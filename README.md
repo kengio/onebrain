@@ -12,51 +12,66 @@ An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI
 
 ## Quick Start
 
-### 1. Clone the repo
+### macOS / Linux
+
+**Option A — Install script (recommended):**
 
 ```bash
-git clone https://github.com/yourusername/onebrain.git
+curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh | bash
+```
+
+**Option B — Manual clone:**
+
+```bash
+git clone https://github.com/kengio/onebrain.git
 cd onebrain
 ```
 
-### 2. Open in Obsidian
+### Windows
 
-- Open Obsidian
-- Click **Open folder as vault**
-- Select the `onebrain/` directory
+**Option A — Install script (recommended):**
 
-When prompted about community plugins, click **Trust author and enable plugins**.
-
-### 3. Install community plugins
-
-Some plugins need to be downloaded from the community store. In Obsidian:
-
-1. Go to **Settings → Community plugins**
-2. Click **Browse** and install:
-   - **Tasks** — task management with due dates
-   - **Dataview** — query notes like a database
-   - **Templater** — advanced templates
-   - **Calendar** — visual calendar view
-   - **Tag Wrangler** — manage tags across vault
-   - **QuickAdd** — fast capture workflows
-
-(Obsidian Git and Terminal are pre-installed in this repo.)
-
-### 4. Start your AI agent
-
-Open the Terminal plugin in Obsidian (click the terminal icon in the sidebar), then run your AI agent:
-
-```bash
-# Claude Code
-claude
-
-# Gemini CLI
-gemini
-
-# Any agent that reads CLAUDE.md / AGENTS.md
+```powershell
+irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
 ```
 
-### 5. Run onboarding
+**Option B — Manual clone:**
+
+```powershell
+git clone https://github.com/kengio/onebrain.git
+cd onebrain
+```
+
+### After Installation
+
+#### 1. Open in Obsidian
+
+- Open Obsidian → **Open folder as vault** → select the vault directory
+- When prompted about community plugins, click **Trust author and enable plugins**
+
+#### 2. Install community plugins
+
+Go to **Settings → Community plugins → Browse** and install:
+
+- **Tasks** — task management with due dates
+- **Dataview** — query notes like a database
+- **Templater** — advanced templates
+- **Calendar** — visual calendar view
+- **Tag Wrangler** — manage tags across vault
+- **QuickAdd** — fast capture workflows
+- **Obsidian Git** — version control for your vault
+- **Terminal** — run your AI agent from within Obsidian
+
+#### 3. Start your AI agent
+
+Open the Terminal plugin in Obsidian (click the terminal icon in the sidebar), then run:
+
+```bash
+claude    # Claude Code
+gemini    # Gemini CLI
+```
+
+#### 4. Run onboarding
 
 ```
 /onboarding
