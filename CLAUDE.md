@@ -83,7 +83,7 @@ At the start of every session:
 4. Greet the user by name with a brief status
 
 At the end of every session:
-- Remind the user to run `/tldr` to save the session
+- Session summaries are auto-saved to `04-memory-log/` when the session ends (if 3+ exchanges occurred). Users can still run `/tldr` manually for a visible summary.
 
 ## File Naming Conventions
 

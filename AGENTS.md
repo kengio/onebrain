@@ -80,9 +80,20 @@ When a user invokes a command, read the corresponding SKILL.md and follow it.
 3. Read most recent file in `04-memory-log/` — note last session topic
 4. Greet user by name with inbox count and last session context
 
-## Session End Reminder
+## Session End Behavior
 
-Always remind the user to run `/tldr` before ending a session.
+Session summaries are auto-saved to `04-memory-log/` when the session ends (if 3+ exchanges occurred). Users can still run `/tldr` manually for a visible summary.
+
+Before your final response in a session, silently save a session summary if ALL of these are true:
+1. The session had 3 or more user↔assistant exchanges
+2. No `/tldr` was run during this session (check `04-memory-log/` for a file matching today's date with matching topics)
+
+If conditions are met:
+- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in `04-memory-log/` for today, use the next number (zero-padded: 01, 02, etc.)
+- Write to `04-memory-log/YYYY-MM-DD-session-NN.md` using the same format as `/tldr` (see `.claude/plugins/onebrain/skills/tldr/SKILL.md` for format)
+- Add `auto-saved: true` to the frontmatter
+- If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `MEMORY.md`
+- Do NOT show any output about the auto-save to the user
 
 ## Conventions
 

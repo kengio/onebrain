@@ -17,7 +17,8 @@
     "skills/update"
   ],
   "hooks": [
-    "hooks/session-start.md"
+    "hooks/session-start.md",
+    "hooks/session-end.md"
   ],
   "agents": [
     "agents/knowledge-linker.md"
