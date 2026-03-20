@@ -71,6 +71,7 @@ Until onboarding is complete, use a helpful, concise, and professional tone.
 | `/summarize-url` | Fetch a URL and create a summary note |
 | `/reading-notes` | Process a book or article into structured notes |
 | `/weekly` | Weekly reflection — review sessions, surface patterns |
+| `/tasks` | View all tasks across the vault — overdue, due soon, open, completed |
 | `/tldr` | End-of-session summary → saved to memory log |
 | `/update` | Update OneBrain system files from GitHub |
 
