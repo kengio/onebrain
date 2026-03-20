@@ -5,7 +5,7 @@ An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI
 ## What It Does
 
 - **Memory across sessions** — your AI remembers your name, role, goals, and past conversations
-- **11 slash commands** — braindump, capture, research, consolidate, connect, and more
+- **12 slash commands** — braindump, capture, research, consolidate, connect, and more
 - **Vault-native** — all notes are Markdown, everything stays in your Obsidian vault
 - **Multi-agent** — works with Claude Code, Gemini CLI, or any AI that reads Markdown
 - **Pre-configured** — open in Obsidian and everything is ready to go
@@ -94,6 +94,7 @@ onebrain/
 | `/summarize-url [url]` | Fetch a URL and save a summary note |
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
+| `/tasks` | Task dashboard — overdue, due soon, open, and completed this week |
 | `/tldr` | Save a session summary to your memory log |
 | `/update` | Update skills, config, and plugins from GitHub |
 

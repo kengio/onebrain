@@ -68,6 +68,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/summarize-url` | `summarize-url/SKILL.md` | URL → summary note |
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
+| `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
 | `/tldr` | `tldr/SKILL.md` | Session summary → memory log |
 | `/update` | `update/SKILL.md` | Update system files from GitHub |
 
