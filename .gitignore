@@ -1,0 +1,20 @@
+# Obsidian workspace (personal to each user — not tracked)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/hotkeys.json
+
+# AI agent caches and local overrides
+.claude/settings.local.json
+.claude/onebrain.local.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Obsidian theme (user preference — not tracked)
+.obsidian/themes/
+.obsidian/appearance.json
+
+# Keep plugin configs tracked:
+# .obsidian/plugins/         — TRACKED
+# .obsidian/community-plugins.json — TRACKED

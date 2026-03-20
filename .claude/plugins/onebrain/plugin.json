@@ -1,0 +1,25 @@
+{
+  "name": "onebrain",
+  "version": "1.0.0",
+  "description": "AI-powered second brain for Obsidian — memory, skills, and personal chief of staff",
+  "author": "OneBrain Contributors",
+  "skills": [
+    "skills/onboarding",
+    "skills/braindump",
+    "skills/capture",
+    "skills/consolidate",
+    "skills/connect",
+    "skills/research",
+    "skills/summarize-url",
+    "skills/reading-notes",
+    "skills/weekly",
+    "skills/tldr",
+    "skills/update"
+  ],
+  "hooks": [
+    "hooks/session-start.md"
+  ],
+  "agents": [
+    "agents/knowledge-linker.md"
+  ]
+}
