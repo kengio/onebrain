@@ -3,12 +3,12 @@ set -euo pipefail
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
 if [ -t 1 ] && command -v tput &>/dev/null && tput colors &>/dev/null; then
-  RED=$(tput setaf 1)
-  GREEN=$(tput setaf 2)
-  YELLOW=$(tput setaf 3)
-  CYAN=$(tput setaf 6)
-  BOLD=$(tput bold)
-  RESET=$(tput sgr0)
+  RED=$(tput setaf 1 2>/dev/null || true)
+  GREEN=$(tput setaf 2 2>/dev/null || true)
+  YELLOW=$(tput setaf 3 2>/dev/null || true)
+  CYAN=$(tput setaf 6 2>/dev/null || true)
+  BOLD=$(tput bold 2>/dev/null || true)
+  RESET=$(tput sgr0 2>/dev/null || true)
 else
   RED="" GREEN="" YELLOW="" CYAN="" BOLD="" RESET=""
 fi
@@ -39,7 +39,11 @@ prompt_with_default() {
   local default="$2"
   local answer
   print_prompt "$question [${default}]:"
-  read -r answer
+  if ! read -r answer; then
+    echo >&2
+    print_error "No input received (EOF). Aborted."
+    exit 1
+  fi
   echo "${answer:-$default}"
 }
 
@@ -53,7 +57,7 @@ main() {
   # ── Uses if-form for exec so set -e doesn't swallow the error handler.
   if [ ! -t 0 ]; then
     if { true < /dev/tty; } 2>/dev/null; then
-      if exec < /dev/tty 2>/dev/null; then
+      if exec < /dev/tty; then
         : # stdin now wired to terminal; all subsequent reads work without < /dev/tty
       else
         print_error "Found /dev/tty but could not redirect stdin to it."
@@ -87,7 +91,11 @@ main() {
 
   if [ ! -d "$install_location" ]; then
     print_prompt "Directory '$install_location' does not exist. Create it? [Y/n]:"
-    read -r confirm
+    if ! read -r confirm; then
+      echo >&2
+      print_error "No input received (EOF). Aborted."
+      exit 1
+    fi
     confirm="${confirm:-Y}"
     if [[ "$confirm" =~ ^[Yy] ]]; then
       if ! mkdir -p "$install_location"; then
@@ -126,7 +134,7 @@ main() {
   # ── Step 3: Download and extract ────────────────────────────────────────────
   local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
   local tmpdir
-  tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that /tmp is writeable and has space."; exit 1; }
+  tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
   # shellcheck disable=SC2064  # $tmpdir is intentionally captured at definition time (set once, never reassigned)
   trap "rm -rf '$tmpdir'" EXIT
 
@@ -152,7 +160,7 @@ main() {
 
   # GitHub tarballs extract to a directory like onebrain-main/
   local extracted_dir
-  extracted_dir=$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1)
+  extracted_dir=$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d | head -1 || true)
 
   if [ -z "$extracted_dir" ]; then
     print_error "Extraction produced no directory. The archive may be malformed or extraction failed."
@@ -167,10 +175,15 @@ main() {
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
   # Remove the install script from the vault — it shouldn't live there
-  rm -f "$vault_path/install.sh"
+  rm -f "$vault_path/install.sh" || true
 
   # Remove any .git directory if somehow included in the tarball
-  rm -rf "$vault_path/.git"
+  if ! rm -rf "$vault_path/.git"; then
+    print_error "Could not remove stale .git from '$vault_path/.git'."
+    print_error "Remove it manually: rm -rf \"$vault_path/.git\""
+    print_error "Then run: git -C \"$vault_path\" init && git -C \"$vault_path\" add -A && git -C \"$vault_path\" commit -m 'Initial OneBrain vault setup'"
+    exit 1
+  fi
 
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   print_info "Initializing git repository..."
