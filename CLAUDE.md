@@ -93,7 +93,7 @@ Session start and end behavior is handled by hooks in `.claude/plugins/onebrain/
 
 Users can run `/ob:wrapup` manually at any time for a visible summary.
 
-**Fallback**: If hooks don't fire, read MEMORY.md and greet the user, then proceed normally.
+**Fallback**: If hooks don't fire, manually perform the SessionStart steps: read MEMORY.md (identity, active projects), read vault.yml for folder names, check inbox count, read the most recent memory log entry, then greet the user by name with that context.
 
 ## File Naming Conventions
 
