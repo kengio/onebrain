@@ -33,8 +33,8 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    name: skill-name
    description: One-line description of what this skill does
    triggers:
-     - /skill-name
-     - skill-name
+     - /ob:skill-name
+     - ob:skill-name
    ---
    ```
 3. Write the skill as a numbered sequence of steps the AI should follow
