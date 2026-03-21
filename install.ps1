@@ -31,14 +31,14 @@ function Print-Banner {
 # ─── Dependency check ─────────────────────────────────────────────────────────
 function Check-Deps {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Print-Error "git is required but not found."
+    Print-Error "git is required but not found (or not on your PATH)."
     Write-Host
     Write-Host "  Install git:" -ForegroundColor White
     Write-Host "    • winget:      " -NoNewline; Write-Host "winget install --id Git.Git" -ForegroundColor Cyan
     Write-Host "    • Chocolatey:  " -NoNewline; Write-Host "choco install git" -ForegroundColor Cyan
     Write-Host "    • Download:    " -NoNewline; Write-Host "https://git-scm.com/download/win" -ForegroundColor Cyan
     Write-Host
-    Print-Error "Install git, then re-run this script."
+    Print-Error "After installing, open a new terminal and re-run this script."
     exit 1
   }
 }
@@ -126,6 +126,7 @@ function Main {
       Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
     } catch {
       Print-Error "Extraction failed. The archive may be corrupted or your disk may be full."
+      Print-Error $_.Exception.Message
       exit 1
     }
     Write-Done "Extracted"
@@ -143,18 +144,15 @@ function Main {
     } catch {
       Print-Error "Failed to move the extracted vault to '$vaultPath'."
       Print-Error "Check that '$installLocation' is writeable and has enough space."
+      Print-Error $_.Exception.Message
       exit 1
     }
 
     # ── Step 4: Clean up installed vault ────────────────────────────────────
-    # Remove install scripts — they shouldn't live in the vault
-    try {
-      Remove-Item -Path (Join-Path $vaultPath "install.sh")  -Force -ErrorAction Stop
-      Remove-Item -Path (Join-Path $vaultPath "install.ps1") -Force -ErrorAction Stop
-    } catch {
-      Print-Error "Could not remove install scripts from '$vaultPath'. Check directory permissions."
-      exit 1
-    }
+    # Remove install scripts — they shouldn't live in the vault.
+    # Use SilentlyContinue so this succeeds even if the archive omits them.
+    Remove-Item -Path (Join-Path $vaultPath "install.sh")  -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $vaultPath "install.ps1") -Force -ErrorAction SilentlyContinue
 
     # Remove any .git directory if included in the archive
     $dotGit = Join-Path $vaultPath ".git"
@@ -171,7 +169,13 @@ function Main {
 
     # ── Step 5: Initialize git ──────────────────────────────────────────────
     Write-Step "🧠" "Initializing git repository..."
-    Push-Location $vaultPath
+    try {
+      Push-Location $vaultPath
+    } catch {
+      Print-Error "Could not change into vault directory '$vaultPath'."
+      Print-Error $_.Exception.Message
+      exit 1
+    }
     try {
       git init -q
       if ($LASTEXITCODE -ne 0) {
@@ -201,7 +205,11 @@ function Main {
     Print-Error "Installation failed: $($_.Exception.Message)"
     exit 1
   } finally {
-    Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+    try {
+      Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction Stop
+    } catch {
+      Print-Info "Warning: could not remove temporary directory '$tmpDir'. You may remove it manually."
+    }
   }
 
   # ── Step 6: Success ──────────────────────────────────────────────────────────

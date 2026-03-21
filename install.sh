@@ -86,7 +86,9 @@ cleanup() {
     printf "\r\033[K" >&2
   fi
   if [ -n "${_INSTALL_TMPDIR:-}" ]; then
-    rm -rf "$_INSTALL_TMPDIR"
+    if ! rm -rf "$_INSTALL_TMPDIR"; then
+      print_info "Warning: could not remove temporary directory '$_INSTALL_TMPDIR'. You may remove it manually."
+    fi
     _INSTALL_TMPDIR=""
   fi
 }
@@ -118,14 +120,34 @@ print_install_hint() {
     curl)
       echo >&2
       echo "${BOLD}  Install curl:${RESET}" >&2
-      echo "    • Debian/Ubuntu: ${CYAN}sudo apt install curl${RESET}" >&2
-      echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install curl${RESET}" >&2
+      case "$os" in
+        Darwin)
+          echo "    • Homebrew: ${CYAN}brew install curl${RESET}" >&2
+          ;;
+        Linux)
+          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install curl${RESET}" >&2
+          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install curl${RESET}" >&2
+          ;;
+        *)
+          echo "    • https://curl.se/download.html" >&2
+          ;;
+      esac
       ;;
     tar)
       echo >&2
       echo "${BOLD}  Install tar:${RESET}" >&2
-      echo "    • Debian/Ubuntu: ${CYAN}sudo apt install tar${RESET}" >&2
-      echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install tar${RESET}" >&2
+      case "$os" in
+        Darwin)
+          echo "    • Homebrew: ${CYAN}brew install gnu-tar${RESET}" >&2
+          ;;
+        Linux)
+          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install tar${RESET}" >&2
+          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install tar${RESET}" >&2
+          ;;
+        *)
+          echo "    • https://www.gnu.org/software/tar/" >&2
+          ;;
+      esac
       ;;
   esac
 }
@@ -248,8 +270,8 @@ main() {
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
   local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
-  _INSTALL_TMPDIR=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
   trap cleanup EXIT INT TERM
+  _INSTALL_TMPDIR=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
 
   spinner_start "$ICON_DL Downloading OneBrain..."
   if ! curl -fsSL "$repo_url" -o "$_INSTALL_TMPDIR/onebrain.tar.gz"; then
@@ -278,7 +300,7 @@ main() {
   # GitHub tarballs extract to a directory like onebrain-main/
   # The || true tolerates SIGPIPE (exit 141) from head -1 closing the pipe early.
   local extracted_dir
-  extracted_dir=$(find "$_INSTALL_TMPDIR" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1) || true
+  extracted_dir=$(find "$_INSTALL_TMPDIR" -maxdepth 1 -mindepth 1 -type d | head -1) || true
 
   if [ -z "$extracted_dir" ]; then
     print_error "Extraction produced no directory. The archive may be malformed or extraction failed."
@@ -308,23 +330,18 @@ main() {
 
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   spinner_start "$ICON_GIT Initializing git repository..."
-  if ! cd "$vault_path"; then
-    spinner_stop "$ICON_FAIL" ""
-    print_error "Could not enter vault directory '$vault_path'. Installation may be incomplete."
-    exit 1
-  fi
-  if ! git init -q; then
+  if ! git -C "$vault_path" init -q; then
     spinner_stop "$ICON_FAIL" ""
     print_error "Failed to initialize a git repository in '$vault_path'."
     exit 1
   fi
-  if ! git add -A; then
+  if ! git -C "$vault_path" add -A; then
     spinner_stop "$ICON_FAIL" ""
     print_error "Failed to stage files for the initial git commit in '$vault_path'."
     print_error "Check for a stale .git/index.lock file or permission issues."
     exit 1
   fi
-  if ! git commit -q -m "Initial OneBrain vault setup"; then
+  if ! git -C "$vault_path" commit -q -m "Initial OneBrain vault setup"; then
     spinner_stop "$ICON_FAIL" ""
     print_error "Failed to create the initial git commit."
     print_error "Git may need a name and email configured. Run:"
