@@ -13,7 +13,14 @@ Welcome to OneBrain! This skill personalizes your vault and sets up your AI chie
 
 ## Platform Note
 
-For choice-based questions (Steps 3, 6, 10), use the `AskUserQuestion` tool if available (Claude Code). If not available, present the options as a numbered list and wait for a text response. Free-text questions (Steps 2, 4, 5, 7, 8) should always be asked as plain text.
+For steps that present a fixed set of choices (vault method, personality archetype, communication style), use the `AskUserQuestion` tool if available. If not available, present the options as a numbered list and wait for a text response. Free-text prompts (name, role, goals, context) should always be asked as plain conversational text.
+
+**Detecting availability:** Attempt `AskUserQuestion` on the first choice-based question (vault method, Step 4). If it fails or is unavailable, switch to plain-text numbered lists for all remaining choice questions in this skill — do not retry `AskUserQuestion` after a failure.
+
+**Label normalization:** `AskUserQuestion` option labels may include suffixes like "(Recommended)". When mapping a selected label to a stored value, always strip any parenthetical suffix and lowercase the result (e.g., "Friendly (Recommended)" → `friendly`, "OneBrain (Recommended)" → `onebrain`).
+
+**`AskUserQuestion` return values:**
+- `multiSelect: false` → returns the selected option's label as a string
 
 ---
 
@@ -29,48 +36,16 @@ Say:
 
 ---
 
-## Step 2: Ask Agent Name
+## Step 2: Ask Name
 
 Ask:
-> What would you like to call me? Pick a name for your AI assistant — for example, Nova, Atlas, Sage, Kai, or anything you like.
+> What should I call you?
 
-Wait for response. Store: `agent_name`.
-
----
-
-## Step 3: Choose Personality Archetype
-
-Use `AskUserQuestion` with:
-- question: "What vibe should I have?"
-- header: "Personality"
-- multiSelect: false
-- options:
-  - label: "Professional", description: "Formal, efficient, straight to the point. Uses phrases like 'I recommend' and 'Consider'."
-  - label: "Friendly (Recommended)", description: "Warm, conversational, encouraging. Uses phrases like 'Great idea!' and 'Let's do this'."
-  - label: "Playful", description: "Casual, witty, keeps things light. Uses phrases like 'Let's roll!' and 'Nice one!'"
-
-Fallback (if AskUserQuestion unavailable): present as numbered list and wait for response. Default to Friendly if no clear answer.
-
-Store: `agent_personality` as one of `professional`, `friendly`, `playful`.
-Store: `agent_personality_description` as the matching trait description text.
-
-Personality trait descriptions:
-- **Professional**: formal language, structured responses, minimal small talk. Uses phrases like "I recommend" and "Consider".
-- **Friendly**: warm greetings, conversational tone, uses encouragement. Uses phrases like "Great idea!" and "Let's do this".
-- **Playful**: casual language, humor, creative metaphors. Uses phrases like "Let's roll!" and "Nice one!"
+Wait for response. Store: `preferred_name`.
 
 ---
 
-## Step 4: Ask Name
-
-Ask:
-> What's your name? (And what should I call you — full name, nickname, or something else?)
-
-Wait for response. Store: `full_name`, `preferred_name`.
-
----
-
-## Step 5: Ask Role
+## Step 3: Ask Role
 
 Ask:
 > What's your primary role or how do you spend most of your time?
@@ -81,25 +56,93 @@ Wait for response. Store: `role`.
 
 ---
 
-## Step 6: Ask Communication Style
+## Step 4: Choose Vault Organization Method
 
 Use `AskUserQuestion` with:
-- question: "How do you prefer I communicate with you? (Select all that apply)"
-- header: "Comm style"
-- multiSelect: true
+- question: "How would you like your vault organized?"
+- header: "Vault method"
+- multiSelect: false
 - options:
-  - label: "Concise", description: "Short answers, bullet points, get to the point"
-  - label: "Detailed", description: "Full explanations, context, reasoning included"
-  - label: "Casual", description: "Informal, conversational, relaxed"
-  - label: "Formal", description: "Professional, structured, precise"
+  - label: "OneBrain (Recommended)", description: "Simple and practical. Best for general-purpose note-taking and getting things done.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with tasks\n02-knowledge/   Consolidated notes & reference\n03-archive/     Completed & inactive items\n04-memory-log/  Session summaries"
+  - label: "PARA", description: "Organize by actionability (Tiago Forte). Best for action-oriented people managing work + life.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with deadlines\n02-areas/       Ongoing responsibilities\n03-resources/   Topics of interest & reference\n04-archive/     Inactive items\n05-memory-log/  Session summaries"
+  - label: "Zettelkasten", description: "Build a knowledge graph (Niklas Luhmann). Best for researchers, writers, and deep thinkers.", preview: "00-fleeting/    Temporary raw ideas\n01-literature/  Notes from sources you've read\n02-permanent/   Atomic linked notes (your graph)\n03-archive/     Inactive items\n04-memory-log/  Session summaries"
 
-Fallback (if AskUserQuestion unavailable): present as a list and ask them to pick a combination, then wait for response.
+Fallback (if AskUserQuestion unavailable): present as a numbered list and wait for response. Default to OneBrain if no clear answer.
 
-Store: `tone` (Casual or Formal), `detail_level` (Concise or Detailed) from their selections.
+If the user wants a custom method: explain that only the three listed methods are supported for automatic vault setup. Ask them to choose one of the three options. If they still decline, default to OneBrain.
+
+Store: `method` as one of `onebrain`, `para`, `zettelkasten` (lowercase, no suffix).
+Store: `method_display_name` as `OneBrain`, `PARA`, or `Zettelkasten` (the human-readable label for the chosen method).
 
 ---
 
-## Step 7: Ask Primary Goals
+## Step 5: Ask Agent Name
+
+Ask:
+> What would you like to call me? Pick a name for your AI assistant — for example, Nova, Atlas, Sage, Kai, or anything you like.
+
+Wait for response. Store: `agent_name`.
+
+---
+
+## Step 6: Choose Personality Archetype
+
+Use `AskUserQuestion` with:
+- question: "What vibe should I have?"
+- header: "Personality"
+- multiSelect: false
+- options:
+  - label: "Professional", description: "Formal, efficient, straight to the point. Uses phrases like 'I recommend' and 'Consider'."
+  - label: "Friendly (Recommended)", description: "Warm, conversational, encouraging. Uses phrases like 'Great idea!' and 'Let's do this'."
+  - label: "Playful", description: "Casual, witty, keeps things light. Uses phrases like 'Let's roll!' and 'Nice one!'"
+
+Fallback (if AskUserQuestion unavailable): present as a numbered list and wait for response. Default to Friendly if no clear answer.
+
+Store: `agent_personality` as one of `professional`, `friendly`, `playful` (lowercase, no suffix).
+Store: `agent_personality_description` from the canonical descriptions below — not from the AskUserQuestion option text.
+
+**Canonical personality descriptions (authoritative source for `agent_personality_description`):**
+- **professional**: formal language, structured responses, minimal small talk. Uses phrases like "I recommend" and "Consider".
+- **friendly**: warm greetings, conversational tone, uses encouragement. Uses phrases like "Great idea!" and "Let's do this".
+- **playful**: casual language, humor, creative metaphors. Uses phrases like "Let's roll!" and "Nice one!"
+
+---
+
+## Step 7: Ask Communication Style
+
+Ask two questions back-to-back.
+
+**Question A — Detail level:**
+
+Use `AskUserQuestion` with:
+- question: "How much detail do you prefer in my responses?"
+- header: "Detail"
+- multiSelect: false
+- options:
+  - label: "Concise (Recommended)", description: "Short answers, bullet points, get to the point"
+  - label: "Detailed", description: "Full explanations, context, and reasoning included"
+
+Fallback (if AskUserQuestion unavailable): ask as plain text. Default to Concise if no clear answer.
+
+Store: `detail_level` as "Concise" or "Detailed" (lowercase the stored value).
+
+**Question B — Tone:**
+
+Use `AskUserQuestion` with:
+- question: "What tone do you prefer?"
+- header: "Tone"
+- multiSelect: false
+- options:
+  - label: "Casual (Recommended)", description: "Informal, conversational, relaxed"
+  - label: "Formal", description: "Professional, structured, precise"
+
+Fallback (if AskUserQuestion unavailable): ask as plain text. Default to Casual if no clear answer.
+
+Store: `tone` as "Casual" or "Formal" (lowercase the stored value).
+
+---
+
+## Step 8: Ask Primary Goals
 
 Ask:
 > What are 1-3 things you're most focused on right now? (These help me prioritize what's important when I surface suggestions.)
@@ -110,7 +153,7 @@ Wait for response. Store: `goals` as a list.
 
 ---
 
-## Step 8: Ask Stack/Context (Optional)
+## Step 9: Ask Stack/Context (Optional)
 
 Ask:
 > Anything else I should always keep in mind? For example: your tech stack, key tools you use, recurring commitments, or anything that gives me context.
@@ -121,7 +164,7 @@ Wait for response. Store: `recurring_contexts`.
 
 ---
 
-## Step 9: Generate MEMORY.md
+## Step 10: Generate MEMORY.md
 
 Overwrite `MEMORY.md` with personalized content:
 
@@ -137,9 +180,8 @@ Overwrite `MEMORY.md` with personalized content:
 
 ## Identity
 
-**Name:** [full_name]
+**Name:** [preferred_name]
 **Role:** [role]
-**Preferred name:** [preferred_name]
 
 ## Communication Style
 
@@ -186,24 +228,6 @@ Your personality is [agent_personality]: [agent_personality_description].
 [If not provided, leave section empty with the comment]
 <!-- Add recurring context here — e.g., "Tuesday = deep work day" or "Main stack: TypeScript, Next.js" -->
 ```
-
----
-
-## Step 10: Choose Vault Organization Method
-
-Use `AskUserQuestion` with:
-- question: "How would you like your vault organized?"
-- header: "Vault method"
-- multiSelect: false
-- options:
-  - label: "OneBrain (Recommended)", description: "Simple and practical. Best for general-purpose note-taking and getting things done.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with tasks\n02-knowledge/   Consolidated notes & reference\n03-archive/     Completed & inactive items\n04-memory-log/  Session summaries"
-  - label: "PARA", description: "Organize by actionability (Tiago Forte). Best for action-oriented people managing work + life.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with deadlines\n02-areas/       Ongoing responsibilities\n03-resources/   Topics of interest & reference\n04-archive/     Inactive items\n05-memory-log/  Session summaries"
-  - label: "Zettelkasten", description: "Build a knowledge graph (Niklas Luhmann). Best for researchers, writers, and deep thinkers.", preview: "00-fleeting/    Temporary raw ideas\n01-literature/  Notes from sources you've read\n02-permanent/   Atomic linked notes (your graph)\n03-archive/     Inactive items\n04-memory-log/  Session summaries"
-
-Fallback (if AskUserQuestion unavailable): present as numbered list with folder details and wait for response. Default to OneBrain if no clear answer.
-
-Store: `method` as one of `onebrain`, `para`, `zettelkasten`.
-Store: `method_display_name` as `OneBrain`, `PARA`, or `Zettelkasten` (the human-readable label for the chosen method).
 
 ---
 
@@ -339,8 +363,8 @@ Say:
 > You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help. Here's what's set up:
 >
 > - Your identity and personality are saved in MEMORY.md
-> - Your vault is organized using the **[method_display_name]** method
-> - Vault folders have been created and system files updated
+> - Your vault is organized using the **[method_display_name]** method with these folders:
+>   [list each folder created in Step 11 for the chosen method, one per line]
 >
 > **First things to try:**
 > - `/braindump` — dump anything on your mind right now
