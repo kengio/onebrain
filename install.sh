@@ -39,40 +39,50 @@ prompt_with_default() {
   local default="$2"
   local answer
   print_prompt "$question [${default}]:"
-  read -r answer < /dev/tty
+  read -r answer
   echo "${answer:-$default}"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 main() {
+  # ── TTY check: when piped (curl | bash), stdin is the pipe not the terminal.
+  # ── Redirect to /dev/tty so prompts reach the user. Exits with instructions
+  # ── if /dev/tty cannot be opened (e.g., headless CI with no controlling TTY).
+  if [ ! -t 0 ]; then
+    if { true < /dev/tty; } 2>/dev/null; then
+      exec < /dev/tty || {
+        print_error "Found /dev/tty but could not redirect stdin to it."
+        print_error "Download and run the script directly instead:"
+        print_error "  curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh -o install.sh"
+        print_error "  bash install.sh"
+        exit 1
+      }
+    else
+      print_error "Cannot read user input (no accessible TTY)."
+      print_error "Download and run the script directly instead:"
+      print_error "  curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh -o install.sh"
+      print_error "  bash install.sh"
+      exit 1
+    fi
+  fi
+
   print_header "OneBrain Vault Installer"
   print_info "This script downloads OneBrain and sets up a fresh Obsidian vault."
   echo
 
   check_deps
 
-  # ── TTY check: required for piped installs (curl | bash) ────────────────────
-  if [ ! -t 0 ]; then
-    if [ -e /dev/tty ]; then
-      exec < /dev/tty
-    else
-      print_error "Cannot read user input (no TTY). Run the script directly instead:"
-      print_error "  bash install.sh"
-      exit 1
-    fi
-  fi
-
   # ── Step 1: Install location ────────────────────────────────────────────────
   local default_location="$HOME/Documents"
   local install_location
   install_location=$(prompt_with_default "Where should the vault be created?" "$default_location")
 
-  # Expand ~ manually in case user typed it
+  # Expand a leading ~ to $HOME (note: ~username forms are not expanded)
   install_location="${install_location/#\~/$HOME}"
 
   if [ ! -d "$install_location" ]; then
     print_prompt "Directory '$install_location' does not exist. Create it? [Y/n]:"
-    read -r confirm < /dev/tty
+    read -r confirm
     confirm="${confirm:-Y}"
     if [[ "$confirm" =~ ^[Yy] ]]; then
       mkdir -p "$install_location"
@@ -109,7 +119,7 @@ main() {
   local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
   local tmpdir
   tmpdir=$(mktemp -d)
-  # shellcheck disable=SC2064
+  # shellcheck disable=SC2064  # $tmpdir is intentionally captured at definition time (set once, never reassigned)
   trap "rm -rf '$tmpdir'" EXIT
 
   print_info "Downloading OneBrain..."
