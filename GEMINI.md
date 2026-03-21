@@ -80,6 +80,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/ob:tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
 | `/ob:wrapup` | `wrapup/SKILL.md` | Wrap up session → memory log |
 | `/ob:update` | `update/SKILL.md` | Update system files from GitHub |
+| `/ob:help` | `help/SKILL.md` | List available commands with use cases |
 
 When a user invokes a command, read the corresponding SKILL.md and follow it.
 
