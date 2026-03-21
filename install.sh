@@ -221,7 +221,7 @@ install_plugins() {
   local registry_file="$_INSTALL_TMPDIR/plugin-registry.json"
   spinner_start "Fetching plugin registry..."
   local registry_err
-  if ! registry_err=$(curl -fsSL "$registry_url" -o "$registry_file" 2>&1 >/dev/null); then
+  if ! registry_err=$(curl -fsSL "$registry_url" -o "$registry_file" 2>&1); then
     spinner_stop "$ICON_FAIL" ""
     print_info "Could not reach the plugin registry${registry_err:+ (${registry_err})}. All plugins will need to be installed manually."
     # Populate FAILED_PLUGINS so the success message shows manual install instructions.
@@ -235,8 +235,9 @@ install_plugins() {
   spinner_stop "$ICON_OK" "Registry fetched"
 
   local plugins_dir="$vault/.obsidian/plugins"
-  if ! mkdir -p "$plugins_dir" 2>/dev/null; then
-    print_info "Could not create plugins directory. Check permissions on '$vault/.obsidian/'."
+  local mkdir_err
+  if ! mkdir_err=$(mkdir -p "$plugins_dir" 2>&1); then
+    print_info "Could not create plugins directory${mkdir_err:+ (${mkdir_err})}."
     while IFS= read -r _pid; do
       [ -z "$_pid" ] && continue
       failed_plugins+=("$_pid")
@@ -247,9 +248,12 @@ install_plugins() {
 
   # GitHub REST API: 60 req/hr unauthenticated (shared per IP) — 5,000/hr with GITHUB_TOKEN.
   # Build auth args once; GITHUB_TOKEN does not change during the loop.
-  local curl_auth_args=()
+  # Accept header is included in the array (not hardcoded on the curl line) so both
+  # authenticated and unauthenticated calls send identical headers, and the array is
+  # never expanded empty (which would be a no-op, but is cleaner to avoid).
+  local curl_auth_args=(-H "Accept: application/vnd.github.v3+json")
   if [ -n "${GITHUB_TOKEN:-}" ]; then
-    curl_auth_args=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    curl_auth_args+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
   fi
 
   local curl_errf="$_INSTALL_TMPDIR/curl_err"
@@ -281,15 +285,20 @@ install_plugins() {
       continue
     fi
 
+    # Clear the shared error file before each plugin so stale errors from a prior
+    # iteration never bleed into this plugin's failure message.
+    : > "$curl_errf"
+
     spinner_start "  Installing ${plugin_id}..."
 
     # Use -sSL (not -fsSL) so the response body is preserved on HTTP errors, enabling
     # rate-limit detection. The HTTP status code is appended with -w and parsed below.
+    # Stderr (transport errors: DNS, TLS, timeout) is captured to $curl_errf so users
+    # see actionable detail instead of a generic "could not get release tag" message.
     local api_raw http_code release_json tag
     api_raw=$(curl -sSL -w '\n%{http_code}' \
-      -H "Accept: application/vnd.github.v3+json" \
       "${curl_auth_args[@]}" \
-      "https://api.github.com/repos/${repo}/releases/latest" 2>/dev/null) || api_raw=""
+      "https://api.github.com/repos/${repo}/releases/latest" 2>"$curl_errf") || true
     http_code=$(printf '%s\n' "$api_raw" | tail -1)
     release_json=$(printf '%s\n' "$api_raw" | sed '$d')
     tag=$(printf '%s' "$release_json" \
@@ -299,7 +308,12 @@ install_plugins() {
 
     if [ -z "$tag" ]; then
       spinner_stop "$ICON_FAIL" ""
-      # HTTP 403 can mean rate limit or access denied — check body to distinguish
+      # HTTP 403 can mean rate limit or access denied — check body to distinguish.
+      # Rate-limit strings come from GitHub REST API error response "message" field.
+      # Note: GitHub primary rate limits now return HTTP 429 (not 403) as of 2023;
+      # a 429 would fall through to the generic branch below with its HTTP code shown.
+      local api_transport_err
+      api_transport_err=$(cat "$curl_errf" 2>/dev/null | head -1 | tr -d '\r')
       if [ "$http_code" = "403" ]; then
         if printf '%s' "$release_json" | grep -qE '"(API rate limit exceeded|exceeded a secondary rate limit)"'; then
           print_info "  ${RED}rate-limited${RESET} ${plugin_id} (GitHub rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)"
@@ -307,16 +321,16 @@ install_plugins() {
           print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (GitHub API returned 403 — check GITHUB_TOKEN if set)"
         fi
       else
-        print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag — HTTP ${http_code:-error})"
+        print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag — HTTP ${http_code:-error}${api_transport_err:+; ${api_transport_err}})"
       fi
       failed_plugins+=("$plugin_id")
       continue
     fi
 
     local plugin_dir="$plugins_dir/$plugin_id"
-    if ! mkdir -p "$plugin_dir" 2>/dev/null; then
+    if ! mkdir_err=$(mkdir -p "$plugin_dir" 2>&1); then
       spinner_stop "$ICON_FAIL" ""
-      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (could not create plugin directory)"
+      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (could not create plugin directory${mkdir_err:+: ${mkdir_err}})"
       failed_plugins+=("$plugin_id")
       continue
     fi
@@ -332,6 +346,17 @@ install_plugins() {
         break
       fi
     done
+    # Verify required assets are non-empty: curl can exit 0 but write zero bytes on a
+    # network drop mid-transfer, or write an HTML error page if the redirect returned 200.
+    if [ "$ok" = true ]; then
+      for asset in main.js manifest.json; do
+        if [ ! -s "$plugin_dir/$asset" ]; then
+          printf '%s: empty or missing after download\n' "$asset" > "$curl_errf"
+          ok=false
+          break
+        fi
+      done
+    fi
 
     # styles.css is optional — not all plugins ship it.
     # curl exit code 22 = HTTP error (status 400+, typically 404) — expected and silent.

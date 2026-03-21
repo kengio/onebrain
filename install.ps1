@@ -171,11 +171,18 @@ function Install-Plugins {
     $baseUrl = "https://github.com/$repo/releases/download/$tag"
     $ok = $true
 
-    # main.js and manifest.json are required; short-circuit on first failure
+    # main.js and manifest.json are required; short-circuit on first failure.
+    # After download, verify non-empty: a network drop can produce a 200 with zero bytes.
     foreach ($asset in @("main.js", "manifest.json")) {
       if (-not $ok) { break }
+      $assetPath = Join-Path $pluginDir $asset
       try {
-        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile (Join-Path $pluginDir $asset) -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile $assetPath -ErrorAction Stop | Out-Null
+        $assetLen = try { (Get-Item $assetPath -ErrorAction Stop).Length } catch { 0 }
+        if ($assetLen -eq 0) {
+          Write-Host "  ⚠️  $pluginId/$asset downloaded as empty (network drop?)" -ForegroundColor Yellow
+          $ok = $false
+        }
       } catch {
         Write-Host "  ⚠️  $pluginId/$asset failed: $($_.Exception.Message)" -ForegroundColor Yellow
         $ok = $false
@@ -183,8 +190,8 @@ function Install-Plugins {
     }
 
     # styles.css is optional — not all plugins ship it.
-    # PS5 Invoke-WebRequest does not throw on HTTP 4xx — check StatusCode explicitly to
-    # avoid keeping a 404 HTML error page on disk as a "valid" CSS file.
+    # Invoke-WebRequest throws on HTTP 4xx/5xx (caught below), but a 200 with zero bytes
+    # is possible on a mid-transfer network drop. Check length and remove if empty.
     if ($ok) {
       $cssPath = Join-Path $pluginDir "styles.css"
       try {
