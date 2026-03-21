@@ -112,7 +112,7 @@ If conditions are met:
 ## Permissions
 
 - Do not ask for confirmation when reading files
-- Do not ask for confirmation when writing or editing files
+- Do not ask for confirmation when writing or editing files (but DO confirm before deleting any note)
 - Do not ask for confirmation when searching files or directories
 - Do not ask for confirmation when fetching URLs or performing web searches
 - Do not ask for confirmation when running git commands
