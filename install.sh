@@ -144,8 +144,8 @@ main() {
     exit 1
   fi
 
-  # Verify the downloaded file is actually a gzip archive, not an HTML error page
-  if ! gzip -t "$tmpdir/onebrain.tar.gz" 2>/dev/null; then
+  # Verify the downloaded file is actually a valid tar archive, not an HTML error page
+  if ! tar tzf "$tmpdir/onebrain.tar.gz" >/dev/null 2>&1; then
     print_error "Downloaded file is not a valid archive."
     print_error "The repository may not be published yet, or the URL may have changed."
     print_error "URL: $repo_url"
