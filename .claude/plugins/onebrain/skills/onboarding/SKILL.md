@@ -163,11 +163,11 @@ Your personality is [agent_personality]: [agent_personality_description].
 
 ## Active Projects
 
-<!-- Updated by /ob:consolidate and /ob:braindump -->
+<!-- Updated by /consolidate and /braindump -->
 
 ## Key Learnings & Patterns
 
-<!-- Added by /ob:wrapup over time -->
+<!-- Added by /wrapup over time -->
 <!-- Format: YYYY-MM-DD — [observation] -->
 
 ## Recurring Contexts
@@ -343,10 +343,10 @@ Say:
 > - Vault folders have been created and system files updated
 >
 > **First things to try:**
-> - `/ob:braindump` — dump anything on your mind right now
-> - `/ob:capture` — add a quick note or idea
-> - `/ob:research [topic]` — research something and save it to your vault
+> - `/braindump` — dump anything on your mind right now
+> - `/capture` — add a quick note or idea
+> - `/research [topic]` — research something and save it to your vault
 >
-> When you're done working, run `/ob:wrapup` to save a session summary.
+> When you're done working, run `/wrapup` to save a session summary.
 >
 > What would you like to do first?

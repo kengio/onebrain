@@ -123,7 +123,7 @@ Say:
 
 If no tasks are found anywhere after scanning:
 
-> No tasks found in your vault yet. Tasks get created when you use `/ob:braindump`, `/ob:weekly`, or add them manually to notes.
+> No tasks found in your vault yet. Tasks get created when you use `/braindump`, `/weekly`, or add them manually to notes.
 >
 > Want to add one now?
 

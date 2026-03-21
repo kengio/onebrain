@@ -1,0 +1,13 @@
+{
+  "name": "onebrain-local",
+  "owner": {
+    "name": "OneBrain"
+  },
+  "plugins": [
+    {
+      "name": "onebrain",
+      "source": "./.claude/plugins/onebrain",
+      "description": "AI-powered second brain for Obsidian"
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 {
-  "name": "ob",
+  "name": "onebrain",
   "version": "1.0.0",
   "description": "AI-powered second brain for Obsidian — memory, skills, and personal chief of staff",
-  "author": "OneBrain Contributors"
+  "author": {
+    "name": "OneBrain Contributors"
+  }
 }

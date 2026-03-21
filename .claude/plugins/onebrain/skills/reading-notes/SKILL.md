@@ -7,7 +7,7 @@ description: Process a book or article into structured progressive summary notes
 
 Turn a book or article into structured, permanent notes using the progressive summarization method.
 
-Usage: `/ob:reading-notes [title]` or `/ob:reading-notes` then follow prompts.
+Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
 
 ---
 
@@ -122,5 +122,5 @@ rating: [1-5 if they want to rate it]
 >
 > Want to:
 > - Add this to your reading list in a project note?
-> - Run `/ob:connect` to find vault notes this connects to?
+> - Run `/connect` to find vault notes this connects to?
 > - Set a reminder to revisit these notes? (I can add a task)

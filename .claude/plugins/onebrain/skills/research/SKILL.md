@@ -7,7 +7,7 @@ description: Research a topic on the web and save a structured note to the knowl
 
 Research a topic and save the findings as a structured note in your knowledge base.
 
-Usage: `/ob:research [topic]`
+Usage: `/research [topic]`
 
 ---
 
@@ -106,4 +106,4 @@ After creating the note:
 > - [Related topic 1]
 > - [Related topic 2]
 >
-> Or run `/ob:summarize-url [url]` to go deeper on a specific source.
+> Or run `/summarize-url [url]` to go deeper on a specific source.

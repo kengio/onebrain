@@ -7,7 +7,7 @@ description: Fetch a URL and create a structured summary note saved to the knowl
 
 Fetch a web page and create a structured summary note in your knowledge base.
 
-Usage: `/ob:summarize-url [url]`
+Usage: `/summarize-url [url]`
 
 ---
 

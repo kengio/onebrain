@@ -1,15 +1,15 @@
 # OneBrain Memory
 
-<!-- Loaded every session. Keep under ~200 lines. Updated by /ob:onboarding, /ob:wrapup, and auto session-end. -->
+<!-- Loaded every session. Keep under ~200 lines. Updated by /onboarding, /wrapup, and auto session-end. -->
 
 ## Agent Identity
 
-**Name:** [Run /ob:onboarding to set up]
+**Name:** [Run /onboarding to set up]
 **Personality:** [e.g., professional / friendly / playful]
 
 ## Identity
 
-**Name:** [Run /ob:onboarding to set up]
+**Name:** [Run /onboarding to set up]
 **Role:** [e.g., developer, designer, PM, founder, student]
 **Preferred name:** [nickname or first name the AI should use]
 
@@ -45,12 +45,12 @@ Your personality is [personality]: [trait description].
 
 ## Active Projects
 
-<!-- Updated by /ob:consolidate and /ob:braindump -->
+<!-- Updated by /consolidate and /braindump -->
 - [project name] — [one-line status]
 
 ## Key Learnings & Patterns
 
-<!-- The AI adds observations here over time via /ob:wrapup -->
+<!-- The AI adds observations here over time via /wrapup -->
 <!-- Format: YYYY-MM-DD — [observation] -->
 
 ## Recurring Contexts
