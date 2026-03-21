@@ -46,17 +46,22 @@ prompt_with_default() {
 # ─── Main ─────────────────────────────────────────────────────────────────────
 main() {
   # ── TTY check: when piped (curl | bash), stdin is the pipe not the terminal.
-  # ── Redirect to /dev/tty so prompts reach the user. Exits with instructions
-  # ── if /dev/tty cannot be opened (e.g., headless CI with no controlling TTY).
+  # ── Probe /dev/tty for readability first; if open-able, redirect stdin so
+  # ── all prompts reach the user's terminal. Two distinct exit paths:
+  # ──   (1) /dev/tty not readable  → exits with download instructions
+  # ──   (2) /dev/tty readable but exec fails (rare) → exits with instructions
+  # ── Uses if-form for exec so set -e doesn't swallow the error handler.
   if [ ! -t 0 ]; then
     if { true < /dev/tty; } 2>/dev/null; then
-      exec < /dev/tty || {
+      if exec < /dev/tty 2>/dev/null; then
+        : # stdin now wired to terminal; all subsequent reads work without < /dev/tty
+      else
         print_error "Found /dev/tty but could not redirect stdin to it."
         print_error "Download and run the script directly instead:"
         print_error "  curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh -o install.sh"
         print_error "  bash install.sh"
         exit 1
-      }
+      fi
     else
       print_error "Cannot read user input (no accessible TTY)."
       print_error "Download and run the script directly instead:"
@@ -137,7 +142,10 @@ main() {
   fi
 
   print_info "Extracting..."
-  tar xzf "$tmpdir/onebrain.tar.gz" -C "$tmpdir"
+  if ! tar xzf "$tmpdir/onebrain.tar.gz" -C "$tmpdir"; then
+    print_error "Extraction failed. The archive may be corrupted or your disk may be full."
+    exit 1
+  fi
 
   # GitHub tarballs extract to a directory like onebrain-main/
   local extracted_dir
@@ -160,9 +168,19 @@ main() {
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   print_info "Initializing git repository..."
   cd "$vault_path"
-  git init -q
+  if ! git init -q; then
+    print_error "Failed to initialize a git repository in '$vault_path'."
+    exit 1
+  fi
   git add -A
-  git commit -q -m "Initial OneBrain vault setup"
+  if ! git commit -q -m "Initial OneBrain vault setup"; then
+    print_error "Failed to create the initial git commit."
+    print_error "Git may need a name and email configured. Run:"
+    print_error "  git config --global user.name  'Your Name'"
+    print_error "  git config --global user.email 'you@example.com'"
+    print_error "Then re-run: git -C \"$vault_path\" add -A && git -C \"$vault_path\" commit -m 'Initial OneBrain vault setup'"
+    exit 1
+  fi
 
   # ── Step 6: Success ──────────────────────────────────────────────────────────
   echo
