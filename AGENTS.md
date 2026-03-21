@@ -87,7 +87,7 @@ When a user invokes a command, read the corresponding SKILL.md and follow it.
 
 ## Session End Behavior
 
-Session summaries are auto-saved to `04-memory-log/` when the session ends (if 3+ exchanges occurred). Users can still run `/tldr` manually for a visible summary.
+Session summaries are auto-saved to the memory-log folder when the session ends (if 3+ exchanges occurred). Users can still run `/tldr` manually for a visible summary.
 
 Before your final response in a session, silently save a session summary if ALL of these are true:
 1. The session had 3 or more user↔assistant exchanges
