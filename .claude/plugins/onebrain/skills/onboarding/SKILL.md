@@ -11,6 +11,12 @@ Welcome to OneBrain! This skill personalizes your vault and sets up your AI chie
 
 ---
 
+## Platform Note
+
+For choice-based questions (Steps 3, 6, 10), use the `AskUserQuestion` tool if available (Claude Code). If not available, present the options as a numbered list and wait for a text response. Free-text questions (Steps 2, 4, 5, 7, 8) should always be asked as plain text.
+
+---
+
 ## Step 1: Welcome
 
 Say:
@@ -34,19 +40,19 @@ Wait for response. Store: `agent_name`.
 
 ## Step 3: Choose Personality Archetype
 
-Ask:
-> What vibe should I have? Pick a personality:
->
-> 1. **Professional** — formal, efficient, straight to the point
-> 2. **Friendly** — warm, conversational, encouraging
-> 3. **Playful** — casual, witty, keeps things light
->
-> Enter 1, 2, or 3 (or press Enter for Friendly):
+Use `AskUserQuestion` with:
+- question: "What vibe should I have?"
+- header: "Personality"
+- multiSelect: false
+- options:
+  - label: "Professional", description: "Formal, efficient, straight to the point. Uses phrases like 'I recommend' and 'Consider'."
+  - label: "Friendly (Recommended)", description: "Warm, conversational, encouraging. Uses phrases like 'Great idea!' and 'Let's do this'."
+  - label: "Playful", description: "Casual, witty, keeps things light. Uses phrases like 'Let's roll!' and 'Nice one!'"
 
-Wait for response. Default to Friendly if no clear answer.
+Fallback (if AskUserQuestion unavailable): present as numbered list and wait for response. Default to Friendly if no clear answer.
 
 Store: `agent_personality` as one of `professional`, `friendly`, `playful`.
-Store: `agent_personality_description` as the matching trait description text from the list above.
+Store: `agent_personality_description` as the matching trait description text.
 
 Personality trait descriptions:
 - **Professional**: formal language, structured responses, minimal small talk. Uses phrases like "I recommend" and "Consider".
@@ -77,16 +83,19 @@ Wait for response. Store: `role`.
 
 ## Step 6: Ask Communication Style
 
-Ask:
-> How do you prefer I communicate with you?
+Use `AskUserQuestion` with:
+- question: "How do you prefer I communicate with you? (Select all that apply)"
+- header: "Comm style"
+- multiSelect: true
+- options:
+  - label: "Concise", description: "Short answers, bullet points, get to the point"
+  - label: "Detailed", description: "Full explanations, context, reasoning included"
+  - label: "Casual", description: "Informal, conversational, relaxed"
+  - label: "Formal", description: "Professional, structured, precise"
 
-Present these options (they can mix):
-- **Concise** — short answers, bullet points, get to the point
-- **Detailed** — full explanations, context, reasoning included
-- **Casual** — informal, conversational, relaxed
-- **Formal** — professional, structured, precise
+Fallback (if AskUserQuestion unavailable): present as a list and ask them to pick a combination, then wait for response.
 
-Wait for response. Store: `tone`, `detail_level`.
+Store: `tone` (Casual or Formal), `detail_level` (Concise or Detailed) from their selections.
 
 ---
 
@@ -182,25 +191,16 @@ Your personality is [agent_personality]: [agent_personality_description].
 
 ## Step 10: Choose Vault Organization Method
 
-Ask:
+Use `AskUserQuestion` with:
+- question: "How would you like your vault organized?"
+- header: "Vault method"
+- multiSelect: false
+- options:
+  - label: "OneBrain (Recommended)", description: "Simple and practical. Best for general-purpose note-taking and getting things done.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with tasks\n02-knowledge/   Consolidated notes & reference\n03-archive/     Completed & inactive items\n04-memory-log/  Session summaries"
+  - label: "PARA", description: "Organize by actionability (Tiago Forte). Best for action-oriented people managing work + life.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with deadlines\n02-areas/       Ongoing responsibilities\n03-resources/   Topics of interest & reference\n04-archive/     Inactive items\n05-memory-log/  Session summaries"
+  - label: "Zettelkasten", description: "Build a knowledge graph (Niklas Luhmann). Best for researchers, writers, and deep thinkers.", preview: "00-fleeting/    Temporary raw ideas\n01-literature/  Notes from sources you've read\n02-permanent/   Atomic linked notes (your graph)\n03-archive/     Inactive items\n04-memory-log/  Session summaries"
 
-> How would you like your vault organized? Each method creates different folders:
->
-> **1. OneBrain** (default) — simple and practical
-> Inbox → Projects → Knowledge → Archive
-> Best for: general-purpose note-taking, getting things done
->
-> **2. PARA** (Tiago Forte) — organize by actionability
-> Inbox → Projects → Areas → Resources → Archive
-> Best for: action-oriented people, managing work + life responsibilities
->
-> **3. Zettelkasten** (Niklas Luhmann) — build a knowledge graph
-> Fleeting → Literature → Permanent → Archive
-> Best for: researchers, writers, deep thinkers who want linked atomic notes
->
-> Enter 1, 2, or 3 (or press Enter for OneBrain):
-
-Wait for response. Default to OneBrain if user says "1", presses enter, or gives no clear answer.
+Fallback (if AskUserQuestion unavailable): present as numbered list with folder details and wait for response. Default to OneBrain if no clear answer.
 
 Store: `method` as one of `onebrain`, `para`, `zettelkasten`.
 Store: `method_display_name` as `OneBrain`, `PARA`, or `Zettelkasten` (the human-readable label for the chosen method).
