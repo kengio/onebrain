@@ -234,8 +234,8 @@ sed -i '' \
 
 # Insert 02-areas/ into vault structure sections (PARA adds a folder with no OneBrain counterpart)
 # CLAUDE.md and GEMINI.md use a code block format
-awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
-awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md
+awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
+awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md
 # AGENTS.md uses a table format
 awk '/`01-projects\/`.*Active projects/ {print; print "| `02-areas/` | Ongoing responsibilities (health, finance, career) |"; next} {print}' AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md
 

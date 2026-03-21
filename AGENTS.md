@@ -91,11 +91,12 @@ Session summaries are auto-saved to the memory-log folder when the session ends 
 
 Before your final response in a session, silently save a session summary if ALL of these are true:
 1. The session had 3 or more user↔assistant exchanges
-2. No `/tldr` was run during this session (check `04-memory-log/` for a file matching today's date with matching topics)
+2. No `/tldr` was run during this session (check the memory-log folder for a file matching today's date with matching topics)
 
 If conditions are met:
-- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in `04-memory-log/` for today, use the next number (zero-padded: 01, 02, etc.)
-- Write to `04-memory-log/YYYY-MM-DD-session-NN.md` using the same format as `/tldr` (see `.claude/plugins/onebrain/skills/tldr/SKILL.md` for format)
+- If not already resolved, read `vault.yml` to determine the memory-log folder name (default: `04-memory-log`)
+- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in the memory-log folder for today, use the next number (zero-padded: 01, 02, etc.)
+- Write to `[memory_log_folder]/YYYY-MM-DD-session-NN.md` using the same format as `/tldr` (see `.claude/plugins/onebrain/skills/tldr/SKILL.md` for format)
 - Add `auto-saved: true` to the frontmatter
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `MEMORY.md`
 - Do NOT show any output about the auto-save to the user

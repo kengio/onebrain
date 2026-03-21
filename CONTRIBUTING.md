@@ -46,7 +46,11 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 - Prefer adding steps over removing them — removals can break workflows users depend on
 - Test manually: open a vault, invoke the command, follow it through
 
-> **Important:** `skills/onboarding/SKILL.md` and `skills/update/SKILL.md` are special — they must always contain the default OneBrain folder names (`00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/`) as hardcoded strings. These files are intentionally excluded from the folder-name replacements that run during onboarding and update. Changing those default names in these two files will break method customization for all users.
+> **Important:** `skills/onboarding/SKILL.md` and `skills/update/SKILL.md` are intentionally excluded from the folder-name replacements that run during onboarding and update.
+>
+> `skills/onboarding/SKILL.md` must always contain the default OneBrain folder names (`00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/`) as hardcoded strings — these are the source patterns the sed replacements match against. Changing them breaks method customization for all users.
+>
+> `skills/update/SKILL.md` reads `vault.yml` and applies replacements at runtime using shell variables, so it must not be pre-replaced. Its folder references appear only as `${INBOX}`, `${PROJECTS}`, etc., not as hardcoded paths.
 
 ## Install Scripts
 

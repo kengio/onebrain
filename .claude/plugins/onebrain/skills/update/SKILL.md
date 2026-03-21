@@ -199,9 +199,9 @@ if [ "$METHOD" = "para" ]; then
     -e "s|Completed projects and archived items|Inactive items from any category|g" \
     CLAUDE.md GEMINI.md AGENTS.md
   # Re-insert 02-areas/ if not already present (PARA-only folder with no OneBrain counterpart)
-  grep -q "02-areas/" CLAUDE.md || awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
-  grep -q "02-areas/" GEMINI.md || awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md
-  grep -q "02-areas/" AGENTS.md || awk '/`01-projects\/`.*Active projects/ {print; print "| `02-areas/` | Ongoing responsibilities (health, finance, career) |"; next} {print}' AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md
+  grep -q "02-areas/" CLAUDE.md || { awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md; }
+  grep -q "02-areas/" GEMINI.md || { awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md; }
+  grep -q "02-areas/" AGENTS.md || { awk '/`01-projects\/`.*Active projects/ {print; print "| `02-areas/` | Ongoing responsibilities (health, finance, career) |"; next} {print}' AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md; }
 elif [ "$METHOD" = "zettelkasten" ]; then
   sed -i '' \
     -e "s|Raw braindumps and quick captures (process regularly)|Temporary capture — raw ideas and quick notes|g" \
