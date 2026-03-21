@@ -50,7 +50,7 @@ Compose a brief greeting (3-5 lines max) that includes:
 1. Address the user by their preferred name from MEMORY.md
 2. Report inbox status: "You have N items in your inbox" (or "Your inbox is clear")
 3. If last session found: "Last session ([date]) was about [topic]" + any open items
-4. One short suggested action based on context (e.g., "Want to run /consolidate to process your inbox?" or "Shall we continue working on [project]?")
+4. One short suggested action based on context (e.g., "Want to run /ob:consolidate to process your inbox?" or "Shall we continue working on [project]?")
 
 Keep the greeting concise. Don't be verbose. Match the user's communication style from MEMORY.md.
 
@@ -58,8 +58,8 @@ Keep the greeting concise. Don't be verbose. Match the user's communication styl
 
 > Hey [Name]! You have 3 items in your inbox from this week.
 > Last session (2026-03-18) you were working on the API redesign — there was one open action: finalize the schema draft.
-> Want to start there, or run /consolidate to clear the inbox first?
+> Want to start there, or run /ob:consolidate to clear the inbox first?
 
 ---
 
-*If MEMORY.md doesn't exist or hasn't been filled in yet, skip steps 2-5 and greet the user generically, then suggest running `/onboarding` to set up their vault.*
+*If MEMORY.md doesn't exist or hasn't been filled in yet, skip steps 2-5 and greet the user generically, then suggest running `/ob:onboarding` to set up their vault.*

@@ -10,7 +10,7 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 
 ## Vault Structure
 
-> **Note:** Vault folders are created during `/onboarding`. The structure below shows the default (OneBrain method).
+> **Note:** Vault folders are created during `/ob:onboarding`. The structure below shows the default (OneBrain method).
 > If you chose PARA or Zettelkasten during onboarding, your folders will differ. See `vault.yml` for your configuration.
 
 ```
@@ -58,7 +58,8 @@ created: YYYY-MM-DD
 
 ## Personality (Personalized During Onboarding)
 
-Read the "AI Personality Instructions" section in MEMORY.md and follow it.
+Read the "AI Personality Instructions" and "Agent Identity" sections in MEMORY.md and follow them.
+The agent has a name and personality set during onboarding — use the name and match the personality style.
 Until onboarding is complete, use a helpful, concise, and professional tone.
 
 ## Available Workflows
@@ -67,18 +68,18 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 
 | Command | Skill File | Purpose |
 |---------|-----------|---------|
-| `/onboarding` | `onboarding/SKILL.md` | First-run setup |
-| `/braindump` | `braindump/SKILL.md` | Capture raw thoughts |
-| `/capture` | `capture/SKILL.md` | Quick note with links |
-| `/consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base |
-| `/connect` | `connect/SKILL.md` | Find note connections |
-| `/research` | `research/SKILL.md` | Web research → vault |
-| `/summarize-url` | `summarize-url/SKILL.md` | URL → summary note |
-| `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
-| `/weekly` | `weekly/SKILL.md` | Weekly reflection |
-| `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
-| `/tldr` | `tldr/SKILL.md` | Session summary → memory log |
-| `/update` | `update/SKILL.md` | Update system files from GitHub |
+| `/ob:onboarding` | `onboarding/SKILL.md` | First-run setup |
+| `/ob:braindump` | `braindump/SKILL.md` | Capture raw thoughts |
+| `/ob:capture` | `capture/SKILL.md` | Quick note with links |
+| `/ob:consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base |
+| `/ob:connect` | `connect/SKILL.md` | Find note connections |
+| `/ob:research` | `research/SKILL.md` | Web research → vault |
+| `/ob:summarize-url` | `summarize-url/SKILL.md` | URL → summary note |
+| `/ob:reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
+| `/ob:weekly` | `weekly/SKILL.md` | Weekly reflection |
+| `/ob:tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
+| `/ob:wrapup` | `wrapup/SKILL.md` | Wrap up session → memory log |
+| `/ob:update` | `update/SKILL.md` | Update system files from GitHub |
 
 When a user invokes a command, read the corresponding SKILL.md and follow it.
 
@@ -92,18 +93,18 @@ At the start of every session:
 5. Greet user by name with inbox count and last session context
 
 At the end of every session:
-- Session summaries are auto-saved to the memory-log folder when the session ends (if 3+ exchanges occurred). Users can still run `/tldr` manually for a visible summary.
+- Session summaries are auto-saved to the memory-log folder when the session ends (if 3+ exchanges occurred). Users can still run `/ob:wrapup` manually for a visible summary.
 
 ### Auto Session Summary
 
 Before your final response in a session, silently save a session summary if ALL of these are true:
 1. The session had 3 or more user↔assistant exchanges
-2. No `/tldr` was run during this session (check the memory-log folder for a file matching today's date with matching topics)
+2. No `/ob:wrapup` was run during this session (check the memory-log folder for a file matching today's date with matching topics)
 
 If conditions are met:
 - If not already resolved, read `vault.yml` to determine the memory-log folder name (default: `04-memory-log`)
 - Determine file name: count existing `YYYY-MM-DD-session-*.md` files in the memory-log folder for today, use the next number (zero-padded: 01, 02, etc.)
-- Write to `[memory_log_folder]/YYYY-MM-DD-session-NN.md` using the same format as `/tldr` (see `.claude/plugins/onebrain/skills/tldr/SKILL.md` for format)
+- Write to `[memory_log_folder]/YYYY-MM-DD-session-NN.md` using the same format as `/ob:wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
 - Add `auto-saved: true` to the frontmatter
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `MEMORY.md`
 - Do NOT show any output about the auto-save to the user

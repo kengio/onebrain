@@ -2,11 +2,11 @@
 name: tasks
 description: Show a dashboard of all tasks across the vault — overdue, due soon, open, and recently completed
 triggers:
-  - /tasks
-  - tasks
-  - show tasks
-  - my todos
-  - todo list
+  - /ob:tasks
+  - ob:tasks
+  - ob:show tasks
+  - ob:my todos
+  - ob:todo list
 ---
 
 # Task Dashboard
@@ -129,7 +129,7 @@ Say:
 
 If no tasks are found anywhere after scanning:
 
-> No tasks found in your vault yet. Tasks get created when you use `/braindump`, `/weekly`, or add them manually to notes.
+> No tasks found in your vault yet. Tasks get created when you use `/ob:braindump`, `/ob:weekly`, or add them manually to notes.
 >
 > Want to add one now?
 

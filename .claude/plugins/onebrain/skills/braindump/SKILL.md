@@ -2,8 +2,8 @@
 name: braindump
 description: Capture a stream of raw thoughts — classify them and file to inbox with action items extracted
 triggers:
-  - /braindump
-  - braindump
+  - /ob:braindump
+  - ob:braindump
 ---
 
 # Braindump

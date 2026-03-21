@@ -10,7 +10,7 @@ You are a knowledge graph specialist. Your job is to find meaningful connections
 
 ## When Invoked
 
-You are invoked by the `/connect` skill when the user wants to find connections between notes.
+You are invoked by the `/ob:connect` skill when the user wants to find connections between notes.
 
 ## Process
 

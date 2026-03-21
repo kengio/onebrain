@@ -1,9 +1,9 @@
 ---
-name: tldr
-description: Generate an end-of-session summary and save it to the memory log — run before ending a session
+name: wrapup
+description: Wrap up and save the current session summary to the memory log
 triggers:
-  - /tldr
-  - tldr
+  - /ob:wrapup
+  - ob:wrapup
 ---
 
 # Session Summary (TL;DR)
