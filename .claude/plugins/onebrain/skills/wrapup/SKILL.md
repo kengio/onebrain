@@ -1,23 +1,31 @@
 ---
-name: tldr
-description: Generate an end-of-session summary and save it to the memory log — run before ending a session
+name: wrapup
+description: Wrap up and save the current session summary to the memory log
 triggers:
-  - /tldr
-  - tldr
+  - /ob:wrapup
+  - ob:wrapup
 ---
 
 # Session Summary (TL;DR)
 
-Generates a summary of this session and saves it to `04-memory-log/` for future recall.
+Generates a summary of this session and saves it to the memory log folder for future recall.
+
+---
+
+## Before You Begin
+
+If `vault.yml` exists, read it and extract `folders.memory_log` as `memory_log_folder`. Default to `04-memory-log` if the file does not exist or the key is absent.
+
+Use `memory_log_folder` for all file paths in the steps below.
 
 ---
 
 ## Step 1: Determine Session File Name
 
 1. Get today's date: `YYYY-MM-DD`
-2. List files in `04-memory-log/` matching `YYYY-MM-DD-session-*.md`
+2. List files in `[memory_log_folder]/` matching `YYYY-MM-DD-session-*.md`
 3. The next session number = count of matches + 1 (zero-padded to 2 digits: 01, 02, etc.)
-4. File name: `04-memory-log/YYYY-MM-DD-session-NN.md`
+4. File name: `[memory_log_folder]/YYYY-MM-DD-session-NN.md`
 
 ---
 
@@ -35,7 +43,7 @@ Reflect on the conversation that just occurred. Identify:
 
 ## Step 3: Write the Session Log
 
-Create `04-memory-log/YYYY-MM-DD-session-NN.md`:
+Create `[memory_log_folder]/YYYY-MM-DD-session-NN.md`:
 
 ```markdown
 ---
@@ -93,7 +101,7 @@ Only add learnings that are genuinely useful long-term (not every session warran
 ## Step 5: Confirm
 
 Say:
-> Session saved to `04-memory-log/YYYY-MM-DD-session-NN.md`.
+> Session saved to `[memory_log_folder]/YYYY-MM-DD-session-NN.md`.
 >
 > [If action items]: I logged N action items — they'll appear in your Tasks view.
 > [If MEMORY.md updated]: I also added a learning to MEMORY.md.

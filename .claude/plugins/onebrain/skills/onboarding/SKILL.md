@@ -2,8 +2,8 @@
 name: onboarding
 description: First-run setup for OneBrain — personalize identity, communication style, and vault configuration
 triggers:
-  - /onboarding
-  - onboarding
+  - /ob:onboarding
+  - ob:onboarding
 ---
 
 # OneBrain Onboarding
@@ -26,7 +26,39 @@ Say:
 
 ---
 
-## Step 2: Ask Name
+## Step 2: Ask Agent Name
+
+Ask:
+> What would you like to call me? Pick a name for your AI assistant — for example, Nova, Atlas, Sage, Kai, or anything you like.
+
+Wait for response. Store: `agent_name`.
+
+---
+
+## Step 3: Choose Personality Archetype
+
+Ask:
+> What vibe should I have? Pick a personality:
+>
+> 1. **Professional** — formal, efficient, straight to the point
+> 2. **Friendly** — warm, conversational, encouraging
+> 3. **Playful** — casual, witty, keeps things light
+>
+> Enter 1, 2, or 3 (or press Enter for Friendly):
+
+Wait for response. Default to Friendly if no clear answer.
+
+Store: `agent_personality` as one of `professional`, `friendly`, `playful`.
+Store: `agent_personality_description` as the matching trait description text from the list above.
+
+Personality trait descriptions:
+- **Professional**: formal language, structured responses, minimal small talk. Uses phrases like "I recommend" and "Consider".
+- **Friendly**: warm greetings, conversational tone, uses encouragement. Uses phrases like "Great idea!" and "Let's do this".
+- **Playful**: casual language, humor, creative metaphors. Uses phrases like "Let's roll!" and "Nice one!"
+
+---
+
+## Step 4: Ask Name
 
 Ask:
 > What's your name? (And what should I call you — full name, nickname, or something else?)
@@ -35,7 +67,7 @@ Wait for response. Store: `full_name`, `preferred_name`.
 
 ---
 
-## Step 3: Ask Role
+## Step 5: Ask Role
 
 Ask:
 > What's your primary role or how do you spend most of your time?
@@ -46,7 +78,7 @@ Wait for response. Store: `role`.
 
 ---
 
-## Step 4: Ask Communication Style
+## Step 6: Ask Communication Style
 
 Ask:
 > How do you prefer I communicate with you?
@@ -61,7 +93,7 @@ Wait for response. Store: `tone`, `detail_level`.
 
 ---
 
-## Step 5: Ask Primary Goals
+## Step 7: Ask Primary Goals
 
 Ask:
 > What are 1-3 things you're most focused on right now? (These help me prioritize what's important when I surface suggestions.)
@@ -72,7 +104,7 @@ Wait for response. Store: `goals` as a list.
 
 ---
 
-## Step 6: Ask Stack/Context (Optional)
+## Step 8: Ask Stack/Context (Optional)
 
 Ask:
 > Anything else I should always keep in mind? For example: your tech stack, key tools you use, recurring commitments, or anything that gives me context.
@@ -83,16 +115,19 @@ Wait for response. Store: `recurring_contexts`.
 
 ---
 
-## Step 7: Generate MEMORY.md
+## Step 9: Generate MEMORY.md
 
 Overwrite `MEMORY.md` with personalized content:
 
 ```markdown
----
 # OneBrain Memory
-# Loaded every session. Keep under ~200 lines.
-# Last updated: [TODAY'S DATE]
----
+
+<!-- Loaded every session. Keep under ~200 lines. Last updated: [TODAY'S DATE] -->
+
+## Agent Identity
+
+**Name:** [agent_name]
+**Personality:** [agent_personality]
 
 ## Identity
 
@@ -104,7 +139,7 @@ Overwrite `MEMORY.md` with personalized content:
 
 **Tone:** [tone]
 **Detail level:** [detail_level]
-**Timezone:** [ask or leave blank]
+**Timezone:** [not set]
 
 ## Goals & Focus Areas
 
@@ -118,8 +153,10 @@ Overwrite `MEMORY.md` with personalized content:
 
 ## AI Personality Instructions
 
-You are [preferred_name]'s personal chief of staff inside their Obsidian vault.
+You are [agent_name], [preferred_name]'s personal chief of staff inside their Obsidian vault.
+Your personality is [agent_personality]: [agent_personality_description].
 
+- Introduce yourself as [agent_name] when appropriate
 - Address them as [preferred_name]
 - Tone: [tone] — [detail_level]
 - Role context: [preferred_name] is a [role]
@@ -129,11 +166,11 @@ You are [preferred_name]'s personal chief of staff inside their Obsidian vault.
 
 ## Active Projects
 
-<!-- Updated by /consolidate and /braindump -->
+<!-- Updated by /ob:consolidate and /ob:braindump -->
 
 ## Key Learnings & Patterns
 
-<!-- Added by /tldr over time -->
+<!-- Added by /ob:wrapup over time -->
 <!-- Format: YYYY-MM-DD — [observation] -->
 
 ## Recurring Contexts
@@ -146,7 +183,7 @@ You are [preferred_name]'s personal chief of staff inside their Obsidian vault.
 
 ---
 
-## Step 8: Choose Vault Organization Method
+## Step 10: Choose Vault Organization Method
 
 Ask:
 
@@ -173,7 +210,7 @@ Store: `method_display_name` as `OneBrain`, `PARA`, or `Zettelkasten` (the human
 
 ---
 
-## Step 9: Create Vault Folders
+## Step 11: Create Vault Folders
 
 Based on the chosen method, create the listed folders. For each folder, check if it exists first; if not, create it and write an empty `.gitkeep` file inside it.
 
@@ -207,7 +244,7 @@ Based on the chosen method, create the listed folders. For each folder, check if
 
 ---
 
-## Step 10: Apply Folder Reference Replacements
+## Step 12: Apply Folder Reference Replacements
 
 If `method` is `onebrain`, skip this step — no replacements needed.
 
@@ -258,7 +295,7 @@ After completing all replacements, tell the user: "Applied [method_display_name]
 
 ---
 
-## Step 11: Write vault.yml
+## Step 13: Write vault.yml
 
 Write `vault.yml` to the vault root with the chosen method and folder mapping.
 
@@ -298,21 +335,21 @@ folders:
 
 ---
 
-## Step 12: Completion Message
+## Step 14: Completion Message
 
 Say:
 
-> You're all set, [preferred_name]! Here's what's ready:
+> You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help. Here's what's set up:
 >
 > - Your identity and personality are saved in MEMORY.md
 > - Your vault is organized using the **[method_display_name]** method
 > - Vault folders have been created and system files updated
 >
 > **First things to try:**
-> - `/braindump` — dump anything on your mind right now
-> - `/capture` — add a quick note or idea
-> - `/research [topic]` — research something and save it to your vault
+> - `/ob:braindump` — dump anything on your mind right now
+> - `/ob:capture` — add a quick note or idea
+> - `/ob:research [topic]` — research something and save it to your vault
 >
-> When you're done working, run `/tldr` to save a session summary.
+> When you're done working, run `/ob:wrapup` to save a session summary.
 >
 > What would you like to do first?

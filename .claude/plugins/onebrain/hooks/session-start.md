@@ -11,6 +11,8 @@ At the start of every session, perform these steps in order:
 ## Step 1: Load Identity
 
 Read `MEMORY.md` from the vault root. This file contains:
+
+- The agent's own name and personality archetype (Agent Identity section)
 - The user's name and preferred name
 - Their role and communication style
 - Their goals and values
@@ -22,6 +24,7 @@ Apply the "AI Personality Instructions" section immediately — it defines how t
 ## Step 2: Resolve Folder Names
 
 If `vault.yml` exists, read it once and extract:
+
 - `inbox_folder` = `folders.inbox` (default: `00-inbox`)
 - `memory_log_folder` = `folders.memory_log` (default: `04-memory-log`)
 
@@ -32,6 +35,7 @@ Use these values for all subsequent steps.
 List all files in `inbox_folder` (excluding .gitkeep).
 
 Count:
+
 - Files present = items waiting to be processed
 
 ## Step 4: Check Recent Memory
@@ -39,6 +43,7 @@ Count:
 List files in `memory_log_folder` sorted by name (descending). Read the most recent one.
 
 Note:
+
 - Date of last session
 - What it was about (the summary)
 - Any open action items from that session
@@ -47,19 +52,19 @@ Note:
 
 Compose a brief greeting (3-5 lines max) that includes:
 
-1. Address the user by their preferred name from MEMORY.md
+1. Address the user by their preferred name from MEMORY.md. If the agent has a name in the Agent Identity section of MEMORY.md, introduce yourself naturally in the greeting.
 2. Report inbox status: "You have N items in your inbox" (or "Your inbox is clear")
 3. If last session found: "Last session ([date]) was about [topic]" + any open items
-4. One short suggested action based on context (e.g., "Want to run /consolidate to process your inbox?" or "Shall we continue working on [project]?")
+4. One short suggested action based on context (e.g., "Want to run /ob:consolidate to process your inbox?" or "Shall we continue working on [project]?")
 
 Keep the greeting concise. Don't be verbose. Match the user's communication style from MEMORY.md.
 
 ## Example Greeting
 
-> Hey [Name]! You have 3 items in your inbox from this week.
+> Hey [Name]! It's [Agent Name] — you have 3 items in your inbox from this week.
 > Last session (2026-03-18) you were working on the API redesign — there was one open action: finalize the schema draft.
-> Want to start there, or run /consolidate to clear the inbox first?
+> Want to start there, or run /ob:consolidate to clear the inbox first?
 
 ---
 
-*If MEMORY.md doesn't exist or hasn't been filled in yet, skip steps 2-5 and greet the user generically, then suggest running `/onboarding` to set up their vault.*
+*If MEMORY.md doesn't exist or hasn't been filled in yet, skip steps 2-5 and greet the user generically, then suggest running `/ob:onboarding` to set up their vault.*

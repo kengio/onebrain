@@ -5,6 +5,7 @@ Thanks for your interest in contributing. This document covers how the project i
 ## What to Contribute
 
 Good contributions include:
+
 - New slash commands (skills)
 - Improvements to existing skills — clearer instructions, better prompts, edge case handling
 - Bug fixes in install scripts
@@ -13,7 +14,7 @@ Good contributions include:
 
 ## Project Structure
 
-```
+```text
 .claude/plugins/onebrain/
 ├── skills/          One directory per slash command
 │   └── [name]/
@@ -28,15 +29,17 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 
 1. Create `.claude/plugins/onebrain/skills/[skill-name]/SKILL.md`
 2. Add YAML frontmatter:
+
    ```yaml
    ---
    name: skill-name
    description: One-line description of what this skill does
    triggers:
-     - /skill-name
-     - skill-name
+     - /ob:skill-name
+     - ob:skill-name
    ---
    ```
+
 3. Write the skill as a numbered sequence of steps the AI should follow
 4. Register the command in `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, and `README.md`
 
@@ -57,7 +60,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 - `install.sh` — bash, targets macOS and Linux
 - `install.ps1` — PowerShell 5+, targets Windows
 
-Both scripts download the repo tarball, extract it, remove themselves from the vault, and initialize git. Keep them simple — vault setup belongs in `/onboarding`, not here.
+Both scripts download the repo tarball, extract it, remove themselves from the vault, and initialize git. Keep them simple — vault setup belongs in `/ob:onboarding`, not here.
 
 ## Pull Request Guidelines
 
@@ -69,6 +72,7 @@ Both scripts download the repo tarball, extract it, remove themselves from the v
 ## Reporting Issues
 
 Open a GitHub issue with:
+
 - What you expected to happen
 - What actually happened
 - Which AI agent you were using (Claude Code, Gemini CLI, etc.)

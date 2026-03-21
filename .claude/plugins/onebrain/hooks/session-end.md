@@ -22,7 +22,7 @@ If `vault.yml` exists, read it to determine the memory log folder name (`folders
 
 List files in the memory log folder matching today's date pattern `YYYY-MM-DD-session-*.md`.
 
-If any files exist, read the most recent one. If its content covers the same topics discussed in this session (same project, same key decisions), stop here — `/tldr` was likely already run for this session.
+If any files exist, read the most recent one. If its content covers the same topics discussed in this session (same project, same key decisions), stop here — `/ob:wrapup` was likely already run for this session.
 
 ## Step 4: Determine File Name
 
@@ -32,7 +32,7 @@ File: `[memory_log]/YYYY-MM-DD-session-NN.md`
 
 ## Step 5: Write Session Log
 
-Create the file with this format (same as `/tldr`, with `auto-saved: true` added to frontmatter):
+Create the file with this format (same as `/ob:wrapup`, with `auto-saved: true` added to frontmatter):
 
 ```markdown
 ---
