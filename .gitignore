@@ -15,6 +15,9 @@ Thumbs.db
 .obsidian/themes/
 .obsidian/appearance.json
 
+# Git worktrees (local workspace isolation)
+.worktrees/
+
 # Keep plugin configs tracked:
 # .obsidian/plugins/         — TRACKED
 # .obsidian/community-plugins.json — TRACKED
