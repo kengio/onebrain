@@ -90,7 +90,10 @@ main() {
     read -r confirm
     confirm="${confirm:-Y}"
     if [[ "$confirm" =~ ^[Yy] ]]; then
-      mkdir -p "$install_location"
+      if ! mkdir -p "$install_location"; then
+        print_error "Could not create '$install_location'. Check permissions and try again."
+        exit 1
+      fi
       print_success "Created $install_location"
     else
       print_error "Aborted. Please choose an existing directory."
@@ -123,7 +126,7 @@ main() {
   # ── Step 3: Download and extract ────────────────────────────────────────────
   local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
   local tmpdir
-  tmpdir=$(mktemp -d)
+  tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that /tmp is writeable and has space."; exit 1; }
   # shellcheck disable=SC2064  # $tmpdir is intentionally captured at definition time (set once, never reassigned)
   trap "rm -rf '$tmpdir'" EXIT
 
@@ -149,14 +152,18 @@ main() {
 
   # GitHub tarballs extract to a directory like onebrain-main/
   local extracted_dir
-  extracted_dir=$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d | head -1)
+  extracted_dir=$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1)
 
   if [ -z "$extracted_dir" ]; then
-    print_error "Extraction produced no directory. The tarball may be malformed."
+    print_error "Extraction produced no directory. The archive may be malformed or extraction failed."
     exit 1
   fi
 
-  mv "$extracted_dir" "$vault_path"
+  if ! mv "$extracted_dir" "$vault_path"; then
+    print_error "Failed to move the extracted vault to '$vault_path'."
+    print_error "Check that '$install_location' is writeable and has enough space."
+    exit 1
+  fi
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
   # Remove the install script from the vault — it shouldn't live there
@@ -167,12 +174,19 @@ main() {
 
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   print_info "Initializing git repository..."
-  cd "$vault_path"
+  if ! cd "$vault_path"; then
+    print_error "Could not enter vault directory '$vault_path'. Installation may be incomplete."
+    exit 1
+  fi
   if ! git init -q; then
     print_error "Failed to initialize a git repository in '$vault_path'."
     exit 1
   fi
-  git add -A
+  if ! git add -A; then
+    print_error "Failed to stage files for the initial git commit in '$vault_path'."
+    print_error "Check for a stale .git/index.lock file or permission issues."
+    exit 1
+  fi
   if ! git commit -q -m "Initial OneBrain vault setup"; then
     print_error "Failed to create the initial git commit."
     print_error "Git may need a name and email configured. Run:"
