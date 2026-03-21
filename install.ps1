@@ -50,7 +50,124 @@ function Prompt-WithDefault {
   if ([string]::IsNullOrWhiteSpace($answer)) { $Default } else { $answer }
 }
 
+# ─── Plugin installer ─────────────────────────────────────────────────────────
+# Install-Plugins <vaultPath>
+# Downloads the latest release of each plugin listed in .obsidian/community-plugins.json.
+# Uses only PowerShell 5+ built-ins: Invoke-RestMethod, ConvertFrom-Json, Invoke-WebRequest.
+# Non-fatal: returns a list of plugin IDs that failed (empty array on full success).
+function Install-Plugins {
+  param([string]$VaultPath)
+
+  $pluginsJson = Join-Path $VaultPath ".obsidian\community-plugins.json"
+  $registryUrl = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
+  $failedPlugins = @()
+
+  if (-not (Test-Path $pluginsJson)) { return $failedPlugins }
+
+  $pluginIds = Get-Content $pluginsJson -Raw | ConvertFrom-Json
+  if (-not $pluginIds -or $pluginIds.Count -eq 0) { return $failedPlugins }
+
+  Write-Host
+  Write-Host "  Installing community plugins..." -ForegroundColor Cyan
+  Write-Host
+
+  # Fetch Obsidian plugin registry once
+  Write-Step "📦" "Fetching plugin registry..."
+  try {
+    $registry = Invoke-RestMethod -Uri $registryUrl -ErrorAction Stop
+  } catch {
+    Write-Host "  ⚠️  Could not reach plugin registry. Plugins will need to be installed manually." -ForegroundColor Yellow
+    return $pluginIds  # all plugins are "failed"
+  }
+  Write-Done "Registry fetched"
+
+  $pluginsDir = Join-Path $VaultPath ".obsidian\plugins"
+  if (-not (Test-Path $pluginsDir)) {
+    New-Item -ItemType Directory -Path $pluginsDir -Force | Out-Null
+  }
+
+  foreach ($pluginId in $pluginIds) {
+    # Find matching entry in the registry
+    $entry = $registry | Where-Object { $_.id -eq $pluginId } | Select-Object -First 1
+    if (-not $entry -or -not $entry.repo) {
+      Write-Host "  ⚠️  skipped $pluginId (not found in registry)" -ForegroundColor Yellow
+      $failedPlugins += $pluginId
+      continue
+    }
+    $repo = $entry.repo
+
+    Write-Step "🔌" "Installing $pluginId..."
+
+    # Get latest release tag
+    try {
+      $release = Invoke-RestMethod `
+        -Uri "https://api.github.com/repos/$repo/releases/latest" `
+        -Headers @{ Accept = "application/vnd.github.v3+json" } `
+        -ErrorAction Stop
+      $tag = $release.tag_name
+    } catch {
+      Write-Host "  ❌ failed $pluginId (could not get release tag)" -ForegroundColor Red
+      $failedPlugins += $pluginId
+      continue
+    }
+
+    if (-not $tag) {
+      Write-Host "  ❌ failed $pluginId (empty release tag)" -ForegroundColor Red
+      $failedPlugins += $pluginId
+      continue
+    }
+
+    $pluginDir = Join-Path $pluginsDir $pluginId
+    New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
+
+    $baseUrl = "https://github.com/$repo/releases/download/$tag"
+    $ok = $true
+
+    # main.js and manifest.json are required
+    foreach ($asset in @("main.js", "manifest.json")) {
+      try {
+        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile (Join-Path $pluginDir $asset) -ErrorAction Stop | Out-Null
+      } catch {
+        $ok = $false
+        break
+      }
+    }
+
+    # styles.css is optional
+    if ($ok) {
+      try {
+        $cssPath = Join-Path $pluginDir "styles.css"
+        Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -ErrorAction Stop | Out-Null
+        # Remove if it downloaded as empty
+        if ((Get-Item $cssPath).Length -eq 0) { Remove-Item $cssPath -Force }
+      } catch {
+        # Optional asset — ignore failure
+      }
+    }
+
+    if ($ok) {
+      Write-Done "$pluginId"
+    } else {
+      Write-Host "  ❌ failed $pluginId (download error)" -ForegroundColor Red
+      Remove-Item -Path $pluginDir -Recurse -Force -ErrorAction SilentlyContinue
+      $failedPlugins += $pluginId
+    }
+  }
+
+  if ($failedPlugins.Count -gt 0) {
+    Write-Host
+    Write-Host "  Some plugins could not be installed automatically:" -ForegroundColor Yellow
+    foreach ($p in $failedPlugins) {
+      Write-Host "    • $p" -ForegroundColor Yellow
+    }
+    Write-Host "  Install them manually: Settings -> Community plugins -> Browse" -ForegroundColor Yellow
+  }
+
+  return $failedPlugins
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
+$script:FailedPlugins = @()
 function Main {
   Print-Banner
   Print-Info "This script downloads OneBrain and sets up a fresh Obsidian vault."
@@ -192,6 +309,9 @@ function Main {
       }
     }
 
+    # ── Step 4b: Install community plugins ──────────────────────────────────
+    $script:FailedPlugins = Install-Plugins $vaultPath
+
     # ── Step 5: Initialize git ──────────────────────────────────────────────
     Write-Step "🧠" "Initializing git repository..."
     # Push-Location lives in its own try/catch outside the finally-guarded block so that
@@ -252,13 +372,21 @@ function Main {
   Write-Host "Next steps:" -ForegroundColor White
   Write-Host "  1. Open Obsidian"
   Write-Host "     File -> Open Folder as Vault -> select: $vaultPath"
-  Write-Host "  2. Install community plugins (Settings -> Community plugins -> Browse):"
-  Write-Host "     Tasks  Dataview  Templater  Calendar" -ForegroundColor Cyan
-  Write-Host "     Tag Wrangler  QuickAdd  Obsidian Git  Terminal" -ForegroundColor Cyan
-  Write-Host "  3. Open the Terminal plugin in Obsidian and run your AI agent:"
-  Write-Host "     claude  or  gemini" -ForegroundColor Cyan
-  Write-Host "  4. Run the onboarding command:"
-  Write-Host "     /onboarding" -ForegroundColor Cyan
+  if ($script:FailedPlugins.Count -gt 0) {
+    Write-Host "  2. Install missing plugins manually (Settings -> Community plugins -> Browse):" -ForegroundColor White
+    foreach ($p in $script:FailedPlugins) {
+      Write-Host "     $p" -ForegroundColor Cyan
+    }
+    Write-Host "  3. Open your terminal in the vault directory and run your AI agent:"
+    Write-Host "     claude  or  gemini" -ForegroundColor Cyan
+    Write-Host "  4. Run the onboarding command:"
+    Write-Host "     /onboarding" -ForegroundColor Cyan
+  } else {
+    Write-Host "  2. Open your terminal in the vault directory and run your AI agent:"
+    Write-Host "     claude  or  gemini" -ForegroundColor Cyan
+    Write-Host "  3. Run the onboarding command:"
+    Write-Host "     /onboarding" -ForegroundColor Cyan
+  }
   Write-Host "     (Onboarding will ask you to choose a vault organization method"
   Write-Host "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   Write-Host

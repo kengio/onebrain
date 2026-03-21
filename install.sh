@@ -192,7 +192,134 @@ prompt_with_default() {
   echo "${answer:-$default}"
 }
 
+# ─── Plugin installer ─────────────────────────────────────────────────────────
+# install_plugins <vault_path>
+# Downloads the latest release of each plugin listed in .obsidian/community-plugins.json.
+# Uses only curl (already a required dependency) and POSIX tools (grep, sed, mkdir).
+# Non-fatal: warns on failure and returns a list of plugins to install manually.
+install_plugins() {
+  local vault="$1"
+  local plugins_json="$vault/.obsidian/community-plugins.json"
+  local registry_url="https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
+  local registry_file
+  local failed_plugins=()
+
+  # Read plugin IDs from the flat JSON array (no jq needed — one string per line after grep)
+  if [ ! -f "$plugins_json" ]; then
+    return 0
+  fi
+  local plugin_ids
+  plugin_ids=$(grep -o '"[^"]*"' "$plugins_json" | tr -d '"')
+  if [ -z "$plugin_ids" ]; then
+    return 0
+  fi
+
+  print_header "Installing community plugins..."
+
+  # Fetch the Obsidian community plugin registry once
+  registry_file=$(mktemp)
+  spinner_start "Fetching plugin registry..."
+  if ! curl -fsSL "$registry_url" -o "$registry_file" 2>/dev/null; then
+    spinner_stop "$ICON_FAIL" ""
+    print_info "Could not reach the plugin registry. Plugins will need to be installed manually."
+    rm -f "$registry_file"
+    _print_manual_plugin_steps
+    return 0
+  fi
+  spinner_stop "$ICON_OK" "Registry fetched"
+
+  local plugins_dir="$vault/.obsidian/plugins"
+  mkdir -p "$plugins_dir"
+
+  while IFS= read -r plugin_id; do
+    [ -z "$plugin_id" ] && continue
+
+    # Extract the GitHub repo for this plugin ID from the registry.
+    # Registry format: {"id": "plugin-id", "repo": "owner/repo", ...}
+    # grep -A5 finds the object block starting with the id line; second grep extracts repo.
+    local repo
+    repo=$(grep -A5 "\"id\": *\"${plugin_id}\"" "$registry_file" \
+           | grep '"repo"' \
+           | sed 's/.*"repo": *"\([^"]*\)".*/\1/' \
+           | head -1)
+
+    if [ -z "$repo" ]; then
+      print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (not found in registry)"
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
+
+    spinner_start "  Installing ${plugin_id}..."
+
+    # Get the latest release tag from GitHub API (no auth needed for 60 req/hr)
+    local release_json tag
+    release_json=$(curl -fsSL \
+      -H "Accept: application/vnd.github.v3+json" \
+      "https://api.github.com/repos/${repo}/releases/latest" 2>/dev/null) || release_json=""
+
+    tag=$(printf '%s' "$release_json" \
+          | grep '"tag_name"' \
+          | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' \
+          | head -1)
+
+    if [ -z "$tag" ]; then
+      spinner_stop "$ICON_FAIL" ""
+      print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag)"
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
+
+    local plugin_dir="$plugins_dir/$plugin_id"
+    mkdir -p "$plugin_dir"
+
+    local base_url="https://github.com/${repo}/releases/download/${tag}"
+    local ok=true
+
+    # main.js and manifest.json are required
+    if ! curl -fsSL "${base_url}/main.js" -o "$plugin_dir/main.js" 2>/dev/null; then
+      ok=false
+    fi
+    if ! curl -fsSL "${base_url}/manifest.json" -o "$plugin_dir/manifest.json" 2>/dev/null; then
+      ok=false
+    fi
+    # styles.css is optional — not all plugins ship it
+    curl -fsSL "${base_url}/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || true
+    # Remove empty styles.css if nothing was downloaded
+    [ -s "$plugin_dir/styles.css" ] || rm -f "$plugin_dir/styles.css"
+
+    if [ "$ok" = true ]; then
+      spinner_stop "$ICON_OK" "${plugin_id}"
+    else
+      spinner_stop "$ICON_FAIL" ""
+      rm -rf "$plugin_dir"
+      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (download error)"
+      failed_plugins+=("$plugin_id")
+    fi
+  done <<< "$plugin_ids"
+
+  rm -f "$registry_file"
+
+  if [ ${#failed_plugins[@]} -gt 0 ]; then
+    echo
+    print_info "Some plugins could not be installed automatically:"
+    for p in "${failed_plugins[@]}"; do
+      print_info "  • $p"
+    done
+    print_info "Install them manually: Settings → Community plugins → Browse"
+  fi
+
+  # Export for use in the success message
+  FAILED_PLUGINS=("${failed_plugins[@]}")
+}
+
+_print_manual_plugin_steps() {
+  echo "  2. Install community plugins (Settings → Community plugins → Browse):"
+  echo "     ${CYAN}Tasks  Dataview  Templater  Calendar${RESET}"
+  echo "     ${CYAN}Tag Wrangler  QuickAdd  Obsidian Git  Terminal${RESET}"
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
+FAILED_PLUGINS=()
 main() {
   # ── TTY check: when piped (curl | bash), stdin (fd 0) is the pipe — not the
   # ── terminal. Open /dev/tty as fd 3 so prompts reach the user without
@@ -341,6 +468,9 @@ main() {
     exit 1
   fi
 
+  # ── Step 4b: Install community plugins ──────────────────────────────────
+  install_plugins "$vault_path"
+
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   # git -C runs each command inside vault_path without changing the script's working
   # directory, avoiding side-effects on any $PWD references that follow.
@@ -376,15 +506,25 @@ main() {
   echo "${BOLD}Next steps:${RESET}"
   echo "  1. Open Obsidian"
   echo "     File → Open Folder as Vault → select: ${CYAN}${vault_path}${RESET}"
-  echo "  2. Install community plugins (Settings → Community plugins → Browse):"
-  echo "     ${CYAN}Tasks  Dataview  Templater  Calendar${RESET}"
-  echo "     ${CYAN}Tag Wrangler  QuickAdd  Obsidian Git  Terminal${RESET}"
-  echo "  3. Open your terminal in the vault directory:"
-  echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
-  echo "  4. Start your AI assistant:"
-  echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
-  echo "  5. Run the onboarding command:"
-  echo "     ${CYAN}/onboarding${RESET}"
+  if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
+    echo "  2. Install missing plugins manually (Settings → Community plugins → Browse):"
+    for p in "${FAILED_PLUGINS[@]}"; do
+      echo "     ${CYAN}${p}${RESET}"
+    done
+    echo "  3. Open your terminal in the vault directory:"
+    echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
+    echo "  4. Start your AI assistant:"
+    echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
+    echo "  5. Run the onboarding command:"
+    echo "     ${CYAN}/onboarding${RESET}"
+  else
+    echo "  2. Open your terminal in the vault directory:"
+    echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
+    echo "  3. Start your AI assistant:"
+    echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
+    echo "  4. Run the onboarding command:"
+    echo "     ${CYAN}/onboarding${RESET}"
+  fi
   echo "     (Onboarding will ask you to choose a vault organization method"
   echo "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   echo
