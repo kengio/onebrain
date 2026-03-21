@@ -32,7 +32,13 @@ function Print-Banner {
 function Check-Deps {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Print-Error "git is required but not found."
-    Print-Error "Download it from https://git-scm.com and re-run this script."
+    Write-Host
+    Write-Host "  Install git:" -ForegroundColor White
+    Write-Host "    • winget:      " -NoNewline; Write-Host "winget install --id Git.Git" -ForegroundColor Cyan
+    Write-Host "    • Chocolatey:  " -NoNewline; Write-Host "choco install git" -ForegroundColor Cyan
+    Write-Host "    • Download:    " -NoNewline; Write-Host "https://git-scm.com/download/win" -ForegroundColor Cyan
+    Write-Host
+    Print-Error "Install git, then re-run this script."
     exit 1
   }
 }

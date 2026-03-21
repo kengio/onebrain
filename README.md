@@ -10,6 +10,22 @@ An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI
 - **Multi-agent** — works with Claude Code, Gemini CLI, or any AI that reads Markdown
 - **Pre-configured** — open in Obsidian and everything is ready to go
 
+## Prerequisites
+
+**Required:** [git](https://git-scm.com) — used to version-control your vault.
+
+| Platform | Install command |
+|----------|----------------|
+| macOS (Homebrew) | `brew install git` |
+| macOS (Xcode CLT) | `xcode-select --install` |
+| Windows (winget) | `winget install --id Git.Git` |
+| Windows (Chocolatey) | `choco install git` |
+| Debian / Ubuntu | `sudo apt install git` |
+| Fedora / RHEL | `sudo dnf install git` |
+| Arch | `sudo pacman -S git` |
+
+Verify with `git --version` before running the installer.
+
 ## Quick Start
 
 ### macOS / Linux

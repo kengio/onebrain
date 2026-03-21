@@ -92,6 +92,44 @@ cleanup() {
 }
 
 # ─── Dependency check ─────────────────────────────────────────────────────────
+print_install_hint() {
+  local cmd="$1"
+  local os
+  os=$(uname -s 2>/dev/null || echo "unknown")
+  case "$cmd" in
+    git)
+      echo >&2
+      echo "${BOLD}  Install git:${RESET}" >&2
+      case "$os" in
+        Darwin)
+          echo "    • Homebrew:  ${CYAN}brew install git${RESET}" >&2
+          echo "    • Xcode CLT: ${CYAN}xcode-select --install${RESET}" >&2
+          ;;
+        Linux)
+          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install git${RESET}" >&2
+          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install git${RESET}" >&2
+          echo "    • Arch:          ${CYAN}sudo pacman -S git${RESET}" >&2
+          ;;
+        *)
+          echo "    • https://git-scm.com/downloads" >&2
+          ;;
+      esac
+      ;;
+    curl)
+      echo >&2
+      echo "${BOLD}  Install curl:${RESET}" >&2
+      echo "    • Debian/Ubuntu: ${CYAN}sudo apt install curl${RESET}" >&2
+      echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install curl${RESET}" >&2
+      ;;
+    tar)
+      echo >&2
+      echo "${BOLD}  Install tar:${RESET}" >&2
+      echo "    • Debian/Ubuntu: ${CYAN}sudo apt install tar${RESET}" >&2
+      echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install tar${RESET}" >&2
+      ;;
+  esac
+}
+
 check_deps() {
   local missing=()
   for cmd in curl tar git; do
@@ -99,7 +137,11 @@ check_deps() {
   done
   if [ ${#missing[@]} -gt 0 ]; then
     print_error "Missing required commands: ${missing[*]}"
-    print_error "Please install them and re-run this script."
+    for cmd in "${missing[@]}"; do
+      print_install_hint "$cmd"
+    done
+    echo >&2
+    print_error "Install the above, then re-run this script."
     exit 1
   fi
 }
