@@ -2,15 +2,19 @@
 set -euo pipefail
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
+# Color variables are gated on stdout (fd 1) being a TTY. When run as `curl | bash`,
+# stdout is the pipe and is not a TTY, so all colors are disabled — including stderr-bound
+# functions — to avoid escape sequences in captured output or pipe buffers.
 if [ -t 1 ] && command -v tput &>/dev/null && tput colors &>/dev/null; then
   RED=$(tput setaf 1 2>/dev/null || true)
   GREEN=$(tput setaf 2 2>/dev/null || true)
   YELLOW=$(tput setaf 3 2>/dev/null || true)
+  BLUE=$(tput setaf 4 2>/dev/null || true)
   CYAN=$(tput setaf 6 2>/dev/null || true)
   BOLD=$(tput bold 2>/dev/null || true)
   RESET=$(tput sgr0 2>/dev/null || true)
 else
-  RED="" GREEN="" YELLOW="" CYAN="" BOLD="" RESET=""
+  RED="" GREEN="" YELLOW="" BLUE="" CYAN="" BOLD="" RESET=""
 fi
 
 # ─── Print helpers ────────────────────────────────────────────────────────────
@@ -20,7 +24,144 @@ print_error()   { echo "${RED}  error:${RESET} $*" >&2; }
 print_prompt()  { printf "${YELLOW}  ? ${RESET}${BOLD}%s${RESET} " "$*" >&2; }
 print_header()  { echo; echo "${BOLD}${CYAN}$*${RESET}"; echo; }
 
+# ─── Unicode / emoji detection ────────────────────────────────────────────────
+if locale charmap 2>/dev/null | grep -qi 'utf-8'; then
+  ICON_DL="📦" ICON_EXTRACT="🔧" ICON_GIT="🧠" ICON_OK="✅" ICON_FAIL="❌" ICON_DONE="🎉"
+else
+  ICON_DL="[DL]" ICON_EXTRACT="[EX]" ICON_GIT="[GIT]" ICON_OK="[OK]" ICON_FAIL="[FAIL]" ICON_DONE="[DONE]"
+fi
+
+# ─── Banner ───────────────────────────────────────────────────────────────────
+print_banner() {
+  echo
+  echo "${BLUE}${BOLD} ██████╗ ███╗   ██╗███████╗${RESET}"
+  echo "${BLUE}${BOLD}██╔═══██╗████╗  ██║██╔════╝${RESET}"
+  echo "${BLUE}${BOLD}██║   ██║██╔██╗ ██║█████╗  ${RESET}"
+  echo "${BLUE}${BOLD}██║   ██║██║╚██╗██║██╔══╝  ${RESET}"
+  echo "${BLUE}${BOLD}╚██████╔╝██║ ╚████║███████╗${RESET}"
+  echo "${BLUE}${BOLD} ╚═════╝ ╚═╝  ╚═══╝╚══════╝${RESET}"
+  echo "${BLUE}${BOLD}██████╗ ██████╗  █████╗ ██╗███╗   ██╗${RESET}"
+  echo "${BLUE}${BOLD}██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║${RESET}"
+  echo "${BLUE}${BOLD}██████╔╝██████╔╝███████║██║██╔██╗ ██║${RESET}"
+  echo "${BLUE}${BOLD}██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║${RESET}"
+  echo "${BLUE}${BOLD}██████╔╝██║  ██║██║  ██║██║██║ ╚████║${RESET}"
+  echo "${BLUE}${BOLD}╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝${RESET}"
+  echo
+  echo "${YELLOW} > all thoughts. one brain. zero friction.${RESET}"
+  echo
+}
+
+# ─── Spinner ──────────────────────────────────────────────────────────────────
+SPINNER_PID=""
+_INSTALL_TMPDIR=""
+
+spinner_start() {
+  local msg="$1"
+  (
+    local i=0
+    local chars len
+    if locale charmap 2>/dev/null | grep -qi 'utf-8'; then
+      chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    else
+      chars='|/-\'
+    fi
+    len="${#chars}"
+    while true; do
+      printf "\r  %s %s " "${chars:i%len:1}" "$msg" >&2
+      i=$((i + 1))
+      sleep 0.08
+    done
+  ) &
+  SPINNER_PID=$!
+}
+
+spinner_stop() {
+  local emoji="${1:-}"
+  local msg="${2:-}"
+  if [ -n "${SPINNER_PID:-}" ]; then
+    kill "$SPINNER_PID" 2>/dev/null || true
+    wait "$SPINNER_PID" 2>/dev/null || true
+    SPINNER_PID=""
+  fi
+  printf "\r\033[K  %s %s\n" "$emoji" "$msg" >&2
+}
+
+# ─── Cleanup ──────────────────────────────────────────────────────────────────
+cleanup() {
+  if [ -n "${SPINNER_PID:-}" ]; then
+    kill "$SPINNER_PID" 2>/dev/null || true
+    wait "$SPINNER_PID" 2>/dev/null || true
+    SPINNER_PID=""
+    printf "\r\033[K" >&2
+  fi
+  if [ -n "${_INSTALL_TMPDIR:-}" ]; then
+    if ! rm -rf "$_INSTALL_TMPDIR"; then
+      print_info "Warning: could not remove temporary directory '$_INSTALL_TMPDIR'. You may remove it manually."
+    fi
+    _INSTALL_TMPDIR=""
+  fi
+}
+
 # ─── Dependency check ─────────────────────────────────────────────────────────
+# print_install_hint: outputs OS-specific install instructions for a missing command.
+print_install_hint() {
+  local cmd="$1"
+  local os
+  os=$(uname -s 2>/dev/null || echo "unknown")
+  case "$cmd" in
+    git)
+      echo >&2
+      echo "${BOLD}  Install git:${RESET}" >&2
+      case "$os" in
+        Darwin)
+          echo "    • Homebrew:  ${CYAN}brew install git${RESET}" >&2
+          echo "    • Xcode CLT: ${CYAN}xcode-select --install${RESET}" >&2
+          ;;
+        Linux)
+          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install git${RESET}" >&2
+          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install git${RESET}" >&2
+          echo "    • Arch:          ${CYAN}sudo pacman -S git${RESET}" >&2
+          ;;
+        *)
+          echo "    • https://git-scm.com/downloads" >&2
+          ;;
+      esac
+      ;;
+    curl)
+      echo >&2
+      echo "${BOLD}  Install curl:${RESET}" >&2
+      case "$os" in
+        Darwin)
+          echo "    • Homebrew: ${CYAN}brew install curl${RESET}" >&2
+          ;;
+        Linux)
+          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install curl${RESET}" >&2
+          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install curl${RESET}" >&2
+          ;;
+        *)
+          echo "    • https://curl.se/download.html" >&2
+          ;;
+      esac
+      ;;
+    tar)
+      echo >&2
+      echo "${BOLD}  Install tar:${RESET}" >&2
+      case "$os" in
+        Darwin)
+          echo "    • Homebrew: ${CYAN}brew install gnu-tar${RESET}" >&2
+          ;;
+        Linux)
+          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install tar${RESET}" >&2
+          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install tar${RESET}" >&2
+          ;;
+        *)
+          echo "    • https://www.gnu.org/software/tar/" >&2
+          ;;
+      esac
+      ;;
+  esac
+}
+
 check_deps() {
   local missing=()
   for cmd in curl tar git; do
@@ -28,7 +169,11 @@ check_deps() {
   done
   if [ ${#missing[@]} -gt 0 ]; then
     print_error "Missing required commands: ${missing[*]}"
-    print_error "Please install them and re-run this script."
+    for cmd in "${missing[@]}"; do
+      print_install_hint "$cmd"
+    done
+    echo >&2
+    print_error "Install the above, then re-run this script."
     exit 1
   fi
 }
@@ -53,9 +198,9 @@ main() {
   # ── terminal. Open /dev/tty as fd 3 so prompts reach the user without
   # ── replacing bash's own command source (which would cause a hang after the
   # ── script finishes). TTY_FD=0 is the default for direct invocation.
-  # ── Two exit paths:
-  # ──   (1) /dev/tty not readable  → exits with download instructions
-  # ──   (2) /dev/tty readable but open fails (rare) → exits with instructions
+  # ── Two exit paths (in code order):
+  # ──   (1) /dev/tty readable but exec 3< fails (rare) → exits with download instructions
+  # ──   (2) /dev/tty not readable (no terminal at all) → exits with download instructions
   TTY_FD=0
   if [ ! -t 0 ]; then
     if { true < /dev/tty; } 2>/dev/null; then
@@ -77,14 +222,14 @@ main() {
     fi
   fi
 
-  print_header "OneBrain Vault Installer"
+  print_banner
   print_info "This script downloads OneBrain and sets up a fresh Obsidian vault."
   echo
 
   check_deps
 
   # ── Step 1: Install location ────────────────────────────────────────────────
-  local default_location="$HOME/Documents"
+  local default_location="$PWD"
   local install_location
   install_location=$(prompt_with_default "Where should the vault be created?" "$default_location")
 
@@ -135,34 +280,39 @@ main() {
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
   local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
-  local tmpdir
-  tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
-  # shellcheck disable=SC2064  # $tmpdir is intentionally captured at definition time (set once, never reassigned)
-  trap "rm -rf '$tmpdir'" EXIT
+  trap cleanup EXIT INT TERM
+  _INSTALL_TMPDIR=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
 
-  print_info "Downloading OneBrain..."
-  if ! curl -fsSL "$repo_url" -o "$tmpdir/onebrain.tar.gz"; then
+  spinner_start "$ICON_DL Downloading OneBrain..."
+  if ! curl -fsSL "$repo_url" -o "$_INSTALL_TMPDIR/onebrain.tar.gz"; then
+    spinner_stop "$ICON_FAIL" ""
     print_error "Download failed. Check your internet connection and try again."
     exit 1
   fi
+  spinner_stop "$ICON_OK" "Downloaded"
 
   # Verify the downloaded file is actually a valid tar archive, not an HTML error page
-  if ! tar tzf "$tmpdir/onebrain.tar.gz" >/dev/null 2>&1; then
+  if ! tar tzf "$_INSTALL_TMPDIR/onebrain.tar.gz" >/dev/null; then
     print_error "Downloaded file is not a valid archive."
     print_error "The repository may not be published yet, or the URL may have changed."
     print_error "URL: $repo_url"
     exit 1
   fi
 
-  print_info "Extracting..."
-  if ! tar xzf "$tmpdir/onebrain.tar.gz" -C "$tmpdir"; then
+  spinner_start "$ICON_EXTRACT Extracting..."
+  if ! tar xzf "$_INSTALL_TMPDIR/onebrain.tar.gz" -C "$_INSTALL_TMPDIR"; then
+    spinner_stop "$ICON_FAIL" ""
     print_error "Extraction failed. The archive may be corrupted or your disk may be full."
     exit 1
   fi
+  spinner_stop "$ICON_OK" "Extracted"
 
   # GitHub tarballs extract to a directory like onebrain-main/
+  # || true prevents set -e from aborting if the find|head -1 pipeline exits non-zero
+  # (e.g., SIGPIPE exit 141 when head -1 closes the read end before find finishes).
+  # extracted_dir will be empty on genuine failure, caught by the check below.
   local extracted_dir
-  extracted_dir=$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d | head -1 || true)
+  extracted_dir=$(find "$_INSTALL_TMPDIR" -maxdepth 1 -mindepth 1 -type d | head -1) || true
 
   if [ -z "$extracted_dir" ]; then
     print_error "Extraction produced no directory. The archive may be malformed or extraction failed."
@@ -176,8 +326,12 @@ main() {
   fi
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
-  # Remove the install script from the vault — it shouldn't live there
-  rm -f "$vault_path/install.sh" || true
+  # Remove install scripts from the vault — they shouldn't live there.
+  # rm -f silently succeeds if they are absent; the if-guard catches permission errors only.
+  if ! rm -f "$vault_path/install.sh" "$vault_path/install.ps1"; then
+    print_error "Could not remove install scripts from '$vault_path'. Check directory permissions."
+    exit 1
+  fi
 
   # Remove any .git directory if somehow included in the tarball
   if ! rm -rf "$vault_path/.git"; then
@@ -188,21 +342,22 @@ main() {
   fi
 
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
-  print_info "Initializing git repository..."
-  if ! cd "$vault_path"; then
-    print_error "Could not enter vault directory '$vault_path'. Installation may be incomplete."
-    exit 1
-  fi
-  if ! git init -q; then
+  # git -C runs each command inside vault_path without changing the script's working
+  # directory, avoiding side-effects on any $PWD references that follow.
+  spinner_start "$ICON_GIT Initializing git repository..."
+  if ! git -C "$vault_path" init -q; then
+    spinner_stop "$ICON_FAIL" ""
     print_error "Failed to initialize a git repository in '$vault_path'."
     exit 1
   fi
-  if ! git add -A; then
+  if ! git -C "$vault_path" add -A; then
+    spinner_stop "$ICON_FAIL" ""
     print_error "Failed to stage files for the initial git commit in '$vault_path'."
     print_error "Check for a stale .git/index.lock file or permission issues."
     exit 1
   fi
-  if ! git commit -q -m "Initial OneBrain vault setup"; then
+  if ! git -C "$vault_path" commit -q -m "Initial OneBrain vault setup"; then
+    spinner_stop "$ICON_FAIL" ""
     print_error "Failed to create the initial git commit."
     print_error "Git may need a name and email configured. Run:"
     print_error "  git config --global user.name  'Your Name'"
@@ -210,17 +365,20 @@ main() {
     print_error "Then re-run: git -C \"$vault_path\" add -A && git -C \"$vault_path\" commit -m 'Initial OneBrain vault setup'"
     exit 1
   fi
+  spinner_stop "$ICON_OK" "Git repository initialized"
 
   # ── Step 6: Success ──────────────────────────────────────────────────────────
   echo
-  echo "${GREEN}${BOLD}  OneBrain is ready!${RESET}"
+  echo "${BLUE}${BOLD}  $ICON_DONE OneBrain is ready!${RESET}"
   echo
   print_success "Vault path: ${BOLD}${vault_path}${RESET}"
   echo
   echo "${BOLD}Next steps:${RESET}"
   echo "  1. Open Obsidian"
   echo "     File → Open Folder as Vault → select: ${CYAN}${vault_path}${RESET}"
-  echo "  2. When prompted, trust community plugins"
+  echo "  2. Install community plugins (Settings → Community plugins → Browse):"
+  echo "     ${CYAN}Tasks  Dataview  Templater  Calendar${RESET}"
+  echo "     ${CYAN}Tag Wrangler  QuickAdd  Obsidian Git  Terminal${RESET}"
   echo "  3. Open your terminal in the vault directory:"
   echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
   echo "  4. Start your AI assistant:"

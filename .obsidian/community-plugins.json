@@ -1,10 +1,10 @@
 [
-  "obsidian-git",
-  "terminal",
   "obsidian-tasks-plugin",
   "dataview",
   "templater-obsidian",
   "calendar",
   "tag-wrangler",
-  "quickadd"
+  "quickadd",
+  "obsidian-git",
+  "terminal"
 ]

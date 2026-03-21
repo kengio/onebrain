@@ -10,6 +10,22 @@ An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI
 - **Multi-agent** — works with Claude Code, Gemini CLI, or any AI that reads Markdown
 - **Pre-configured** — open in Obsidian and everything is ready to go
 
+## Prerequisites
+
+**Required:** [git](https://git-scm.com) — used to version-control your vault.
+
+| Platform | Install command |
+|----------|----------------|
+| macOS (Homebrew) | `brew install git` |
+| macOS (Xcode CLT) | `xcode-select --install` |
+| Windows (winget) | `winget install --id Git.Git` |
+| Windows (Chocolatey) | `choco install git` |
+| Debian / Ubuntu | `sudo apt install git` |
+| Fedora / RHEL | `sudo dnf install git` |
+| Arch | `sudo pacman -S git` |
+
+Verify with `git --version` before running the installer.
+
 ## Quick Start
 
 ### macOS / Linux
@@ -19,6 +35,8 @@ An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI
 ```bash
 curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh | bash
 ```
+
+> The installer creates the vault in your current directory by default. You'll be prompted to confirm the location and vault name.
 
 **Option B — Manual clone:**
 
@@ -34,6 +52,8 @@ cd onebrain
 ```powershell
 irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
 ```
+
+> The installer creates the vault in your current directory by default. You'll be prompted to confirm the location and vault name.
 
 **Option B — Manual clone:**
 
