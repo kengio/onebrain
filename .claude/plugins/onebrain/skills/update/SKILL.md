@@ -190,9 +190,35 @@ find .claude/plugins/onebrain -name "*.md" \
     -e "s|03-archive/|${ARCHIVE}/|g" \
     -e "s|04-memory-log/|${MEMLOG}/|g" \
   {} +
+
+# Re-apply descriptive text replacements (these are not covered by the folder-name substitutions above)
+if [ "$METHOD" = "para" ]; then
+  sed -i '' \
+    -e "s|Consolidated notes, insights, and reference material|Topics of interest and reference material|g" \
+    -e "s|Completed projects and old items|Inactive items from any category|g" \
+    -e "s|Completed projects and archived items|Inactive items from any category|g" \
+    CLAUDE.md GEMINI.md AGENTS.md
+  # Re-insert 02-areas/ if not already present (PARA-only folder with no OneBrain counterpart)
+  grep -q "02-areas/" CLAUDE.md || awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
+  grep -q "02-areas/" GEMINI.md || awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md
+  grep -q "02-areas/" AGENTS.md || awk '/`01-projects\/`.*Active projects/ {print; print "| `02-areas/` | Ongoing responsibilities (health, finance, career) |"; next} {print}' AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md
+elif [ "$METHOD" = "zettelkasten" ]; then
+  sed -i '' \
+    -e "s|Raw braindumps and quick captures (process regularly)|Temporary capture — raw ideas and quick notes|g" \
+    -e "s|Active projects with tasks and notes|Notes from sources you've read|g" \
+    -e "s|Active projects with tasks and inline notes|Notes from sources you've read|g" \
+    -e "s|Consolidated notes, insights, and reference material|Atomic, linked notes — your knowledge graph|g" \
+    CLAUDE.md GEMINI.md AGENTS.md
+fi
+
+# Build display name for user message
+if [ "$METHOD" = "para" ]; then METHOD_DISPLAY="PARA"
+elif [ "$METHOD" = "zettelkasten" ]; then METHOD_DISPLAY="Zettelkasten"
+else METHOD_DISPLAY="$METHOD"
+fi
 ```
 
-Tell the user: "Re-applied [METHOD] folder customizations to updated files."
+Tell the user: "Re-applied ${METHOD_DISPLAY} folder customizations to updated files."
 
 ---
 

@@ -232,6 +232,13 @@ sed -i '' \
   -e "s|Completed projects and archived items|Inactive items from any category|g" \
   CLAUDE.md GEMINI.md AGENTS.md
 
+# Insert 02-areas/ into vault structure sections (PARA adds a folder with no OneBrain counterpart)
+# CLAUDE.md and GEMINI.md use a code block format
+awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
+awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/          Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md
+# AGENTS.md uses a table format
+awk '/`01-projects\/`.*Active projects/ {print; print "| `02-areas/` | Ongoing responsibilities (health, finance, career) |"; next} {print}' AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md
+
 # All plugin files (excluding onboarding and update skills)
 find .claude/plugins/onebrain -name "*.md" \
   ! -path "*/skills/onboarding/SKILL.md" \
@@ -293,6 +300,7 @@ method: para
 folders:
   inbox: 00-inbox
   projects: 01-projects
+  areas: 02-areas
   knowledge: 03-resources
   archive: 04-archive
   memory_log: 05-memory-log
