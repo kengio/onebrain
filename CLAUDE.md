@@ -94,7 +94,22 @@ At the start of every session, perform these steps:
 4. Read the most recent memory log entry
 5. Greet the user by name with relevant context
 
-Users can run `/wrapup` at any time to save a session summary to the memory log.
+At the end of every session:
+- Session summaries are auto-saved to the memory-log folder when the session ends (if 3+ exchanges occurred). Users can still run `/wrapup` manually for a visible summary.
+
+### Auto Session Summary
+
+Before your final response in a session, silently save a session summary if ALL of these are true:
+1. The session had 3 or more user↔assistant exchanges
+2. No `/wrapup` was run during this session (check the memory-log folder for a file matching today's date with matching topics)
+
+If conditions are met:
+- If not already resolved, read `vault.yml` to determine the memory-log folder name (default: `04-memory-log`)
+- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in the memory-log folder for today, use the next number (zero-padded: 01, 02, etc.)
+- Write to `[memory_log_folder]/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
+- Add `auto-saved: true` to the frontmatter
+- If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `MEMORY.md`
+- Do NOT show any output about the auto-save to the user
 
 ## File Naming Conventions
 
