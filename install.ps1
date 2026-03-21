@@ -117,7 +117,7 @@ function Main {
     } catch {
       Print-Error "Download failed. Check your internet connection and try again."
       Print-Error $_.Exception.Message
-      exit 1
+      throw "error:already-printed"
     }
     Write-Done "Downloaded"
 
@@ -127,16 +127,22 @@ function Main {
     } catch {
       Print-Error "Extraction failed. The archive may be corrupted or your disk may be full."
       Print-Error $_.Exception.Message
-      exit 1
+      throw "error:already-printed"
     }
     Write-Done "Extracted"
 
     # GitHub zip extracts to a directory like onebrain-main/
-    $extractedDir = Get-ChildItem -Path $tmpDir -Directory | Select-Object -First 1
+    try {
+      $extractedDir = Get-ChildItem -Path $tmpDir -Directory | Select-Object -First 1
+    } catch {
+      Print-Error "Could not read extracted directory from '$tmpDir'. Check that your temp folder is accessible."
+      Print-Error $_.Exception.Message
+      throw "error:already-printed"
+    }
 
     if ($null -eq $extractedDir) {
       Print-Error "Extraction produced no directory. The archive may be malformed."
-      exit 1
+      throw "error:already-printed"
     }
 
     try {
@@ -145,14 +151,33 @@ function Main {
       Print-Error "Failed to move the extracted vault to '$vaultPath'."
       Print-Error "Check that '$installLocation' is writeable and has enough space."
       Print-Error $_.Exception.Message
-      exit 1
+      throw "error:already-printed"
     }
 
     # ── Step 4: Clean up installed vault ────────────────────────────────────
     # Remove install scripts — they shouldn't live in the vault.
-    # Use SilentlyContinue so this succeeds even if the archive omits them.
-    Remove-Item -Path (Join-Path $vaultPath "install.sh")  -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path (Join-Path $vaultPath "install.ps1") -Force -ErrorAction SilentlyContinue
+    # Test-Path first so we error only on real failures (permissions/locks),
+    # not on the file simply being absent from the archive.
+    $shPath  = Join-Path $vaultPath "install.sh"
+    $ps1Path = Join-Path $vaultPath "install.ps1"
+    if (Test-Path $shPath) {
+      try {
+        Remove-Item $shPath -Force -ErrorAction Stop
+      } catch {
+        Print-Error "Could not remove install.sh from '$vaultPath'. Check directory permissions."
+        Print-Error $_.Exception.Message
+        throw "error:already-printed"
+      }
+    }
+    if (Test-Path $ps1Path) {
+      try {
+        Remove-Item $ps1Path -Force -ErrorAction Stop
+      } catch {
+        Print-Error "Could not remove install.ps1 from '$vaultPath'. Check directory permissions."
+        Print-Error $_.Exception.Message
+        throw "error:already-printed"
+      }
+    }
 
     # Remove any .git directory if included in the archive
     $dotGit = Join-Path $vaultPath ".git"
@@ -163,30 +188,32 @@ function Main {
         Print-Error "Could not remove the bundled .git directory from '$vaultPath'."
         Print-Error "Check for locked files and remove '$dotGit' manually, then re-run:"
         Print-Error "  git -C '$vaultPath' init; git -C '$vaultPath' add -A; git -C '$vaultPath' commit -m 'Initial OneBrain vault setup'"
-        exit 1
+        throw "error:already-printed"
       }
     }
 
     # ── Step 5: Initialize git ──────────────────────────────────────────────
     Write-Step "🧠" "Initializing git repository..."
+    # Push-Location lives in its own try/catch outside the finally-guarded block so that
+    # Pop-Location is only called when Push-Location actually succeeded.
     try {
       Push-Location $vaultPath
     } catch {
       Print-Error "Could not change into vault directory '$vaultPath'."
       Print-Error $_.Exception.Message
-      exit 1
+      throw "error:already-printed"  # propagates to outer catch; outer finally still cleans tmpDir
     }
     try {
       git init -q
       if ($LASTEXITCODE -ne 0) {
         Print-Error "Failed to initialize a git repository in '$vaultPath'."
-        exit 1
+        throw "error:already-printed"
       }
       git add -A
       if ($LASTEXITCODE -ne 0) {
         Print-Error "Failed to stage files for the initial git commit in '$vaultPath'."
         Print-Error "Check for a stale .git/index.lock file or permission issues."
-        exit 1
+        throw "error:already-printed"
       }
       git commit -q -m "Initial OneBrain vault setup"
       if ($LASTEXITCODE -ne 0) {
@@ -194,7 +221,7 @@ function Main {
         Print-Error "Git may need a name and email configured. Run:"
         Print-Error "  git config --global user.name 'Your Name'"
         Print-Error "  git config --global user.email 'you@example.com'"
-        exit 1
+        throw "error:already-printed"
       }
     } finally {
       Pop-Location
@@ -202,7 +229,11 @@ function Main {
     Write-Done "Git repository initialized"
 
   } catch {
-    Print-Error "Installation failed: $($_.Exception.Message)"
+    # Sentinel "error:already-printed" means a specific message was already shown to the user.
+    # Any other exception is unexpected and gets the generic fallback message.
+    if ($_.Exception.Message -ne "error:already-printed") {
+      Print-Error "Installation failed at an unexpected step: $($_.Exception.Message)"
+    }
     exit 1
   } finally {
     try {

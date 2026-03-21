@@ -2,6 +2,9 @@
 set -euo pipefail
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
+# Color variables are gated on stdout (fd 1) being a TTY. When run as `curl | bash`,
+# stdout is the pipe and is not a TTY, so all colors are disabled — including stderr-bound
+# functions — to avoid escape sequences in captured output or pipe buffers.
 if [ -t 1 ] && command -v tput &>/dev/null && tput colors &>/dev/null; then
   RED=$(tput setaf 1 2>/dev/null || true)
   GREEN=$(tput setaf 2 2>/dev/null || true)
@@ -56,9 +59,15 @@ spinner_start() {
   local msg="$1"
   (
     local i=0
-    local chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local chars len
+    if locale charmap 2>/dev/null | grep -qi 'utf-8'; then
+      chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    else
+      chars='|/-\'
+    fi
+    len="${#chars}"
     while true; do
-      printf "\r  %s %s " "${chars:i%10:1}" "$msg" >&2
+      printf "\r  %s %s " "${chars:i%len:1}" "$msg" >&2
       i=$((i + 1))
       sleep 0.08
     done
@@ -94,6 +103,7 @@ cleanup() {
 }
 
 # ─── Dependency check ─────────────────────────────────────────────────────────
+# print_install_hint: outputs OS-specific install instructions for a missing command.
 print_install_hint() {
   local cmd="$1"
   local os
@@ -188,9 +198,9 @@ main() {
   # ── terminal. Open /dev/tty as fd 3 so prompts reach the user without
   # ── replacing bash's own command source (which would cause a hang after the
   # ── script finishes). TTY_FD=0 is the default for direct invocation.
-  # ── Two exit paths:
-  # ──   (1) /dev/tty not readable  → exits with download instructions
-  # ──   (2) /dev/tty readable but open fails (rare) → exits with instructions
+  # ── Two exit paths (in code order):
+  # ──   (1) /dev/tty readable but exec 3< fails (rare) → exits with download instructions
+  # ──   (2) /dev/tty not readable (no terminal at all) → exits with download instructions
   TTY_FD=0
   if [ ! -t 0 ]; then
     if { true < /dev/tty; } 2>/dev/null; then
@@ -282,7 +292,7 @@ main() {
   spinner_stop "$ICON_OK" "Downloaded"
 
   # Verify the downloaded file is actually a valid tar archive, not an HTML error page
-  if ! tar tzf "$_INSTALL_TMPDIR/onebrain.tar.gz" >/dev/null 2>&1; then
+  if ! tar tzf "$_INSTALL_TMPDIR/onebrain.tar.gz" >/dev/null; then
     print_error "Downloaded file is not a valid archive."
     print_error "The repository may not be published yet, or the URL may have changed."
     print_error "URL: $repo_url"
@@ -298,7 +308,9 @@ main() {
   spinner_stop "$ICON_OK" "Extracted"
 
   # GitHub tarballs extract to a directory like onebrain-main/
-  # The || true tolerates SIGPIPE (exit 141) from head -1 closing the pipe early.
+  # || true prevents set -e from aborting if the find|head -1 pipeline exits non-zero
+  # (e.g., SIGPIPE exit 141 when head -1 closes the read end before find finishes).
+  # extracted_dir will be empty on genuine failure, caught by the check below.
   local extracted_dir
   extracted_dir=$(find "$_INSTALL_TMPDIR" -maxdepth 1 -mindepth 1 -type d | head -1) || true
 
@@ -314,7 +326,8 @@ main() {
   fi
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
-  # Remove install scripts from the vault — they shouldn't live there
+  # Remove install scripts from the vault — they shouldn't live there.
+  # rm -f silently succeeds if they are absent; the if-guard catches permission errors only.
   if ! rm -f "$vault_path/install.sh" "$vault_path/install.ps1"; then
     print_error "Could not remove install scripts from '$vault_path'. Check directory permissions."
     exit 1
@@ -329,6 +342,8 @@ main() {
   fi
 
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
+  # git -C runs each command inside vault_path without changing the script's working
+  # directory, avoiding side-effects on any $PWD references that follow.
   spinner_start "$ICON_GIT Initializing git repository..."
   if ! git -C "$vault_path" init -q; then
     spinner_stop "$ICON_FAIL" ""
