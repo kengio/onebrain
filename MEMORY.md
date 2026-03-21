@@ -1,8 +1,6 @@
----
 # OneBrain Memory
-# This file is loaded at the start of every AI session.
-# Keep under ~200 lines. Updated by /ob:onboarding, /ob:wrapup, and auto session-end.
----
+
+<!-- Loaded every session. Keep under ~200 lines. Updated by /ob:onboarding, /ob:wrapup, and auto session-end. -->
 
 ## Agent Identity
 

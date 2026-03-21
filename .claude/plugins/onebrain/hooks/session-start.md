@@ -11,6 +11,7 @@ At the start of every session, perform these steps in order:
 ## Step 1: Load Identity
 
 Read `MEMORY.md` from the vault root. This file contains:
+
 - The agent's own name and personality archetype (Agent Identity section)
 - The user's name and preferred name
 - Their role and communication style
@@ -23,6 +24,7 @@ Apply the "AI Personality Instructions" section immediately — it defines how t
 ## Step 2: Resolve Folder Names
 
 If `vault.yml` exists, read it once and extract:
+
 - `inbox_folder` = `folders.inbox` (default: `00-inbox`)
 - `memory_log_folder` = `folders.memory_log` (default: `04-memory-log`)
 
@@ -33,6 +35,7 @@ Use these values for all subsequent steps.
 List all files in `inbox_folder` (excluding .gitkeep).
 
 Count:
+
 - Files present = items waiting to be processed
 
 ## Step 4: Check Recent Memory
@@ -40,6 +43,7 @@ Count:
 List files in `memory_log_folder` sorted by name (descending). Read the most recent one.
 
 Note:
+
 - Date of last session
 - What it was about (the summary)
 - Any open action items from that session

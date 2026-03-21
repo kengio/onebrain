@@ -120,11 +120,9 @@ Wait for response. Store: `recurring_contexts`.
 Overwrite `MEMORY.md` with personalized content:
 
 ```markdown
----
 # OneBrain Memory
-# Loaded every session. Keep under ~200 lines.
-# Last updated: [TODAY'S DATE]
----
+
+<!-- Loaded every session. Keep under ~200 lines. Last updated: [TODAY'S DATE] -->
 
 ## Agent Identity
 
