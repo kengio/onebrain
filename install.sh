@@ -220,9 +220,10 @@ install_plugins() {
   # Reuse _INSTALL_TMPDIR (cleaned by the EXIT trap) to avoid a separate tempfile leak.
   local registry_file="$_INSTALL_TMPDIR/plugin-registry.json"
   spinner_start "Fetching plugin registry..."
-  if ! curl -fsSL "$registry_url" -o "$registry_file" 2>/dev/null; then
+  local registry_err
+  if ! registry_err=$(curl -fsSL "$registry_url" -o "$registry_file" 2>&1 >/dev/null); then
     spinner_stop "$ICON_FAIL" ""
-    print_info "Could not reach the plugin registry. All plugins will need to be installed manually."
+    print_info "Could not reach the plugin registry${registry_err:+ (${registry_err})}. All plugins will need to be installed manually."
     # Populate FAILED_PLUGINS so the success message shows manual install instructions.
     while IFS= read -r _pid; do
       [ -z "$_pid" ] && continue
@@ -234,10 +235,35 @@ install_plugins() {
   spinner_stop "$ICON_OK" "Registry fetched"
 
   local plugins_dir="$vault/.obsidian/plugins"
-  mkdir -p "$plugins_dir"
+  if ! mkdir -p "$plugins_dir" 2>/dev/null; then
+    print_info "Could not create plugins directory. Check permissions on '$vault/.obsidian/'."
+    while IFS= read -r _pid; do
+      [ -z "$_pid" ] && continue
+      failed_plugins+=("$_pid")
+    done <<< "$plugin_ids"
+    FAILED_PLUGINS=("${failed_plugins[@]}")
+    return 0
+  fi
+
+  # GitHub REST API: 60 req/hr unauthenticated (shared per IP) — 5,000/hr with GITHUB_TOKEN.
+  # Build auth args once; GITHUB_TOKEN does not change during the loop.
+  local curl_auth_args=()
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    curl_auth_args=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
+
+  local curl_errf="$_INSTALL_TMPDIR/curl_err"
 
   while IFS= read -r plugin_id; do
     [ -z "$plugin_id" ] && continue
+
+    # Validate plugin ID: reject IDs with path-traversal or shell-unsafe characters.
+    # All legitimate Obsidian plugin IDs use only alphanumerics, hyphens, and underscores.
+    if ! printf '%s' "$plugin_id" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+      print_info "  ${YELLOW}skipped${RESET} invalid plugin ID: '${plugin_id}'"
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
 
     # Extract the GitHub repo for this plugin ID from the registry.
     # grep -F (fixed-string) prevents plugin IDs with special characters from
@@ -257,19 +283,15 @@ install_plugins() {
 
     spinner_start "  Installing ${plugin_id}..."
 
-    # GitHub REST API: 60 req/hr unauthenticated (shared per IP). Each plugin consumes
-    # one request. Set GITHUB_TOKEN env var to raise the limit to 5,000/hr.
-    local curl_auth_args=()
-    if [ -n "${GITHUB_TOKEN:-}" ]; then
-      curl_auth_args=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
-    fi
-    local release_json
-    release_json=$(curl -fsSL \
+    # Use -sSL (not -fsSL) so the response body is preserved on HTTP errors, enabling
+    # rate-limit detection. The HTTP status code is appended with -w and parsed below.
+    local api_raw http_code release_json tag
+    api_raw=$(curl -sSL -w '\n%{http_code}' \
       -H "Accept: application/vnd.github.v3+json" \
       "${curl_auth_args[@]}" \
-      "https://api.github.com/repos/${repo}/releases/latest" 2>/dev/null) || release_json=""
-
-    local tag
+      "https://api.github.com/repos/${repo}/releases/latest" 2>/dev/null) || api_raw=""
+    http_code=$(printf '%s\n' "$api_raw" | tail -1)
+    release_json=$(printf '%s\n' "$api_raw" | sed '$d')
     tag=$(printf '%s' "$release_json" \
           | grep '"tag_name"' \
           | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' \
@@ -277,32 +299,42 @@ install_plugins() {
 
     if [ -z "$tag" ]; then
       spinner_stop "$ICON_FAIL" ""
-      # Distinguish GitHub rate limit (actionable) from other failures
-      if printf '%s' "$release_json" | grep -q '"API rate limit exceeded"'; then
-        print_info "  ${RED}rate-limited${RESET} ${plugin_id} (GitHub API rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)"
+      # HTTP 403 can mean rate limit or access denied — check body to distinguish
+      if [ "$http_code" = "403" ]; then
+        if printf '%s' "$release_json" | grep -qE '"(API rate limit exceeded|exceeded a secondary rate limit)"'; then
+          print_info "  ${RED}rate-limited${RESET} ${plugin_id} (GitHub rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)"
+        else
+          print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (GitHub API returned 403 — check GITHUB_TOKEN if set)"
+        fi
       else
-        print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag)"
+        print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag — HTTP ${http_code:-error})"
       fi
       failed_plugins+=("$plugin_id")
       continue
     fi
 
     local plugin_dir="$plugins_dir/$plugin_id"
-    mkdir -p "$plugin_dir"
+    if ! mkdir -p "$plugin_dir" 2>/dev/null; then
+      spinner_stop "$ICON_FAIL" ""
+      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (could not create plugin directory)"
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
 
     local base_url="https://github.com/${repo}/releases/download/${tag}"
     local ok=true
 
-    # main.js and manifest.json are required; short-circuit on first failure
-    if ! curl -fsSL "${base_url}/main.js" -o "$plugin_dir/main.js" 2>/dev/null; then
-      ok=false
-    fi
-    if [ "$ok" = true ] && ! curl -fsSL "${base_url}/manifest.json" -o "$plugin_dir/manifest.json" 2>/dev/null; then
-      ok=false
-    fi
+    # main.js and manifest.json are required; short-circuit on first failure.
+    # curl stderr (error details) is captured to $curl_errf for the failure message.
+    for asset in main.js manifest.json; do
+      if ! curl -fsSL "${base_url}/${asset}" -o "$plugin_dir/${asset}" 2>"$curl_errf"; then
+        ok=false
+        break
+      fi
+    done
 
     # styles.css is optional — not all plugins ship it.
-    # curl exit code 22 = HTTP error (404 Not Found) — expected and silent.
+    # curl exit code 22 = HTTP error (status 400+, typically 404) — expected and silent.
     # Any other non-zero exit (disk full, TLS, DNS) is unexpected and warrants a warning.
     if [ "$ok" = true ]; then
       local css_exit=0
@@ -318,10 +350,14 @@ install_plugins() {
       spinner_stop "$ICON_OK" "${plugin_id}"
     else
       spinner_stop "$ICON_FAIL" ""
-      if ! rm -rf "$plugin_dir" 2>/dev/null; then
-        print_info "  ${YELLOW}warning${RESET} Could not remove partial directory '$plugin_dir'. Remove it manually before opening Obsidian."
+      local curl_err_detail
+      curl_err_detail=$(cat "$curl_errf" 2>/dev/null | head -1 | tr -d '\r')
+      local rm_err
+      if ! rm_err=$(rm -rf "$plugin_dir" 2>&1); then
+        print_info "  ${YELLOW}warning${RESET} Could not remove partial directory '$plugin_dir': $rm_err"
+        print_info "  Remove it manually before opening Obsidian."
       fi
-      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (download error)"
+      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (${curl_err_detail:-download error})"
       failed_plugins+=("$plugin_id")
     fi
   done <<< "$plugin_ids"
@@ -527,25 +563,22 @@ main() {
   echo "${BOLD}Next steps:${RESET}"
   echo "  1. Open Obsidian"
   echo "     File → Open Folder as Vault → select: ${CYAN}${vault_path}${RESET}"
+  local step=2
   if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
-    echo "  2. Install missing plugins manually (Settings → Community plugins → Browse):"
+    echo "  ${step}. Install missing plugins manually (Settings → Community plugins → Browse):"
     for p in "${FAILED_PLUGINS[@]}"; do
       echo "     ${CYAN}${p}${RESET}"
     done
-    echo "  3. Open your terminal in the vault directory:"
-    echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
-    echo "  4. Start your AI assistant:"
-    echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
-    echo "  5. Run the onboarding command:"
-    echo "     ${CYAN}/onboarding${RESET}"
-  else
-    echo "  2. Open your terminal in the vault directory:"
-    echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
-    echo "  3. Start your AI assistant:"
-    echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
-    echo "  4. Run the onboarding command:"
-    echo "     ${CYAN}/onboarding${RESET}"
+    step=$((step + 1))
   fi
+  echo "  ${step}. Open your terminal in the vault directory:"
+  echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
+  step=$((step + 1))
+  echo "  ${step}. Start your AI assistant:"
+  echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
+  step=$((step + 1))
+  echo "  ${step}. Run the onboarding command:"
+  echo "     ${CYAN}/onboarding${RESET}"
   echo "     (Onboarding will ask you to choose a vault organization method"
   echo "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   echo

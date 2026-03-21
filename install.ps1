@@ -65,7 +65,15 @@ function Install-Plugins {
 
   if (-not (Test-Path $pluginsJson)) { return ,@($failedPlugins) }
 
-  $pluginIds = Get-Content $pluginsJson -Raw | ConvertFrom-Json
+  # Wrap ConvertFrom-Json in try/catch: malformed JSON (e.g. sync-conflict markers) throws
+  # a terminating error and must not propagate to the outer Main catch as a fatal abort.
+  try {
+    $pluginIds = Get-Content $pluginsJson -Raw | ConvertFrom-Json -ErrorAction Stop
+  } catch {
+    Write-Host "  ⚠️  community-plugins.json could not be parsed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  Skipping plugin installation." -ForegroundColor Yellow
+    return ,@($failedPlugins)
+  }
   # Validate that the file is a flat array of strings (guards against sync-conflict corruption)
   if (-not $pluginIds -or $pluginIds.Count -eq 0) { return ,@($failedPlugins) }
   if ($pluginIds | Where-Object { $_ -isnot [string] }) {
@@ -88,12 +96,32 @@ function Install-Plugins {
   }
   Write-Done "Registry fetched"
 
+  # Wrap New-Item in try/catch: a filesystem error here must not propagate to the outer
+  # Main catch as a fatal abort — plugin installation is a non-fatal step.
   $pluginsDir = Join-Path $VaultPath ".obsidian\plugins"
-  if (-not (Test-Path $pluginsDir)) {
-    New-Item -ItemType Directory -Path $pluginsDir -Force | Out-Null
+  try {
+    if (-not (Test-Path $pluginsDir)) {
+      New-Item -ItemType Directory -Path $pluginsDir -Force -ErrorAction Stop | Out-Null
+    }
+  } catch {
+    Write-Host "  ⚠️  Could not create plugins directory '$pluginsDir': $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  All plugins will need to be installed manually." -ForegroundColor Yellow
+    return ,@($pluginIds)
   }
 
+  # GitHub REST API: 60 req/hr unauthenticated (shared per IP) — 5,000/hr with GITHUB_TOKEN.
+  # Build headers once; GITHUB_TOKEN does not change during the loop.
+  $ghHeaders = @{ Accept = "application/vnd.github.v3+json" }
+  if ($env:GITHUB_TOKEN) { $ghHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
+
   foreach ($pluginId in $pluginIds) {
+    # Validate plugin ID: reject IDs with path-traversal or shell-unsafe characters
+    if ($pluginId -notmatch '^[a-zA-Z0-9_-]+$') {
+      Write-Host "  ⚠️  skipped invalid plugin ID: '$pluginId'" -ForegroundColor Yellow
+      $failedPlugins += $pluginId
+      continue
+    }
+
     # Find matching entry in the registry
     $entry = $registry | Where-Object { $_.id -eq $pluginId } | Select-Object -First 1
     if (-not $entry -or -not $entry.repo) {
@@ -105,11 +133,6 @@ function Install-Plugins {
 
     Write-Step "🔌" "Installing $pluginId..."
 
-    # GitHub REST API: 60 req/hr unauthenticated (shared per IP). Each plugin consumes
-    # one request. Set GITHUB_TOKEN env var to raise the limit to 5,000/hr.
-    $ghHeaders = @{ Accept = "application/vnd.github.v3+json" }
-    if ($env:GITHUB_TOKEN) { $ghHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
-
     try {
       $release = Invoke-RestMethod `
         -Uri "https://api.github.com/repos/$repo/releases/latest" `
@@ -117,9 +140,11 @@ function Install-Plugins {
         -ErrorAction Stop
       $tag = $release.tag_name
     } catch {
-      # Check for GitHub rate limit specifically
-      if ($_.Exception.Message -match '403' -or ($_.Exception.Response -and $_.Exception.Response.StatusCode -eq 403)) {
-        Write-Host "  ❌ rate-limited $pluginId (GitHub API rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)" -ForegroundColor Red
+      # HTTP 403 can mean rate limit or access denied (private repo, bad token scope) —
+      # check status code via the response object to avoid matching "403" in unrelated messages
+      $statusCode = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+      if ($statusCode -eq 403) {
+        Write-Host "  ❌ forbidden $pluginId (HTTP 403 — rate limited or access denied; check GITHUB_TOKEN)" -ForegroundColor Red
       } else {
         Write-Host "  ❌ failed $pluginId (could not get release tag: $($_.Exception.Message))" -ForegroundColor Red
       }
@@ -133,8 +158,15 @@ function Install-Plugins {
       continue
     }
 
+    # Wrap New-Item per-plugin in try/catch to preserve non-fatal contract
     $pluginDir = Join-Path $pluginsDir $pluginId
-    New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
+    try {
+      New-Item -ItemType Directory -Path $pluginDir -Force -ErrorAction Stop | Out-Null
+    } catch {
+      Write-Host "  ❌ failed $pluginId (could not create plugin directory: $($_.Exception.Message))" -ForegroundColor Red
+      $failedPlugins += $pluginId
+      continue
+    }
 
     $baseUrl = "https://github.com/$repo/releases/download/$tag"
     $ok = $true
@@ -151,24 +183,23 @@ function Install-Plugins {
     }
 
     # styles.css is optional — not all plugins ship it.
-    # PS5 Invoke-WebRequest does not throw on HTTP 4xx — check StatusCode explicitly.
-    # Network/TLS errors do throw and are warned about (not silently ignored).
+    # PS5 Invoke-WebRequest does not throw on HTTP 4xx — check StatusCode explicitly to
+    # avoid keeping a 404 HTML error page on disk as a "valid" CSS file.
     if ($ok) {
       $cssPath = Join-Path $pluginDir "styles.css"
       try {
         $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -ErrorAction Stop
-        # Remove if HTTP error or empty (handles PS5 which writes 404 HTML body to disk)
-        if ($cssResponse.StatusCode -ne 200 -or (Get-Item $cssPath -ErrorAction SilentlyContinue).Length -eq 0) {
-          Remove-Item $cssPath -Force -ErrorAction SilentlyContinue
+        # Remove if non-200 or empty (PS5 writes the 404 HTML body to disk without throwing)
+        $cssLen = try { (Get-Item $cssPath -ErrorAction Stop).Length } catch { 0 }
+        if ($cssResponse.StatusCode -ne 200 -or $cssLen -eq 0) {
+          try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
+            Write-Host "  ⚠️  Could not remove bad styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+          }
         }
-      } catch [System.Net.WebException] {
-        # Network-level failure (DNS, TLS, timeout) — not a missing optional file; warn the user
-        Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
-        Remove-Item $cssPath -Force -ErrorAction SilentlyContinue
       } catch {
-        # Any other unexpected error — warn but don't fail the plugin
-        Write-Host "  ⚠️  Unexpected error downloading styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
-        Remove-Item $cssPath -Force -ErrorAction SilentlyContinue
+        # Network/TLS/unexpected errors — warn but don't fail the plugin
+        Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
+        try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {}
       }
     }
 
@@ -403,21 +434,19 @@ function Main {
   Write-Host "Next steps:" -ForegroundColor White
   Write-Host "  1. Open Obsidian"
   Write-Host "     File -> Open Folder as Vault -> select: $vaultPath"
+  $step = 2
   if ($script:FailedPlugins.Count -gt 0) {
-    Write-Host "  2. Install missing plugins manually (Settings -> Community plugins -> Browse):" -ForegroundColor White
+    Write-Host "  $step. Install missing plugins manually (Settings -> Community plugins -> Browse):" -ForegroundColor White
     foreach ($p in $script:FailedPlugins) {
       Write-Host "     $p" -ForegroundColor Cyan
     }
-    Write-Host "  3. Open your terminal in the vault directory and run your AI agent:"
-    Write-Host "     claude  or  gemini" -ForegroundColor Cyan
-    Write-Host "  4. Run the onboarding command:"
-    Write-Host "     /onboarding" -ForegroundColor Cyan
-  } else {
-    Write-Host "  2. Open your terminal in the vault directory and run your AI agent:"
-    Write-Host "     claude  or  gemini" -ForegroundColor Cyan
-    Write-Host "  3. Run the onboarding command:"
-    Write-Host "     /onboarding" -ForegroundColor Cyan
+    $step++
   }
+  Write-Host "  $step. Open your terminal in the vault directory and run your AI agent:"
+  Write-Host "     claude  or  gemini" -ForegroundColor Cyan
+  $step++
+  Write-Host "  $step. Run the onboarding command:"
+  Write-Host "     /onboarding" -ForegroundColor Cyan
   Write-Host "     (Onboarding will ask you to choose a vault organization method"
   Write-Host "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   Write-Host
