@@ -196,12 +196,12 @@ prompt_with_default() {
 # install_plugins <vault_path>
 # Downloads the latest release of each plugin listed in .obsidian/community-plugins.json.
 # Uses only curl (already a required dependency) and POSIX tools (grep, sed, mkdir).
-# Non-fatal: warns on failure and returns a list of plugins to install manually.
+# Non-fatal: warns on failure and populates the global FAILED_PLUGINS array with
+# any plugin IDs that could not be installed.
 install_plugins() {
   local vault="$1"
   local plugins_json="$vault/.obsidian/community-plugins.json"
   local registry_url="https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
-  local registry_file
   local failed_plugins=()
 
   # Read plugin IDs from the flat JSON array (no jq needed — one string per line after grep)
@@ -216,14 +216,19 @@ install_plugins() {
 
   print_header "Installing community plugins..."
 
-  # Fetch the Obsidian community plugin registry once
-  registry_file=$(mktemp)
+  # Fetch the Obsidian community plugin registry once.
+  # Reuse _INSTALL_TMPDIR (cleaned by the EXIT trap) to avoid a separate tempfile leak.
+  local registry_file="$_INSTALL_TMPDIR/plugin-registry.json"
   spinner_start "Fetching plugin registry..."
   if ! curl -fsSL "$registry_url" -o "$registry_file" 2>/dev/null; then
     spinner_stop "$ICON_FAIL" ""
-    print_info "Could not reach the plugin registry. Plugins will need to be installed manually."
-    rm -f "$registry_file"
-    _print_manual_plugin_steps
+    print_info "Could not reach the plugin registry. All plugins will need to be installed manually."
+    # Populate FAILED_PLUGINS so the success message shows manual install instructions.
+    while IFS= read -r _pid; do
+      [ -z "$_pid" ] && continue
+      failed_plugins+=("$_pid")
+    done <<< "$plugin_ids"
+    FAILED_PLUGINS=("${failed_plugins[@]}")
     return 0
   fi
   spinner_stop "$ICON_OK" "Registry fetched"
@@ -235,10 +240,11 @@ install_plugins() {
     [ -z "$plugin_id" ] && continue
 
     # Extract the GitHub repo for this plugin ID from the registry.
-    # Registry format: {"id": "plugin-id", "repo": "owner/repo", ...}
-    # grep -A5 finds the object block starting with the id line; second grep extracts repo.
+    # grep -F (fixed-string) prevents plugin IDs with special characters from
+    # matching unintended entries. grep -A10 assumes "repo" appears within 10 lines
+    # of the "id" field — valid for the current Obsidian registry format.
     local repo
-    repo=$(grep -A5 "\"id\": *\"${plugin_id}\"" "$registry_file" \
+    repo=$(grep -F "\"id\": \"${plugin_id}\"" "$registry_file" -A10 \
            | grep '"repo"' \
            | sed 's/.*"repo": *"\([^"]*\)".*/\1/' \
            | head -1)
@@ -251,12 +257,19 @@ install_plugins() {
 
     spinner_start "  Installing ${plugin_id}..."
 
-    # Get the latest release tag from GitHub API (no auth needed for 60 req/hr)
-    local release_json tag
+    # GitHub REST API: 60 req/hr unauthenticated (shared per IP). Each plugin consumes
+    # one request. Set GITHUB_TOKEN env var to raise the limit to 5,000/hr.
+    local curl_auth_args=()
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+      curl_auth_args=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    fi
+    local release_json
     release_json=$(curl -fsSL \
       -H "Accept: application/vnd.github.v3+json" \
+      "${curl_auth_args[@]}" \
       "https://api.github.com/repos/${repo}/releases/latest" 2>/dev/null) || release_json=""
 
+    local tag
     tag=$(printf '%s' "$release_json" \
           | grep '"tag_name"' \
           | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' \
@@ -264,7 +277,12 @@ install_plugins() {
 
     if [ -z "$tag" ]; then
       spinner_stop "$ICON_FAIL" ""
-      print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag)"
+      # Distinguish GitHub rate limit (actionable) from other failures
+      if printf '%s' "$release_json" | grep -q '"API rate limit exceeded"'; then
+        print_info "  ${RED}rate-limited${RESET} ${plugin_id} (GitHub API rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)"
+      else
+        print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag)"
+      fi
       failed_plugins+=("$plugin_id")
       continue
     fi
@@ -275,29 +293,38 @@ install_plugins() {
     local base_url="https://github.com/${repo}/releases/download/${tag}"
     local ok=true
 
-    # main.js and manifest.json are required
+    # main.js and manifest.json are required; short-circuit on first failure
     if ! curl -fsSL "${base_url}/main.js" -o "$plugin_dir/main.js" 2>/dev/null; then
       ok=false
     fi
-    if ! curl -fsSL "${base_url}/manifest.json" -o "$plugin_dir/manifest.json" 2>/dev/null; then
+    if [ "$ok" = true ] && ! curl -fsSL "${base_url}/manifest.json" -o "$plugin_dir/manifest.json" 2>/dev/null; then
       ok=false
     fi
-    # styles.css is optional — not all plugins ship it
-    curl -fsSL "${base_url}/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || true
-    # Remove empty styles.css if nothing was downloaded
-    [ -s "$plugin_dir/styles.css" ] || rm -f "$plugin_dir/styles.css"
+
+    # styles.css is optional — not all plugins ship it.
+    # curl exit code 22 = HTTP error (404 Not Found) — expected and silent.
+    # Any other non-zero exit (disk full, TLS, DNS) is unexpected and warrants a warning.
+    if [ "$ok" = true ]; then
+      local css_exit=0
+      curl -fsSL "${base_url}/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || css_exit=$?
+      if [ "$css_exit" -ne 0 ] && [ "$css_exit" -ne 22 ]; then
+        print_info "  ${YELLOW}warning${RESET} Unexpected error downloading styles.css for ${plugin_id} (curl exit ${css_exit})"
+      fi
+      # Remove styles.css if absent or zero bytes (curl -f suppresses 404 bodies, leaving an empty file)
+      [ -s "$plugin_dir/styles.css" ] || rm -f "$plugin_dir/styles.css"
+    fi
 
     if [ "$ok" = true ]; then
       spinner_stop "$ICON_OK" "${plugin_id}"
     else
       spinner_stop "$ICON_FAIL" ""
-      rm -rf "$plugin_dir"
+      if ! rm -rf "$plugin_dir" 2>/dev/null; then
+        print_info "  ${YELLOW}warning${RESET} Could not remove partial directory '$plugin_dir'. Remove it manually before opening Obsidian."
+      fi
       print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (download error)"
       failed_plugins+=("$plugin_id")
     fi
   done <<< "$plugin_ids"
-
-  rm -f "$registry_file"
 
   if [ ${#failed_plugins[@]} -gt 0 ]; then
     echo
@@ -308,14 +335,8 @@ install_plugins() {
     print_info "Install them manually: Settings → Community plugins → Browse"
   fi
 
-  # Export for use in the success message
+  # Populate global for use in the success message
   FAILED_PLUGINS=("${failed_plugins[@]}")
-}
-
-_print_manual_plugin_steps() {
-  echo "  2. Install community plugins (Settings → Community plugins → Browse):"
-  echo "     ${CYAN}Tasks  Dataview  Templater  Calendar${RESET}"
-  echo "     ${CYAN}Tag Wrangler  QuickAdd  Obsidian Git  Terminal${RESET}"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────

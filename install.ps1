@@ -53,7 +53,8 @@ function Prompt-WithDefault {
 # ─── Plugin installer ─────────────────────────────────────────────────────────
 # Install-Plugins <vaultPath>
 # Downloads the latest release of each plugin listed in .obsidian/community-plugins.json.
-# Uses only PowerShell 5+ built-ins: Invoke-RestMethod, ConvertFrom-Json, Invoke-WebRequest.
+# No external dependencies — uses only PowerShell 5+ built-in cmdlets. Does not
+# require curl, jq, or additional modules.
 # Non-fatal: returns a list of plugin IDs that failed (empty array on full success).
 function Install-Plugins {
   param([string]$VaultPath)
@@ -62,10 +63,15 @@ function Install-Plugins {
   $registryUrl = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
   $failedPlugins = @()
 
-  if (-not (Test-Path $pluginsJson)) { return $failedPlugins }
+  if (-not (Test-Path $pluginsJson)) { return ,@($failedPlugins) }
 
   $pluginIds = Get-Content $pluginsJson -Raw | ConvertFrom-Json
-  if (-not $pluginIds -or $pluginIds.Count -eq 0) { return $failedPlugins }
+  # Validate that the file is a flat array of strings (guards against sync-conflict corruption)
+  if (-not $pluginIds -or $pluginIds.Count -eq 0) { return ,@($failedPlugins) }
+  if ($pluginIds | Where-Object { $_ -isnot [string] }) {
+    Write-Host "  ⚠️  community-plugins.json is malformed (expected array of strings). Skipping plugin installation." -ForegroundColor Yellow
+    return ,@($failedPlugins)
+  }
 
   Write-Host
   Write-Host "  Installing community plugins..." -ForegroundColor Cyan
@@ -76,8 +82,9 @@ function Install-Plugins {
   try {
     $registry = Invoke-RestMethod -Uri $registryUrl -ErrorAction Stop
   } catch {
-    Write-Host "  ⚠️  Could not reach plugin registry. Plugins will need to be installed manually." -ForegroundColor Yellow
-    return $pluginIds  # all plugins are "failed"
+    Write-Host "  ⚠️  Plugin registry unavailable: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  All plugins will need to be installed manually." -ForegroundColor Yellow
+    return ,@($pluginIds)  # all plugins are "failed"
   }
   Write-Done "Registry fetched"
 
@@ -98,15 +105,24 @@ function Install-Plugins {
 
     Write-Step "🔌" "Installing $pluginId..."
 
-    # Get latest release tag
+    # GitHub REST API: 60 req/hr unauthenticated (shared per IP). Each plugin consumes
+    # one request. Set GITHUB_TOKEN env var to raise the limit to 5,000/hr.
+    $ghHeaders = @{ Accept = "application/vnd.github.v3+json" }
+    if ($env:GITHUB_TOKEN) { $ghHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
+
     try {
       $release = Invoke-RestMethod `
         -Uri "https://api.github.com/repos/$repo/releases/latest" `
-        -Headers @{ Accept = "application/vnd.github.v3+json" } `
+        -Headers $ghHeaders `
         -ErrorAction Stop
       $tag = $release.tag_name
     } catch {
-      Write-Host "  ❌ failed $pluginId (could not get release tag)" -ForegroundColor Red
+      # Check for GitHub rate limit specifically
+      if ($_.Exception.Message -match '403' -or ($_.Exception.Response -and $_.Exception.Response.StatusCode -eq 403)) {
+        Write-Host "  ❌ rate-limited $pluginId (GitHub API rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)" -ForegroundColor Red
+      } else {
+        Write-Host "  ❌ failed $pluginId (could not get release tag: $($_.Exception.Message))" -ForegroundColor Red
+      }
       $failedPlugins += $pluginId
       continue
     }
@@ -123,25 +139,36 @@ function Install-Plugins {
     $baseUrl = "https://github.com/$repo/releases/download/$tag"
     $ok = $true
 
-    # main.js and manifest.json are required
+    # main.js and manifest.json are required; short-circuit on first failure
     foreach ($asset in @("main.js", "manifest.json")) {
+      if (-not $ok) { break }
       try {
         Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile (Join-Path $pluginDir $asset) -ErrorAction Stop | Out-Null
       } catch {
+        Write-Host "  ⚠️  $pluginId/$asset failed: $($_.Exception.Message)" -ForegroundColor Yellow
         $ok = $false
-        break
       }
     }
 
-    # styles.css is optional
+    # styles.css is optional — not all plugins ship it.
+    # PS5 Invoke-WebRequest does not throw on HTTP 4xx — check StatusCode explicitly.
+    # Network/TLS errors do throw and are warned about (not silently ignored).
     if ($ok) {
+      $cssPath = Join-Path $pluginDir "styles.css"
       try {
-        $cssPath = Join-Path $pluginDir "styles.css"
-        Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -ErrorAction Stop | Out-Null
-        # Remove if it downloaded as empty
-        if ((Get-Item $cssPath).Length -eq 0) { Remove-Item $cssPath -Force }
+        $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -ErrorAction Stop
+        # Remove if HTTP error or empty (handles PS5 which writes 404 HTML body to disk)
+        if ($cssResponse.StatusCode -ne 200 -or (Get-Item $cssPath -ErrorAction SilentlyContinue).Length -eq 0) {
+          Remove-Item $cssPath -Force -ErrorAction SilentlyContinue
+        }
+      } catch [System.Net.WebException] {
+        # Network-level failure (DNS, TLS, timeout) — not a missing optional file; warn the user
+        Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
+        Remove-Item $cssPath -Force -ErrorAction SilentlyContinue
       } catch {
-        # Optional asset — ignore failure
+        # Any other unexpected error — warn but don't fail the plugin
+        Write-Host "  ⚠️  Unexpected error downloading styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
+        Remove-Item $cssPath -Force -ErrorAction SilentlyContinue
       }
     }
 
@@ -149,7 +176,11 @@ function Install-Plugins {
       Write-Done "$pluginId"
     } else {
       Write-Host "  ❌ failed $pluginId (download error)" -ForegroundColor Red
-      Remove-Item -Path $pluginDir -Recurse -Force -ErrorAction SilentlyContinue
+      try {
+        Remove-Item -Path $pluginDir -Recurse -Force -ErrorAction Stop
+      } catch {
+        Write-Host "  ⚠️  Could not remove partial directory '$pluginDir'. Remove it manually before opening Obsidian." -ForegroundColor Yellow
+      }
       $failedPlugins += $pluginId
     }
   }
@@ -163,7 +194,7 @@ function Install-Plugins {
     Write-Host "  Install them manually: Settings -> Community plugins -> Browse" -ForegroundColor Yellow
   }
 
-  return $failedPlugins
+  return ,@($failedPlugins)
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -310,7 +341,7 @@ function Main {
     }
 
     # ── Step 4b: Install community plugins ──────────────────────────────────
-    $script:FailedPlugins = Install-Plugins $vaultPath
+    $script:FailedPlugins = @(Install-Plugins $vaultPath)
 
     # ── Step 5: Initialize git ──────────────────────────────────────────────
     Write-Step "🧠" "Initializing git repository..."
