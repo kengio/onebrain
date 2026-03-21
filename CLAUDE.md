@@ -89,7 +89,7 @@ When a user invokes a command, read the corresponding SKILL.md and follow it.
 Session start and end behavior is handled by hooks in `.claude/plugins/onebrain/hooks/hooks.json`.
 
 - **SessionStart hook**: Loads MEMORY.md, checks inbox, reads recent memory log, greets user by name
-- **Stop hook**: Auto-saves session summary to memory-log if 3+ exchanges occurred and `/ob:wrapup` wasn't already run
+- **SessionEnd hook**: Auto-saves session summary to memory-log if 3+ exchanges occurred and `/ob:wrapup` wasn't already run
 
 Users can run `/ob:wrapup` manually at any time for a visible summary.
 

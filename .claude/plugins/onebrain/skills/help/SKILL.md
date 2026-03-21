@@ -13,16 +13,7 @@ triggers:
 
 When this skill is invoked, present all available OneBrain commands to the user.
 
-## Step 1: Read Available Skills
-
-Read `.claude/plugins/onebrain/plugin.json` to get the list of registered skills.
-
-For each skill path in the `"skills"` array, read the corresponding `SKILL.md` file at:
-`.claude/plugins/onebrain/{skill-path}/SKILL.md`
-
-Extract from each file's frontmatter: `name`, `description`, and the first trigger (primary command).
-
-## Step 2: Present the Command Table
+## Step 1: Present the Command Table
 
 Display a formatted table with all available commands:
 
@@ -42,7 +33,7 @@ Display a formatted table with all available commands:
 | `/ob:update` | Update OneBrain system files from GitHub | When a new version is available |
 | `/ob:help` | List all available commands | You're already here! |
 
-## Step 3: Add a Usage Note
+## Step 2: Add a Usage Note
 
 After the table, add:
 

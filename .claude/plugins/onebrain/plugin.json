@@ -18,7 +18,7 @@
     "skills/update",
     "skills/help"
   ],
-  "hooks": "hooks/hooks.json",
+  "hooks": "./hooks/hooks.json",
   "agents": [
     "agents/knowledge-linker.md"
   ]
