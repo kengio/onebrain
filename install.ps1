@@ -59,7 +59,12 @@ function Main {
   if (-not (Test-Path $installLocation)) {
     $confirm = Read-Host "  ? Directory '$installLocation' does not exist. Create it? [Y/n]"
     if ($confirm -eq '' -or $confirm -match '^[Yy]') {
-      New-Item -ItemType Directory -Path $installLocation -Force | Out-Null
+      try {
+        New-Item -ItemType Directory -Path $installLocation -Force | Out-Null
+      } catch {
+        Print-Error "Could not create '$installLocation'. Check permissions and try again."
+        exit 1
+      }
       Print-Success "Created $installLocation"
     } else {
       Print-Error "Aborted. Please choose an existing directory."
@@ -90,7 +95,12 @@ function Main {
   # ── Step 3: Download and extract ────────────────────────────────────────────
   $repoUrl = "https://github.com/kengio/onebrain/archive/refs/heads/main.zip"
   $tmpDir  = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
-  New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+  try {
+    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+  } catch {
+    Print-Error "Could not create a temporary directory. Check that your system temp folder is writeable."
+    exit 1
+  }
 
   try {
     Write-Step "📦" "Downloading OneBrain..."
@@ -106,7 +116,12 @@ function Main {
     Write-Done "Downloaded"
 
     Write-Step "🔧" "Extracting..."
-    Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
+    try {
+      Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
+    } catch {
+      Print-Error "Extraction failed. The archive may be corrupted or your disk may be full."
+      exit 1
+    }
     Write-Done "Extracted"
 
     # GitHub zip extracts to a directory like onebrain-main/
@@ -117,28 +132,68 @@ function Main {
       exit 1
     }
 
-    Move-Item -Path $extractedDir.FullName -Destination $vaultPath
+    try {
+      Move-Item -Path $extractedDir.FullName -Destination $vaultPath
+    } catch {
+      Print-Error "Failed to move the extracted vault to '$vaultPath'."
+      Print-Error "Check that '$installLocation' is writeable and has enough space."
+      exit 1
+    }
 
     # ── Step 4: Clean up installed vault ────────────────────────────────────
     # Remove install scripts — they shouldn't live in the vault
-    Remove-Item -Path (Join-Path $vaultPath "install.sh")  -ErrorAction SilentlyContinue
-    Remove-Item -Path (Join-Path $vaultPath "install.ps1") -ErrorAction SilentlyContinue
+    try {
+      Remove-Item -Path (Join-Path $vaultPath "install.sh")  -Force -ErrorAction Stop
+      Remove-Item -Path (Join-Path $vaultPath "install.ps1") -Force -ErrorAction Stop
+    } catch {
+      Print-Error "Could not remove install scripts from '$vaultPath'. Check directory permissions."
+      exit 1
+    }
 
     # Remove any .git directory if included in the archive
     $dotGit = Join-Path $vaultPath ".git"
     if (Test-Path $dotGit) {
-      Remove-Item -Path $dotGit -Recurse -Force
+      try {
+        Remove-Item -Path $dotGit -Recurse -Force -ErrorAction Stop
+      } catch {
+        Print-Error "Could not remove the bundled .git directory from '$vaultPath'."
+        Print-Error "Check for locked files and remove '$dotGit' manually, then re-run:"
+        Print-Error "  git -C '$vaultPath' init; git -C '$vaultPath' add -A; git -C '$vaultPath' commit -m 'Initial OneBrain vault setup'"
+        exit 1
+      }
     }
 
     # ── Step 5: Initialize git ──────────────────────────────────────────────
     Write-Step "🧠" "Initializing git repository..."
     Push-Location $vaultPath
-    git init -q
-    git add -A
-    git commit -q -m "Initial OneBrain vault setup"
-    Pop-Location
+    try {
+      git init -q
+      if ($LASTEXITCODE -ne 0) {
+        Print-Error "Failed to initialize a git repository in '$vaultPath'."
+        exit 1
+      }
+      git add -A
+      if ($LASTEXITCODE -ne 0) {
+        Print-Error "Failed to stage files for the initial git commit in '$vaultPath'."
+        Print-Error "Check for a stale .git/index.lock file or permission issues."
+        exit 1
+      }
+      git commit -q -m "Initial OneBrain vault setup"
+      if ($LASTEXITCODE -ne 0) {
+        Print-Error "Failed to create the initial git commit."
+        Print-Error "Git may need a name and email configured. Run:"
+        Print-Error "  git config --global user.name 'Your Name'"
+        Print-Error "  git config --global user.email 'you@example.com'"
+        exit 1
+      }
+    } finally {
+      Pop-Location
+    }
     Write-Done "Git repository initialized"
 
+  } catch {
+    Print-Error "Installation failed: $($_.Exception.Message)"
+    exit 1
   } finally {
     Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
   }
@@ -166,7 +221,11 @@ function Main {
   # Offer to open the vault folder in Explorer
   $open = Read-Host "  ? Open vault folder in Explorer? [Y/n]"
   if ($open -eq '' -or $open -match '^[Yy]') {
-    Start-Process explorer.exe $vaultPath
+    try {
+      Start-Process explorer.exe $vaultPath
+    } catch {
+      Print-Info "Could not open Explorer automatically. Your vault is at: $vaultPath"
+    }
   }
 }
 

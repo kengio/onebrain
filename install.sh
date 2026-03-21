@@ -74,7 +74,7 @@ spinner_stop() {
     wait "$SPINNER_PID" 2>/dev/null || true
     SPINNER_PID=""
   fi
-  printf "\r  %s %s\n" "$emoji" "$msg" >&2
+  printf "\r\033[K  %s %s\n" "$emoji" "$msg" >&2
 }
 
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
@@ -82,8 +82,13 @@ cleanup() {
   if [ -n "${SPINNER_PID:-}" ]; then
     kill "$SPINNER_PID" 2>/dev/null || true
     wait "$SPINNER_PID" 2>/dev/null || true
+    SPINNER_PID=""
+    printf "\r\033[K" >&2
   fi
-  [ -n "${_INSTALL_TMPDIR:-}" ] && rm -rf "$_INSTALL_TMPDIR"
+  if [ -n "${_INSTALL_TMPDIR:-}" ]; then
+    rm -rf "$_INSTALL_TMPDIR"
+    _INSTALL_TMPDIR=""
+  fi
 }
 
 # ─── Dependency check ─────────────────────────────────────────────────────────
@@ -206,8 +211,8 @@ main() {
 
   spinner_start "$ICON_DL Downloading OneBrain..."
   if ! curl -fsSL "$repo_url" -o "$_INSTALL_TMPDIR/onebrain.tar.gz"; then
-    spinner_stop "$ICON_FAIL" "Download failed."
-    print_error "Check your internet connection and try again."
+    spinner_stop "$ICON_FAIL" ""
+    print_error "Download failed. Check your internet connection and try again."
     exit 1
   fi
   spinner_stop "$ICON_OK" "Downloaded"
@@ -222,15 +227,16 @@ main() {
 
   spinner_start "$ICON_EXTRACT Extracting..."
   if ! tar xzf "$_INSTALL_TMPDIR/onebrain.tar.gz" -C "$_INSTALL_TMPDIR"; then
-    spinner_stop "$ICON_FAIL" "Extraction failed."
-    print_error "The archive may be corrupted or your disk may be full."
+    spinner_stop "$ICON_FAIL" ""
+    print_error "Extraction failed. The archive may be corrupted or your disk may be full."
     exit 1
   fi
   spinner_stop "$ICON_OK" "Extracted"
 
   # GitHub tarballs extract to a directory like onebrain-main/
+  # The || true tolerates SIGPIPE (exit 141) from head -1 closing the pipe early.
   local extracted_dir
-  extracted_dir=$(find "$_INSTALL_TMPDIR" -maxdepth 1 -mindepth 1 -type d | head -1 || true)
+  extracted_dir=$(find "$_INSTALL_TMPDIR" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1) || true
 
   if [ -z "$extracted_dir" ]; then
     print_error "Extraction produced no directory. The archive may be malformed or extraction failed."
@@ -245,7 +251,10 @@ main() {
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
   # Remove install scripts from the vault — they shouldn't live there
-  rm -f "$vault_path/install.sh" "$vault_path/install.ps1" || true
+  if ! rm -f "$vault_path/install.sh" "$vault_path/install.ps1"; then
+    print_error "Could not remove install scripts from '$vault_path'. Check directory permissions."
+    exit 1
+  fi
 
   # Remove any .git directory if somehow included in the tarball
   if ! rm -rf "$vault_path/.git"; then
@@ -258,23 +267,23 @@ main() {
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   spinner_start "$ICON_GIT Initializing git repository..."
   if ! cd "$vault_path"; then
-    spinner_stop "$ICON_FAIL" "Could not enter vault directory."
+    spinner_stop "$ICON_FAIL" ""
     print_error "Could not enter vault directory '$vault_path'. Installation may be incomplete."
     exit 1
   fi
   if ! git init -q; then
-    spinner_stop "$ICON_FAIL" "git init failed."
+    spinner_stop "$ICON_FAIL" ""
     print_error "Failed to initialize a git repository in '$vault_path'."
     exit 1
   fi
   if ! git add -A; then
-    spinner_stop "$ICON_FAIL" "git add failed."
+    spinner_stop "$ICON_FAIL" ""
     print_error "Failed to stage files for the initial git commit in '$vault_path'."
     print_error "Check for a stale .git/index.lock file or permission issues."
     exit 1
   fi
   if ! git commit -q -m "Initial OneBrain vault setup"; then
-    spinner_stop "$ICON_FAIL" "git commit failed."
+    spinner_stop "$ICON_FAIL" ""
     print_error "Failed to create the initial git commit."
     print_error "Git may need a name and email configured. Run:"
     print_error "  git config --global user.name  'Your Name'"
