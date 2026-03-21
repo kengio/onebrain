@@ -189,7 +189,7 @@ function Install-Plugins {
       $cssPath = Join-Path $pluginDir "styles.css"
       try {
         $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -ErrorAction Stop
-        # Remove if non-200 or empty (PS5 writes the 404 HTML body to disk without throwing)
+        # Defensive: remove if non-200 or empty (guards against zero-byte writes on network drop)
         $cssLen = try { (Get-Item $cssPath -ErrorAction Stop).Length } catch { 0 }
         if ($cssResponse.StatusCode -ne 200 -or $cssLen -eq 0) {
           try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
@@ -199,7 +199,9 @@ function Install-Plugins {
       } catch {
         # Network/TLS/unexpected errors — warn but don't fail the plugin
         Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
-        try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {}
+        try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
+          Write-Host "  ⚠️  Could not remove partial styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
       }
     }
 
@@ -281,7 +283,7 @@ function Main {
   $repoUrl = "https://github.com/kengio/onebrain/archive/refs/heads/main.zip"
   $tmpDir  = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
   try {
-    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $tmpDir -Force -ErrorAction Stop | Out-Null
   } catch {
     Print-Error "Could not create a temporary directory. Check that your system temp folder is writeable."
     exit 1
@@ -455,7 +457,7 @@ function Main {
   $open = Read-Host "  ? Open vault folder in Explorer? [Y/n]"
   if ($open -eq '' -or $open -match '^[Yy]') {
     try {
-      Start-Process explorer.exe $vaultPath
+      Start-Process explorer.exe -ArgumentList $vaultPath
     } catch {
       Print-Info "Could not open Explorer automatically. Your vault is at: $vaultPath"
     }
