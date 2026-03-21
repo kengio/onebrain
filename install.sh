@@ -39,7 +39,7 @@ prompt_with_default() {
   local default="$2"
   local answer
   print_prompt "$question [${default}]:"
-  if ! read -r answer; then
+  if ! read -r answer <&"$TTY_FD"; then
     echo >&2
     print_error "No input received (EOF). Aborted."
     exit 1
@@ -49,18 +49,20 @@ prompt_with_default() {
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 main() {
-  # ── TTY check: when piped (curl | bash), stdin is the pipe not the terminal.
-  # ── Probe /dev/tty for readability first; if open-able, redirect stdin so
-  # ── all prompts reach the user's terminal. Two distinct exit paths:
+  # ── TTY check: when piped (curl | bash), stdin (fd 0) is the pipe — not the
+  # ── terminal. Open /dev/tty as fd 3 so prompts reach the user without
+  # ── replacing bash's own command source (which would cause a hang after the
+  # ── script finishes). TTY_FD=0 is the default for direct invocation.
+  # ── Two exit paths:
   # ──   (1) /dev/tty not readable  → exits with download instructions
-  # ──   (2) /dev/tty readable but exec fails (rare) → exits with instructions
-  # ── Uses if-form for exec so set -e doesn't swallow the error handler.
+  # ──   (2) /dev/tty readable but open fails (rare) → exits with instructions
+  TTY_FD=0
   if [ ! -t 0 ]; then
     if { true < /dev/tty; } 2>/dev/null; then
-      if exec < /dev/tty; then
-        : # stdin now wired to terminal; all subsequent reads work without < /dev/tty
+      if exec 3< /dev/tty; then
+        TTY_FD=3
       else
-        print_error "Found /dev/tty but could not redirect stdin to it."
+        print_error "Found /dev/tty but could not open it for reading."
         print_error "Download and run the script directly instead:"
         print_error "  curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh -o install.sh"
         print_error "  bash install.sh"
@@ -91,7 +93,7 @@ main() {
 
   if [ ! -d "$install_location" ]; then
     print_prompt "Directory '$install_location' does not exist. Create it? [Y/n]:"
-    if ! read -r confirm; then
+    if ! read -r confirm <&"$TTY_FD"; then
       echo >&2
       print_error "No input received (EOF). Aborted."
       exit 1
