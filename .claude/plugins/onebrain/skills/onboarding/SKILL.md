@@ -232,8 +232,7 @@ In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
 - "Completed projects and archived items" → "Inactive items from any category"
 
 Also insert a line for `02-areas/` in the vault structure sections (PARA adds a folder with no OneBrain counterpart):
-- In `CLAUDE.md` and `GEMINI.md`: add `02-areas/        Ongoing responsibilities (health, finance, career)` immediately after the `01-projects/` line in the vault structure code block
-- In `AGENTS.md`: add `| \`02-areas/\` | Ongoing responsibilities (health, finance, career) |` immediately after the `| \`01-projects/\` |` table row
+- In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`: add `02-areas/        Ongoing responsibilities (health, finance, career)` immediately after the `01-projects/` line in the vault structure code block
 
 In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
 - `02-knowledge/` → `03-resources/`
@@ -248,7 +247,6 @@ In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
 - `02-knowledge/` → `02-permanent/`
 - "Raw braindumps and quick captures (process regularly)" → "Temporary capture — raw ideas and quick notes"
 - "Active projects with tasks and notes" → "Notes from sources you've read"
-- "Active projects with tasks and inline notes" → "Notes from sources you've read"
 - "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
 
 In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
