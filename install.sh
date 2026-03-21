@@ -39,7 +39,7 @@ prompt_with_default() {
   local default="$2"
   local answer
   print_prompt "$question [${default}]:"
-  read -r answer
+  read -r answer < /dev/tty
   echo "${answer:-$default}"
 }
 
@@ -51,6 +51,17 @@ main() {
 
   check_deps
 
+  # ── TTY check: required for piped installs (curl | bash) ────────────────────
+  if [ ! -t 0 ]; then
+    if [ -e /dev/tty ]; then
+      exec < /dev/tty
+    else
+      print_error "Cannot read user input (no TTY). Run the script directly instead:"
+      print_error "  bash install.sh"
+      exit 1
+    fi
+  fi
+
   # ── Step 1: Install location ────────────────────────────────────────────────
   local default_location="$HOME/Documents"
   local install_location
@@ -61,7 +72,7 @@ main() {
 
   if [ ! -d "$install_location" ]; then
     print_prompt "Directory '$install_location' does not exist. Create it? [Y/n]:"
-    read -r confirm
+    read -r confirm < /dev/tty
     confirm="${confirm:-Y}"
     if [[ "$confirm" =~ ^[Yy] ]]; then
       mkdir -p "$install_location"
