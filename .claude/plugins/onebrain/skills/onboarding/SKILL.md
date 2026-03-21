@@ -169,12 +169,13 @@ Ask:
 Wait for response. Default to OneBrain if user says "1", presses enter, or gives no clear answer.
 
 Store: `method` as one of `onebrain`, `para`, `zettelkasten`.
+Store: `method_display_name` as `OneBrain`, `PARA`, or `Zettelkasten` (the human-readable label for the chosen method).
 
 ---
 
 ## Step 9: Create Vault Folders
 
-Based on the chosen method, create the listed folders. For each, create the folder and write an empty `.gitkeep` file inside it.
+Based on the chosen method, create the listed folders. For each folder, check if it exists first; if not, create it and write an empty `.gitkeep` file inside it.
 
 **OneBrain (method = onebrain):**
 ```
@@ -204,8 +205,6 @@ Based on the chosen method, create the listed folders. For each, create the fold
 04-memory-log/
 ```
 
-For each folder: check if it exists first. If not, create it with a `.gitkeep` file.
-
 ---
 
 ## Step 10: Apply Folder Reference Replacements
@@ -223,11 +222,14 @@ Otherwise, update all folder path references across the vault's system files. Th
 **For PARA**, run:
 
 ```bash
-# Root instruction files
+# Root instruction files (folder renames + descriptive text in vault structure sections)
 sed -i '' \
-  -e 's|02-knowledge/|02-areas/|g' \
+  -e 's|02-knowledge/|03-resources/|g' \
   -e 's|03-archive/|04-archive/|g' \
   -e 's|04-memory-log/|05-memory-log/|g' \
+  -e "s|Consolidated notes, insights, and reference material|Topics of interest and reference material|g" \
+  -e "s|Completed projects and old items|Inactive items from any category|g" \
+  -e "s|Completed projects and archived items|Inactive items from any category|g" \
   CLAUDE.md GEMINI.md AGENTS.md
 
 # All plugin files (excluding onboarding and update skills)
@@ -235,24 +237,24 @@ find .claude/plugins/onebrain -name "*.md" \
   ! -path "*/skills/onboarding/SKILL.md" \
   ! -path "*/skills/update/SKILL.md" \
   -exec sed -i '' \
-    -e 's|02-knowledge/|02-areas/|g' \
+    -e 's|02-knowledge/|03-resources/|g' \
     -e 's|03-archive/|04-archive/|g' \
     -e 's|04-memory-log/|05-memory-log/|g' \
   {} +
 ```
 
-Also update descriptive text in vault structure sections:
-- "Consolidated notes, insights, and reference material" → "Ongoing responsibilities and areas of focus"
-- "Completed projects and old items" → "Inactive items from any category"
-
 **For Zettelkasten**, run:
 
 ```bash
-# Root instruction files
+# Root instruction files (folder renames + descriptive text in vault structure sections)
 sed -i '' \
   -e 's|00-inbox/|00-fleeting/|g' \
   -e 's|01-projects/|01-literature/|g' \
   -e 's|02-knowledge/|02-permanent/|g' \
+  -e "s|Raw braindumps and quick captures (process regularly)|Temporary capture — raw ideas and quick notes|g" \
+  -e "s|Active projects with tasks and notes|Notes from sources you've read|g" \
+  -e "s|Active projects with tasks and inline notes|Notes from sources you've read|g" \
+  -e "s|Consolidated notes, insights, and reference material|Atomic, linked notes — your knowledge graph|g" \
   CLAUDE.md GEMINI.md AGENTS.md
 
 # All plugin files (excluding onboarding and update skills)
@@ -266,12 +268,7 @@ find .claude/plugins/onebrain -name "*.md" \
   {} +
 ```
 
-Also update descriptive text:
-- "Raw braindumps and quick captures" → "Temporary capture — raw ideas and quick notes"
-- "Active projects with tasks and notes" → "Notes from sources you've read"
-- "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
-
-After running replacements, tell the user: "Applied [METHOD] folder structure to all system files."
+After running replacements, tell the user: "Applied [method_display_name] folder structure to all system files."
 
 ---
 
@@ -296,7 +293,7 @@ method: para
 folders:
   inbox: 00-inbox
   projects: 01-projects
-  knowledge: 02-areas
+  knowledge: 03-resources
   archive: 04-archive
   memory_log: 05-memory-log
 ```
@@ -321,7 +318,7 @@ Say:
 > You're all set, [preferred_name]! Here's what's ready:
 >
 > - Your identity and personality are saved in MEMORY.md
-> - Your vault is organized using the **[METHOD NAME]** method
+> - Your vault is organized using the **[method_display_name]** method
 > - Vault folders have been created and system files updated
 >
 > **First things to try:**

@@ -46,6 +46,8 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 - Prefer adding steps over removing them — removals can break workflows users depend on
 - Test manually: open a vault, invoke the command, follow it through
 
+> **Important:** `skills/onboarding/SKILL.md` and `skills/update/SKILL.md` are special — they must always contain the default OneBrain folder names (`00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/`) as hardcoded strings. These files are intentionally excluded from the folder-name replacements that run during onboarding and update. Changing those default names in these two files will break method customization for all users.
+
 ## Install Scripts
 
 - `install.sh` — bash, targets macOS and Linux

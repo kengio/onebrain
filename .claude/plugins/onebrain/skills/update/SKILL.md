@@ -24,7 +24,7 @@ Tell the user what will and won't be updated:
 - `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
-- `00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/` (and any custom folders) — all your notes
+- All your note folders (inbox, projects, knowledge, archive, memory log — exact names depend on your vault method; see `vault.yml`) — all your notes
 - `MEMORY.md` — your identity and session context
 - `vault.yml` — your vault method configuration
 - `.obsidian/themes/` — your chosen theme
@@ -100,7 +100,7 @@ Use the allowlist below to diff each path. Show a summary: **N modified, N new, 
 For each item in the allowlist:
 
 ```bash
-VAULT="/path/to/vault"   # current working directory
+VAULT="$(pwd)"
 
 # For files:
 diff -q "$UPSTREAM/CLAUDE.md" "$VAULT/CLAUDE.md" >/dev/null 2>&1 && echo "unchanged: CLAUDE.md" || echo "modified: CLAUDE.md"
