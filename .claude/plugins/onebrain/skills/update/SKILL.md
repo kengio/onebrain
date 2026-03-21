@@ -1,9 +1,6 @@
 ---
 name: update
 description: Update OneBrain skills, config, and plugins from GitHub — never touches your notes or data
-triggers:
-  - /ob:update
-  - ob:update
 ---
 
 # Update OneBrain

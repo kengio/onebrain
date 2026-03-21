@@ -1,10 +1,6 @@
 ---
 name: reading-notes
 description: Process a book or article into structured progressive summary notes saved to the knowledge base
-triggers:
-  - /ob:reading-notes
-  - ob:reading-notes
-  - ob:reading notes
 ---
 
 # Reading Notes

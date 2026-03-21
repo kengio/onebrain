@@ -1,9 +1,6 @@
 ---
 name: consolidate
 description: Review inbox and recent notes, synthesize and merge into the knowledge base
-triggers:
-  - /ob:consolidate
-  - ob:consolidate
 ---
 
 # Consolidate

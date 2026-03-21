@@ -1,12 +1,6 @@
 ---
 name: help
 description: List all available OneBrain commands with descriptions and use cases. Invoke when user asks what you can do, wants to see commands, or seems confused about capabilities.
-triggers:
-  - /ob:help
-  - ob:help
-  - ob:commands
-  - what can you do
-  - what commands are available
 ---
 
 # /ob:help — Available Commands
@@ -40,6 +34,6 @@ After the table, add:
 ---
 
 **Tips:**
-- Commands work with or without the `/` prefix — both `/ob:braindump` and `ob:braindump` work
+- Commands use the `/ob:` prefix — type `/ob:` and Claude Code will show available commands
 - You can also describe what you want in plain language: "I want to dump some thoughts" or "show me my tasks"
 - New to OneBrain? Start with `/ob:onboarding` to set up your vault and personalize your AI assistant

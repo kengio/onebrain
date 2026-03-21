@@ -1,9 +1,6 @@
 ---
 name: wrapup
 description: Wrap up and save the current session summary to the memory log
-triggers:
-  - /ob:wrapup
-  - ob:wrapup
 ---
 
 # Session Summary (TL;DR)

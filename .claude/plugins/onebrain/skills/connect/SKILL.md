@@ -1,9 +1,6 @@
 ---
 name: connect
 description: Find connections between notes and suggest wikilinks to strengthen the knowledge graph
-triggers:
-  - /ob:connect
-  - ob:connect
 ---
 
 # Connect

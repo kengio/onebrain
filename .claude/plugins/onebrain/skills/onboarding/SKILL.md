@@ -1,9 +1,6 @@
 ---
 name: onboarding
 description: First-run setup for OneBrain — personalize identity, communication style, and vault configuration
-triggers:
-  - /ob:onboarding
-  - ob:onboarding
 ---
 
 # OneBrain Onboarding
