@@ -50,7 +50,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 >
 > `skills/onboarding/SKILL.md` must always contain the default OneBrain folder names (`00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/`) as hardcoded strings — these are the source patterns the sed replacements match against. Changing them breaks method customization for all users.
 >
-> `skills/update/SKILL.md` reads `vault.yml` and applies replacements at runtime using shell variables, so it must not be pre-replaced. Its folder references appear only as `${INBOX}`, `${PROJECTS}`, etc., not as hardcoded paths.
+> `skills/update/SKILL.md` must likewise not be pre-replaced. Its `sed` patterns use the default folder names as hardcoded source strings (e.g., `00-inbox/`, `04-memory-log/`) to match against fresh upstream content, and shell variables (`${INBOX}`, `${MEMLOG}`, etc.) as replacement targets. Do not alter the hardcoded source strings — doing so will break re-application for users on PARA or Zettelkasten.
 
 ## Install Scripts
 

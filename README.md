@@ -129,7 +129,7 @@ onebrain/
 
 Skills that save reference notes (like `/research`, `/consolidate`, and `/capture`) route to `03-resources/`. The `02-areas/` folder is for manually organizing ongoing responsibilities — there is no automated skill routing to it.
 
-Note: `00-inbox` and `05-memory-log` are OneBrain additions on top of the PARA taxonomy — they are not native PARA categories.
+Note: `00-inbox/` and `05-memory-log/` are OneBrain additions on top of the PARA taxonomy — they are not native PARA categories.
 
 Best for: action-oriented people, those managing many parallel responsibilities, anyone who has read *Building a Second Brain*.
 
