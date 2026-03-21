@@ -15,12 +15,10 @@
     "skills/weekly",
     "skills/wrapup",
     "skills/tasks",
-    "skills/update"
+    "skills/update",
+    "skills/help"
   ],
-  "hooks": [
-    "hooks/session-start.md",
-    "hooks/session-end.md"
-  ],
+  "hooks": "hooks/hooks.json",
   "agents": [
     "agents/knowledge-linker.md"
   ]
