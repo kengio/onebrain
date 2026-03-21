@@ -24,8 +24,9 @@ Tell the user what will and won't be updated:
 - `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
-- `00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/` — all your notes
+- `00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/` (and any custom folders) — all your notes
 - `MEMORY.md` — your identity and session context
+- `vault.yml` — your vault method configuration
 - `.obsidian/themes/` — your chosen theme
 - `.obsidian/appearance.json` — your theme preference
 - `.obsidian/workspace.json` — your panel layout
@@ -145,6 +146,53 @@ cp "$UPSTREAM/.gitignore" "$VAULT/.gitignore"
 rsync -a --delete "$UPSTREAM/.claude/plugins/onebrain/" "$VAULT/.claude/plugins/onebrain/"
 rsync -a --delete "$UPSTREAM/.obsidian/plugins/"        "$VAULT/.obsidian/plugins/"
 ```
+
+---
+
+## Step 5.5: Re-apply Vault Method Customizations
+
+If `vault.yml` exists in the vault root, check the configured method:
+
+```bash
+METHOD=$(grep "^method:" vault.yml | awk '{print $2}')
+```
+
+If `METHOD` is `onebrain` or `vault.yml` doesn't exist, skip this step.
+
+Otherwise, read the folder mapping from `vault.yml` and re-apply replacements to all updated system files. This ensures fresh upstream files get the correct folder names for the user's chosen method.
+
+The onboarding and update skill files themselves must NOT be replaced — they contain hardcoded default names as templates and must stay unmodified so they work correctly for future runs.
+
+```bash
+INBOX=$(grep "  inbox:" vault.yml | awk '{print $2}')
+PROJECTS=$(grep "  projects:" vault.yml | awk '{print $2}')
+KNOWLEDGE=$(grep "  knowledge:" vault.yml | awk '{print $2}')
+ARCHIVE=$(grep "  archive:" vault.yml | awk '{print $2}')
+MEMLOG=$(grep "  memory_log:" vault.yml | awk '{print $2}')
+
+# Root instruction files
+sed -i '' \
+  -e "s|00-inbox/|${INBOX}/|g" \
+  -e "s|01-projects/|${PROJECTS}/|g" \
+  -e "s|02-knowledge/|${KNOWLEDGE}/|g" \
+  -e "s|03-archive/|${ARCHIVE}/|g" \
+  -e "s|04-memory-log/|${MEMLOG}/|g" \
+  CLAUDE.md GEMINI.md AGENTS.md
+
+# All plugin files (excluding onboarding and update skills)
+find .claude/plugins/onebrain -name "*.md" \
+  ! -path "*/skills/onboarding/SKILL.md" \
+  ! -path "*/skills/update/SKILL.md" \
+  -exec sed -i '' \
+    -e "s|00-inbox/|${INBOX}/|g" \
+    -e "s|01-projects/|${PROJECTS}/|g" \
+    -e "s|02-knowledge/|${KNOWLEDGE}/|g" \
+    -e "s|03-archive/|${ARCHIVE}/|g" \
+    -e "s|04-memory-log/|${MEMLOG}/|g" \
+  {} +
+```
+
+Tell the user: "Re-applied [METHOD] folder customizations to updated files."
 
 ---
 

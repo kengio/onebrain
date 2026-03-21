@@ -14,6 +14,9 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 
 ## Vault Structure
 
+> **Note:** Vault folders are created during `/onboarding`. The table below shows the default (OneBrain method).
+> If you chose PARA or Zettelkasten during onboarding, your folders will differ. See `vault.yml` for your configuration.
+
 | Folder | Purpose |
 |--------|---------|
 | `00-inbox/` | Raw braindumps and quick captures (process regularly) |
@@ -77,9 +80,10 @@ When a user invokes a command, read the corresponding SKILL.md and follow it.
 ## Session Start Behavior
 
 1. Read `MEMORY.md`
-2. List files in `00-inbox/` — report count
-3. Read most recent file in `04-memory-log/` — note last session topic
-4. Greet user by name with inbox count and last session context
+2. If `vault.yml` exists, read it to know the correct folder names; otherwise use defaults
+3. List files in the inbox folder — report count
+4. Read most recent file in the memory-log folder — note last session topic
+5. Greet user by name with inbox count and last session context
 
 ## Session End Behavior
 
@@ -100,5 +104,6 @@ If conditions are met:
 
 - File names: `Topic Name.md` (title case) for knowledge, `YYYY-MM-DD-topic.md` for inbox
 - Never delete notes without confirmation
+- Don't move files to the archive folder without telling the user
 - Prefer editing existing notes over creating new ones
 - Keep `MEMORY.md` under ~200 lines

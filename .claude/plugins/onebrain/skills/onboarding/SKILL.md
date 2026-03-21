@@ -146,26 +146,183 @@ You are [preferred_name]'s personal chief of staff inside their Obsidian vault.
 
 ---
 
-## Step 8: Create Vault Folders
+## Step 8: Choose Vault Organization Method
 
-Check that these folders exist. Create any that are missing (with a .gitkeep file):
-- `00-inbox/`
-- `01-projects/`
-- `02-knowledge/`
-- `03-archive/`
-- `04-memory-log/`
+Ask:
+
+> How would you like your vault organized? Each method creates different folders:
+>
+> **1. OneBrain** (default) — simple and practical
+> Inbox → Projects → Knowledge → Archive
+> Best for: general-purpose note-taking, getting things done
+>
+> **2. PARA** (Tiago Forte) — organize by actionability
+> Inbox → Projects → Areas → Resources → Archive
+> Best for: action-oriented people, managing work + life responsibilities
+>
+> **3. Zettelkasten** (Niklas Luhmann) — build a knowledge graph
+> Fleeting → Literature → Permanent → Archive
+> Best for: researchers, writers, deep thinkers who want linked atomic notes
+>
+> Enter 1, 2, or 3 (or press Enter for OneBrain):
+
+Wait for response. Default to OneBrain if user says "1", presses enter, or gives no clear answer.
+
+Store: `method` as one of `onebrain`, `para`, `zettelkasten`.
 
 ---
 
-## Step 9: Completion Message
+## Step 9: Create Vault Folders
+
+Based on the chosen method, create the listed folders. For each, create the folder and write an empty `.gitkeep` file inside it.
+
+**OneBrain (method = onebrain):**
+```
+00-inbox/
+01-projects/
+02-knowledge/
+03-archive/
+04-memory-log/
+```
+
+**PARA (method = para):**
+```
+00-inbox/
+01-projects/
+02-areas/
+03-resources/
+04-archive/
+05-memory-log/
+```
+
+**Zettelkasten (method = zettelkasten):**
+```
+00-fleeting/
+01-literature/
+02-permanent/
+03-archive/
+04-memory-log/
+```
+
+For each folder: check if it exists first. If not, create it with a `.gitkeep` file.
+
+---
+
+## Step 10: Apply Folder Reference Replacements
+
+If `method` is `onebrain`, skip this step — no replacements needed.
+
+Otherwise, update all folder path references across the vault's system files. This ensures skills, hooks, and instruction files use the correct folder names.
+
+**Files to update:**
+- `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`
+- All `.md` files under `.claude/plugins/onebrain/` (skills, hooks, agents)
+
+**Important:** Do NOT replace references inside `skills/onboarding/SKILL.md` or `skills/update/SKILL.md` — these files contain hardcoded default names as templates and must stay unmodified so future onboardings and updates work correctly.
+
+**For PARA**, run:
+
+```bash
+# Root instruction files
+sed -i '' \
+  -e 's|02-knowledge/|02-areas/|g' \
+  -e 's|03-archive/|04-archive/|g' \
+  -e 's|04-memory-log/|05-memory-log/|g' \
+  CLAUDE.md GEMINI.md AGENTS.md
+
+# All plugin files (excluding onboarding and update skills)
+find .claude/plugins/onebrain -name "*.md" \
+  ! -path "*/skills/onboarding/SKILL.md" \
+  ! -path "*/skills/update/SKILL.md" \
+  -exec sed -i '' \
+    -e 's|02-knowledge/|02-areas/|g' \
+    -e 's|03-archive/|04-archive/|g' \
+    -e 's|04-memory-log/|05-memory-log/|g' \
+  {} +
+```
+
+Also update descriptive text in vault structure sections:
+- "Consolidated notes, insights, and reference material" → "Ongoing responsibilities and areas of focus"
+- "Completed projects and old items" → "Inactive items from any category"
+
+**For Zettelkasten**, run:
+
+```bash
+# Root instruction files
+sed -i '' \
+  -e 's|00-inbox/|00-fleeting/|g' \
+  -e 's|01-projects/|01-literature/|g' \
+  -e 's|02-knowledge/|02-permanent/|g' \
+  CLAUDE.md GEMINI.md AGENTS.md
+
+# All plugin files (excluding onboarding and update skills)
+find .claude/plugins/onebrain -name "*.md" \
+  ! -path "*/skills/onboarding/SKILL.md" \
+  ! -path "*/skills/update/SKILL.md" \
+  -exec sed -i '' \
+    -e 's|00-inbox/|00-fleeting/|g' \
+    -e 's|01-projects/|01-literature/|g' \
+    -e 's|02-knowledge/|02-permanent/|g' \
+  {} +
+```
+
+Also update descriptive text:
+- "Raw braindumps and quick captures" → "Temporary capture — raw ideas and quick notes"
+- "Active projects with tasks and notes" → "Notes from sources you've read"
+- "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
+
+After running replacements, tell the user: "Applied [METHOD] folder structure to all system files."
+
+---
+
+## Step 11: Write vault.yml
+
+Write `vault.yml` to the vault root with the chosen method and folder mapping.
+
+**OneBrain:**
+```yaml
+method: onebrain
+folders:
+  inbox: 00-inbox
+  projects: 01-projects
+  knowledge: 02-knowledge
+  archive: 03-archive
+  memory_log: 04-memory-log
+```
+
+**PARA:**
+```yaml
+method: para
+folders:
+  inbox: 00-inbox
+  projects: 01-projects
+  knowledge: 02-areas
+  archive: 04-archive
+  memory_log: 05-memory-log
+```
+
+**Zettelkasten:**
+```yaml
+method: zettelkasten
+folders:
+  inbox: 00-fleeting
+  projects: 01-literature
+  knowledge: 02-permanent
+  archive: 03-archive
+  memory_log: 04-memory-log
+```
+
+---
+
+## Step 12: Completion Message
 
 Say:
 
 > You're all set, [preferred_name]! Here's what's ready:
 >
 > - Your identity and personality are saved in MEMORY.md
-> - Your vault folders are set up
-> - I'll greet you by name at the start of every session
+> - Your vault is organized using the **[METHOD NAME]** method
+> - Vault folders have been created and system files updated
 >
 > **First things to try:**
 > - `/braindump` — dump anything on your mind right now

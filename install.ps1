@@ -133,6 +133,8 @@ function Main {
   Write-Host "     claude  or  gemini" -ForegroundColor Cyan
   Write-Host "  4. Run the onboarding command:"
   Write-Host "     /onboarding" -ForegroundColor Cyan
+  Write-Host "     (Onboarding will ask you to choose a vault organization method"
+  Write-Host "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   Write-Host
 
   # Offer to open the vault folder in Explorer

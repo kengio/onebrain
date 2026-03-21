@@ -21,14 +21,18 @@ Apply the "AI Personality Instructions" section immediately — it defines how t
 
 ## Step 2: Check Inbox
 
-List all files in `00-inbox/` (excluding .gitkeep).
+If `vault.yml` exists, read it to determine the inbox folder name (`folders.inbox`); otherwise default to `00-inbox`.
+
+List all files in the inbox folder (excluding .gitkeep).
 
 Count:
 - Files present = items waiting to be processed
 
 ## Step 3: Check Recent Memory
 
-List files in `04-memory-log/` sorted by name (descending). Read the most recent one.
+If `vault.yml` exists, read it to determine the memory log folder name (`folders.memory_log`); otherwise default to `04-memory-log`.
+
+List files in the memory log folder sorted by name (descending). Read the most recent one.
 
 Note:
 - Date of last session
