@@ -159,6 +159,8 @@ main() {
   echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
   echo "  5. Run the onboarding command:"
   echo "     ${CYAN}/onboarding${RESET}"
+  echo "     (Onboarding will ask you to choose a vault organization method"
+  echo "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   echo
 }
 

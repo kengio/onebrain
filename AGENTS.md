@@ -14,6 +14,9 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 
 ## Vault Structure
 
+> **Note:** Vault folders are created during `/onboarding`. The table below shows the default (OneBrain method).
+> If you chose PARA or Zettelkasten during onboarding, your folders will differ. See `vault.yml` for your configuration.
+
 | Folder | Purpose |
 |--------|---------|
 | `00-inbox/` | Raw braindumps and quick captures (process regularly) |
@@ -77,21 +80,23 @@ When a user invokes a command, read the corresponding SKILL.md and follow it.
 ## Session Start Behavior
 
 1. Read `MEMORY.md`
-2. List files in `00-inbox/` — report count
-3. Read most recent file in `04-memory-log/` — note last session topic
-4. Greet user by name with inbox count and last session context
+2. If `vault.yml` exists, read it to know the correct folder names; otherwise use defaults
+3. List files in the inbox folder — report count
+4. Read most recent file in the memory-log folder — note last session topic
+5. Greet user by name with inbox count and last session context
 
 ## Session End Behavior
 
-Session summaries are auto-saved to `04-memory-log/` when the session ends (if 3+ exchanges occurred). Users can still run `/tldr` manually for a visible summary.
+Session summaries are auto-saved to the memory-log folder when the session ends (if 3+ exchanges occurred). Users can still run `/tldr` manually for a visible summary.
 
 Before your final response in a session, silently save a session summary if ALL of these are true:
 1. The session had 3 or more user↔assistant exchanges
-2. No `/tldr` was run during this session (check `04-memory-log/` for a file matching today's date with matching topics)
+2. No `/tldr` was run during this session (check the memory-log folder for a file matching today's date with matching topics)
 
 If conditions are met:
-- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in `04-memory-log/` for today, use the next number (zero-padded: 01, 02, etc.)
-- Write to `04-memory-log/YYYY-MM-DD-session-NN.md` using the same format as `/tldr` (see `.claude/plugins/onebrain/skills/tldr/SKILL.md` for format)
+- If not already resolved, read `vault.yml` to determine the memory-log folder name (default: `04-memory-log`)
+- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in the memory-log folder for today, use the next number (zero-padded: 01, 02, etc.)
+- Write to `[memory_log_folder]/YYYY-MM-DD-session-NN.md` using the same format as `/tldr` (see `.claude/plugins/onebrain/skills/tldr/SKILL.md` for format)
 - Add `auto-saved: true` to the frontmatter
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `MEMORY.md`
 - Do NOT show any output about the auto-save to the user
@@ -100,5 +105,6 @@ If conditions are met:
 
 - File names: `Topic Name.md` (title case) for knowledge, `YYYY-MM-DD-topic.md` for inbox
 - Never delete notes without confirmation
+- Don't move files to the archive folder without telling the user
 - Prefer editing existing notes over creating new ones
 - Keep `MEMORY.md` under ~200 lines

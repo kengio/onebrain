@@ -19,23 +19,31 @@ Read `MEMORY.md` from the vault root. This file contains:
 
 Apply the "AI Personality Instructions" section immediately — it defines how to address and interact with the user.
 
-## Step 2: Check Inbox
+## Step 2: Resolve Folder Names
 
-List all files in `00-inbox/` (excluding .gitkeep).
+If `vault.yml` exists, read it once and extract:
+- `inbox_folder` = `folders.inbox` (default: `00-inbox`)
+- `memory_log_folder` = `folders.memory_log` (default: `04-memory-log`)
+
+Use these values for all subsequent steps.
+
+## Step 3: Check Inbox
+
+List all files in `inbox_folder` (excluding .gitkeep).
 
 Count:
 - Files present = items waiting to be processed
 
-## Step 3: Check Recent Memory
+## Step 4: Check Recent Memory
 
-List files in `04-memory-log/` sorted by name (descending). Read the most recent one.
+List files in `memory_log_folder` sorted by name (descending). Read the most recent one.
 
 Note:
 - Date of last session
 - What it was about (the summary)
 - Any open action items from that session
 
-## Step 4: Greet the User
+## Step 5: Greet the User
 
 Compose a brief greeting (3-5 lines max) that includes:
 
@@ -54,4 +62,4 @@ Keep the greeting concise. Don't be verbose. Match the user's communication styl
 
 ---
 
-*If MEMORY.md doesn't exist or hasn't been filled in yet, skip steps 2-4 and greet the user generically, then suggest running `/onboarding` to set up their vault.*
+*If MEMORY.md doesn't exist or hasn't been filled in yet, skip steps 2-5 and greet the user generically, then suggest running `/onboarding` to set up their vault.*

@@ -14,19 +14,23 @@ Estimate the number of user↔assistant exchanges in this session. Count each us
 
 If fewer than 3 exchanges occurred, stop here — do nothing.
 
-## Step 2: Dedup Check
+## Step 2: Resolve Memory Log Folder
 
-List files in `04-memory-log/` matching today's date pattern `YYYY-MM-DD-session-*.md`.
+If `vault.yml` exists, read it to determine the memory log folder name (`folders.memory_log`); otherwise default to `04-memory-log`.
+
+## Step 3: Dedup Check
+
+List files in the memory log folder matching today's date pattern `YYYY-MM-DD-session-*.md`.
 
 If any files exist, read the most recent one. If its content covers the same topics discussed in this session (same project, same key decisions), stop here — `/tldr` was likely already run for this session.
 
-## Step 3: Determine File Name
+## Step 4: Determine File Name
 
-Count existing `YYYY-MM-DD-session-*.md` files in `04-memory-log/` for today. The next session number = count + 1 (zero-padded to 2 digits: 01, 02, etc.).
+Count existing `YYYY-MM-DD-session-*.md` files in the memory log folder for today. The next session number = count + 1 (zero-padded to 2 digits: 01, 02, etc.).
 
-File: `04-memory-log/YYYY-MM-DD-session-NN.md`
+File: `[memory_log]/YYYY-MM-DD-session-NN.md`
 
-## Step 4: Write Session Log
+## Step 5: Write Session Log
 
 Create the file with this format (same as `/tldr`, with `auto-saved: true` added to frontmatter):
 
@@ -67,7 +71,7 @@ auto-saved: true
 [[Link to relevant vault notes if applicable]]
 ```
 
-## Step 5: Conditionally Update MEMORY.md
+## Step 6: Conditionally Update MEMORY.md
 
 If this session produced a genuinely useful long-term insight about the user's work patterns or preferences, append it to the "Key Learnings & Patterns" section of `MEMORY.md`:
 
@@ -77,6 +81,6 @@ If this session produced a genuinely useful long-term insight about the user's w
 
 Only do this if the insight is genuinely valuable across future sessions. Most sessions will not warrant this.
 
-## Step 6: No Output
+## Step 7: No Output
 
 Do not show any summary, confirmation, or message to the user. This entire process runs silently.
