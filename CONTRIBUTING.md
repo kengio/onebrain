@@ -16,6 +16,8 @@ Good contributions include:
 
 ```text
 .claude/plugins/onebrain/
+├── .claude-plugin/
+│   └── plugin.json      Plugin manifest (name, version, description)
 ├── skills/          One directory per slash command
 │   └── [name]/
 │       └── SKILL.md     The skill prompt — what the AI follows when invoked
@@ -34,11 +36,10 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    ---
    name: skill-name
    description: One-line description of what this skill does
-   triggers:
-     - /ob:skill-name
-     - ob:skill-name
    ---
    ```
+
+   No `triggers:` field is needed. Skill routing is handled by the command tables in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` — register your command there (see step 4).
 
 3. Write the skill as a numbered sequence of steps the AI should follow
 4. Register the command in `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, and `README.md`

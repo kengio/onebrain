@@ -202,6 +202,7 @@ In all cases, the vault root also contains:
 | `/ob:tasks` | Task dashboard — overdue, due soon, open, and completed this week |
 | `/ob:wrapup` | Wrap up session and save summary to memory log |
 | `/ob:update` | Update skills, config, and plugins from GitHub |
+| `/ob:help` | List all available commands with descriptions |
 
 ## Memory System
 

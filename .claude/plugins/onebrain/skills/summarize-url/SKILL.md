@@ -1,10 +1,6 @@
 ---
 name: summarize-url
 description: Fetch a URL and create a structured summary note saved to the knowledge base
-triggers:
-  - /ob:summarize-url
-  - ob:summarize-url
-  - ob:summarize url
 ---
 
 # Summarize URL

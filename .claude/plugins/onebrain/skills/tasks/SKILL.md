@@ -1,12 +1,6 @@
 ---
 name: tasks
 description: Show a dashboard of all tasks across the vault — overdue, due soon, open, and recently completed
-triggers:
-  - /ob:tasks
-  - ob:tasks
-  - ob:show tasks
-  - ob:my todos
-  - ob:todo list
 ---
 
 # Task Dashboard

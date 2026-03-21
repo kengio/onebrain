@@ -1,9 +1,6 @@
 ---
 name: capture
 description: Quick note capture with automatic wikilink suggestions to related existing notes
-triggers:
-  - /ob:capture
-  - ob:capture
 ---
 
 # Capture

@@ -1,11 +1,6 @@
 ---
 name: weekly
 description: Weekly reflection — review the past week's sessions, surface patterns, and plan ahead
-triggers:
-  - /ob:weekly
-  - ob:weekly
-  - ob:weekly review
-  - ob:week in review
 ---
 
 # Weekly Reflection
