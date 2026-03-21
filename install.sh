@@ -3,12 +3,12 @@ set -euo pipefail
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
 if [ -t 1 ] && command -v tput &>/dev/null && tput colors &>/dev/null; then
-  RED=$(tput setaf 1)
-  GREEN=$(tput setaf 2)
-  YELLOW=$(tput setaf 3)
-  CYAN=$(tput setaf 6)
-  BOLD=$(tput bold)
-  RESET=$(tput sgr0)
+  RED=$(tput setaf 1 2>/dev/null || true)
+  GREEN=$(tput setaf 2 2>/dev/null || true)
+  YELLOW=$(tput setaf 3 2>/dev/null || true)
+  CYAN=$(tput setaf 6 2>/dev/null || true)
+  BOLD=$(tput bold 2>/dev/null || true)
+  RESET=$(tput sgr0 2>/dev/null || true)
 else
   RED="" GREEN="" YELLOW="" CYAN="" BOLD="" RESET=""
 fi
@@ -39,12 +39,42 @@ prompt_with_default() {
   local default="$2"
   local answer
   print_prompt "$question [${default}]:"
-  read -r answer
+  if ! read -r answer; then
+    echo >&2
+    print_error "No input received (EOF). Aborted."
+    exit 1
+  fi
   echo "${answer:-$default}"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 main() {
+  # ── TTY check: when piped (curl | bash), stdin is the pipe not the terminal.
+  # ── Probe /dev/tty for readability first; if open-able, redirect stdin so
+  # ── all prompts reach the user's terminal. Two distinct exit paths:
+  # ──   (1) /dev/tty not readable  → exits with download instructions
+  # ──   (2) /dev/tty readable but exec fails (rare) → exits with instructions
+  # ── Uses if-form for exec so set -e doesn't swallow the error handler.
+  if [ ! -t 0 ]; then
+    if { true < /dev/tty; } 2>/dev/null; then
+      if exec < /dev/tty; then
+        : # stdin now wired to terminal; all subsequent reads work without < /dev/tty
+      else
+        print_error "Found /dev/tty but could not redirect stdin to it."
+        print_error "Download and run the script directly instead:"
+        print_error "  curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh -o install.sh"
+        print_error "  bash install.sh"
+        exit 1
+      fi
+    else
+      print_error "Cannot read user input (no accessible TTY)."
+      print_error "Download and run the script directly instead:"
+      print_error "  curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh -o install.sh"
+      print_error "  bash install.sh"
+      exit 1
+    fi
+  fi
+
   print_header "OneBrain Vault Installer"
   print_info "This script downloads OneBrain and sets up a fresh Obsidian vault."
   echo
@@ -56,15 +86,22 @@ main() {
   local install_location
   install_location=$(prompt_with_default "Where should the vault be created?" "$default_location")
 
-  # Expand ~ manually in case user typed it
+  # Expand a leading ~ to $HOME (note: ~username forms are not expanded)
   install_location="${install_location/#\~/$HOME}"
 
   if [ ! -d "$install_location" ]; then
     print_prompt "Directory '$install_location' does not exist. Create it? [Y/n]:"
-    read -r confirm
+    if ! read -r confirm; then
+      echo >&2
+      print_error "No input received (EOF). Aborted."
+      exit 1
+    fi
     confirm="${confirm:-Y}"
     if [[ "$confirm" =~ ^[Yy] ]]; then
-      mkdir -p "$install_location"
+      if ! mkdir -p "$install_location"; then
+        print_error "Could not create '$install_location'. Check permissions and try again."
+        exit 1
+      fi
       print_success "Created $install_location"
     else
       print_error "Aborted. Please choose an existing directory."
@@ -97,8 +134,8 @@ main() {
   # ── Step 3: Download and extract ────────────────────────────────────────────
   local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
   local tmpdir
-  tmpdir=$(mktemp -d)
-  # shellcheck disable=SC2064
+  tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
+  # shellcheck disable=SC2064  # $tmpdir is intentionally captured at definition time (set once, never reassigned)
   trap "rm -rf '$tmpdir'" EXIT
 
   print_info "Downloading OneBrain..."
@@ -107,8 +144,8 @@ main() {
     exit 1
   fi
 
-  # Verify the downloaded file is actually a gzip archive, not an HTML error page
-  if ! gzip -t "$tmpdir/onebrain.tar.gz" 2>/dev/null; then
+  # Verify the downloaded file is actually a valid tar archive, not an HTML error page
+  if ! tar tzf "$tmpdir/onebrain.tar.gz" >/dev/null 2>&1; then
     print_error "Downloaded file is not a valid archive."
     print_error "The repository may not be published yet, or the URL may have changed."
     print_error "URL: $repo_url"
@@ -116,32 +153,61 @@ main() {
   fi
 
   print_info "Extracting..."
-  tar xzf "$tmpdir/onebrain.tar.gz" -C "$tmpdir"
-
-  # GitHub tarballs extract to a directory like onebrain-main/
-  local extracted_dir
-  extracted_dir=$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d | head -1)
-
-  if [ -z "$extracted_dir" ]; then
-    print_error "Extraction produced no directory. The tarball may be malformed."
+  if ! tar xzf "$tmpdir/onebrain.tar.gz" -C "$tmpdir"; then
+    print_error "Extraction failed. The archive may be corrupted or your disk may be full."
     exit 1
   fi
 
-  mv "$extracted_dir" "$vault_path"
+  # GitHub tarballs extract to a directory like onebrain-main/
+  local extracted_dir
+  extracted_dir=$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d | head -1 || true)
+
+  if [ -z "$extracted_dir" ]; then
+    print_error "Extraction produced no directory. The archive may be malformed or extraction failed."
+    exit 1
+  fi
+
+  if ! mv "$extracted_dir" "$vault_path"; then
+    print_error "Failed to move the extracted vault to '$vault_path'."
+    print_error "Check that '$install_location' is writeable and has enough space."
+    exit 1
+  fi
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
   # Remove the install script from the vault — it shouldn't live there
-  rm -f "$vault_path/install.sh"
+  rm -f "$vault_path/install.sh" || true
 
   # Remove any .git directory if somehow included in the tarball
-  rm -rf "$vault_path/.git"
+  if ! rm -rf "$vault_path/.git"; then
+    print_error "Could not remove stale .git from '$vault_path/.git'."
+    print_error "Remove it manually: rm -rf \"$vault_path/.git\""
+    print_error "Then run: git -C \"$vault_path\" init && git -C \"$vault_path\" add -A && git -C \"$vault_path\" commit -m 'Initial OneBrain vault setup'"
+    exit 1
+  fi
 
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   print_info "Initializing git repository..."
-  cd "$vault_path"
-  git init -q
-  git add -A
-  git commit -q -m "Initial OneBrain vault setup"
+  if ! cd "$vault_path"; then
+    print_error "Could not enter vault directory '$vault_path'. Installation may be incomplete."
+    exit 1
+  fi
+  if ! git init -q; then
+    print_error "Failed to initialize a git repository in '$vault_path'."
+    exit 1
+  fi
+  if ! git add -A; then
+    print_error "Failed to stage files for the initial git commit in '$vault_path'."
+    print_error "Check for a stale .git/index.lock file or permission issues."
+    exit 1
+  fi
+  if ! git commit -q -m "Initial OneBrain vault setup"; then
+    print_error "Failed to create the initial git commit."
+    print_error "Git may need a name and email configured. Run:"
+    print_error "  git config --global user.name  'Your Name'"
+    print_error "  git config --global user.email 'you@example.com'"
+    print_error "Then re-run: git -C \"$vault_path\" add -A && git -C \"$vault_path\" commit -m 'Initial OneBrain vault setup'"
+    exit 1
+  fi
 
   # ── Step 6: Success ──────────────────────────────────────────────────────────
   echo
