@@ -359,12 +359,14 @@ install_plugins() {
     fi
 
     # styles.css is optional — not all plugins ship it.
-    # curl exit code 22 = HTTP error (status 400+, typically 404) — expected and silent.
-    # Any other non-zero exit (disk full, TLS, DNS) is unexpected and warrants a warning.
+    # curl exit 22 = HTTP 4xx/5xx (with -f flag) — expected when asset is absent.
+    # curl exit 56 = "failure receiving network data" — GitHub's CDN sometimes resets
+    # the connection instead of returning a 404 for a missing release asset; treat as absent.
+    # Any other non-zero exit (disk full, TLS error, DNS failure) is unexpected and warns.
     if [ "$ok" = true ]; then
       local css_exit=0
       curl -fsSL "${base_url}/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || css_exit=$?
-      if [ "$css_exit" -ne 0 ] && [ "$css_exit" -ne 22 ]; then
+      if [ "$css_exit" -ne 0 ] && [ "$css_exit" -ne 22 ] && [ "$css_exit" -ne 56 ]; then
         print_info "  ${YELLOW}warning${RESET} Unexpected error downloading styles.css for ${plugin_id} (curl exit ${css_exit})"
       fi
       # Remove styles.css if absent or zero bytes (curl -f suppresses 404 bodies, leaving an empty file)
