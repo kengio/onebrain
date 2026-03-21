@@ -134,13 +134,11 @@ From `vault.yml`, read the `folders` mapping:
 - Replace "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
 - Replace "Completed projects and old items" → "Inactive items from any category"
 - Replace "Completed projects and archived items" → "Inactive items from any category"
-- Insert `02-areas/        Ongoing responsibilities (health, finance, career)` after the `01-projects/` line in `CLAUDE.md` and `GEMINI.md` vault structure code blocks (if not already present)
-- Insert `| \`02-areas/\` | Ongoing responsibilities (health, finance, career) |` after the `| \`01-projects/\` |` row in `AGENTS.md` (if not already present)
+- Insert `02-areas/        Ongoing responsibilities (health, finance, career)` after the `01-projects/` line in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` vault structure code blocks (if not already present)
 
 **If method is `zettelkasten`, also in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`:**
 - Replace "Raw braindumps and quick captures (process regularly)" → "Temporary capture — raw ideas and quick notes"
 - Replace "Active projects with tasks and notes" → "Notes from sources you've read"
-- Replace "Active projects with tasks and inline notes" → "Notes from sources you've read"
 - Replace "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
 
 **In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:**
