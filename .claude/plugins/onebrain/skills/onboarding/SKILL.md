@@ -219,63 +219,44 @@ Otherwise, update all folder path references across the vault's system files. Th
 
 **Important:** Do NOT replace references inside `skills/onboarding/SKILL.md` or `skills/update/SKILL.md` — these files contain hardcoded default names as templates and must stay unmodified so future onboardings and updates work correctly.
 
-**For PARA**, run:
+Use your file editing tools (Read, Edit) to make these replacements — do not use shell commands. This ensures the step works on all platforms (macOS, Linux, Windows).
 
-```bash
-# Root instruction files (folder renames + descriptive text in vault structure sections)
-sed -i '' \
-  -e 's|02-knowledge/|03-resources/|g' \
-  -e 's|03-archive/|04-archive/|g' \
-  -e 's|04-memory-log/|05-memory-log/|g' \
-  -e "s|Consolidated notes, insights, and reference material|Topics of interest and reference material|g" \
-  -e "s|Completed projects and old items|Inactive items from any category|g" \
-  -e "s|Completed projects and archived items|Inactive items from any category|g" \
-  CLAUDE.md GEMINI.md AGENTS.md
+**For PARA:**
 
-# Insert 02-areas/ into vault structure sections (PARA adds a folder with no OneBrain counterpart)
-# CLAUDE.md and GEMINI.md use a code block format
-awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
-awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md
-# AGENTS.md uses a table format
-awk '/`01-projects\/`.*Active projects/ {print; print "| `02-areas/` | Ongoing responsibilities (health, finance, career) |"; next} {print}' AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md
+In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
+- `02-knowledge/` → `03-resources/`
+- `03-archive/` → `04-archive/`
+- `04-memory-log/` → `05-memory-log/`
+- "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
+- "Completed projects and old items" → "Inactive items from any category"
+- "Completed projects and archived items" → "Inactive items from any category"
 
-# All plugin files (excluding onboarding and update skills)
-find .claude/plugins/onebrain -name "*.md" \
-  ! -path "*/skills/onboarding/SKILL.md" \
-  ! -path "*/skills/update/SKILL.md" \
-  -exec sed -i '' \
-    -e 's|02-knowledge/|03-resources/|g' \
-    -e 's|03-archive/|04-archive/|g' \
-    -e 's|04-memory-log/|05-memory-log/|g' \
-  {} +
-```
+Also insert a line for `02-areas/` in the vault structure sections (PARA adds a folder with no OneBrain counterpart):
+- In `CLAUDE.md` and `GEMINI.md`: add `02-areas/        Ongoing responsibilities (health, finance, career)` immediately after the `01-projects/` line in the vault structure code block
+- In `AGENTS.md`: add `| \`02-areas/\` | Ongoing responsibilities (health, finance, career) |` immediately after the `| \`01-projects/\` |` table row
 
-**For Zettelkasten**, run:
+In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
+- `02-knowledge/` → `03-resources/`
+- `03-archive/` → `04-archive/`
+- `04-memory-log/` → `05-memory-log/`
 
-```bash
-# Root instruction files (folder renames + descriptive text in vault structure sections)
-sed -i '' \
-  -e 's|00-inbox/|00-fleeting/|g' \
-  -e 's|01-projects/|01-literature/|g' \
-  -e 's|02-knowledge/|02-permanent/|g' \
-  -e "s|Raw braindumps and quick captures (process regularly)|Temporary capture — raw ideas and quick notes|g" \
-  -e "s|Active projects with tasks and notes|Notes from sources you've read|g" \
-  -e "s|Active projects with tasks and inline notes|Notes from sources you've read|g" \
-  -e "s|Consolidated notes, insights, and reference material|Atomic, linked notes — your knowledge graph|g" \
-  CLAUDE.md GEMINI.md AGENTS.md
+**For Zettelkasten:**
 
-# All plugin files (excluding onboarding and update skills)
-find .claude/plugins/onebrain -name "*.md" \
-  ! -path "*/skills/onboarding/SKILL.md" \
-  ! -path "*/skills/update/SKILL.md" \
-  -exec sed -i '' \
-    -e 's|00-inbox/|00-fleeting/|g' \
-    -e 's|01-projects/|01-literature/|g' \
-    -e 's|02-knowledge/|02-permanent/|g' \
-  {} +
-```
+In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
+- `00-inbox/` → `00-fleeting/`
+- `01-projects/` → `01-literature/`
+- `02-knowledge/` → `02-permanent/`
+- "Raw braindumps and quick captures (process regularly)" → "Temporary capture — raw ideas and quick notes"
+- "Active projects with tasks and notes" → "Notes from sources you've read"
+- "Active projects with tasks and inline notes" → "Notes from sources you've read"
+- "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
 
-After running replacements, tell the user: "Applied [method_display_name] folder structure to all system files."
+In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
+- `00-inbox/` → `00-fleeting/`
+- `01-projects/` → `01-literature/`
+- `02-knowledge/` → `02-permanent/`
+
+After completing all replacements, tell the user: "Applied [method_display_name] folder structure to all system files."
 
 ---
 

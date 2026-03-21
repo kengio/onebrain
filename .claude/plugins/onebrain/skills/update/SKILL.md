@@ -151,74 +151,51 @@ rsync -a --delete "$UPSTREAM/.obsidian/plugins/"        "$VAULT/.obsidian/plugin
 
 ## Step 5.5: Re-apply Vault Method Customizations
 
-If `vault.yml` exists in the vault root, check the configured method:
-
-```bash
-METHOD=$(grep "^method:" vault.yml | awk '{print $2}')
-```
-
-If `METHOD` is `onebrain` or `vault.yml` doesn't exist, skip this step.
+Read `vault.yml` to check the configured method (`method:` key). If `vault.yml` doesn't exist or the method is `onebrain`, skip this step.
 
 Otherwise, read the folder mapping from `vault.yml` and re-apply replacements to all updated system files. This ensures fresh upstream files get the correct folder names for the user's chosen method.
 
-The onboarding and update skill files themselves must NOT be replaced — they contain hardcoded default names as templates and must stay unmodified so they work correctly for future runs.
+The onboarding and update skill files must NOT be modified — they contain hardcoded default folder names as templates required for future runs.
 
-```bash
-INBOX=$(grep "  inbox:" vault.yml | awk '{print $2}')
-PROJECTS=$(grep "  projects:" vault.yml | awk '{print $2}')
-KNOWLEDGE=$(grep "  knowledge:" vault.yml | awk '{print $2}')
-ARCHIVE=$(grep "  archive:" vault.yml | awk '{print $2}')
-MEMLOG=$(grep "  memory_log:" vault.yml | awk '{print $2}')
+Use your file editing tools (Read, Edit) to make these replacements — do not use shell commands. This ensures the step works on all platforms (macOS, Linux, Windows).
 
-# Root instruction files
-sed -i '' \
-  -e "s|00-inbox/|${INBOX}/|g" \
-  -e "s|01-projects/|${PROJECTS}/|g" \
-  -e "s|02-knowledge/|${KNOWLEDGE}/|g" \
-  -e "s|03-archive/|${ARCHIVE}/|g" \
-  -e "s|04-memory-log/|${MEMLOG}/|g" \
-  CLAUDE.md GEMINI.md AGENTS.md
+From `vault.yml`, read the `folders` mapping:
+- `folders.inbox` → INBOX
+- `folders.projects` → PROJECTS
+- `folders.knowledge` → KNOWLEDGE
+- `folders.archive` → ARCHIVE
+- `folders.memory_log` → MEMLOG
 
-# All plugin files (excluding onboarding and update skills)
-find .claude/plugins/onebrain -name "*.md" \
-  ! -path "*/skills/onboarding/SKILL.md" \
-  ! -path "*/skills/update/SKILL.md" \
-  -exec sed -i '' \
-    -e "s|00-inbox/|${INBOX}/|g" \
-    -e "s|01-projects/|${PROJECTS}/|g" \
-    -e "s|02-knowledge/|${KNOWLEDGE}/|g" \
-    -e "s|03-archive/|${ARCHIVE}/|g" \
-    -e "s|04-memory-log/|${MEMLOG}/|g" \
-  {} +
+**In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:**
+- `00-inbox/` → `[INBOX]/`
+- `01-projects/` → `[PROJECTS]/`
+- `02-knowledge/` → `[KNOWLEDGE]/`
+- `03-archive/` → `[ARCHIVE]/`
+- `04-memory-log/` → `[MEMLOG]/`
 
-# Re-apply descriptive text replacements (these are not covered by the folder-name substitutions above)
-if [ "$METHOD" = "para" ]; then
-  sed -i '' \
-    -e "s|Consolidated notes, insights, and reference material|Topics of interest and reference material|g" \
-    -e "s|Completed projects and old items|Inactive items from any category|g" \
-    -e "s|Completed projects and archived items|Inactive items from any category|g" \
-    CLAUDE.md GEMINI.md AGENTS.md
-  # Re-insert 02-areas/ if not already present (PARA-only folder with no OneBrain counterpart)
-  grep -q "02-areas/" CLAUDE.md || { awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md; }
-  grep -q "02-areas/" GEMINI.md || { awk '/01-projects\/.*Active projects with tasks and notes/ {print; print "02-areas/        Ongoing responsibilities (health, finance, career)"; next} {print}' GEMINI.md > GEMINI.md.tmp && mv GEMINI.md.tmp GEMINI.md; }
-  grep -q "02-areas/" AGENTS.md || { awk '/`01-projects\/`.*Active projects/ {print; print "| `02-areas/` | Ongoing responsibilities (health, finance, career) |"; next} {print}' AGENTS.md > AGENTS.md.tmp && mv AGENTS.md.tmp AGENTS.md; }
-elif [ "$METHOD" = "zettelkasten" ]; then
-  sed -i '' \
-    -e "s|Raw braindumps and quick captures (process regularly)|Temporary capture — raw ideas and quick notes|g" \
-    -e "s|Active projects with tasks and notes|Notes from sources you've read|g" \
-    -e "s|Active projects with tasks and inline notes|Notes from sources you've read|g" \
-    -e "s|Consolidated notes, insights, and reference material|Atomic, linked notes — your knowledge graph|g" \
-    CLAUDE.md GEMINI.md AGENTS.md
-fi
+**If method is `para`, also in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`:**
+- Replace "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
+- Replace "Completed projects and old items" → "Inactive items from any category"
+- Replace "Completed projects and archived items" → "Inactive items from any category"
+- Insert `02-areas/        Ongoing responsibilities (health, finance, career)` after the `01-projects/` line in `CLAUDE.md` and `GEMINI.md` vault structure code blocks (if not already present)
+- Insert `| \`02-areas/\` | Ongoing responsibilities (health, finance, career) |` after the `| \`01-projects/\` |` row in `AGENTS.md` (if not already present)
 
-# Build display name for user message
-if [ "$METHOD" = "para" ]; then METHOD_DISPLAY="PARA"
-elif [ "$METHOD" = "zettelkasten" ]; then METHOD_DISPLAY="Zettelkasten"
-else METHOD_DISPLAY="$METHOD"
-fi
-```
+**If method is `zettelkasten`, also in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`:**
+- Replace "Raw braindumps and quick captures (process regularly)" → "Temporary capture — raw ideas and quick notes"
+- Replace "Active projects with tasks and notes" → "Notes from sources you've read"
+- Replace "Active projects with tasks and inline notes" → "Notes from sources you've read"
+- Replace "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
 
-Tell the user: "Re-applied ${METHOD_DISPLAY} folder customizations to updated files."
+**In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:**
+- `00-inbox/` → `[INBOX]/`
+- `01-projects/` → `[PROJECTS]/`
+- `02-knowledge/` → `[KNOWLEDGE]/`
+- `03-archive/` → `[ARCHIVE]/`
+- `04-memory-log/` → `[MEMLOG]/`
+
+Display name mapping for the completion message: `onebrain` → OneBrain, `para` → PARA, `zettelkasten` → Zettelkasten.
+
+Tell the user: "Re-applied [display name] folder customizations to updated files."
 
 ---
 
