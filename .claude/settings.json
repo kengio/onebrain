@@ -10,5 +10,16 @@
       "WebFetch",
       "WebSearch"
     ]
+  },
+  "enabledPlugins": {
+    "onebrain@onebrain-local": true
+  },
+  "extraKnownMarketplaces": {
+    "onebrain-local": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
   }
 }

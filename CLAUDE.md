@@ -10,7 +10,7 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 
 ## Vault Structure
 
-> **Note:** Vault folders are created during `/ob:onboarding`. The structure below shows the default (OneBrain method).
+> **Note:** Vault folders are created during `/onboarding`. The structure below shows the default (OneBrain method).
 > If you chose PARA or Zettelkasten during onboarding, your folders will differ. See `vault.yml` for your configuration.
 
 ```
@@ -68,32 +68,33 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 
 | Command | Skill File | Purpose |
 |---------|-----------|---------|
-| `/ob:onboarding` | `onboarding/SKILL.md` | First-run setup |
-| `/ob:braindump` | `braindump/SKILL.md` | Capture raw thoughts |
-| `/ob:capture` | `capture/SKILL.md` | Quick note with links |
-| `/ob:consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base |
-| `/ob:connect` | `connect/SKILL.md` | Find note connections |
-| `/ob:research` | `research/SKILL.md` | Web research → vault |
-| `/ob:summarize-url` | `summarize-url/SKILL.md` | URL → summary note |
-| `/ob:reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
-| `/ob:weekly` | `weekly/SKILL.md` | Weekly reflection |
-| `/ob:tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
-| `/ob:wrapup` | `wrapup/SKILL.md` | Wrap up session → memory log |
-| `/ob:update` | `update/SKILL.md` | Update system files from GitHub |
-| `/ob:help` | `help/SKILL.md` | List available commands with use cases |
+| `/onboarding` | `onboarding/SKILL.md` | First-run setup |
+| `/braindump` | `braindump/SKILL.md` | Capture raw thoughts |
+| `/capture` | `capture/SKILL.md` | Quick note with links |
+| `/consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base |
+| `/connect` | `connect/SKILL.md` | Find note connections |
+| `/research` | `research/SKILL.md` | Web research → vault |
+| `/summarize-url` | `summarize-url/SKILL.md` | URL → summary note |
+| `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
+| `/weekly` | `weekly/SKILL.md` | Weekly reflection |
+| `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
+| `/wrapup` | `wrapup/SKILL.md` | Wrap up session → memory log |
+| `/update` | `update/SKILL.md` | Update system files from GitHub |
+| `/help` | `help/SKILL.md` | List available commands with use cases |
 
 When a user invokes a command, read the corresponding SKILL.md and follow it.
 
 ## Session Behavior
 
-Session start and end behavior is handled by hooks in `.claude/plugins/onebrain/hooks/hooks.json`.
+At the start of every session, perform these steps:
 
-- **SessionStart hook**: Loads MEMORY.md, checks inbox, reads recent memory log, greets user by name
-- **SessionEnd hook**: Auto-saves session summary to memory-log if 3+ exchanges occurred and `/ob:wrapup` wasn't already run
+1. Read MEMORY.md to load identity, personality, and active projects
+2. Read vault.yml for folder names and configuration
+3. Check inbox count
+4. Read the most recent memory log entry
+5. Greet the user by name with relevant context
 
-Users can run `/ob:wrapup` manually at any time for a visible summary.
-
-**Fallback**: If hooks don't fire, manually perform the SessionStart steps: read MEMORY.md (identity, active projects), read vault.yml for folder names, check inbox count, read the most recent memory log entry, then greet the user by name with that context.
+Users can run `/wrapup` at any time to save a session summary to the memory log.
 
 ## File Naming Conventions
 

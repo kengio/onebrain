@@ -61,7 +61,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 - `install.sh` — bash, targets macOS and Linux
 - `install.ps1` — PowerShell 5+, targets Windows
 
-Both scripts download the repo tarball, extract it, remove themselves from the vault, and initialize git. Keep them simple — vault setup belongs in `/ob:onboarding`, not here.
+Both scripts download the repo tarball, extract it, remove themselves from the vault, and initialize git. Keep them simple — vault setup belongs in `/onboarding`, not here.
 
 ## Pull Request Guidelines
 

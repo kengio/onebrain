@@ -11,10 +11,10 @@ Quickly capture a note, idea, reference, or piece of information — with automa
 
 ## Step 1: Ask What to Capture
 
-If the user invoked `/ob:capture` without content, ask:
+If the user invoked `/capture` without content, ask:
 > What do you want to capture?
 
-If they provided content after `/ob:capture [content]`, use that directly.
+If they provided content after `/capture [content]`, use that directly.
 
 ---
 
