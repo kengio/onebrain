@@ -19,8 +19,8 @@ For steps that present a fixed set of choices (vault method, personality archety
 
 **Label normalization:** `AskUserQuestion` option labels may include suffixes like "(Recommended)". When mapping a selected label to a stored value, always strip any parenthetical suffix and lowercase the result (e.g., "Friendly (Recommended)" → `friendly`, "OneBrain (Recommended)" → `onebrain`).
 
-**`AskUserQuestion` return values:**
-- `multiSelect: false` → returns the selected option's label as a string
+**`AskUserQuestion` return value** (`multiSelect: false` only — this skill does not use multi-select)**:**
+- Returns the selected option's label as a string
 
 ---
 
@@ -124,7 +124,7 @@ Use `AskUserQuestion` with:
 
 Fallback (if AskUserQuestion unavailable): ask as plain text. Default to Concise if no clear answer.
 
-Store: `detail_level` as "Concise" or "Detailed" (lowercase the stored value).
+Store: `detail_level` as `concise` or `detailed`.
 
 **Question B — Tone:**
 
@@ -138,7 +138,7 @@ Use `AskUserQuestion` with:
 
 Fallback (if AskUserQuestion unavailable): ask as plain text. Default to Casual if no clear answer.
 
-Store: `tone` as "Casual" or "Formal" (lowercase the stored value).
+Store: `tone` as `casual` or `formal`.
 
 ---
 
@@ -286,7 +286,6 @@ In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
 - `03-archive/` → `04-archive/`
 - `04-memory-log/` → `05-memory-log/`
 - "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
-- "Completed projects and old items" → "Inactive items from any category"
 - "Completed projects and archived items" → "Inactive items from any category"
 
 Also insert a line for `02-areas/` in the vault structure sections (PARA adds a folder with no OneBrain counterpart):
@@ -306,6 +305,7 @@ In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
 - "Raw braindumps and quick captures (process regularly)" → "Temporary capture — raw ideas and quick notes"
 - "Active projects with tasks and notes" → "Notes from sources you've read"
 - "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
+- "Completed projects and archived items" → "Inactive items"
 
 In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
 - `00-inbox/` → `00-fleeting/`
