@@ -50,7 +50,195 @@ function Prompt-WithDefault {
   if ([string]::IsNullOrWhiteSpace($answer)) { $Default } else { $answer }
 }
 
+# ─── Plugin installer ─────────────────────────────────────────────────────────
+# Install-Plugins <vaultPath>
+# Downloads the latest release of each plugin listed in .obsidian/community-plugins.json.
+# No external dependencies — uses only PowerShell 5+ built-in cmdlets. Does not
+# require curl, jq, or additional modules.
+# Non-fatal: returns a list of plugin IDs that failed (empty array on full success).
+function Install-Plugins {
+  param([string]$VaultPath)
+
+  $pluginsJson = Join-Path $VaultPath ".obsidian\community-plugins.json"
+  $registryUrl = "https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
+  $failedPlugins = @()
+
+  if (-not (Test-Path $pluginsJson)) { return ,@($failedPlugins) }
+
+  # Wrap ConvertFrom-Json in try/catch: malformed JSON (e.g. sync-conflict markers) throws
+  # a terminating error and must not propagate to the outer Main catch as a fatal abort.
+  try {
+    $pluginIds = Get-Content $pluginsJson -Raw | ConvertFrom-Json -ErrorAction Stop
+  } catch {
+    Write-Host "  ⚠️  community-plugins.json could not be parsed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  Skipping plugin installation." -ForegroundColor Yellow
+    return ,@($failedPlugins)
+  }
+  # Validate that the file is a flat array of strings (guards against sync-conflict corruption)
+  if (-not $pluginIds -or $pluginIds.Count -eq 0) { return ,@($failedPlugins) }
+  if ($pluginIds | Where-Object { $_ -isnot [string] }) {
+    Write-Host "  ⚠️  community-plugins.json is malformed (expected array of strings). Skipping plugin installation." -ForegroundColor Yellow
+    return ,@($failedPlugins)
+  }
+
+  Write-Host
+  Write-Host "  Installing community plugins..." -ForegroundColor Cyan
+  Write-Host
+
+  # Fetch Obsidian plugin registry once
+  Write-Step "📦" "Fetching plugin registry..."
+  try {
+    $registry = Invoke-RestMethod -Uri $registryUrl -ErrorAction Stop
+  } catch {
+    Write-Host "  ⚠️  Plugin registry unavailable: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  All plugins will need to be installed manually." -ForegroundColor Yellow
+    return ,@($pluginIds)  # all plugins are "failed"
+  }
+  Write-Done "Registry fetched"
+
+  # Wrap New-Item in try/catch: a filesystem error here must not propagate to the outer
+  # Main catch as a fatal abort — plugin installation is a non-fatal step.
+  $pluginsDir = Join-Path $VaultPath ".obsidian\plugins"
+  try {
+    if (-not (Test-Path $pluginsDir)) {
+      New-Item -ItemType Directory -Path $pluginsDir -Force -ErrorAction Stop | Out-Null
+    }
+  } catch {
+    Write-Host "  ⚠️  Could not create plugins directory '$pluginsDir': $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  All plugins will need to be installed manually." -ForegroundColor Yellow
+    return ,@($pluginIds)
+  }
+
+  # GitHub REST API: 60 req/hr unauthenticated (shared per IP) — 5,000/hr with GITHUB_TOKEN.
+  # Build headers once; GITHUB_TOKEN does not change during the loop.
+  $ghHeaders = @{ Accept = "application/vnd.github.v3+json" }
+  if ($env:GITHUB_TOKEN) { $ghHeaders["Authorization"] = "Bearer $env:GITHUB_TOKEN" }
+
+  foreach ($pluginId in $pluginIds) {
+    # Validate plugin ID: reject IDs with path-traversal or shell-unsafe characters
+    if ($pluginId -notmatch '^[a-zA-Z0-9_-]+$') {
+      Write-Host "  ⚠️  skipped invalid plugin ID: '$pluginId'" -ForegroundColor Yellow
+      $failedPlugins += $pluginId
+      continue
+    }
+
+    # Find matching entry in the registry
+    $entry = $registry | Where-Object { $_.id -eq $pluginId } | Select-Object -First 1
+    if (-not $entry -or -not $entry.repo) {
+      Write-Host "  ⚠️  skipped $pluginId (not found in registry)" -ForegroundColor Yellow
+      $failedPlugins += $pluginId
+      continue
+    }
+    $repo = $entry.repo
+
+    Write-Step "🔌" "Installing $pluginId..."
+
+    try {
+      $release = Invoke-RestMethod `
+        -Uri "https://api.github.com/repos/$repo/releases/latest" `
+        -Headers $ghHeaders `
+        -ErrorAction Stop
+      $tag = $release.tag_name
+    } catch {
+      # HTTP 403 can mean rate limit or access denied (private repo, bad token scope) —
+      # check status code via the response object to avoid matching "403" in unrelated messages
+      $statusCode = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+      if ($statusCode -eq 403) {
+        Write-Host "  ❌ forbidden $pluginId (HTTP 403 — rate limited or access denied; check GITHUB_TOKEN)" -ForegroundColor Red
+      } else {
+        Write-Host "  ❌ failed $pluginId (could not get release tag: $($_.Exception.Message))" -ForegroundColor Red
+      }
+      $failedPlugins += $pluginId
+      continue
+    }
+
+    if (-not $tag) {
+      Write-Host "  ❌ failed $pluginId (empty release tag)" -ForegroundColor Red
+      $failedPlugins += $pluginId
+      continue
+    }
+
+    # Wrap New-Item per-plugin in try/catch to preserve non-fatal contract
+    $pluginDir = Join-Path $pluginsDir $pluginId
+    try {
+      New-Item -ItemType Directory -Path $pluginDir -Force -ErrorAction Stop | Out-Null
+    } catch {
+      Write-Host "  ❌ failed $pluginId (could not create plugin directory: $($_.Exception.Message))" -ForegroundColor Red
+      $failedPlugins += $pluginId
+      continue
+    }
+
+    $baseUrl = "https://github.com/$repo/releases/download/$tag"
+    $ok = $true
+
+    # main.js and manifest.json are required; short-circuit on first failure.
+    # After download, verify non-empty: a network drop can produce a 200 with zero bytes.
+    foreach ($asset in @("main.js", "manifest.json")) {
+      if (-not $ok) { break }
+      $assetPath = Join-Path $pluginDir $asset
+      try {
+        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile $assetPath -ErrorAction Stop | Out-Null
+        $assetLen = try { (Get-Item $assetPath -ErrorAction Stop).Length } catch { 0 }
+        if ($assetLen -eq 0) {
+          Write-Host "  ⚠️  $pluginId/$asset downloaded as empty (network drop?)" -ForegroundColor Yellow
+          $ok = $false
+        }
+      } catch {
+        Write-Host "  ⚠️  $pluginId/$asset failed: $($_.Exception.Message)" -ForegroundColor Yellow
+        $ok = $false
+      }
+    }
+
+    # styles.css is optional — not all plugins ship it.
+    # Invoke-WebRequest throws on HTTP 4xx/5xx (caught below), but a 200 with zero bytes
+    # is possible on a mid-transfer network drop. Check length and remove if empty.
+    if ($ok) {
+      $cssPath = Join-Path $pluginDir "styles.css"
+      try {
+        $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -ErrorAction Stop
+        # Defensive: remove if non-200 or empty (guards against zero-byte writes on network drop)
+        $cssLen = try { (Get-Item $cssPath -ErrorAction Stop).Length } catch { 0 }
+        if ($cssResponse.StatusCode -ne 200 -or $cssLen -eq 0) {
+          try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
+            Write-Host "  ⚠️  Could not remove bad styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+          }
+        }
+      } catch {
+        # Network/TLS/unexpected errors — warn but don't fail the plugin
+        Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
+        try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
+          Write-Host "  ⚠️  Could not remove partial styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+      }
+    }
+
+    if ($ok) {
+      Write-Done "$pluginId"
+    } else {
+      Write-Host "  ❌ failed $pluginId (download error)" -ForegroundColor Red
+      try {
+        Remove-Item -Path $pluginDir -Recurse -Force -ErrorAction Stop
+      } catch {
+        Write-Host "  ⚠️  Could not remove partial directory '$pluginDir'. Remove it manually before opening Obsidian." -ForegroundColor Yellow
+      }
+      $failedPlugins += $pluginId
+    }
+  }
+
+  if ($failedPlugins.Count -gt 0) {
+    Write-Host
+    Write-Host "  Some plugins could not be installed automatically:" -ForegroundColor Yellow
+    foreach ($p in $failedPlugins) {
+      Write-Host "    • $p" -ForegroundColor Yellow
+    }
+    Write-Host "  Install them manually: Settings -> Community plugins -> Browse" -ForegroundColor Yellow
+  }
+
+  return ,@($failedPlugins)
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
+$script:FailedPlugins = @()
 function Main {
   Print-Banner
   Print-Info "This script downloads OneBrain and sets up a fresh Obsidian vault."
@@ -102,7 +290,7 @@ function Main {
   $repoUrl = "https://github.com/kengio/onebrain/archive/refs/heads/main.zip"
   $tmpDir  = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
   try {
-    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $tmpDir -Force -ErrorAction Stop | Out-Null
   } catch {
     Print-Error "Could not create a temporary directory. Check that your system temp folder is writeable."
     exit 1
@@ -192,6 +380,9 @@ function Main {
       }
     }
 
+    # ── Step 4b: Install community plugins ──────────────────────────────────
+    $script:FailedPlugins = @(Install-Plugins $vaultPath)
+
     # ── Step 5: Initialize git ──────────────────────────────────────────────
     Write-Step "🧠" "Initializing git repository..."
     # Push-Location lives in its own try/catch outside the finally-guarded block so that
@@ -252,12 +443,18 @@ function Main {
   Write-Host "Next steps:" -ForegroundColor White
   Write-Host "  1. Open Obsidian"
   Write-Host "     File -> Open Folder as Vault -> select: $vaultPath"
-  Write-Host "  2. Install community plugins (Settings -> Community plugins -> Browse):"
-  Write-Host "     Tasks  Dataview  Templater  Calendar" -ForegroundColor Cyan
-  Write-Host "     Tag Wrangler  QuickAdd  Obsidian Git  Terminal" -ForegroundColor Cyan
-  Write-Host "  3. Open the Terminal plugin in Obsidian and run your AI agent:"
+  $step = 2
+  if ($script:FailedPlugins.Count -gt 0) {
+    Write-Host "  $step. Install missing plugins manually (Settings -> Community plugins -> Browse):" -ForegroundColor White
+    foreach ($p in $script:FailedPlugins) {
+      Write-Host "     $p" -ForegroundColor Cyan
+    }
+    $step++
+  }
+  Write-Host "  $step. Open your terminal in the vault directory and run your AI agent:"
   Write-Host "     claude  or  gemini" -ForegroundColor Cyan
-  Write-Host "  4. Run the onboarding command:"
+  $step++
+  Write-Host "  $step. Run the onboarding command:"
   Write-Host "     /onboarding" -ForegroundColor Cyan
   Write-Host "     (Onboarding will ask you to choose a vault organization method"
   Write-Host "      and create your folders: OneBrain, PARA, or Zettelkasten)"
@@ -267,7 +464,7 @@ function Main {
   $open = Read-Host "  ? Open vault folder in Explorer? [Y/n]"
   if ($open -eq '' -or $open -match '^[Yy]') {
     try {
-      Start-Process explorer.exe $vaultPath
+      Start-Process explorer.exe -ArgumentList $vaultPath
     } catch {
       Print-Info "Could not open Explorer automatically. Your vault is at: $vaultPath"
     }

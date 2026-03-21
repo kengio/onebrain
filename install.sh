@@ -192,7 +192,218 @@ prompt_with_default() {
   echo "${answer:-$default}"
 }
 
+# ─── Plugin installer ─────────────────────────────────────────────────────────
+# install_plugins <vault_path>
+# Downloads the latest release of each plugin listed in .obsidian/community-plugins.json.
+# Uses only curl (already a required dependency) and POSIX tools (grep, sed, mkdir).
+# Non-fatal: warns on failure and populates the global FAILED_PLUGINS array with
+# any plugin IDs that could not be installed.
+install_plugins() {
+  local vault="$1"
+  local plugins_json="$vault/.obsidian/community-plugins.json"
+  local registry_url="https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
+  local failed_plugins=()
+
+  # Read plugin IDs from the flat JSON array (no jq needed — one string per line after grep)
+  if [ ! -f "$plugins_json" ]; then
+    return 0
+  fi
+  local plugin_ids
+  plugin_ids=$(grep -o '"[^"]*"' "$plugins_json" | tr -d '"')
+  if [ -z "$plugin_ids" ]; then
+    return 0
+  fi
+
+  print_header "Installing community plugins..."
+
+  # Fetch the Obsidian community plugin registry once.
+  # Reuse _INSTALL_TMPDIR (cleaned by the EXIT trap) to avoid a separate tempfile leak.
+  local registry_file="$_INSTALL_TMPDIR/plugin-registry.json"
+  spinner_start "Fetching plugin registry..."
+  local registry_err
+  if ! registry_err=$(curl -fsSL "$registry_url" -o "$registry_file" 2>&1); then
+    spinner_stop "$ICON_FAIL" ""
+    print_info "Could not reach the plugin registry${registry_err:+ (${registry_err})}. All plugins will need to be installed manually."
+    # Populate FAILED_PLUGINS so the success message shows manual install instructions.
+    while IFS= read -r _pid; do
+      [ -z "$_pid" ] && continue
+      failed_plugins+=("$_pid")
+    done <<< "$plugin_ids"
+    FAILED_PLUGINS=("${failed_plugins[@]}")
+    return 0
+  fi
+  spinner_stop "$ICON_OK" "Registry fetched"
+
+  local plugins_dir="$vault/.obsidian/plugins"
+  local mkdir_err
+  if ! mkdir_err=$(mkdir -p "$plugins_dir" 2>&1); then
+    print_info "Could not create plugins directory${mkdir_err:+ (${mkdir_err})}."
+    while IFS= read -r _pid; do
+      [ -z "$_pid" ] && continue
+      failed_plugins+=("$_pid")
+    done <<< "$plugin_ids"
+    FAILED_PLUGINS=("${failed_plugins[@]}")
+    return 0
+  fi
+
+  # GitHub REST API: 60 req/hr unauthenticated (shared per IP) — 5,000/hr with GITHUB_TOKEN.
+  # Build auth args once; GITHUB_TOKEN does not change during the loop.
+  # Accept header is included in the array (not hardcoded on the curl line) so both
+  # authenticated and unauthenticated calls send identical headers, and the array is
+  # never expanded empty (which would be a no-op, but is cleaner to avoid).
+  local curl_auth_args=(-H "Accept: application/vnd.github.v3+json")
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    curl_auth_args+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
+
+  local curl_errf="$_INSTALL_TMPDIR/curl_err"
+
+  while IFS= read -r plugin_id; do
+    [ -z "$plugin_id" ] && continue
+
+    # Validate plugin ID: reject IDs with path-traversal or shell-unsafe characters.
+    # All legitimate Obsidian plugin IDs use only alphanumerics, hyphens, and underscores.
+    if ! printf '%s' "$plugin_id" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+      print_info "  ${YELLOW}skipped${RESET} invalid plugin ID: '${plugin_id}'"
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
+
+    # Extract the GitHub repo for this plugin ID from the registry.
+    # grep -F (fixed-string) prevents plugin IDs with special characters from
+    # matching unintended entries. grep -A10 assumes "repo" appears within 10 lines
+    # of the "id" field — valid for the current Obsidian registry format.
+    local repo
+    repo=$(grep -F "\"id\": \"${plugin_id}\"" "$registry_file" -A10 \
+           | grep '"repo"' \
+           | sed 's/.*"repo": *"\([^"]*\)".*/\1/' \
+           | head -1)
+
+    if [ -z "$repo" ]; then
+      print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (not found in registry)"
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
+
+    # Clear the shared error file before each plugin so stale errors from a prior
+    # iteration never bleed into this plugin's failure message.
+    : > "$curl_errf"
+
+    spinner_start "  Installing ${plugin_id}..."
+
+    # Use -sSL (not -fsSL) so the response body is preserved on HTTP errors, enabling
+    # rate-limit detection. The HTTP status code is appended with -w and parsed below.
+    # Stderr (transport errors: DNS, TLS, timeout) is captured to $curl_errf so users
+    # see actionable detail instead of a generic "could not get release tag" message.
+    local api_raw http_code release_json tag
+    api_raw=$(curl -sSL -w '\n%{http_code}' \
+      "${curl_auth_args[@]}" \
+      "https://api.github.com/repos/${repo}/releases/latest" 2>"$curl_errf") || true
+    http_code=$(printf '%s\n' "$api_raw" | tail -1)
+    release_json=$(printf '%s\n' "$api_raw" | sed '$d')
+    tag=$(printf '%s' "$release_json" \
+          | grep '"tag_name"' \
+          | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' \
+          | head -1)
+
+    if [ -z "$tag" ]; then
+      spinner_stop "$ICON_FAIL" ""
+      # HTTP 403 can mean rate limit or access denied — check body to distinguish.
+      # Rate-limit strings come from GitHub REST API error response "message" field.
+      # Note: GitHub primary rate limits now return HTTP 429 (not 403) as of 2023;
+      # a 429 would fall through to the generic branch below with its HTTP code shown.
+      local api_transport_err
+      api_transport_err=$(cat "$curl_errf" 2>/dev/null | head -1 | tr -d '\r')
+      if [ "$http_code" = "403" ]; then
+        if printf '%s' "$release_json" | grep -qE '"(API rate limit exceeded|exceeded a secondary rate limit)"'; then
+          print_info "  ${RED}rate-limited${RESET} ${plugin_id} (GitHub rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)"
+        else
+          print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (GitHub API returned 403 — check GITHUB_TOKEN if set)"
+        fi
+      else
+        print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag — HTTP ${http_code:-error}${api_transport_err:+; ${api_transport_err}})"
+      fi
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
+
+    local plugin_dir="$plugins_dir/$plugin_id"
+    if ! mkdir_err=$(mkdir -p "$plugin_dir" 2>&1); then
+      spinner_stop "$ICON_FAIL" ""
+      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (could not create plugin directory${mkdir_err:+: ${mkdir_err}})"
+      failed_plugins+=("$plugin_id")
+      continue
+    fi
+
+    local base_url="https://github.com/${repo}/releases/download/${tag}"
+    local ok=true
+
+    # main.js and manifest.json are required; short-circuit on first failure.
+    # curl stderr (error details) is captured to $curl_errf for the failure message.
+    for asset in main.js manifest.json; do
+      if ! curl -fsSL "${base_url}/${asset}" -o "$plugin_dir/${asset}" 2>"$curl_errf"; then
+        ok=false
+        break
+      fi
+    done
+    # Verify required assets are non-empty: curl can exit 0 but write zero bytes on a
+    # network drop mid-transfer, or write an HTML error page if the redirect returned 200.
+    if [ "$ok" = true ]; then
+      for asset in main.js manifest.json; do
+        if [ ! -s "$plugin_dir/$asset" ]; then
+          printf '%s: empty or missing after download\n' "$asset" > "$curl_errf"
+          ok=false
+          break
+        fi
+      done
+    fi
+
+    # styles.css is optional — not all plugins ship it.
+    # curl exit 22 = HTTP 4xx/5xx (with -f flag) — expected when asset is absent.
+    # curl exit 56 = "failure receiving network data" — GitHub's CDN sometimes resets
+    # the connection instead of returning a 404 for a missing release asset; treat as absent.
+    # Any other non-zero exit (disk full, TLS error, DNS failure) is unexpected and warns.
+    if [ "$ok" = true ]; then
+      local css_exit=0
+      curl -fsSL "${base_url}/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || css_exit=$?
+      if [ "$css_exit" -ne 0 ] && [ "$css_exit" -ne 22 ] && [ "$css_exit" -ne 56 ]; then
+        print_info "  ${YELLOW}warning${RESET} Unexpected error downloading styles.css for ${plugin_id} (curl exit ${css_exit})"
+      fi
+      # Remove styles.css if absent or zero bytes (curl -f suppresses 404 bodies, leaving an empty file)
+      [ -s "$plugin_dir/styles.css" ] || rm -f "$plugin_dir/styles.css"
+    fi
+
+    if [ "$ok" = true ]; then
+      spinner_stop "$ICON_OK" "${plugin_id}"
+    else
+      spinner_stop "$ICON_FAIL" ""
+      local curl_err_detail
+      curl_err_detail=$(cat "$curl_errf" 2>/dev/null | head -1 | tr -d '\r')
+      local rm_err
+      if ! rm_err=$(rm -rf "$plugin_dir" 2>&1); then
+        print_info "  ${YELLOW}warning${RESET} Could not remove partial directory '$plugin_dir': $rm_err"
+        print_info "  Remove it manually before opening Obsidian."
+      fi
+      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (${curl_err_detail:-download error})"
+      failed_plugins+=("$plugin_id")
+    fi
+  done <<< "$plugin_ids"
+
+  if [ ${#failed_plugins[@]} -gt 0 ]; then
+    echo
+    print_info "Some plugins could not be installed automatically:"
+    for p in "${failed_plugins[@]}"; do
+      print_info "  • $p"
+    done
+    print_info "Install them manually: Settings → Community plugins → Browse"
+  fi
+
+  # Populate global for use in the success message
+  FAILED_PLUGINS=("${failed_plugins[@]}")
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
+FAILED_PLUGINS=()
 main() {
   # ── TTY check: when piped (curl | bash), stdin (fd 0) is the pipe — not the
   # ── terminal. Open /dev/tty as fd 3 so prompts reach the user without
@@ -341,6 +552,9 @@ main() {
     exit 1
   fi
 
+  # ── Step 4b: Install community plugins ──────────────────────────────────
+  install_plugins "$vault_path"
+
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   # git -C runs each command inside vault_path without changing the script's working
   # directory, avoiding side-effects on any $PWD references that follow.
@@ -376,14 +590,21 @@ main() {
   echo "${BOLD}Next steps:${RESET}"
   echo "  1. Open Obsidian"
   echo "     File → Open Folder as Vault → select: ${CYAN}${vault_path}${RESET}"
-  echo "  2. Install community plugins (Settings → Community plugins → Browse):"
-  echo "     ${CYAN}Tasks  Dataview  Templater  Calendar${RESET}"
-  echo "     ${CYAN}Tag Wrangler  QuickAdd  Obsidian Git  Terminal${RESET}"
-  echo "  3. Open your terminal in the vault directory:"
+  local step=2
+  if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
+    echo "  ${step}. Install missing plugins manually (Settings → Community plugins → Browse):"
+    for p in "${FAILED_PLUGINS[@]}"; do
+      echo "     ${CYAN}${p}${RESET}"
+    done
+    step=$((step + 1))
+  fi
+  echo "  ${step}. Open your terminal in the vault directory:"
   echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
-  echo "  4. Start your AI assistant:"
+  step=$((step + 1))
+  echo "  ${step}. Start your AI assistant:"
   echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
-  echo "  5. Run the onboarding command:"
+  step=$((step + 1))
+  echo "  ${step}. Run the onboarding command:"
   echo "     ${CYAN}/onboarding${RESET}"
   echo "     (Onboarding will ask you to choose a vault organization method"
   echo "      and create your folders: OneBrain, PARA, or Zettelkasten)"
