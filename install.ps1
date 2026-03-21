@@ -6,6 +6,27 @@ function Print-Info    { param($msg) Write-Host "   $msg" -ForegroundColor Cyan 
 function Print-Success { param($msg) Write-Host "   $msg" -ForegroundColor Green }
 function Print-Error   { param($msg) Write-Host "  error: $msg" -ForegroundColor Red }
 function Print-Header  { param($msg) Write-Host; Write-Host $msg -ForegroundColor Cyan; Write-Host }
+function Write-Step    { param($emoji, $msg) Write-Host "  $emoji $msg" }
+function Write-Done    { param($msg) Write-Host "  ✅ $msg" -ForegroundColor Green }
+
+function Print-Banner {
+  Write-Host
+  Write-Host " ██████╗ ███╗   ██╗███████╗" -ForegroundColor Blue
+  Write-Host "██╔═══██╗████╗  ██║██╔════╝" -ForegroundColor Blue
+  Write-Host "██║   ██║██╔██╗ ██║█████╗  " -ForegroundColor Blue
+  Write-Host "██║   ██║██║╚██╗██║██╔══╝  " -ForegroundColor Blue
+  Write-Host "╚██████╔╝██║ ╚████║███████╗" -ForegroundColor Blue
+  Write-Host " ╚═════╝ ╚═╝  ╚═══╝╚══════╝" -ForegroundColor Blue
+  Write-Host "██████╗ ██████╗  █████╗ ██╗███╗   ██╗" -ForegroundColor Blue
+  Write-Host "██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║" -ForegroundColor Blue
+  Write-Host "██████╔╝██████╔╝███████║██║██╔██╗ ██║" -ForegroundColor Blue
+  Write-Host "██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║" -ForegroundColor Blue
+  Write-Host "██████╔╝██║  ██║██║  ██║██║██║ ╚████║" -ForegroundColor Blue
+  Write-Host "╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝" -ForegroundColor Blue
+  Write-Host
+  Write-Host " > all thoughts. one brain. zero friction." -ForegroundColor Yellow
+  Write-Host
+}
 
 # ─── Dependency check ─────────────────────────────────────────────────────────
 function Check-Deps {
@@ -25,14 +46,14 @@ function Prompt-WithDefault {
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 function Main {
-  Print-Header "OneBrain Vault Installer"
+  Print-Banner
   Print-Info "This script downloads OneBrain and sets up a fresh Obsidian vault."
   Write-Host
 
   Check-Deps
 
   # ── Step 1: Install location ────────────────────────────────────────────────
-  $defaultLocation = Join-Path $env:USERPROFILE "Documents"
+  $defaultLocation = (Get-Location).Path
   $installLocation = Prompt-WithDefault "Where should the vault be created?" $defaultLocation
 
   if (-not (Test-Path $installLocation)) {
@@ -72,7 +93,7 @@ function Main {
   New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
 
   try {
-    Print-Info "Downloading OneBrain..."
+    Write-Step "📦" "Downloading OneBrain..."
     $zipPath = Join-Path $tmpDir "onebrain.zip"
 
     try {
@@ -82,9 +103,11 @@ function Main {
       Print-Error $_.Exception.Message
       exit 1
     }
+    Write-Done "Downloaded"
 
-    Print-Info "Extracting..."
+    Write-Step "🔧" "Extracting..."
     Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
+    Write-Done "Extracted"
 
     # GitHub zip extracts to a directory like onebrain-main/
     $extractedDir = Get-ChildItem -Path $tmpDir -Directory | Select-Object -First 1
@@ -108,12 +131,13 @@ function Main {
     }
 
     # ── Step 5: Initialize git ──────────────────────────────────────────────
-    Print-Info "Initializing git repository..."
+    Write-Step "🧠" "Initializing git repository..."
     Push-Location $vaultPath
     git init -q
     git add -A
     git commit -q -m "Initial OneBrain vault setup"
     Pop-Location
+    Write-Done "Git repository initialized"
 
   } finally {
     Remove-Item -Path $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -121,14 +145,16 @@ function Main {
 
   # ── Step 6: Success ──────────────────────────────────────────────────────────
   Write-Host
-  Write-Host "  OneBrain is ready!" -ForegroundColor Green
+  Write-Host "  🎉 OneBrain is ready!" -ForegroundColor Green
   Write-Host
   Print-Success "Vault path: $vaultPath"
   Write-Host
   Write-Host "Next steps:" -ForegroundColor White
   Write-Host "  1. Open Obsidian"
   Write-Host "     File -> Open Folder as Vault -> select: $vaultPath"
-  Write-Host "  2. When prompted, trust community plugins"
+  Write-Host "  2. Install community plugins (Settings -> Community plugins -> Browse):"
+  Write-Host "     Tasks  Dataview  Templater  Calendar" -ForegroundColor Cyan
+  Write-Host "     Tag Wrangler  QuickAdd  Obsidian Git  Terminal" -ForegroundColor Cyan
   Write-Host "  3. Open the Terminal plugin in Obsidian and run your AI agent:"
   Write-Host "     claude  or  gemini" -ForegroundColor Cyan
   Write-Host "  4. Run the onboarding command:"

@@ -20,6 +20,8 @@ An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI
 curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh | bash
 ```
 
+> The installer creates the vault in your current directory by default. You'll be prompted to confirm the location and vault name.
+
 **Option B — Manual clone:**
 
 ```bash
@@ -34,6 +36,8 @@ cd onebrain
 ```powershell
 irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
 ```
+
+> The installer creates the vault in your current directory by default. You'll be prompted to confirm the location and vault name.
 
 **Option B — Manual clone:**
 
