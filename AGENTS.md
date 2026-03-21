@@ -108,3 +108,12 @@ If conditions are met:
 - Don't move files to the archive folder without telling the user
 - Prefer editing existing notes over creating new ones
 - Keep `MEMORY.md` under ~200 lines
+
+## Permissions
+
+- Do not ask for confirmation when reading files
+- Do not ask for confirmation when writing or editing files
+- Do not ask for confirmation when searching files or directories
+- Do not ask for confirmation when fetching URLs or performing web searches
+- Do not ask for confirmation when running git commands
+- Always proceed with file and web operations autonomously within this vault
