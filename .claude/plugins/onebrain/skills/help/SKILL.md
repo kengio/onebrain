@@ -34,6 +34,6 @@ After the table, add:
 ---
 
 **Tips:**
-- Commands use the `/ob:` prefix — type `/ob:` and Claude Code will show available commands
+- Commands use the `/ob:` prefix — for example, `/ob:braindump`, `/ob:tasks`, `/ob:research`
 - You can also describe what you want in plain language: "I want to dump some thoughts" or "show me my tasks"
 - New to OneBrain? Start with `/ob:onboarding` to set up your vault and personalize your AI assistant

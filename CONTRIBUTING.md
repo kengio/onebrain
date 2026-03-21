@@ -39,7 +39,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    ---
    ```
 
-   The plugin system auto-namespaces skills using the folder name and the plugin's `name` field (`"ob"`), so `/ob:skill-name` is available automatically — no `triggers` needed.
+   No `triggers:` field is needed. Skill routing is handled by the command tables in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` — register your command there (see step 4).
 
 3. Write the skill as a numbered sequence of steps the AI should follow
 4. Register the command in `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, and `README.md`
