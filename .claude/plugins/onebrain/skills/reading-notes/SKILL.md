@@ -67,7 +67,7 @@ File: `04-resources/[subfolder]/[Book Title] — Notes.md` (subfolder confirmed 
 
 ```markdown
 ---
-tags: [reference, book-notes, topic-tag]
+tags: [reference, topic-tag]
 created: YYYY-MM-DD
 source: /reading-notes
 author: [Author]
