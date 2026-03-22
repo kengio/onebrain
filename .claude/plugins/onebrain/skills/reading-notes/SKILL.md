@@ -1,11 +1,11 @@
 ---
 name: reading-notes
-description: Process a book or article into structured progressive summary notes saved to the knowledge base
+description: Process a book or article into structured progressive summary notes saved to the resources folder
 ---
 
 # Reading Notes
 
-Turn a book or article into structured, permanent notes using the progressive summarization method.
+Turn a book or article into structured, permanent notes using the progressive summarization method, saved to your resources folder.
 
 Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
 
@@ -54,21 +54,22 @@ From the raw input, extract:
 
 ## Step 4: Choose Subfolder
 
-1. Glob existing subfolders in `02-knowledge/*/`
+1. Glob existing subfolders in `04-resources/*/`
 2. Suggest a kebab-case subfolder based on the book/article's topic (max 2 levels, e.g. `books/productivity` or `science/neuroscience`)
-3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+3. Present to user: "I'd file this under `04-resources/[suggested-path]/`. OK?"
 4. Use confirmed path for file creation.
 
 ---
 
 ## Step 5: Create the Note
 
-File: `02-knowledge/[subfolder]/[Book Title] — Notes.md` (subfolder confirmed in Step 4)
+File: `04-resources/[subfolder]/[Book Title] — Notes.md` (subfolder confirmed in Step 4)
 
 ```markdown
 ---
-tags: [book-notes, topic-tag]
+tags: [reference, book-notes, topic-tag]
 created: YYYY-MM-DD
+source: /reading-notes
 author: [Author]
 type: [book/article/paper]
 status: [reading/finished]
@@ -127,7 +128,7 @@ rating: [1-5 if they want to rate it]
 
 ## Step 6: Follow Up
 
-> Notes saved to `02-knowledge/[subfolder]/[Title] — Notes.md`.
+> Notes saved to `04-resources/[subfolder]/[Title] — Notes.md`.
 >
 > Want to:
 > - Add this to your reading list in a project note?
