@@ -83,7 +83,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub |
-| `/learn` | `learn/SKILL.md` | Teach the agent something — saved to 05-agent/ |
+| `/learn` | `learn/SKILL.md` | Teach the agent something — saved to agent folder |
 | `/export` | `export/SKILL.md` | Export agent context for transfer to another vault |
 | `/help` | `help/SKILL.md` | List available commands with use cases |
 
