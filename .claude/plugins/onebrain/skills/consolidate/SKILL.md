@@ -42,28 +42,39 @@ For each item:
 
 ### 3a. Analyze
 Read the file fully. Identify:
-- What type of knowledge this is (insight, reference, idea, project note)
-- What existing notes it relates to (search `02-knowledge/**/*.md` and `01-projects/**/*.md`)
+- What type of knowledge this is (insight, reference, idea, project note, area)
+- What existing notes it relates to (search `03-knowledge/**/*.md`, `04-resources/**/*.md`, `01-projects/**/*.md`, and `02-areas/**/*.md`)
 - Whether it deserves its own note or should be merged into an existing one
 
 ### 3b. Decide Destination
-Show the user:
-> `[filename]`: I'd merge this into [[Existing Note]] — it adds context about [topic].
+Classify the item and route it to the appropriate folder:
+- **Your own synthesis, insight, or conclusion** → `03-knowledge/[subfolder]/`
+- **Reference material, external info, or source notes** → `04-resources/[subfolder]/`
+- **Project-specific work** → `01-projects/[subfolder]/`
+- **Area-related note (health, finance, career, etc.)** → `02-areas/[subfolder]/`
+
+For the first few items, confirm routing with the user:
+> `[filename]`: This looks like [classification] — I'd route it to `[destination-folder]/`. Does that work, or would you prefer a different folder?
+
+After confirming the first few, proceed autonomously using the same classification logic.
+
+Also show merge options if relevant:
+> I'd merge this into [[Existing Note]] — it adds context about [topic].
 > Or I could create a new note: `[[New Note Name]]`.
 > What do you prefer?
 
 ### 3b.5 Choose Subfolder (for new notes only)
 
-If creating a new note in `02-knowledge/`:
-1. Glob existing subfolders in `02-knowledge/*/`
+Based on the routing decision above:
+1. Glob existing subfolders in the target folder (`03-knowledge/*/`, `04-resources/*/`, `01-projects/*/`, or `02-areas/*/`)
 2. Suggest a kebab-case subfolder based on the note's topic (max 2 levels, e.g. `science/biology`)
-3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+3. Present to user: "I'd file this under `[destination-folder]/[suggested-path]/`. OK?"
 4. Use confirmed path for file creation.
 
 ### 3c. Execute
 - **Merge**: Append the content as a new section in the target note, with a date header
-- **New note**: Create `02-knowledge/[subfolder]/[Topic Name].md` with proper frontmatter
-- **Archive**: If the item is outdated or irrelevant, move to `03-archive/YYYY/MM/`
+- **New note**: Create `[destination-folder]/[subfolder]/[Topic Name].md` with proper frontmatter
+- **Archive**: If the item is outdated or irrelevant, move to `06-archive/YYYY/MM/`
 
 Always add wikilinks connecting to at least one related note.
 
@@ -80,7 +91,7 @@ If inbox items contain unchecked tasks (`- [ ]`):
 ## Step 5: Archive Processed Items
 
 After an inbox item has been fully processed and its content merged/filed:
-- Move the original file to `03-archive/YYYY/MM/` (using today's date, don't delete it)
+- Move the original file to `06-archive/YYYY/MM/` (using today's date, don't delete it)
 - Or delete it if the user prefers a clean inbox
 
 Ask preference once: "After processing, should I archive originals or delete them?"
