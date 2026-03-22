@@ -14,14 +14,14 @@ Find meaningful connections between your notes and suggest wikilinks to build a 
 Ask (or infer from context):
 > Do you want to find connections:
 > - For a **specific note** (name it)
-> - Across your entire **knowledge base** (02-knowledge/)
+> - Across your entire **knowledge base** (02-knowledge/**/)
 > - For **recently added notes** (last 7 days)
 
 ---
 
 ## Step 2: Scan Notes
 
-List and read the relevant notes. For each note, extract:
+List and read the relevant notes using recursive glob patterns (`02-knowledge/**/*.md`, `01-projects/**/*.md`). For each note, extract:
 - Title
 - Tags (from frontmatter)
 - Key concepts mentioned (first 200 words)

@@ -43,7 +43,7 @@ For each item:
 ### 3a. Analyze
 Read the file fully. Identify:
 - What type of knowledge this is (insight, reference, idea, project note)
-- What existing notes it relates to (search `02-knowledge/` and `01-projects/`)
+- What existing notes it relates to (search `02-knowledge/**/*.md` and `01-projects/**/*.md`)
 - Whether it deserves its own note or should be merged into an existing one
 
 ### 3b. Decide Destination
@@ -52,10 +52,18 @@ Show the user:
 > Or I could create a new note: `[[New Note Name]]`.
 > What do you prefer?
 
+### 3b.5 Choose Subfolder (for new notes only)
+
+If creating a new note in `02-knowledge/`:
+1. Glob existing subfolders in `02-knowledge/*/`
+2. Suggest a kebab-case subfolder based on the note's topic (max 2 levels, e.g. `science/biology`)
+3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+4. Use confirmed path for file creation.
+
 ### 3c. Execute
 - **Merge**: Append the content as a new section in the target note, with a date header
-- **New note**: Create `02-knowledge/[Topic Name].md` with proper frontmatter
-- **Archive**: If the item is outdated or irrelevant, move to `03-archive/`
+- **New note**: Create `02-knowledge/[subfolder]/[Topic Name].md` with proper frontmatter
+- **Archive**: If the item is outdated or irrelevant, move to `03-archive/YYYY/MM/`
 
 Always add wikilinks connecting to at least one related note.
 
@@ -72,7 +80,7 @@ If inbox items contain unchecked tasks (`- [ ]`):
 ## Step 5: Archive Processed Items
 
 After an inbox item has been fully processed and its content merged/filed:
-- Move the original file to `03-archive/` (don't delete it)
+- Move the original file to `03-archive/YYYY/MM/` (using today's date, don't delete it)
 - Or delete it if the user prefers a clean inbox
 
 Ask preference once: "After processing, should I archive originals or delete them?"

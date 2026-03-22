@@ -46,11 +46,21 @@ Before writing the note, synthesize what you found:
 
 ---
 
-## Step 4: Create Research Note
+## Step 4: Choose Subfolder
 
-File: `02-knowledge/[Topic Name].md`
+1. Glob existing subfolders in `02-knowledge/*/`
+2. Suggest a kebab-case subfolder based on the research topic (max 2 levels, e.g. `technology/ai`)
+3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+   Show existing subfolders as options.
+4. Use confirmed path for file creation.
 
-If a note on this topic already exists, ask whether to create a new one or append a "Research — [Date]" section.
+---
+
+## Step 5: Create Research Note
+
+File: `02-knowledge/[subfolder]/[Topic Name].md` (subfolder confirmed in Step 4)
+
+If a note on this topic already exists (search recursively in `02-knowledge/**/*.md`), ask whether to create a new one or append a "Research — [Date]" section.
 
 ```markdown
 ---
@@ -97,10 +107,10 @@ sources: [list of key sources]
 
 ---
 
-## Step 5: Suggest Follow-Up
+## Step 6: Suggest Follow-Up
 
 After creating the note:
-> Research saved to `02-knowledge/[Topic Name].md`.
+> Research saved to `02-knowledge/[subfolder]/[Topic Name].md`.
 >
 > Based on what I found, you might also want to explore:
 > - [Related topic 1]

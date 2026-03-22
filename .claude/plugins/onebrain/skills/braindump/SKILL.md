@@ -93,7 +93,7 @@ created: YYYY-MM-DD
 
 If any item mentions an active project from MEMORY.md:
 - Mention it: "This looks related to [Project] — want me to also add a note there?"
-- If yes, append a brief note to the relevant `01-projects/` file
+- If yes, find the project file by searching `01-projects/**/*.md` and append a brief note to it (the subfolder is wherever the project file already lives)
 
 ---
 

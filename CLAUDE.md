@@ -18,7 +18,7 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 01-projects/     Active projects with tasks and notes
 02-knowledge/    Consolidated notes, insights, and reference material
 03-archive/      Completed projects and archived items
-04-memory-log/   Session summaries (YYYY-MM-DD-session-NN.md)
+04-logs/          Session logs (YYYY-MM-DD-session-NN.md)
 MEMORY.md        Identity and evolving knowledge (loaded every session)
 ```
 
@@ -78,7 +78,8 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
 | `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
-| `/wrapup` | `wrapup/SKILL.md` | Wrap up session → memory log |
+| `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
+| `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub |
 | `/help` | `help/SKILL.md` | List available commands with use cases |
 
@@ -91,32 +92,39 @@ At the start of every session, perform these steps:
 1. Read MEMORY.md to load identity, personality, and active projects
 2. Read vault.yml for folder names and configuration
 3. Check inbox count
-4. Read the most recent memory log entry
+4. Read the most recent session log entry
 5. Greet the user by name with relevant context
 
 At the end of every session:
-- Session summaries are auto-saved to the memory-log folder when the session ends (if 3+ exchanges occurred). Users can still run `/wrapup` manually for a visible summary.
+- Session summaries are auto-saved to the logs folder when the session ends (if 3+ exchanges occurred). Users can still run `/wrapup` manually for a visible summary.
 
 ### Auto Session Summary
 
 Before your final response in a session, silently save a session summary if ALL of these are true:
 1. The session had 3 or more user↔assistant exchanges
-2. No `/wrapup` was run during this session (check the memory-log folder for a file matching today's date with matching topics)
+2. No `/wrapup` was run during this session (check the logs folder for a file matching today's date with matching topics)
 
 If conditions are met:
-- If not already resolved, read `vault.yml` to determine the memory-log folder name (default: `04-memory-log`)
-- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in the memory-log folder for today, use the next number (zero-padded: 01, 02, etc.)
-- Write to `[memory_log_folder]/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
+- If not already resolved, read `vault.yml` to determine the logs folder name (default: `04-logs`)
+- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in `[logs_folder]/YYYY/MM/` for today, use the next number (zero-padded: 01, 02, etc.)
+- Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
 - Add `auto-saved: true` to the frontmatter
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `MEMORY.md`
 - Do NOT show any output about the auto-save to the user
 
 ## File Naming Conventions
 
-- Knowledge notes: `Topic Name.md` (title case)
-- Project notes: `Project Name.md`
-- Memory logs: `YYYY-MM-DD-session-NN.md`
-- Inbox items: `YYYY-MM-DD-topic.md`
+- Knowledge notes: `02-knowledge/[subfolder]/Topic Name.md` (title case, subfolder in kebab-case)
+- Project notes: `01-projects/[subfolder]/Project Name.md` (subfolder in kebab-case)
+- Archive items: `03-archive/YYYY/MM/filename.md` (organized by date archived)
+- Session logs: `04-logs/YYYY/MM/YYYY-MM-DD-session-NN.md`
+- Inbox items: `00-inbox/YYYY-MM-DD-topic.md` (flat, no subfolders)
+
+**Subfolder rules:**
+- Always kebab-case (lowercase, hyphens not spaces): `machine-learning`, `web-development`
+- Max 2 levels deep: `technology/ai` is OK, `technology/ai/deep-learning` is NOT
+- When creating a note, suggest a subfolder and confirm with the user before saving
+- To migrate existing flat notes into subfolders, run `/reorganize`
 
 ## Boundaries
 

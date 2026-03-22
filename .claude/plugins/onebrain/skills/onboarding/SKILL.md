@@ -63,9 +63,9 @@ Use `AskUserQuestion` with:
 - header: "Vault method"
 - multiSelect: false
 - options:
-  - label: "OneBrain (Recommended)", description: "Simple and practical. Best for general-purpose note-taking and getting things done.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with tasks\n02-knowledge/   Consolidated notes & reference\n03-archive/     Completed & inactive items\n04-memory-log/  Session summaries"
-  - label: "PARA", description: "Organize by actionability (Tiago Forte). Best for action-oriented people managing work + life.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with deadlines\n02-areas/       Ongoing responsibilities\n03-resources/   Topics of interest & reference\n04-archive/     Inactive items\n05-memory-log/  Session summaries"
-  - label: "Zettelkasten", description: "Build a knowledge graph (Niklas Luhmann). Best for researchers, writers, and deep thinkers.", preview: "00-fleeting/    Temporary raw ideas\n01-literature/  Notes from sources you've read\n02-permanent/   Atomic linked notes (your graph)\n03-archive/     Inactive items\n04-memory-log/  Session summaries"
+  - label: "OneBrain (Recommended)", description: "Simple and practical. Best for general-purpose note-taking and getting things done.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with tasks\n02-knowledge/   Consolidated notes & reference\n03-archive/     Completed & inactive items\n04-logs/        Session logs"
+  - label: "PARA", description: "Organize by actionability (Tiago Forte). Best for action-oriented people managing work + life.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with deadlines\n02-areas/       Ongoing responsibilities\n03-resources/   Topics of interest & reference\n04-archive/     Inactive items\n05-logs/        Session logs"
+  - label: "Zettelkasten", description: "Build a knowledge graph (Niklas Luhmann). Best for researchers, writers, and deep thinkers.", preview: "00-fleeting/    Temporary raw ideas\n01-literature/  Notes from sources you've read\n02-permanent/   Atomic linked notes (your graph)\n03-archive/     Inactive items\n04-logs/        Session logs"
 
 Fallback (if AskUserQuestion unavailable): present as a numbered list and wait for response. Default to OneBrain if no clear answer.
 
@@ -241,7 +241,7 @@ Based on the chosen method, create the listed folders. For each folder, check if
 01-projects/
 02-knowledge/
 03-archive/
-04-memory-log/
+04-logs/
 ```
 
 **PARA (method = para):**
@@ -251,7 +251,7 @@ Based on the chosen method, create the listed folders. For each folder, check if
 02-areas/
 03-resources/
 04-archive/
-05-memory-log/
+05-logs/
 ```
 
 **Zettelkasten (method = zettelkasten):**
@@ -260,7 +260,7 @@ Based on the chosen method, create the listed folders. For each folder, check if
 01-literature/
 02-permanent/
 03-archive/
-04-memory-log/
+04-logs/
 ```
 
 ---
@@ -284,7 +284,7 @@ Use your file editing tools (Read, Edit) to make these replacements — do not u
 In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
 - `02-knowledge/` → `03-resources/`
 - `03-archive/` → `04-archive/`
-- `04-memory-log/` → `05-memory-log/`
+- `04-logs/` → `05-logs/`
 - "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
 - "Completed projects and archived items" → "Inactive items from any category"
 
@@ -294,7 +294,7 @@ Also insert a line for `02-areas/` in the vault structure sections (PARA adds a 
 In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
 - `02-knowledge/` → `03-resources/`
 - `03-archive/` → `04-archive/`
-- `04-memory-log/` → `05-memory-log/`
+- `04-logs/` → `05-logs/`
 
 **For Zettelkasten:**
 
@@ -328,7 +328,7 @@ folders:
   projects: 01-projects
   knowledge: 02-knowledge
   archive: 03-archive
-  memory_log: 04-memory-log
+  logs: 04-logs
 ```
 
 **PARA:**
@@ -340,7 +340,7 @@ folders:
   areas: 02-areas
   knowledge: 03-resources
   archive: 04-archive
-  memory_log: 05-memory-log
+  logs: 05-logs
 ```
 
 **Zettelkasten:**
@@ -351,7 +351,7 @@ folders:
   projects: 01-literature
   knowledge: 02-permanent
   archive: 03-archive
-  memory_log: 04-memory-log
+  logs: 04-logs
 ```
 
 ---
@@ -370,6 +370,8 @@ Say:
 > - `/braindump` — dump anything on your mind right now
 > - `/capture` — add a quick note or idea
 > - `/research [topic]` — research something and save it to your vault
+>
+> **How notes are organized:** Knowledge and project notes go into kebab-case subfolders (e.g. `02-knowledge/programming/python/`). I'll suggest a subfolder whenever you create a note — just confirm or adjust. Session logs go into `04-logs/YYYY/MM/` and archive items go into `03-archive/YYYY/MM/`.
 >
 > When you're done working, run `/wrapup` to save a session summary.
 >

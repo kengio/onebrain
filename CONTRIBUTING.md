@@ -52,7 +52,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 
 > **Important:** `skills/onboarding/SKILL.md` and `skills/update/SKILL.md` are intentionally excluded from the folder-name replacements that run during onboarding and update.
 >
-> `skills/onboarding/SKILL.md` must always contain the default OneBrain folder names (`00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-memory-log/`) as hardcoded strings — these are the source patterns the replacement instructions match against. Changing them breaks method customization for all users.
+> `skills/onboarding/SKILL.md` must always contain the default OneBrain folder names (`00-inbox/`, `01-projects/`, `02-knowledge/`, `03-archive/`, `04-logs/`) as hardcoded strings — these are the source patterns the replacement instructions match against. Changing them breaks method customization for all users.
 >
 > `skills/update/SKILL.md` must likewise not be pre-replaced. Its Step 5.5 uses the same default folder names as hardcoded source strings to match against fresh upstream content. Do not alter them — doing so will break re-application for users on PARA or Zettelkasten.
 

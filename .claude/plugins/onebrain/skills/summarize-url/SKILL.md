@@ -50,13 +50,25 @@ Identify:
 
 ---
 
-## Step 5: Create Summary Note
+## Step 5: Choose Subfolder
+
+**Skip this step if saving to `00-inbox/`.**
+
+For notes going to `02-knowledge/`:
+1. Glob existing subfolders in `02-knowledge/*/`
+2. Suggest a kebab-case subfolder based on the article's topic (max 2 levels, e.g. `productivity/tools`)
+3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+4. Use confirmed path for file creation.
+
+---
+
+## Step 6: Create Summary Note
 
 Determine the best location:
-- `02-knowledge/` — for reference material
+- `02-knowledge/[subfolder]/` — for reference material (subfolder confirmed in Step 5)
 - `00-inbox/` — if the user just wants to save it for later without processing
 
-File name: `02-knowledge/[Article Title].md` or `00-inbox/YYYY-MM-DD-[slug].md`
+File name: `02-knowledge/[subfolder]/[Article Title].md` or `00-inbox/YYYY-MM-DD-[slug].md`
 
 ```markdown
 ---
@@ -99,11 +111,11 @@ published: [Publication date if known]
 
 ---
 
-## Step 6: Suggest Links
+## Step 7: Suggest Links
 
-Scan `02-knowledge/` for notes related to the article's topic.
+Scan `02-knowledge/**/*.md` for notes related to the article's topic.
 
-> Summary saved to `02-knowledge/[Title].md`.
+> Summary saved to `02-knowledge/[subfolder]/[Title].md`.
 >
 > This looks related to:
 > - [[Related Note 1]] — [why]
