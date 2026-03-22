@@ -1,11 +1,11 @@
 ---
 name: wrapup
-description: Wrap up and save the current session summary to the memory log
+description: Wrap up and save the current session summary to the session log
 ---
 
 # Session Summary (TL;DR)
 
-Generates a summary of this session and saves it to the memory log folder for future recall.
+Generates a summary of this session and saves it to the logs folder for future recall.
 
 ---
 

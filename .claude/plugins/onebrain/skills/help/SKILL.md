@@ -23,7 +23,7 @@ Display a formatted table with all available commands:
 | `/reading-notes` | Book or article → structured progressive summary | When finishing a book or long article and want to capture it |
 | `/tasks` | Task dashboard — overdue, due soon, open, completed | When you want an overview of what needs doing |
 | `/weekly` | Weekly reflection — review sessions, patterns, intentions | At the end of each week for review and planning |
-| `/wrapup` | Save a session summary to your memory log | At the end of a work session to capture what you did |
+| `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
 | `/reorganize` | Migrate existing flat notes into subfolders — one-time migration | After upgrading to a version with subfolder organization |
 | `/update` | Update OneBrain system files from GitHub | When a new version is available |
 | `/help` | List all available commands | You're already here! |
