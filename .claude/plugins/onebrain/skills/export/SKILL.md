@@ -39,10 +39,10 @@ updated: YYYY-MM-DD
 - Last updated: [TODAY'S DATE]
 
 ## Context Notes
-[For each file in agent_folder/context/, list: - filename — first line of file body (after frontmatter)]
+[For each .md file in agent_folder/context/ (skip .gitkeep and non-.md files), list: - filename — first line of file body (after frontmatter). If no .md files exist, write: (none yet)]
 
 ## Memory Notes
-[For each file in agent_folder/memory/, list: - filename — first line of file body (after frontmatter)]
+[For each .md file in agent_folder/memory/ (skip .gitkeep and non-.md files), list: - filename — first line of file body (after frontmatter). If no .md files exist, write: (none yet)]
 ```
 
 ---
@@ -74,14 +74,15 @@ Ask:
 If the user chose option 1:
 
 1. Determine output folder: `agent-export-YYYY-MM-DD/`
-2. If that folder already exists, append a counter: `agent-export-YYYY-MM-DD-02/`, `-03/`, etc.
+2. If that folder already exists, append a counter: `agent-export-YYYY-MM-DD-02/`, `-03/`, etc. Keep incrementing until you find a name that does not exist.
 3. Create the output folder
 4. Copy `MEMORY.md` to `[output_folder]/MEMORY.md`
 5. Copy entire `[agent_folder]/` to `[output_folder]/[agent_folder]/` preserving all subfolders and files (including EXPORT.md)
 6. Confirm:
    > Your agent context is ready at `[output_folder]/`.
    > Copy this folder's contents to your new vault root to restore context.
-   > To import: place `MEMORY.md` at the vault root and `[agent_folder]/` in the same location.
+   > **Prerequisite:** Your new vault must have OneBrain installed before importing.
+   > To import: place `MEMORY.md` at the vault root and `[agent_folder]/` at the same vault root level.
 
 ---
 
