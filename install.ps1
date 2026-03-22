@@ -237,6 +237,67 @@ function Install-Plugins {
   return ,@($failedPlugins)
 }
 
+# ─── Obsidian Skills plugin (kepano/obsidian-skills) ─────────────────────────
+# Install-ObsidianSkills <VaultPath>
+# Shallow-clones kepano/obsidian-skills into .claude\plugins\obsidian-skills\
+# so the obsidian-markdown, obsidian-bases, json-canvas, obsidian-cli, and
+# defuddle skills are available to Claude Code immediately after vault setup.
+# Non-fatal: warns on failure and continues.
+# Idempotent: skips if directory already exists in a valid state.
+function Install-ObsidianSkills {
+  param([string]$VaultPath)
+
+  $targetDir = Join-Path $VaultPath ".claude\plugins\obsidian-skills"
+  $repoUrl   = "https://github.com/kepano/obsidian-skills.git"
+
+  Write-Step "📦" "Installing Obsidian Skills plugin..."
+
+  # Already installed in a valid state — skip silently
+  if ((Test-Path $targetDir -PathType Container) -and
+      -not (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
+    Write-Done "Obsidian Skills already present"
+    return
+  }
+
+  # Partial install detected: directory exists but .git was not removed.
+  # This happens when a previous run cloned successfully but .git removal failed.
+  if ((Test-Path $targetDir -PathType Container) -and
+      (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
+    Write-Host "  ❌ Obsidian Skills: incomplete previous install" -ForegroundColor Red
+    Print-Info "Found obsidian-skills with a nested .git (previous install incomplete)."
+    Print-Info "Remove it manually, then re-run the installer:"
+    Print-Info "  Remove-Item -Path `"$targetDir\.git`" -Recurse -Force"
+    return
+  }
+
+  # Clone the repo (shallow, quiet)
+  $cloneOutput = git clone --depth 1 -q $repoUrl $targetDir 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
+    Print-Info "Could not clone obsidian-skills:"
+    Print-Info "  $cloneOutput"
+    Print-Info "You can install it later:"
+    Print-Info "  git clone --depth 1 $repoUrl `"$targetDir`""
+    return  # Non-fatal — continue with install
+  }
+
+  # Remove the nested .git so git doesn't treat this as an unregistered submodule.
+  # The .gitignore entry already excludes the path from tracking, but leaving .git
+  # in place would cause confusing `git status` output and potential submodule errors.
+  try {
+    Remove-Item -Path (Join-Path $targetDir ".git") -Recurse -Force -ErrorAction Stop
+  } catch {
+    Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
+    Print-Info "Cloned obsidian-skills but could not remove its nested .git directory."
+    Print-Info "Without removing it, git may treat this as an unregistered submodule."
+    Print-Info "Fix manually before running git commands in this vault:"
+    Print-Info "  Remove-Item -Path `"$targetDir\.git`" -Recurse -Force"
+    return  # Non-fatal — continue with install
+  }
+
+  Write-Done "Obsidian Skills installed"
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 $script:FailedPlugins = @()
 function Main {
@@ -382,6 +443,9 @@ function Main {
 
     # ── Step 4b: Install community plugins ──────────────────────────────────
     $script:FailedPlugins = @(Install-Plugins $vaultPath)
+
+    # ── Step 4c: Install Obsidian Skills Claude plugin ───────────────────────
+    Install-ObsidianSkills $vaultPath
 
     # ── Step 5: Initialize git ──────────────────────────────────────────────
     Write-Step "🧠" "Initializing git repository..."
