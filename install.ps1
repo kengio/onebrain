@@ -204,9 +204,9 @@ function Install-Plugins {
           }
         }
       } catch {
-        # Network/TLS/HTTP 4xx errors — warn but don't fail the plugin.
+        # Network/TLS/HTTP 4xx/5xx errors — warn but don't fail the plugin.
         # Only attempt cleanup if a partial file was actually written (e.g. mid-transfer
-        # network drop); Invoke-WebRequest does not create the file on a clean 4xx.
+        # network drop); Invoke-WebRequest does not create the file on a clean error response.
         Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
         if (Test-Path $cssPath) {
           try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
@@ -256,33 +256,42 @@ function Install-ObsidianSkills {
 
   Write-Step "📦" "Installing Obsidian Skills plugin..."
 
-  # Already installed in a valid state — skip silently
+  # Already installed in a valid state — show confirmation and skip
   if ((Test-Path $targetDir -PathType Container) -and
       -not (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
     Write-Done "Obsidian Skills already present"
     return
   }
 
-  # Partial install detected: directory exists but .git was not removed.
-  # This happens when a previous run cloned successfully but .git removal failed.
+  # Partial install: directory exists but still has a .git (previous .git removal failed,
+  # or clone was interrupted before checkout completed). Remove the whole directory so the
+  # next run can retry cleanly — a partial clone's skill files may be incomplete too.
   if ((Test-Path $targetDir -PathType Container) -and
       (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
-    Write-Host "  ❌ Obsidian Skills: incomplete previous install" -ForegroundColor Red
-    Print-Info "Found obsidian-skills with a nested .git (previous install incomplete)."
-    Print-Info "Remove it manually, then re-run the installer:"
-    Print-Info "  Remove-Item -Path `"$targetDir\.git`" -Recurse -Force"
-    return
+    Write-Host "  ⚠️  Obsidian Skills: incomplete previous install — retrying..." -ForegroundColor Yellow
+    try {
+      Remove-Item -Path $targetDir -Recurse -Force -ErrorAction Stop
+    } catch {
+      Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
+      Print-Info "Could not remove partial install at: $targetDir"
+      Print-Info "Remove it manually, then re-run the installer:"
+      Print-Info "  Remove-Item -Path `"$targetDir`" -Recurse -Force"
+      return  # Non-fatal — overall install continues without this plugin
+    }
+    Write-Step "📦" "Installing Obsidian Skills plugin..."
   }
 
-  # Clone the repo (shallow, quiet)
-  $cloneOutput = git clone --depth 1 -q $repoUrl $targetDir 2>&1
+  # Clone the repo (shallow, quiet); join all output lines for readable error display
+  $cloneOutput = (git clone --depth 1 -q $repoUrl $targetDir 2>&1) -join "`n"
   if ($LASTEXITCODE -ne 0) {
     Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
     Print-Info "Could not clone obsidian-skills:"
     Print-Info "  $cloneOutput"
+    # Clean up any partial directory git may have created before failing
+    Remove-Item -Path $targetDir -Recurse -Force -ErrorAction SilentlyContinue
     Print-Info "You can install it later:"
     Print-Info "  git clone --depth 1 $repoUrl `"$targetDir`""
-    return  # Non-fatal — continue with install
+    return  # Non-fatal — overall install continues without this plugin
   }
 
   # Remove the nested .git so git doesn't treat this as an unregistered submodule.
@@ -296,7 +305,7 @@ function Install-ObsidianSkills {
     Print-Info "Without removing it, git may treat this as an unregistered submodule."
     Print-Info "Fix manually before running git commands in this vault:"
     Print-Info "  Remove-Item -Path `"$targetDir\.git`" -Recurse -Force"
-    return  # Non-fatal — continue with install
+    return  # Non-fatal — overall install continues without this plugin
   }
 
   Write-Done "Obsidian Skills installed"

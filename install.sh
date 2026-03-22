@@ -416,20 +416,25 @@ install_obsidian_skills() {
 
   spinner_start "Installing Obsidian Skills plugin..."
 
-  # Already installed in a valid state — skip silently
+  # Already installed in a valid state — show confirmation and skip
   if [ -d "$target_dir" ] && [ ! -d "$target_dir/.git" ]; then
     spinner_stop "$ICON_OK" "Obsidian Skills already present"
     return 0
   fi
 
-  # Partial install detected: directory exists but .git was not removed.
-  # This happens when a previous run cloned successfully but rm -rf .git failed.
+  # Partial install: directory exists but still has a .git (previous .git removal failed,
+  # or clone was interrupted before checkout completed). Remove the whole directory so the
+  # next run can retry cleanly — a partial clone's skill files may be incomplete too.
   if [ -d "$target_dir" ] && [ -d "$target_dir/.git" ]; then
     spinner_stop "$ICON_FAIL" "Obsidian Skills: incomplete previous install"
-    print_info "${YELLOW}Found obsidian-skills with a nested .git (previous install incomplete).${RESET}"
-    print_info "Remove it manually, then re-run the installer:"
-    print_info "  ${CYAN}rm -rf \"$target_dir/.git\"${RESET}"
-    return 0  # Non-fatal — continue with install
+    print_info "${YELLOW}Found an incomplete obsidian-skills install. Removing and retrying...${RESET}"
+    if ! rm -rf "$target_dir"; then
+      print_info "${YELLOW}Could not remove partial install at:${RESET} $target_dir"
+      print_info "Remove it manually, then re-run the installer:"
+      print_info "  ${CYAN}rm -rf \"$target_dir\"${RESET}"
+      return 0  # Non-fatal — overall install continues without this plugin
+    fi
+    spinner_start "Installing Obsidian Skills plugin..."
   fi
 
   local clone_err
@@ -437,9 +442,11 @@ install_obsidian_skills() {
     spinner_stop "$ICON_FAIL" "Obsidian Skills install failed"
     print_info "${YELLOW}Could not clone obsidian-skills:${RESET}"
     print_info "  ${clone_err:-unknown error}"
+    # Clean up any partial directory git may have created before failing
+    rm -rf "$target_dir" 2>/dev/null
     print_info "You can install it later:"
     print_info "  ${CYAN}git clone --depth 1 $repo_url \"$target_dir\"${RESET}"
-    return 0  # Non-fatal — continue with install
+    return 0  # Non-fatal — overall install continues without this plugin
   fi
 
   # Remove the nested .git so git doesn't treat this as an unregistered submodule.
@@ -451,7 +458,7 @@ install_obsidian_skills() {
     print_info "Without removing it, git may treat this as an unregistered submodule."
     print_info "Fix manually before running git commands in this vault:"
     print_info "  ${CYAN}rm -rf \"$target_dir/.git\"${RESET}"
-    return 0  # Non-fatal — continue with install
+    return 0  # Non-fatal — overall install continues without this plugin
   fi
 
   spinner_stop "$ICON_OK" "Obsidian Skills installed"

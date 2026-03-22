@@ -161,20 +161,22 @@ Update the kepano/obsidian-skills plugin to the latest version.
 Ask the user:
 > The Obsidian Skills plugin is not installed. Would you like to install it now?
 
-If yes, run:
-```
-git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills
-```
-Then remove `.claude/plugins/obsidian-skills/.git`.
+If yes:
+1. Run: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills`
+   - If the clone fails: warn the user, clean up `obsidian-skills/` unconditionally (it may be partially created), and skip this step.
+2. Remove `.claude/plugins/obsidian-skills/.git`:
+   - If this fails: warn the user with the manual fix command (`rm -rf .claude/plugins/obsidian-skills/.git`), and skip this step.
 
 If no, skip this step.
 
 **If `.claude/plugins/obsidian-skills/` exists:**
 
-Since the `.git` directory was removed at install time, update by re-cloning to a temp location first, then swapping:
+First check: if `.claude/plugins/obsidian-skills/.git` still exists (incomplete previous install), stop and tell the user to remove it manually before updating: `rm -rf .claude/plugins/obsidian-skills/.git` — or remove the whole directory and re-run `/update`.
+
+Otherwise, since the `.git` directory was removed at install time, update by re-cloning to a temp location first, then swapping:
 
 1. Clone to temp: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills-new`
-   - If the clone fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new` if it was partially created.
+   - If the clone fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new` unconditionally (attempt removal regardless of whether it appears complete or partial).
 
 2. Remove `.claude/plugins/obsidian-skills-new/.git`:
    - If this fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new`.
