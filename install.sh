@@ -405,9 +405,10 @@ install_plugins() {
 # ─── Obsidian Skills plugin (kepano/obsidian-skills) ─────────────────────────
 # install_obsidian_skills <vault_path>
 # Shallow-clones kepano/obsidian-skills into .claude/plugins/obsidian-skills/
-# so the obsidian-markdown, bases, canvas, cli, and defuddle skills are available
-# to Claude Code immediately after vault setup. Non-fatal: warns on failure and
-# continues. Idempotent: skips silently if the directory already exists.
+# so the obsidian-markdown, obsidian-bases, json-canvas, obsidian-cli, and
+# defuddle skills are available to Claude Code immediately after vault setup.
+# Non-fatal: warns on failure and continues.
+# Idempotent: skips if directory already exists in a valid state.
 install_obsidian_skills() {
   local vault="$1"
   local target_dir="$vault/.claude/plugins/obsidian-skills"
@@ -415,24 +416,43 @@ install_obsidian_skills() {
 
   spinner_start "Installing Obsidian Skills plugin..."
 
-  # Already exists (e.g., re-run) — skip silently
-  if [ -d "$target_dir" ]; then
+  # Already installed in a valid state — skip silently
+  if [ -d "$target_dir" ] && [ ! -d "$target_dir/.git" ]; then
     spinner_stop "$ICON_OK" "Obsidian Skills already present"
     return 0
   fi
 
+  # Partial install detected: directory exists but .git was not removed.
+  # This happens when a previous run cloned successfully but rm -rf .git failed.
+  if [ -d "$target_dir" ] && [ -d "$target_dir/.git" ]; then
+    spinner_stop "$ICON_FAIL" "Obsidian Skills: incomplete previous install"
+    print_info "${YELLOW}Found obsidian-skills with a nested .git (previous install incomplete).${RESET}"
+    print_info "Remove it manually, then re-run the installer:"
+    print_info "  ${CYAN}rm -rf \"$target_dir/.git\"${RESET}"
+    return 0  # Non-fatal — continue with install
+  fi
+
   local clone_err
   if ! clone_err=$(git clone --depth 1 -q "$repo_url" "$target_dir" 2>&1); then
-    spinner_stop "$ICON_FAIL" ""
-    print_info "${YELLOW}Could not clone obsidian-skills:${RESET} ${clone_err:-unknown error}"
+    spinner_stop "$ICON_FAIL" "Obsidian Skills install failed"
+    print_info "${YELLOW}Could not clone obsidian-skills:${RESET}"
+    print_info "  ${clone_err:-unknown error}"
     print_info "You can install it later:"
     print_info "  ${CYAN}git clone --depth 1 $repo_url \"$target_dir\"${RESET}"
     return 0  # Non-fatal — continue with install
   fi
 
-  # Remove the nested .git so the vault's own git init (Step 5) doesn't treat
-  # this as a submodule and so `git add -A` doesn't accidentally stage it.
-  rm -rf "$target_dir/.git" 2>/dev/null || true
+  # Remove the nested .git so git doesn't treat this as an unregistered submodule.
+  # The .gitignore entry already excludes the path from tracking, but leaving .git
+  # in place would cause confusing `git status` output and potential submodule errors.
+  if ! rm -rf "$target_dir/.git"; then
+    spinner_stop "$ICON_FAIL" "Obsidian Skills install failed"
+    print_info "${YELLOW}Cloned obsidian-skills but could not remove its nested .git directory.${RESET}"
+    print_info "Without removing it, git may treat this as an unregistered submodule."
+    print_info "Fix manually before running git commands in this vault:"
+    print_info "  ${CYAN}rm -rf \"$target_dir/.git\"${RESET}"
+    return 0  # Non-fatal — continue with install
+  fi
 
   spinner_stop "$ICON_OK" "Obsidian Skills installed"
 }

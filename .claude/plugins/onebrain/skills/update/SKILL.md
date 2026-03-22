@@ -171,13 +171,21 @@ If no, skip this step.
 
 **If `.claude/plugins/obsidian-skills/` exists:**
 
-Since the `.git` directory was removed at install time, update by re-cloning:
+Since the `.git` directory was removed at install time, update by re-cloning to a temp location first, then swapping:
 
-1. Clone to a temp location: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills-new`
-2. If the clone succeeds: remove `.claude/plugins/obsidian-skills-new/.git`, delete `.claude/plugins/obsidian-skills/`, rename `obsidian-skills-new` → `obsidian-skills`
-3. If the clone fails: warn the user and keep the existing version intact. Clean up `obsidian-skills-new` if it was created.
+1. Clone to temp: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills-new`
+   - If the clone fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new` if it was partially created.
 
-Report: "Obsidian Skills plugin updated to latest version." or the skip/failure message.
+2. Remove `.claude/plugins/obsidian-skills-new/.git`:
+   - If this fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new`.
+
+3. Delete `.claude/plugins/obsidian-skills/`:
+   - If this fails: warn the user, keep both directories, and stop. Tell the user to manually remove `obsidian-skills/` and rename `obsidian-skills-new` to `obsidian-skills`.
+
+4. Rename `obsidian-skills-new` → `obsidian-skills`:
+   - If this fails (e.g., cross-device move): warn the user that the old directory was removed and the new one is at `obsidian-skills-new`. Tell the user to manually rename it: `mv .claude/plugins/obsidian-skills-new .claude/plugins/obsidian-skills`
+
+Report: "Obsidian Skills plugin updated to latest version." on success, or the specific failure message if any step failed.
 
 ---
 
