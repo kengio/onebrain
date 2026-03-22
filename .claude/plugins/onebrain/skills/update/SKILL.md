@@ -22,9 +22,9 @@ Tell the user what will and won't be updated:
 - `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
-- All your note folders (inbox, projects, knowledge, archive, logs — exact names depend on your vault method; see `vault.yml`) — all your notes
+- All your note folders (00-inbox, 01-projects, 02-knowledge, 03-archive, 04-logs) — all your notes
 - `MEMORY.md` — your identity and session context
-- `vault.yml` — your vault method configuration
+- `vault.yml` — your vault configuration
 - `.obsidian/themes/` — your chosen theme
 - `.obsidian/appearance.json` — your theme preference
 - `.obsidian/workspace.json` — your panel layout
@@ -104,55 +104,7 @@ Only modify files that are in the allowlist. Never touch note folders, `MEMORY.m
 
 ---
 
-## Step 5.5: Re-apply Vault Method Customizations
-
-Read `vault.yml` to check the configured method (`method:` key). If `vault.yml` doesn't exist or the method is `onebrain`, skip this step.
-
-Otherwise, read the folder mapping from `vault.yml` and re-apply replacements to all updated system files. This ensures fresh upstream files get the correct folder names for the user's chosen method.
-
-The onboarding and update skill files must NOT be modified — they contain hardcoded default folder names as templates required for future runs.
-
-Use your file editing tools (Read, Edit) to make these replacements — do not use shell commands. This ensures the step works on all platforms (macOS, Linux, Windows).
-
-From `vault.yml`, read the `folders` mapping:
-- `folders.inbox` → INBOX
-- `folders.projects` → PROJECTS
-- `folders.knowledge` → KNOWLEDGE
-- `folders.archive` → ARCHIVE
-- `folders.logs` → MEMLOG
-
-**In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:**
-- `00-inbox/` → `[INBOX]/`
-- `01-projects/` → `[PROJECTS]/`
-- `02-knowledge/` → `[KNOWLEDGE]/`
-- `03-archive/` → `[ARCHIVE]/`
-- `04-logs/` → `[MEMLOG]/`
-
-**If method is `para`, also in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`:**
-- Replace "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
-- Replace "Completed projects and old items" → "Inactive items from any category"
-- Replace "Completed projects and archived items" → "Inactive items from any category"
-- Insert `02-areas/        Ongoing responsibilities (health, finance, career)` after the `01-projects/` line in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` vault structure code blocks (if not already present)
-
-**If method is `zettelkasten`, also in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`:**
-- Replace "Raw braindumps and quick captures (process regularly)" → "Temporary capture — raw ideas and quick notes"
-- Replace "Active projects with tasks and notes" → "Notes from sources you've read"
-- Replace "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
-
-**In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:**
-- `00-inbox/` → `[INBOX]/`
-- `01-projects/` → `[PROJECTS]/`
-- `02-knowledge/` → `[KNOWLEDGE]/`
-- `03-archive/` → `[ARCHIVE]/`
-- `04-logs/` → `[MEMLOG]/`
-
-Display name mapping for the completion message: `onebrain` → OneBrain, `para` → PARA, `zettelkasten` → Zettelkasten.
-
-Tell the user: "Re-applied [display name] folder customizations to updated files."
-
----
-
-## Step 5.6: Update Obsidian Skills Plugin
+## Step 5: Update Obsidian Skills Plugin
 
 Update the kepano/obsidian-skills plugin to the latest version.
 
