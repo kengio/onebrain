@@ -1,9 +1,5 @@
 [
   "obsidian-tasks-plugin",
   "dataview",
-  "templater-obsidian",
-  "calendar",
-  "tag-wrangler",
-  "quickadd",
   "terminal"
 ]
