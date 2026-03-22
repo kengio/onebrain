@@ -33,9 +33,11 @@ None of the OneBrain Claude skills depend on any community plugin — all skill 
 ## Primary Use Pattern
 
 Users interact with OneBrain in a mixed mode:
+
 - **Claude Code** for AI-driven work (`/braindump`, `/tasks`, `/capture`, etc.)
 - **Obsidian directly** for browsing notes, clicking tasks, building dashboards, and navigating the vault
 - The `terminal` plugin enables running `claude` from within Obsidian — the vault is the working environment
+
 
 ---
 
@@ -45,7 +47,7 @@ Users interact with OneBrain in a mixed mode:
 
 The task format used across all OneBrain skills and CLAUDE.md was intentionally designed to match Obsidian Tasks conventions:
 
-```
+```markdown
 - [ ] Task description 📅 YYYY-MM-DD 🔺
 ```
 
@@ -63,7 +65,7 @@ Embeds a terminal emulator inside Obsidian. Users run `claude` (or `gemini`) dir
 
 Provides a SQL-like query engine for notes. Users can write inline queries to build dynamic dashboards, e.g.:
 
-```
+```dataview
 TABLE file.mtime, tags FROM "01-projects" WHERE contains(tags, "active")
 ```
 
