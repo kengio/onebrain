@@ -221,9 +221,9 @@ Create the following folders. For each folder, check if it exists first; if not,
 02-areas/
 03-knowledge/
 04-resources/
-05-agent/
-05-agent/context/
-05-agent/memory/
+05-agent/              ← root folder
+05-agent/context/      ← subfolder only (no README)
+05-agent/memory/       ← subfolder only (no README)
 06-archive/
 07-logs/
 ```
@@ -367,7 +367,7 @@ Behavioral patterns and extended observations the AI has learned:
 
 ## Portability
 Copy MEMORY.md + this folder to move your agent to a new vault.
-Run /export to package everything neatly — it generates EXPORT.md (a manifest of all context and memory files) and copies everything into agent-export-YYYY-MM-DD/.
+When ready to transfer your agent to a new vault, run `/export` to package everything neatly.
 
 ## Not here
 - Personal notes → 03-knowledge/
