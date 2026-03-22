@@ -52,7 +52,7 @@ For knowledge notes (`03-knowledge/`), reference notes (`04-resources/`), area n
 
 ## Step 4: Find Related Notes
 
-Scan `03-knowledge/**/*.md`, `04-resources/**/*.md`, and `01-projects/**/*.md` for notes related to the content (by topic/tags/title).
+Scan `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` for notes related to the content (by topic/tags/title).
 
 List up to 3 relevant matches and ask:
 > I found these related notes — should I link to any of them?
