@@ -204,10 +204,13 @@ function Install-Plugins {
           }
         }
       } catch {
-        # Network/TLS/HTTP 4xx/5xx errors — warn but don't fail the plugin.
-        # Invoke-WebRequest may or may not create the OutFile on error depending on
-        # the PowerShell version and server response body; check and remove defensively.
-        Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
+        # styles.css is optional — 404 means this plugin doesn't ship one; skip silently.
+        # Only warn on unexpected errors (network failures, TLS errors, 5xx, etc.).
+        $statusCode = try { [int]$_.Exception.Response.StatusCode.value__ } catch { 0 }
+        if ($statusCode -ne 404) {
+          Write-Host "  ⚠️  Could not download styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+        # Invoke-WebRequest may partially create the OutFile — remove it defensively.
         if (Test-Path $cssPath) {
           try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
             Write-Host "  ⚠️  Could not remove partial styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
