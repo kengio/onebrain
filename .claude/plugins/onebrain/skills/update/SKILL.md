@@ -24,7 +24,7 @@ Tell the user what will and won't be updated:
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-knowledge, 03-archive, 04-logs) — all your notes
 - `MEMORY.md` — your identity and session context
-- `vault.yml` — your vault method configuration
+- `vault.yml` — your vault configuration
 - `.obsidian/themes/` — your chosen theme
 - `.obsidian/appearance.json` — your theme preference
 - `.obsidian/workspace.json` — your panel layout
@@ -104,7 +104,7 @@ Only modify files that are in the allowlist. Never touch note folders, `MEMORY.m
 
 ---
 
-## Step 5.5: Update Obsidian Skills Plugin
+## Step 5: Update Obsidian Skills Plugin
 
 Update the kepano/obsidian-skills plugin to the latest version.
 

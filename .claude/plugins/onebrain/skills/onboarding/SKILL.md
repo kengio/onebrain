@@ -248,7 +248,7 @@ Say:
 > You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help. Here's what's set up:
 >
 > - Your identity and personality are saved in MEMORY.md
-> - Your vault is organized using the **OneBrain** method with these folders:
+> - Your vault is set up with these folders:
 >   - `00-inbox/` — raw captures (process regularly)
 >   - `01-projects/` — active projects with tasks
 >   - `02-knowledge/` — consolidated notes & reference
