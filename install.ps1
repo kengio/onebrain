@@ -448,8 +448,7 @@ function Main {
         Remove-Item -Path $dotGit -Recurse -Force -ErrorAction Stop
       } catch {
         Print-Error "Could not remove the bundled .git directory from '$vaultPath'."
-        Print-Error "Check for locked files and remove '$dotGit' manually, then re-run:"
-        Print-Error "  git -C '$vaultPath' init; git -C '$vaultPath' add -A; git -C '$vaultPath' commit -m 'Initial OneBrain vault setup'"
+        Print-Error "Remove it manually: Remove-Item -Path '$dotGit' -Recurse -Force"
         throw "error:already-printed"
       }
     }
@@ -459,42 +458,6 @@ function Main {
 
     # ── Step 4c: Install Obsidian Skills Claude plugin ───────────────────────
     Install-ObsidianSkills $vaultPath
-
-    # ── Step 5: Initialize git ──────────────────────────────────────────────
-    Write-Step "🧠" "Initializing git repository..."
-    # Push-Location lives in its own try/catch outside the finally-guarded block so that
-    # Pop-Location is only called when Push-Location actually succeeded.
-    try {
-      Push-Location $vaultPath
-    } catch {
-      Print-Error "Could not change into vault directory '$vaultPath'."
-      Print-Error $_.Exception.Message
-      throw "error:already-printed"  # propagates to outer catch; outer finally still cleans tmpDir
-    }
-    try {
-      git init -q
-      if ($LASTEXITCODE -ne 0) {
-        Print-Error "Failed to initialize a git repository in '$vaultPath'."
-        throw "error:already-printed"
-      }
-      git add -A
-      if ($LASTEXITCODE -ne 0) {
-        Print-Error "Failed to stage files for the initial git commit in '$vaultPath'."
-        Print-Error "Check for a stale .git/index.lock file or permission issues."
-        throw "error:already-printed"
-      }
-      git commit -q -m "Initial OneBrain vault setup"
-      if ($LASTEXITCODE -ne 0) {
-        Print-Error "Failed to create the initial git commit."
-        Print-Error "Git may need a name and email configured. Run:"
-        Print-Error "  git config --global user.name 'Your Name'"
-        Print-Error "  git config --global user.email 'you@example.com'"
-        throw "error:already-printed"
-      }
-    } finally {
-      Pop-Location
-    }
-    Write-Done "Git repository initialized"
 
   } catch {
     # Sentinel "error:already-printed" means a specific message was already shown to the user.
@@ -511,7 +474,7 @@ function Main {
     }
   }
 
-  # ── Step 6: Success ──────────────────────────────────────────────────────────
+  # ── Step 5: Success ──────────────────────────────────────────────────────────
   Write-Host
   Write-Host "  🎉 OneBrain is ready!" -ForegroundColor Green
   Write-Host

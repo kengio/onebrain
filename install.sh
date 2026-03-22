@@ -26,9 +26,9 @@ print_header()  { echo; echo "${BOLD}${CYAN}$*${RESET}"; echo; }
 
 # ─── Unicode / emoji detection ────────────────────────────────────────────────
 if locale charmap 2>/dev/null | grep -qi 'utf-8'; then
-  ICON_DL="📦" ICON_EXTRACT="🔧" ICON_GIT="🧠" ICON_OK="✅" ICON_FAIL="❌" ICON_DONE="🎉"
+  ICON_DL="📦" ICON_EXTRACT="🔧" ICON_OK="✅" ICON_FAIL="❌" ICON_DONE="🎉"
 else
-  ICON_DL="[DL]" ICON_EXTRACT="[EX]" ICON_GIT="[GIT]" ICON_OK="[OK]" ICON_FAIL="[FAIL]" ICON_DONE="[DONE]"
+  ICON_DL="[DL]" ICON_EXTRACT="[EX]" ICON_OK="[OK]" ICON_FAIL="[FAIL]" ICON_DONE="[DONE]"
 fi
 
 # ─── Banner ───────────────────────────────────────────────────────────────────
@@ -610,7 +610,6 @@ main() {
   if ! rm -rf "$vault_path/.git"; then
     print_error "Could not remove stale .git from '$vault_path/.git'."
     print_error "Remove it manually: rm -rf \"$vault_path/.git\""
-    print_error "Then run: git -C \"$vault_path\" init && git -C \"$vault_path\" add -A && git -C \"$vault_path\" commit -m 'Initial OneBrain vault setup'"
     exit 1
   fi
 
@@ -620,33 +619,7 @@ main() {
   # ── Step 4c: Install Obsidian Skills Claude plugin ───────────────────────
   install_obsidian_skills "$vault_path"
 
-  # ── Step 5: Initialize git ──────────────────────────────────────────────────
-  # git -C runs each command inside vault_path without changing the script's working
-  # directory, avoiding side-effects on any $PWD references that follow.
-  spinner_start "$ICON_GIT Initializing git repository..."
-  if ! git -C "$vault_path" init -q; then
-    spinner_stop "$ICON_FAIL" ""
-    print_error "Failed to initialize a git repository in '$vault_path'."
-    exit 1
-  fi
-  if ! git -C "$vault_path" add -A; then
-    spinner_stop "$ICON_FAIL" ""
-    print_error "Failed to stage files for the initial git commit in '$vault_path'."
-    print_error "Check for a stale .git/index.lock file or permission issues."
-    exit 1
-  fi
-  if ! git -C "$vault_path" commit -q -m "Initial OneBrain vault setup"; then
-    spinner_stop "$ICON_FAIL" ""
-    print_error "Failed to create the initial git commit."
-    print_error "Git may need a name and email configured. Run:"
-    print_error "  git config --global user.name  'Your Name'"
-    print_error "  git config --global user.email 'you@example.com'"
-    print_error "Then re-run: git -C \"$vault_path\" add -A && git -C \"$vault_path\" commit -m 'Initial OneBrain vault setup'"
-    exit 1
-  fi
-  spinner_stop "$ICON_OK" "Git repository initialized"
-
-  # ── Step 6: Success ──────────────────────────────────────────────────────────
+  # ── Step 5: Success ──────────────────────────────────────────────────────────
   echo
   echo "${BLUE}${BOLD}  $ICON_DONE OneBrain is ready!${RESET}"
   echo
