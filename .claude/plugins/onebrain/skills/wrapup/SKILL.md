@@ -11,7 +11,7 @@ Generates a summary of this session and saves it to the logs folder for future r
 
 ## Before You Begin
 
-If `vault.yml` exists, read it and extract `folders.logs` as `logs_folder`. Default to `04-logs` if the file does not exist or the key is absent.
+If `vault.yml` exists, read it and extract `folders.logs` as `logs_folder`. Default to `07-logs` if the file does not exist or the key is absent.
 
 Use `logs_folder` for all file paths in the steps below.
 
@@ -95,7 +95,19 @@ Only add learnings that are genuinely useful long-term (not every session warran
 
 ---
 
-## Step 5: Confirm
+## Step 5: Overflow to Agent Memory (Optional)
+
+If a genuinely useful long-term insight emerged this session — a clear behavioral pattern, a strong user preference, or a non-obvious observation about how to work with this user — and it is too detailed for MEMORY.md, write it to `[agent_folder]/memory/YYYY-MM-DD-slug.md`:
+
+- Read `vault.yml` and extract `folders.agent`, default to `05-agent`
+- Frontmatter: `tags: [agent-memory]`, `created: YYYY-MM-DD`, `source: /wrapup`
+- File naming: first note of day: `YYYY-MM-DD-slug.md`; if one already exists today: `YYYY-MM-DD-02-slug.md`, etc.
+- Keep it to 1-3 sentences
+- Only do this if the insight is genuinely useful long-term — do not overflow routine session details
+
+---
+
+## Step 6: Confirm
 
 Say:
 > Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
