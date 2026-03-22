@@ -205,8 +205,8 @@ function Install-Plugins {
         }
       } catch {
         # Network/TLS/HTTP 4xx/5xx errors — warn but don't fail the plugin.
-        # Only attempt cleanup if a partial file was actually written (e.g. mid-transfer
-        # network drop); Invoke-WebRequest does not create the file on a clean error response.
+        # Invoke-WebRequest may or may not create the OutFile on error depending on
+        # the PowerShell version and server response body; check and remove defensively.
         Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
         if (Test-Path $cssPath) {
           try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
@@ -244,9 +244,9 @@ function Install-Plugins {
 # ─── Obsidian Skills plugin (kepano/obsidian-skills) ─────────────────────────
 # Install-ObsidianSkills <VaultPath>
 # Shallow-clones kepano/obsidian-skills into .claude\plugins\obsidian-skills\
-# so the obsidian-markdown, obsidian-bases, json-canvas, obsidian-cli, and
-# defuddle skills are available to Claude Code immediately after vault setup.
-# Non-fatal: warns on failure and continues.
+# so the Obsidian-specific Claude Code skills from that repo are available
+# immediately after vault setup. See https://github.com/kepano/obsidian-skills
+# for the current skill list. Non-fatal: warns on failure and continues.
 # Idempotent: skips if directory already exists in a valid state.
 function Install-ObsidianSkills {
   param([string]$VaultPath)
@@ -287,22 +287,29 @@ function Install-ObsidianSkills {
     Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
     Print-Info "Could not clone obsidian-skills:"
     Print-Info "  $cloneOutput"
-    # Clean up any partial directory git may have created before failing
-    Remove-Item -Path $targetDir -Recurse -Force -ErrorAction SilentlyContinue
+    # Clean up any partial directory git may have created before failing.
+    # Warn if removal fails so the user knows to clean up before retrying.
+    try {
+      Remove-Item -Path $targetDir -Recurse -Force -ErrorAction Stop
+    } catch {
+      Write-Host "  ⚠️  Could not remove partial clone at: $targetDir" -ForegroundColor Yellow
+      Print-Info "Remove it manually: Remove-Item -Path `"$targetDir`" -Recurse -Force"
+    }
     Print-Info "You can install it later:"
     Print-Info "  git clone --depth 1 $repoUrl `"$targetDir`""
     return  # Non-fatal — overall install continues without this plugin
   }
 
-  # Remove the nested .git so git doesn't treat this as an unregistered submodule.
-  # The .gitignore entry already excludes the path from tracking, but leaving .git
-  # in place would cause confusing `git status` output and potential submodule errors.
+  # Remove the nested .git so the parent repo does not treat this directory as
+  # an embedded repository. Without removal, 'git add' warns about an embedded
+  # repo and 'git status' silently ignores the subtree, which is confusing.
+  # The .gitignore entry suppresses tracking, but does not suppress the warning.
   try {
     Remove-Item -Path (Join-Path $targetDir ".git") -Recurse -Force -ErrorAction Stop
   } catch {
     Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
     Print-Info "Cloned obsidian-skills but could not remove its nested .git directory."
-    Print-Info "Without removing it, git may treat this as an unregistered submodule."
+    Print-Info "Without removing it, 'git add' will warn about an embedded repository."
     Print-Info "Fix manually before running git commands in this vault:"
     Print-Info "  Remove-Item -Path `"$targetDir\.git`" -Recurse -Force"
     return  # Non-fatal — overall install continues without this plugin

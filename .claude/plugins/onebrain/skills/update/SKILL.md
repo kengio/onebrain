@@ -165,18 +165,18 @@ If yes:
 1. Run: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills`
    - If the clone fails: warn the user, clean up `obsidian-skills/` unconditionally (it may be partially created), and skip this step.
 2. Remove `.claude/plugins/obsidian-skills/.git`:
-   - If this fails: warn the user with the manual fix command (`rm -rf .claude/plugins/obsidian-skills/.git`), and skip this step.
+   - If this fails: warn the user. Tell them to either remove the whole directory and re-run `/update` (`rm -rf .claude/plugins/obsidian-skills/`), or if they know the skill files are complete, remove only the nested `.git` (`rm -rf .claude/plugins/obsidian-skills/.git`). Skip this step.
 
 If no, skip this step.
 
 **If `.claude/plugins/obsidian-skills/` exists:**
 
-First check: if `.claude/plugins/obsidian-skills/.git` still exists (incomplete previous install), stop and tell the user to remove it manually before updating: `rm -rf .claude/plugins/obsidian-skills/.git` — or remove the whole directory and re-run `/update`.
+First check: if `.claude/plugins/obsidian-skills/.git` still exists (incomplete previous install), stop and tell the user to remove the whole directory and re-run `/update`: `rm -rf .claude/plugins/obsidian-skills/` — or, if the skill files are known complete, remove only the nested `.git`: `rm -rf .claude/plugins/obsidian-skills/.git`.
 
 Otherwise, since the `.git` directory was removed at install time, update by re-cloning to a temp location first, then swapping:
 
 1. Clone to temp: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills-new`
-   - If the clone fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new` unconditionally (attempt removal regardless of whether it appears complete or partial).
+   - If the clone fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new` unconditionally. If that cleanup also fails, warn the user to remove it manually (`rm -rf .claude/plugins/obsidian-skills-new`) before the next update attempt.
 
 2. Remove `.claude/plugins/obsidian-skills-new/.git`:
    - If this fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new`.
