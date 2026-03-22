@@ -18,7 +18,7 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 01-projects/     Active projects with tasks and notes
 02-knowledge/    Consolidated notes, insights, and reference material
 03-archive/      Completed projects and archived items
-04-logs/          Session logs (YYYY-MM-DD-session-NN.md)
+04-logs/         Session logs (YYYY-MM-DD-session-NN.md)
 MEMORY.md        Identity and evolving knowledge (loaded every session)
 ```
 
