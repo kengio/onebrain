@@ -83,9 +83,9 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub |
-| `/help` | `help/SKILL.md` | List available commands with use cases |
 | `/learn` | `learn/SKILL.md` | Teach the agent something — saved to 05-agent/ |
 | `/export` | `export/SKILL.md` | Export agent context for transfer to another vault |
+| `/help` | `help/SKILL.md` | List available commands with use cases |
 
 When a user invokes a command, read the corresponding SKILL.md and follow it.
 
@@ -94,10 +94,10 @@ When a user invokes a command, read the corresponding SKILL.md and follow it.
 At the start of every session, perform these steps:
 
 1. Read MEMORY.md to load identity, personality, and active projects
-2. Read vault.yml for folder names and configuration
-   > **Agent context (lazy load):** If the session involves a domain-specific topic (e.g., research, writing, technical work), grep `05-agent/context/` for notes relevant to that topic and use them as background context. Do not load all context files every session — only when relevant.
+2. Read vault.yml for folder names and configuration (this sets `[agent folder]` from `folders.agent`, default: `05-agent`)
+   > **Agent context (lazy load):** If the session involves a domain-specific topic (e.g., research, writing, technical work), grep `[agent folder]/context/` for notes relevant to that topic and use them as background context. Do not load all context files every session — only when relevant.
    >
-   > **Agent memory (on-demand only):** `05-agent/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
+   > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
 4. Read the most recent session log entry
 5. Greet the user by name with relevant context
