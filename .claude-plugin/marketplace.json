@@ -8,6 +8,11 @@
       "name": "onebrain",
       "source": "./.claude/plugins/onebrain",
       "description": "AI-powered second brain for Obsidian"
+    },
+    {
+      "name": "obsidian",
+      "source": "./.claude/plugins/obsidian-skills",
+      "description": "Claude Skills for Obsidian — markdown, bases, canvas, CLI, and web extraction"
     }
   ]
 }

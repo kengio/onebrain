@@ -17,6 +17,7 @@ Tell the user what will and won't be updated:
 **WILL update (system files only):**
 - `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `README.md`, `.gitignore`
 - `.claude/plugins/onebrain/` — all skills, hooks, and agents
+- `.claude/plugins/obsidian-skills/` — Obsidian Skills plugin (kepano/obsidian-skills)
 - `.obsidian/plugins/` — bundled plugin files
 - `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
@@ -148,6 +149,35 @@ From `vault.yml`, read the `folders` mapping:
 Display name mapping for the completion message: `onebrain` → OneBrain, `para` → PARA, `zettelkasten` → Zettelkasten.
 
 Tell the user: "Re-applied [display name] folder customizations to updated files."
+
+---
+
+## Step 5.6: Update Obsidian Skills Plugin
+
+Update the kepano/obsidian-skills plugin to the latest version.
+
+**If `.claude/plugins/obsidian-skills/` does NOT exist:**
+
+Ask the user:
+> The Obsidian Skills plugin is not installed. Would you like to install it now?
+
+If yes, run:
+```
+git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills
+```
+Then remove `.claude/plugins/obsidian-skills/.git`.
+
+If no, skip this step.
+
+**If `.claude/plugins/obsidian-skills/` exists:**
+
+Since the `.git` directory was removed at install time, update by re-cloning:
+
+1. Clone to a temp location: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills-new`
+2. If the clone succeeds: remove `.claude/plugins/obsidian-skills-new/.git`, delete `.claude/plugins/obsidian-skills/`, rename `obsidian-skills-new` → `obsidian-skills`
+3. If the clone fails: warn the user and keep the existing version intact. Clean up `obsidian-skills-new` if it was created.
+
+Report: "Obsidian Skills plugin updated to latest version." or the skip/failure message.
 
 ---
 

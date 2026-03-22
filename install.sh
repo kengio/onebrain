@@ -402,6 +402,41 @@ install_plugins() {
   FAILED_PLUGINS=("${failed_plugins[@]}")
 }
 
+# ─── Obsidian Skills plugin (kepano/obsidian-skills) ─────────────────────────
+# install_obsidian_skills <vault_path>
+# Shallow-clones kepano/obsidian-skills into .claude/plugins/obsidian-skills/
+# so the obsidian-markdown, bases, canvas, cli, and defuddle skills are available
+# to Claude Code immediately after vault setup. Non-fatal: warns on failure and
+# continues. Idempotent: skips silently if the directory already exists.
+install_obsidian_skills() {
+  local vault="$1"
+  local target_dir="$vault/.claude/plugins/obsidian-skills"
+  local repo_url="https://github.com/kepano/obsidian-skills.git"
+
+  spinner_start "Installing Obsidian Skills plugin..."
+
+  # Already exists (e.g., re-run) — skip silently
+  if [ -d "$target_dir" ]; then
+    spinner_stop "$ICON_OK" "Obsidian Skills already present"
+    return 0
+  fi
+
+  local clone_err
+  if ! clone_err=$(git clone --depth 1 -q "$repo_url" "$target_dir" 2>&1); then
+    spinner_stop "$ICON_FAIL" ""
+    print_info "${YELLOW}Could not clone obsidian-skills:${RESET} ${clone_err:-unknown error}"
+    print_info "You can install it later:"
+    print_info "  ${CYAN}git clone --depth 1 $repo_url \"$target_dir\"${RESET}"
+    return 0  # Non-fatal — continue with install
+  fi
+
+  # Remove the nested .git so the vault's own git init (Step 5) doesn't treat
+  # this as a submodule and so `git add -A` doesn't accidentally stage it.
+  rm -rf "$target_dir/.git" 2>/dev/null || true
+
+  spinner_stop "$ICON_OK" "Obsidian Skills installed"
+}
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 FAILED_PLUGINS=()
 main() {
@@ -554,6 +589,9 @@ main() {
 
   # ── Step 4b: Install community plugins ──────────────────────────────────
   install_plugins "$vault_path"
+
+  # ── Step 4c: Install Obsidian Skills Claude plugin ───────────────────────
+  install_obsidian_skills "$vault_path"
 
   # ── Step 5: Initialize git ──────────────────────────────────────────────────
   # git -C runs each command inside vault_path without changing the script's working

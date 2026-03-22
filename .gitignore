@@ -7,6 +7,9 @@
 .claude/settings.local.json
 .claude/onebrain.local.md
 
+# Obsidian Skills plugin (cloned at install time — not committed)
+.claude/plugins/obsidian-skills/
+
 # OS files
 .DS_Store
 Thumbs.db
