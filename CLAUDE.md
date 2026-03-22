@@ -18,9 +18,9 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 02-areas/        Ongoing responsibilities (health, finances, career...)
 03-knowledge/    Your own synthesized thinking and insights
 04-resources/    External info — research output, summaries, reference
-05-agent/        AI-specific knowledge and working context
+05-agent/        AI-specific context and memory (context/ + memory/)
 06-archive/      Completed projects and archived areas
-07-logs/         Session logs (YYYY-MM-DD-session-NN.md)
+07-logs/         Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
 MEMORY.md        Identity and evolving knowledge (loaded every session)
 ```
 
@@ -81,10 +81,10 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
 | `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
+| `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences |
+| `/export` | `export/SKILL.md` | Package agent context for vault transfer |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub |
-| `/learn` | `learn/SKILL.md` | Teach the agent something — saved to agent folder |
-| `/export` | `export/SKILL.md` | Export agent context for transfer to another vault |
 | `/help` | `help/SKILL.md` | List available commands with use cases |
 
 When a user invokes a command, read the corresponding SKILL.md and follow it.

@@ -24,10 +24,11 @@ Classify the content:
 - **Fleeting note** → file to `00-inbox/` (unprocessed idea, rough thought)
 - **Knowledge note** → file to `03-knowledge/` (personal synthesis, insight, processed idea)
 - **Reference note** → file to `04-resources/` (external source, fact, quote, reference material)
+- **Area note** → file to `02-areas/` (ongoing responsibility — health, finances, career...)
 - **Project note** → append to relevant `01-projects/` file
 
 Ask if unclear:
-> Is this a rough idea to process later, something you've synthesized yourself, or reference material from an external source?
+> Is this a rough idea to process later, your own synthesized insight, reference material from an external source, something related to an ongoing area of responsibility, or a project update?
 
 ---
 
@@ -35,9 +36,9 @@ Ask if unclear:
 
 **Skip this step for fleeting notes going to `00-inbox/`.**
 
-For knowledge notes (`03-knowledge/`), reference notes (`04-resources/`), or project notes (`01-projects/`):
+For knowledge notes (`03-knowledge/`), reference notes (`04-resources/`), area notes (`02-areas/`), or project notes (`01-projects/`):
 
-1. Glob existing subfolders in the target folder (e.g. `03-knowledge/*/` or `04-resources/*/`)
+1. Glob existing subfolders in the target folder (e.g. `03-knowledge/*/`, `04-resources/*/`, or `02-areas/*/`)
 2. Analyze the content to determine the best category
 3. Suggest a subfolder path (kebab-case, max 2 levels, e.g. `programming/python`):
    - If an existing subfolder fits well → suggest it
