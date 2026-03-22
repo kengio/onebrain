@@ -11,11 +11,17 @@ Best run on Friday afternoon or over the weekend.
 
 ---
 
+## Before You Begin
+
+Read `vault.yml` and extract `folders.logs` as `logs_folder`. Default to `07-logs` if absent.
+
+---
+
 ## Step 1: Identify This Week's Sessions
 
 Determine the current week's date range (Mon–Sun).
 
-List all files in `04-logs/**/*.md` from this week. If there are none, check the past 7 days.
+List all files in `[logs_folder]/**/*.md` from this week. If there are none, check the past 7 days.
 
 Report:
 > I found N sessions this week:
