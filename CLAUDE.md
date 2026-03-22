@@ -15,9 +15,12 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 ```
 00-inbox/        Raw braindumps and quick captures (process regularly)
 01-projects/     Active projects with tasks and notes
-02-knowledge/    Consolidated notes, insights, and reference material
-03-archive/      Completed projects and archived items
-04-logs/         Session logs (YYYY-MM-DD-session-NN.md)
+02-areas/        Ongoing responsibilities (health, finances, career...)
+03-knowledge/    Your own synthesized thinking and insights
+04-resources/    External info — research output, summaries, reference
+05-agent/        AI-specific knowledge and working context
+06-archive/      Completed projects and archived areas
+07-logs/         Session logs (YYYY-MM-DD-session-NN.md)
 MEMORY.md        Identity and evolving knowledge (loaded every session)
 ```
 
@@ -81,6 +84,8 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub |
 | `/help` | `help/SKILL.md` | List available commands with use cases |
+| `/learn` | `learn/SKILL.md` | Teach the agent something — saved to 05-agent/ |
+| `/export` | `export/SKILL.md` | Export agent context for transfer to another vault |
 
 When a user invokes a command, read the corresponding SKILL.md and follow it.
 
@@ -90,6 +95,9 @@ At the start of every session, perform these steps:
 
 1. Read MEMORY.md to load identity, personality, and active projects
 2. Read vault.yml for folder names and configuration
+   > **Agent context (lazy load):** If the session involves a domain-specific topic (e.g., research, writing, technical work), grep `05-agent/context/` for notes relevant to that topic and use them as background context. Do not load all context files every session — only when relevant.
+   >
+   > **Agent memory (on-demand only):** `05-agent/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
 4. Read the most recent session log entry
 5. Greet the user by name with relevant context
@@ -104,7 +112,7 @@ Before your final response in a session, silently save a session summary if ALL 
 2. No `/wrapup` was run during this session (check the logs folder for a file matching today's date with matching topics)
 
 If conditions are met:
-- If not already resolved, read `vault.yml` to determine the logs folder name (default: `04-logs`)
+- If not already resolved, read `vault.yml` to determine the logs folder name (default: `07-logs`)
 - Determine file name: count existing `YYYY-MM-DD-session-*.md` files in `[logs_folder]/YYYY/MM/` for today, use the next number (zero-padded: 01, 02, etc.)
 - Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
 - Add `auto-saved: true` to the frontmatter
@@ -113,10 +121,12 @@ If conditions are met:
 
 ## File Naming Conventions
 
-- Knowledge notes: `02-knowledge/[subfolder]/Topic Name.md` (title case, subfolder in kebab-case)
+- Knowledge notes: `03-knowledge/[subfolder]/Topic Name.md` (title case, subfolder in kebab-case)
+- Area notes: `02-areas/[subfolder]/Topic Name.md` (subfolder in kebab-case)
+- Resource notes: `04-resources/[subfolder]/Topic Name.md` (subfolder in kebab-case)
 - Project notes: `01-projects/[subfolder]/Project Name.md` (subfolder in kebab-case)
-- Archive items: `03-archive/YYYY/MM/filename.md` (organized by date archived)
-- Session logs: `04-logs/YYYY/MM/YYYY-MM-DD-session-NN.md`
+- Archive items: `06-archive/YYYY/MM/filename.md` (organized by date archived)
+- Session logs: `07-logs/YYYY/MM/YYYY-MM-DD-session-NN.md`
 - Inbox items: `00-inbox/YYYY-MM-DD-topic.md` (flat, no subfolders)
 
 **Subfolder rules:**
