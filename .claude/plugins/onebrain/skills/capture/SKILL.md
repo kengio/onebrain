@@ -83,7 +83,7 @@ created: YYYY-MM-DD
 [[Link 2]]
 ```
 
-**For knowledge note (`03-knowledge/`) or reference note (`04-resources/`):**
+**For knowledge note (`03-knowledge/`), reference note (`04-resources/`), or area note (`02-areas/`):**
 
 File: `[target-folder]/[subfolder]/[Topic Name].md` (target folder and subfolder confirmed in Steps 2–3)
 
