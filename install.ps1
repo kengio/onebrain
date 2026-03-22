@@ -204,10 +204,17 @@ function Install-Plugins {
           }
         }
       } catch {
-        # Network/TLS/unexpected errors — warn but don't fail the plugin
-        Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
-        try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
-          Write-Host "  ⚠️  Could not remove partial styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+        # styles.css is optional — 404 means this plugin doesn't ship one; skip silently.
+        # Only warn on unexpected errors (network failures, TLS errors, 5xx, etc.).
+        $statusCode = try { [int]$_.Exception.Response.StatusCode.value__ } catch { 0 }
+        if ($statusCode -ne 404) {
+          Write-Host "  ⚠️  Could not download styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+        # Invoke-WebRequest may partially create the OutFile — remove it defensively.
+        if (Test-Path $cssPath) {
+          try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
+            Write-Host "  ⚠️  Could not remove partial styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+          }
         }
       }
     }
@@ -235,6 +242,83 @@ function Install-Plugins {
   }
 
   return ,@($failedPlugins)
+}
+
+# ─── Obsidian Skills plugin (kepano/obsidian-skills) ─────────────────────────
+# Install-ObsidianSkills <VaultPath>
+# Shallow-clones kepano/obsidian-skills into .claude\plugins\obsidian-skills\
+# so the Obsidian-specific Claude Code skills from that repo are available
+# immediately after vault setup. See https://github.com/kepano/obsidian-skills
+# for the current skill list. Non-fatal: warns on failure and continues.
+# Idempotent: skips if directory already exists in a valid state.
+function Install-ObsidianSkills {
+  param([string]$VaultPath)
+
+  $targetDir = Join-Path $VaultPath ".claude\plugins\obsidian-skills"
+  $repoUrl   = "https://github.com/kepano/obsidian-skills.git"
+
+  Write-Step "📦" "Installing Obsidian Skills plugin..."
+
+  # Already installed in a valid state — show confirmation and skip
+  if ((Test-Path $targetDir -PathType Container) -and
+      -not (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
+    Write-Done "Obsidian Skills already present"
+    return
+  }
+
+  # Partial install: directory exists but still has a .git (previous .git removal failed,
+  # or clone was interrupted before checkout completed). Remove the whole directory so the
+  # next run can retry cleanly — a partial clone's skill files may be incomplete too.
+  if ((Test-Path $targetDir -PathType Container) -and
+      (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
+    Write-Host "  ⚠️  Obsidian Skills: incomplete previous install — retrying..." -ForegroundColor Yellow
+    try {
+      Remove-Item -Path $targetDir -Recurse -Force -ErrorAction Stop
+    } catch {
+      Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
+      Print-Info "Could not remove partial install at: $targetDir"
+      Print-Info "Remove it manually, then re-run the installer:"
+      Print-Info "  Remove-Item -Path `"$targetDir`" -Recurse -Force"
+      return  # Non-fatal — overall install continues without this plugin
+    }
+    Write-Step "📦" "Installing Obsidian Skills plugin..."
+  }
+
+  # Clone the repo (shallow, quiet); join all output lines for readable error display
+  $cloneOutput = (git clone --depth 1 -q $repoUrl $targetDir 2>&1) -join "`n"
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
+    Print-Info "Could not clone obsidian-skills:"
+    Print-Info "  $cloneOutput"
+    # Clean up any partial directory git may have created before failing.
+    # Warn if removal fails so the user knows to clean up before retrying.
+    try {
+      Remove-Item -Path $targetDir -Recurse -Force -ErrorAction Stop
+    } catch {
+      Write-Host "  ⚠️  Could not remove partial clone at: $targetDir" -ForegroundColor Yellow
+      Print-Info "Remove it manually: Remove-Item -Path `"$targetDir`" -Recurse -Force"
+    }
+    Print-Info "You can install it later:"
+    Print-Info "  git clone --depth 1 $repoUrl `"$targetDir`""
+    return  # Non-fatal — overall install continues without this plugin
+  }
+
+  # Remove the nested .git so the parent repo does not treat this directory as
+  # an embedded repository. Without removal, 'git add' warns about an embedded
+  # repo and 'git status' silently ignores the subtree, which is confusing.
+  # The .gitignore entry suppresses tracking, but does not suppress the warning.
+  try {
+    Remove-Item -Path (Join-Path $targetDir ".git") -Recurse -Force -ErrorAction Stop
+  } catch {
+    Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
+    Print-Info "Cloned obsidian-skills but could not remove its nested .git directory."
+    Print-Info "Without removing it, 'git add' will warn about an embedded repository."
+    Print-Info "Fix manually before running git commands in this vault:"
+    Print-Info "  Remove-Item -Path `"$targetDir\.git`" -Recurse -Force"
+    return  # Non-fatal — overall install continues without this plugin
+  }
+
+  Write-Done "Obsidian Skills installed"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -374,8 +458,7 @@ function Main {
         Remove-Item -Path $dotGit -Recurse -Force -ErrorAction Stop
       } catch {
         Print-Error "Could not remove the bundled .git directory from '$vaultPath'."
-        Print-Error "Check for locked files and remove '$dotGit' manually, then re-run:"
-        Print-Error "  git -C '$vaultPath' init; git -C '$vaultPath' add -A; git -C '$vaultPath' commit -m 'Initial OneBrain vault setup'"
+        Print-Error "Remove it manually: Remove-Item -Path '$dotGit' -Recurse -Force"
         throw "error:already-printed"
       }
     }
@@ -383,41 +466,8 @@ function Main {
     # ── Step 4b: Install community plugins ──────────────────────────────────
     $script:FailedPlugins = @(Install-Plugins $vaultPath)
 
-    # ── Step 5: Initialize git ──────────────────────────────────────────────
-    Write-Step "🧠" "Initializing git repository..."
-    # Push-Location lives in its own try/catch outside the finally-guarded block so that
-    # Pop-Location is only called when Push-Location actually succeeded.
-    try {
-      Push-Location $vaultPath
-    } catch {
-      Print-Error "Could not change into vault directory '$vaultPath'."
-      Print-Error $_.Exception.Message
-      throw "error:already-printed"  # propagates to outer catch; outer finally still cleans tmpDir
-    }
-    try {
-      git init -q
-      if ($LASTEXITCODE -ne 0) {
-        Print-Error "Failed to initialize a git repository in '$vaultPath'."
-        throw "error:already-printed"
-      }
-      git add -A
-      if ($LASTEXITCODE -ne 0) {
-        Print-Error "Failed to stage files for the initial git commit in '$vaultPath'."
-        Print-Error "Check for a stale .git/index.lock file or permission issues."
-        throw "error:already-printed"
-      }
-      git commit -q -m "Initial OneBrain vault setup"
-      if ($LASTEXITCODE -ne 0) {
-        Print-Error "Failed to create the initial git commit."
-        Print-Error "Git may need a name and email configured. Run:"
-        Print-Error "  git config --global user.name 'Your Name'"
-        Print-Error "  git config --global user.email 'you@example.com'"
-        throw "error:already-printed"
-      }
-    } finally {
-      Pop-Location
-    }
-    Write-Done "Git repository initialized"
+    # ── Step 4c: Install Obsidian Skills Claude plugin ───────────────────────
+    Install-ObsidianSkills $vaultPath
 
   } catch {
     # Sentinel "error:already-printed" means a specific message was already shown to the user.
@@ -434,7 +484,7 @@ function Main {
     }
   }
 
-  # ── Step 6: Success ──────────────────────────────────────────────────────────
+  # ── Step 5: Success ──────────────────────────────────────────────────────────
   Write-Host
   Write-Host "  🎉 OneBrain is ready!" -ForegroundColor Green
   Write-Host
@@ -459,16 +509,6 @@ function Main {
   Write-Host "     (Onboarding will ask you to choose a vault organization method"
   Write-Host "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   Write-Host
-
-  # Offer to open the vault folder in Explorer
-  $open = Read-Host "  ? Open vault folder in Explorer? [Y/n]"
-  if ($open -eq '' -or $open -match '^[Yy]') {
-    try {
-      Start-Process explorer.exe -ArgumentList $vaultPath
-    } catch {
-      Print-Info "Could not open Explorer automatically. Your vault is at: $vaultPath"
-    }
-  }
 }
 
 Main
