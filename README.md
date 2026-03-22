@@ -5,7 +5,7 @@ An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI
 ## What It Does
 
 - **Memory across sessions** — your AI remembers your name, role, goals, and past conversations
-- **12 slash commands** — braindump, capture, research, consolidate, connect, and more
+- **14 slash commands** — braindump, capture, research, consolidate, connect, and more
 - **Vault-native** — all notes are Markdown, everything stays in your Obsidian vault
 - **Multi-agent** — works with Claude Code, Gemini CLI, or any AI that reads Markdown
 - **Pre-configured** — open in Obsidian and everything is ready to go
@@ -67,20 +67,22 @@ cd onebrain
 #### 1. Open in Obsidian
 
 - Open Obsidian → **Open folder as vault** → select the vault directory
-- When prompted about community plugins, click **Trust author and enable plugins**
 
-#### 2. Install community plugins
+#### 2. Community plugins
 
-Go to **Settings → Community plugins → Browse** and install:
+These three plugins are pre-configured in vault settings — install them via **Settings → Community plugins → Browse**, then click **Trust author and enable plugins** when prompted:
 
 - **Tasks** — task management with due dates
 - **Dataview** — query notes like a database
+- **Terminal** — run your AI agent from within Obsidian
+
+These are recommended but optional — install via the same Browse panel:
+
 - **Templater** — advanced templates
 - **Calendar** — visual calendar view
 - **Tag Wrangler** — manage tags across vault
 - **QuickAdd** — fast capture workflows
 - **Obsidian Git** — version control for your vault
-- **Terminal** — run your AI agent from within Obsidian
 
 #### 3. Start your AI agent
 
@@ -118,7 +120,8 @@ onebrain/
 ├── CLAUDE.md          Instructions for Claude Code
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions
-└── vault.yml          Your vault configuration (created during onboarding)
+├── vault.yml          Your vault configuration (created during onboarding)
+└── .claude-plugin/    Claude plugin marketplace config
 ```
 
 The core workflow: capture everything to inbox → process with `/consolidate` → grow your knowledge base → archive what's done.
@@ -138,6 +141,7 @@ The core workflow: capture everything to inbox → process with `/consolidate` �
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/tasks` | Task dashboard — overdue, due soon, open, and completed this week |
 | `/wrapup` | Wrap up session and save summary to session log |
+| `/reorganize` | Migrate flat notes into organized subfolders |
 | `/update` | Update skills, config, and plugins from GitHub |
 | `/help` | List all available commands with descriptions |
 

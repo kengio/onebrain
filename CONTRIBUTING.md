@@ -15,14 +15,19 @@ Good contributions include:
 ## Project Structure
 
 ```text
-.claude/plugins/onebrain/
+.claude-plugin/                          Root marketplace config
+└── marketplace.json                     Registers plugins for Claude
+
+.claude/plugins/onebrain/                Main plugin directory
 ├── .claude-plugin/
-│   └── plugin.json      Plugin manifest (name, version, description)
-├── skills/          One directory per slash command
+│   └── plugin.json                      Plugin manifest (name, version, description)
+├── skills/                              One directory per slash command (14 skills)
 │   └── [name]/
-│       └── SKILL.md     The skill prompt — what the AI follows when invoked
-├── hooks/           Automated behaviors (session start, session end)
-└── agents/          Specialized subagents
+│       └── SKILL.md                     The skill prompt — what the AI follows when invoked
+├── hooks/
+│   └── hooks.json                       Hook configuration (session automation)
+└── agents/
+    └── knowledge-linker.md              Knowledge graph agent (used by /connect)
 ```
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
@@ -42,7 +47,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    No `triggers:` field is needed. Skill routing is handled by the command tables in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` — register your command there (see step 4).
 
 3. Write the skill as a numbered sequence of steps the AI should follow
-4. Register the command in `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, and `README.md`
+4. Register the command in `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, and `README.md` (also increment the command count in the "What It Does" section of README.md)
 
 ## Editing an Existing Skill
 
