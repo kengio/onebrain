@@ -99,11 +99,12 @@ Only add learnings that are genuinely useful long-term (not every session warran
 
 If a genuinely useful long-term insight emerged this session — a clear behavioral pattern, a strong user preference, or a non-obvious observation about how to work with this user — and it is too detailed for MEMORY.md, write it to `[agent_folder]/memory/YYYY-MM-DD-slug.md`:
 
-- Read `vault.yml` and extract `folders.agent`, default to `05-agent`
+- If `vault.yml` exists, read it and extract `folders.agent`. Default to `05-agent` if the file does not exist or the key is absent.
 - Frontmatter: `tags: [agent-memory]`, `created: YYYY-MM-DD`, `source: /wrapup`
 - File naming: first note of day: `YYYY-MM-DD-slug.md`; if one already exists today: `YYYY-MM-DD-02-slug.md`, etc.
 - Keep it to 1-3 sentences
 - Only do this if the insight is genuinely useful long-term — do not overflow routine session details
+- Use this step only when the insight was too detailed to include in MEMORY.md (Step 4). Do not write the same insight to both MEMORY.md and agent memory.
 
 ---
 
