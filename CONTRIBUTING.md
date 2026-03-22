@@ -25,7 +25,7 @@ Good contributions include:
 │   └── [name]/
 │       └── SKILL.md                     The skill prompt — what the AI follows when invoked
 ├── hooks/
-│   └── hooks.json                       Automated behaviors (currently empty)
+│   └── hooks.json                       Hook configuration (session automation)
 └── agents/
     └── knowledge-linker.md              Knowledge graph agent (used by /connect)
 ```

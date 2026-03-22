@@ -67,17 +67,16 @@ cd onebrain
 #### 1. Open in Obsidian
 
 - Open Obsidian → **Open folder as vault** → select the vault directory
-- When prompted about community plugins, click **Trust author and enable plugins**
 
 #### 2. Community plugins
 
-Three plugins are pre-configured and ready to go — just click **Trust author and enable plugins** when Obsidian prompts you:
+These three plugins are pre-configured in vault settings — install them via **Settings → Community plugins → Browse**, then click **Trust author and enable plugins** when prompted:
 
 - **Tasks** — task management with due dates
 - **Dataview** — query notes like a database
 - **Terminal** — run your AI agent from within Obsidian
 
-These are recommended but optional — install them via **Settings → Community plugins → Browse**:
+These are recommended but optional — install via the same Browse panel:
 
 - **Templater** — advanced templates
 - **Calendar** — visual calendar view
