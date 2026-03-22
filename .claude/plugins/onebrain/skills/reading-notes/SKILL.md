@@ -52,9 +52,18 @@ From the raw input, extract:
 
 ---
 
-## Step 4: Create the Note
+## Step 4: Choose Subfolder
 
-File: `02-knowledge/[Book Title] — Notes.md`
+1. Glob existing subfolders in `02-knowledge/*/`
+2. Suggest a kebab-case subfolder based on the book/article's topic (max 2 levels, e.g. `books/productivity` or `science/neuroscience`)
+3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+4. Use confirmed path for file creation.
+
+---
+
+## Step 5: Create the Note
+
+File: `02-knowledge/[subfolder]/[Book Title] — Notes.md` (subfolder confirmed in Step 4)
 
 ```markdown
 ---
@@ -116,9 +125,9 @@ rating: [1-5 if they want to rate it]
 
 ---
 
-## Step 5: Follow Up
+## Step 6: Follow Up
 
-> Notes saved to `02-knowledge/[Title] — Notes.md`.
+> Notes saved to `02-knowledge/[subfolder]/[Title] — Notes.md`.
 >
 > Want to:
 > - Add this to your reading list in a project note?

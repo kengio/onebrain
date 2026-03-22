@@ -13,11 +13,11 @@ Shows all tasks across the vault, organized by urgency, with quick actions to up
 
 Use the Grep tool to find all task lines across active vault folders.
 
-Search for `- \[.\]` (regex) in these directories only:
+Search for `- \[.\]` (regex) recursively in these directories only:
 - `00-inbox/`
-- `01-projects/`
-- `02-knowledge/`
-- `04-memory-log/`
+- `01-projects/**`
+- `02-knowledge/**`
+- `04-logs/**`
 
 **Skip entirely:** `03-archive/`, `.obsidian/`, `.claude/`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`
 

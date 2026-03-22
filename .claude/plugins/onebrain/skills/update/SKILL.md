@@ -22,7 +22,7 @@ Tell the user what will and won't be updated:
 - `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
-- All your note folders (inbox, projects, knowledge, archive, memory log — exact names depend on your vault method; see `vault.yml`) — all your notes
+- All your note folders (inbox, projects, knowledge, archive, logs — exact names depend on your vault method; see `vault.yml`) — all your notes
 - `MEMORY.md` — your identity and session context
 - `vault.yml` — your vault method configuration
 - `.obsidian/themes/` — your chosen theme
@@ -119,14 +119,14 @@ From `vault.yml`, read the `folders` mapping:
 - `folders.projects` → PROJECTS
 - `folders.knowledge` → KNOWLEDGE
 - `folders.archive` → ARCHIVE
-- `folders.memory_log` → MEMLOG
+- `folders.logs` → MEMLOG
 
 **In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:**
 - `00-inbox/` → `[INBOX]/`
 - `01-projects/` → `[PROJECTS]/`
 - `02-knowledge/` → `[KNOWLEDGE]/`
 - `03-archive/` → `[ARCHIVE]/`
-- `04-memory-log/` → `[MEMLOG]/`
+- `04-logs/` → `[MEMLOG]/`
 
 **If method is `para`, also in `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`:**
 - Replace "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
@@ -144,7 +144,7 @@ From `vault.yml`, read the `folders` mapping:
 - `01-projects/` → `[PROJECTS]/`
 - `02-knowledge/` → `[KNOWLEDGE]/`
 - `03-archive/` → `[ARCHIVE]/`
-- `04-memory-log/` → `[MEMLOG]/`
+- `04-logs/` → `[MEMLOG]/`
 
 Display name mapping for the completion message: `onebrain` → OneBrain, `para` → PARA, `zettelkasten` → Zettelkasten.
 

@@ -15,7 +15,7 @@ Best run on Friday afternoon or over the weekend.
 
 Determine the current week's date range (Mon–Sun).
 
-List all files in `04-memory-log/` from this week. If there are none, check the past 7 days.
+List all files in `04-logs/**/*.md` from this week. If there are none, check the past 7 days.
 
 Report:
 > I found N sessions this week:
