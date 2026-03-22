@@ -1,11 +1,11 @@
 ---
 name: research
-description: Research a topic on the web and save a structured note to the knowledge base
+description: Research a topic on the web and save a structured note to the resources folder
 ---
 
 # Research
 
-Research a topic and save the findings as a structured note in your knowledge base.
+Research a topic and save the findings as a structured note in your resources folder.
 
 Usage: `/research [topic]`
 
@@ -48,9 +48,9 @@ Before writing the note, synthesize what you found:
 
 ## Step 4: Choose Subfolder
 
-1. Glob existing subfolders in `02-knowledge/*/`
+1. Glob existing subfolders in `04-resources/*/`
 2. Suggest a kebab-case subfolder based on the research topic (max 2 levels, e.g. `technology/ai`)
-3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+3. Present to user: "I'd file this under `04-resources/[suggested-path]/`. OK?"
    Show existing subfolders as options.
 4. Use confirmed path for file creation.
 
@@ -58,14 +58,15 @@ Before writing the note, synthesize what you found:
 
 ## Step 5: Create Research Note
 
-File: `02-knowledge/[subfolder]/[Topic Name].md` (subfolder confirmed in Step 4)
+File: `04-resources/[subfolder]/[Topic Name].md` (subfolder confirmed in Step 4)
 
-If a note on this topic already exists (search recursively in `02-knowledge/**/*.md`), ask whether to create a new one or append a "Research — [Date]" section.
+If a note on this topic already exists (search recursively in `04-resources/**/*.md`), ask whether to create a new one or append a "Research — [Date]" section.
 
 ```markdown
 ---
 tags: [research, topic-tag]
 created: YYYY-MM-DD
+source: /research
 sources: [list of key sources]
 ---
 
@@ -110,7 +111,7 @@ sources: [list of key sources]
 ## Step 6: Suggest Follow-Up
 
 After creating the note:
-> Research saved to `02-knowledge/[subfolder]/[Topic Name].md`.
+> Research saved to `04-resources/[subfolder]/[Topic Name].md`.
 >
 > Based on what I found, you might also want to explore:
 > - [Related topic 1]

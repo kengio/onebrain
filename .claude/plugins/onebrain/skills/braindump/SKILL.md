@@ -26,7 +26,7 @@ After they've finished, silently analyze the content and classify each item into
 |------|-------------|-------------|
 | **Task** | Something to do | Extract as task with date |
 | **Idea** | Creative or speculative thought | File to inbox |
-| **Note** | Fact, reference, or information | File to inbox or knowledge |
+| **Note** | Fact, reference, or information | File to inbox (process later via `/consolidate`) |
 | **Project** | Something that needs a dedicated note | Create/update in 01-projects/ |
 | **Question** | Open question or uncertainty | File to inbox with `?` tag |
 | **Feeling/Reflection** | Personal reflection or emotion | File to inbox |

@@ -1,11 +1,11 @@
 ---
 name: summarize-url
-description: Fetch a URL and create a structured summary note saved to the knowledge base
+description: Fetch a URL and create a structured summary note saved to the resources folder
 ---
 
 # Summarize URL
 
-Fetch a web page and create a structured summary note in your knowledge base.
+Fetch a web page and create a structured summary note in your resources folder.
 
 Usage: `/summarize-url [url]`
 
@@ -54,10 +54,10 @@ Identify:
 
 **Skip this step if saving to `00-inbox/`.**
 
-For notes going to `02-knowledge/`:
-1. Glob existing subfolders in `02-knowledge/*/`
+For notes going to `04-resources/`:
+1. Glob existing subfolders in `04-resources/*/`
 2. Suggest a kebab-case subfolder based on the article's topic (max 2 levels, e.g. `productivity/tools`)
-3. Present to user: "I'd file this under `02-knowledge/[suggested-path]/`. OK?"
+3. Present to user: "I'd file this under `04-resources/[suggested-path]/`. OK?"
 4. Use confirmed path for file creation.
 
 ---
@@ -65,16 +65,17 @@ For notes going to `02-knowledge/`:
 ## Step 6: Create Summary Note
 
 Determine the best location:
-- `02-knowledge/[subfolder]/` — for reference material (subfolder confirmed in Step 5)
+- `04-resources/[subfolder]/` — for reference material (subfolder confirmed in Step 5)
 - `00-inbox/` — if the user just wants to save it for later without processing
 
-File name: `02-knowledge/[subfolder]/[Article Title].md` or `00-inbox/YYYY-MM-DD-[slug].md`
+File name: `04-resources/[subfolder]/[Article Title].md` or `00-inbox/YYYY-MM-DD-[slug].md`
 
 ```markdown
 ---
-tags: [source-type, topic-tag]
+tags: [summary, topic-tag]
 created: YYYY-MM-DD
-source: [URL]
+source: /summarize-url
+url: [URL]
 author: [Author Name]
 published: [Publication date if known]
 ---
@@ -113,9 +114,9 @@ published: [Publication date if known]
 
 ## Step 7: Suggest Links
 
-Scan `02-knowledge/**/*.md` for notes related to the article's topic.
+Scan `04-resources/**/*.md` for notes related to the article's topic.
 
-> Summary saved to `02-knowledge/[subfolder]/[Title].md`.
+> Summary saved to `04-resources/[subfolder]/[Title].md`.
 >
 > This looks related to:
 > - [[Related Note 1]] — [why]

@@ -16,10 +16,12 @@ Use the Grep tool to find all task lines across active vault folders.
 Search for `- \[.\]` (regex) recursively in these directories only:
 - `00-inbox/`
 - `01-projects/**`
-- `02-knowledge/**`
-- `04-logs/**`
+- `02-areas/**`
+- `03-knowledge/**`
+- `04-resources/**`
+- `07-logs/**`
 
-**Skip entirely:** `03-archive/`, `.obsidian/`, `.claude/`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`
+**Skip entirely:** `05-agent/`, `06-archive/`, `.obsidian/`, `.claude/`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`
 
 These excluded files contain template examples or system instructions, not real tasks.
 
