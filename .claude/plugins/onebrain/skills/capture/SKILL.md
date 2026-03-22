@@ -22,11 +22,12 @@ If they provided content after `/capture [content]`, use that directly.
 
 Classify the content:
 - **Fleeting note** → file to `00-inbox/` (unprocessed idea, rough thought)
-- **Reference note** → file to `02-knowledge/` (fact, quote, resource)
+- **Knowledge note** → file to `03-knowledge/` (personal synthesis, insight, processed idea)
+- **Reference note** → file to `04-resources/` (external source, fact, quote, reference material)
 - **Project note** → append to relevant `01-projects/` file
 
 Ask if unclear:
-> Is this a rough idea to process later, or a reference you want in your knowledge base?
+> Is this a rough idea to process later, something you've synthesized yourself, or reference material from an external source?
 
 ---
 
@@ -34,15 +35,15 @@ Ask if unclear:
 
 **Skip this step for fleeting notes going to `00-inbox/`.**
 
-For reference notes (`02-knowledge/`) or project notes (`01-projects/`):
+For knowledge notes (`03-knowledge/`), reference notes (`04-resources/`), or project notes (`01-projects/`):
 
-1. Glob existing subfolders in the target folder (e.g. `02-knowledge/*/`)
+1. Glob existing subfolders in the target folder (e.g. `03-knowledge/*/` or `04-resources/*/`)
 2. Analyze the content to determine the best category
 3. Suggest a subfolder path (kebab-case, max 2 levels, e.g. `programming/python`):
    - If an existing subfolder fits well → suggest it
    - If none match → suggest a new name (1-2 short words, hyphenated)
 4. Present to user:
-   > I'd file this under `02-knowledge/[suggested-path]/`. Sound good?
+   > I'd file this under `[target-folder]/[suggested-path]/`. Sound good?
    > Existing folders: [list]
 5. Use the confirmed path. Subfolder naming rules: all lowercase, hyphens not spaces, max 2 levels.
 
@@ -50,7 +51,7 @@ For reference notes (`02-knowledge/`) or project notes (`01-projects/`):
 
 ## Step 4: Find Related Notes
 
-Scan `02-knowledge/**/*.md` and `01-projects/**/*.md` for notes related to the content (by topic/tags/title).
+Scan `03-knowledge/**/*.md`, `04-resources/**/*.md`, and `01-projects/**/*.md` for notes related to the content (by topic/tags/title).
 
 List up to 3 relevant matches and ask:
 > I found these related notes — should I link to any of them?
@@ -81,9 +82,9 @@ created: YYYY-MM-DD
 [[Link 2]]
 ```
 
-**For knowledge base (reference note):**
+**For knowledge note (`03-knowledge/`) or reference note (`04-resources/`):**
 
-File: `02-knowledge/[subfolder]/[Topic Name].md` (subfolder confirmed in Step 3)
+File: `[target-folder]/[subfolder]/[Topic Name].md` (target folder and subfolder confirmed in Steps 2–3)
 
 If the file already exists, append a new section. If not, create it:
 

@@ -22,7 +22,7 @@ Tell the user what will and won't be updated:
 - `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
-- All your note folders (00-inbox, 01-projects, 02-knowledge, 03-archive, 04-logs) — all your notes
+- All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
 - `MEMORY.md` — your identity and session context
 - `vault.yml` — your vault configuration
 - `.obsidian/themes/` — your chosen theme
