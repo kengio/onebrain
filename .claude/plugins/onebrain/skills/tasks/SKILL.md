@@ -21,7 +21,7 @@ Search for `- \[.\]` (regex) recursively in these directories only:
 - `04-resources/**`
 - `07-logs/**`
 
-**Skip entirely:** `06-archive/`, `.obsidian/`, `.claude/`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`
+**Skip entirely:** `05-agent/`, `06-archive/`, `.obsidian/`, `.claude/`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`
 
 These excluded files contain template examples or system instructions, not real tasks.
 
