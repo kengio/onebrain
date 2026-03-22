@@ -218,9 +218,207 @@ Create the following folders. For each folder, check if it exists first; if not,
 ```
 00-inbox/
 01-projects/
-02-knowledge/
-03-archive/
-04-logs/
+02-areas/
+03-knowledge/
+04-resources/
+05-agent/
+05-agent/context/
+05-agent/memory/
+06-archive/
+07-logs/
+```
+
+---
+
+## Step 10b: Write README files
+
+For each root folder, create a `README.md` with the content specified below. Write these files exactly as shown.
+
+Folders that get a README (all 8): `00-inbox/`, `01-projects/`, `02-areas/`, `03-knowledge/`, `04-resources/`, `05-agent/`, `06-archive/`, `07-logs/`
+
+**`00-inbox/README.md`**
+```markdown
+# Inbox
+Quick landing zone for anything unprocessed. If you're not sure where it goes, it goes here.
+
+## Use cases
+- A thought that just crossed your mind
+- A link you want to read later
+- An idea from a conversation
+- Raw braindump output from /braindump
+- A quick capture from /capture before classification
+
+## Example notes
+- 2026-03-23-product-ideas.md
+- 2026-03-23-book-recommendation.md
+- 2026-03-23-meeting-followup.md
+
+## Not here
+- A note you've already processed → 01-projects/, 02-areas/, 03-knowledge/, or 04-resources/
+- A session log → 07-logs/
+```
+
+**`01-projects/README.md`**
+```markdown
+# Projects
+Active work with a clear goal and end date. When a project is done, archive it.
+
+## Use cases
+- Building a feature or product
+- Planning an event or trip
+- Writing a document, proposal, or article
+- Running a short-term campaign or initiative
+- Any work that has a "done" state
+
+## Example notes
+- work/Website Redesign.md
+- personal/Japan Trip 2026.md
+- side-projects/CLI Tool v2.md
+
+## Not here
+- Ongoing responsibilities with no end date → 02-areas/
+- Reference material you didn't write → 04-resources/
+```
+
+**`02-areas/README.md`**
+```markdown
+# Areas
+Ongoing responsibilities and life domains that never "complete" — you maintain these indefinitely.
+
+## Use cases
+- Health and fitness tracking
+- Personal finances and budgeting
+- Career development and goals
+- Relationships and social commitments
+- Home maintenance and logistics
+
+## Example notes
+- health/Running Log.md
+- finances/Budget 2026.md
+- career/Skills Roadmap.md
+- relationships/Gift Ideas.md
+
+## Not here
+- Work with a deadline and end state → 01-projects/
+- External reference material → 04-resources/
+```
+
+**`03-knowledge/README.md`**
+```markdown
+# Knowledge
+Your own synthesized thinking — conclusions, frameworks, and insights you've developed.
+
+## Use cases
+- An insight you formed after reading several sources
+- A mental model you use regularly
+- A personal framework or decision heuristic
+- Lessons learned from a completed project
+- Your evolving opinions on a topic
+
+## Example notes
+- productivity/Deep Work Principles.md
+- technology/When to Use Microservices.md
+- leadership/Feedback Models.md
+
+## Not here
+- Someone else's ideas you've saved → 04-resources/
+- Active project work → 01-projects/
+- Raw captures → 00-inbox/
+```
+
+**`04-resources/README.md`**
+```markdown
+# Resources
+External information saved for reference — research output, summaries, how-tos, and reference material.
+
+## Use cases
+- Output from /research on a topic
+- Summary of a URL from /summarize-url
+- Book or article notes from /reading-notes
+- Code snippets and cheat sheets
+- How-to guides and tutorials
+
+## Example notes
+- code-snippets/Go HTTP Middleware.md
+- research/Zettelkasten Method.md
+- summaries/The Pragmatic Programmer.md
+
+## Not here
+- Your own synthesis and conclusions → 03-knowledge/
+- Active work → 01-projects/
+```
+
+**`05-agent/README.md`**
+```markdown
+# Agent
+AI-specific knowledge and working context. This folder — together with MEMORY.md — is your agent's portable "mind".
+
+## context/
+Facts about your world the AI reads when relevant:
+- Your domain, stack, and tools
+- Your product and target users
+- Terminology and naming conventions
+
+## memory/
+Behavioral patterns and extended observations the AI has learned:
+- Your communication preferences
+- Patterns from past sessions
+- Things that improve or degrade the AI's responses
+
+## Portability
+Copy MEMORY.md + this folder to move your agent to a new vault.
+Run /export to package everything neatly — it generates EXPORT.md (a manifest of all context and memory files) and copies everything into agent-export-YYYY-MM-DD/.
+
+## Not here
+- Personal notes → 03-knowledge/
+- Project work → 01-projects/
+```
+
+**`06-archive/README.md`**
+```markdown
+# Archive
+Completed projects and retired areas, organized by date archived.
+
+## Structure
+- Single notes: 06-archive/YYYY/MM/Note Name.md
+- Projects/areas with multiple notes: 06-archive/YYYY/MM/Project Name/ (folder)
+
+## Use cases
+- A project that reached its goal
+- An area of life you're no longer maintaining
+- Old reference material you want to keep but not see daily
+
+## Example notes
+- 2026/03/Lone Reference Note.md               ← single note, flat
+- 2026/03/Website Redesign/Overview.md         ← project folder
+- 2026/03/Website Redesign/Tasks.md
+- 2026/03/Health/Running Log.md                ← retired area folder
+
+## Not here
+- Active work → 01-projects/ or 02-areas/
+- Notes you want to delete (just delete them)
+```
+
+**`07-logs/README.md`**
+```markdown
+# Logs
+Session logs — one file per AI session, organized by year and month.
+
+## Structure
+07-logs/YYYY/MM/YYYY-MM-DD-session-NN.md
+
+## Use cases
+- Reviewing what you worked on last week
+- Finding a decision or insight from a past session
+- Input for /weekly reflection
+
+## Example notes
+- 2026/03/2026-03-23-session-01.md
+- 2026/03/2026-03-23-session-02.md
+- 2026/03/2026-03-24-session-01.md
+
+## Not here
+- Personal notes or projects — logs are AI session records only
 ```
 
 ---
@@ -234,9 +432,12 @@ method: onebrain
 folders:
   inbox: 00-inbox
   projects: 01-projects
-  knowledge: 02-knowledge
-  archive: 03-archive
-  logs: 04-logs
+  areas: 02-areas
+  knowledge: 03-knowledge
+  resources: 04-resources
+  agent: 05-agent
+  archive: 06-archive
+  logs: 07-logs
 ```
 
 ---
@@ -251,16 +452,19 @@ Say:
 > - Your vault is set up with these folders:
 >   - `00-inbox/` — raw captures (process regularly)
 >   - `01-projects/` — active projects with tasks
->   - `02-knowledge/` — consolidated notes & reference
->   - `03-archive/` — completed & inactive items
->   - `04-logs/` — session logs
+>   - `02-areas/` — ongoing responsibilities (health, finances, career...)
+>   - `03-knowledge/` — your own synthesized thinking
+>   - `04-resources/` — external info, research output, reference
+>   - `05-agent/` — AI context and memory
+>   - `06-archive/` — completed and archived items
+>   - `07-logs/` — session logs
 >
 > **First things to try:**
 > - `/braindump` — dump anything on your mind right now
 > - `/capture` — add a quick note or idea
 > - `/research [topic]` — research something and save it to your vault
 >
-> **How notes are organized:** Knowledge and project notes go into kebab-case subfolders (e.g. `02-knowledge/programming/python/`). I'll suggest a subfolder whenever you create a note — just confirm or adjust. Session logs go into `04-logs/YYYY/MM/` and archive items go into `03-archive/YYYY/MM/`.
+> **How notes are organized:** Project and area notes go into kebab-case subfolders (e.g. `01-projects/work/Website Redesign.md`). I'll suggest a subfolder whenever you create a note — just confirm or adjust. Research and summary output goes to `04-resources/` — use `/consolidate` to turn it into your own thinking in `03-knowledge/`. Use `/learn` to teach me things about your world (domain, tools, terminology) and I'll save them to `05-agent/`. Session logs go into `07-logs/YYYY/MM/` and archive items go into `06-archive/YYYY/MM/`.
 >
 > When you're done working, run `/wrapup` to save a session summary.
 >
