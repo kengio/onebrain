@@ -523,16 +523,6 @@ function Main {
   Write-Host "     (Onboarding will ask you to choose a vault organization method"
   Write-Host "      and create your folders: OneBrain, PARA, or Zettelkasten)"
   Write-Host
-
-  # Offer to open the vault folder in Explorer
-  $open = Read-Host "  ? Open vault folder in Explorer? [Y/n]"
-  if ($open -eq '' -or $open -match '^[Yy]') {
-    try {
-      Start-Process explorer.exe -ArgumentList $vaultPath
-    } catch {
-      Print-Info "Could not open Explorer automatically. Your vault is at: $vaultPath"
-    }
-  }
 }
 
 Main
