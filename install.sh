@@ -652,8 +652,7 @@ main() {
   step=$((step + 1))
   echo "  ${step}. Run the onboarding command:"
   echo "     ${CYAN}/onboarding${RESET}"
-  echo "     (Onboarding will ask you to choose a vault organization method"
-  echo "      and create your folders: OneBrain, PARA, or Zettelkasten)"
+  echo "     (Onboarding personalizes your vault and creates your folders)"
   echo
 }
 

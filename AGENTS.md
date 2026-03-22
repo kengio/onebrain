@@ -11,8 +11,7 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 
 ## Vault Structure
 
-> **Note:** Vault folders are created during `/onboarding`. The structure below shows the default (OneBrain method).
-> If you chose PARA or Zettelkasten during onboarding, your folders will differ. See `vault.yml` for your configuration.
+> **Note:** Vault folders are created during `/onboarding`.
 
 ```
 00-inbox/        Raw braindumps and quick captures (process regularly)

@@ -13,11 +13,11 @@ Welcome to OneBrain! This skill personalizes your vault and sets up your AI chie
 
 ## Platform Note
 
-For steps that present a fixed set of choices (vault method, personality archetype, communication style), use the `AskUserQuestion` tool if available. If not available, present the options as a numbered list and wait for a text response. Free-text prompts (name, role, goals, context) should always be asked as plain conversational text.
+For steps that present a fixed set of choices (personality archetype, communication style), use the `AskUserQuestion` tool if available. If not available, present the options as a numbered list and wait for a text response. Free-text prompts (name, role, goals, context) should always be asked as plain conversational text.
 
-**Detecting availability:** Attempt `AskUserQuestion` on the first choice-based question (vault method, Step 4). If it fails or is unavailable, switch to plain-text numbered lists for all remaining choice questions in this skill — do not retry `AskUserQuestion` after a failure.
+**Detecting availability:** Attempt `AskUserQuestion` on the first choice-based question (personality archetype, Step 5). If it fails or is unavailable, switch to plain-text numbered lists for all remaining choice questions in this skill — do not retry `AskUserQuestion` after a failure.
 
-**Label normalization:** `AskUserQuestion` option labels may include suffixes like "(Recommended)". When mapping a selected label to a stored value, always strip any parenthetical suffix and lowercase the result (e.g., "Friendly (Recommended)" → `friendly`, "OneBrain (Recommended)" → `onebrain`).
+**Label normalization:** `AskUserQuestion` option labels may include suffixes like "(Recommended)". When mapping a selected label to a stored value, always strip any parenthetical suffix and lowercase the result (e.g., "Friendly (Recommended)" → `friendly`, "Professional (Recommended)" → `professional`).
 
 **`AskUserQuestion` return value** (`multiSelect: false` only — this skill does not use multi-select)**:**
 - Returns the selected option's label as a string
@@ -56,27 +56,7 @@ Wait for response. Store: `role`.
 
 ---
 
-## Step 4: Choose Vault Organization Method
-
-Use `AskUserQuestion` with:
-- question: "How would you like your vault organized?"
-- header: "Vault method"
-- multiSelect: false
-- options:
-  - label: "OneBrain (Recommended)", description: "Simple and practical. Best for general-purpose note-taking and getting things done.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with tasks\n02-knowledge/   Consolidated notes & reference\n03-archive/     Completed & inactive items\n04-logs/        Session logs"
-  - label: "PARA", description: "Organize by actionability (Tiago Forte). Best for action-oriented people managing work + life.", preview: "00-inbox/       Raw captures (process regularly)\n01-projects/    Active projects with deadlines\n02-areas/       Ongoing responsibilities\n03-resources/   Topics of interest & reference\n04-archive/     Inactive items\n05-logs/        Session logs"
-  - label: "Zettelkasten", description: "Build a knowledge graph (Niklas Luhmann). Best for researchers, writers, and deep thinkers.", preview: "00-fleeting/    Temporary raw ideas\n01-literature/  Notes from sources you've read\n02-permanent/   Atomic linked notes (your graph)\n03-archive/     Inactive items\n04-logs/        Session logs"
-
-Fallback (if AskUserQuestion unavailable): present as a numbered list and wait for response. Default to OneBrain if no clear answer.
-
-If the user wants a custom method: explain that only the three listed methods are supported for automatic vault setup. Ask them to choose one of the three options. If they still decline, default to OneBrain.
-
-Store: `method` as one of `onebrain`, `para`, `zettelkasten` (lowercase, no suffix).
-Store: `method_display_name` as `OneBrain`, `PARA`, or `Zettelkasten` (the human-readable label for the chosen method).
-
----
-
-## Step 5: Ask Agent Name
+## Step 4: Ask Agent Name
 
 Ask:
 > What would you like to call me? Pick a name for your AI assistant — for example, Nova, Atlas, Sage, Kai, or anything you like.
@@ -85,7 +65,7 @@ Wait for response. Store: `agent_name`.
 
 ---
 
-## Step 6: Choose Personality Archetype
+## Step 5: Choose Personality Archetype
 
 Use `AskUserQuestion` with:
 - question: "What vibe should I have?"
@@ -108,7 +88,7 @@ Store: `agent_personality_description` from the canonical descriptions below —
 
 ---
 
-## Step 7: Ask Communication Style
+## Step 6: Ask Communication Style
 
 Ask two questions back-to-back.
 
@@ -142,7 +122,7 @@ Store: `tone` as `casual` or `formal`.
 
 ---
 
-## Step 8: Ask Primary Goals
+## Step 7: Ask Primary Goals
 
 Ask:
 > What are 1-3 things you're most focused on right now? (These help me prioritize what's important when I surface suggestions.)
@@ -153,7 +133,7 @@ Wait for response. Store: `goals` as a list.
 
 ---
 
-## Step 9: Ask Stack/Context (Optional)
+## Step 8: Ask Stack/Context (Optional)
 
 Ask:
 > Anything else I should always keep in mind? For example: your tech stack, key tools you use, recurring commitments, or anything that gives me context.
@@ -164,7 +144,7 @@ Wait for response. Store: `recurring_contexts`.
 
 ---
 
-## Step 10: Generate MEMORY.md
+## Step 9: Generate MEMORY.md
 
 Overwrite `MEMORY.md` with personalized content:
 
@@ -231,11 +211,10 @@ Your personality is [agent_personality]: [agent_personality_description].
 
 ---
 
-## Step 11: Create Vault Folders
+## Step 10: Create Vault Folders
 
-Based on the chosen method, create the listed folders. For each folder, check if it exists first; if not, create it and write an empty `.gitkeep` file inside it.
+Create the following folders. For each folder, check if it exists first; if not, create it and write an empty `.gitkeep` file inside it.
 
-**OneBrain (method = onebrain):**
 ```
 00-inbox/
 01-projects/
@@ -244,83 +223,12 @@ Based on the chosen method, create the listed folders. For each folder, check if
 04-logs/
 ```
 
-**PARA (method = para):**
-```
-00-inbox/
-01-projects/
-02-areas/
-03-resources/
-04-archive/
-05-logs/
-```
-
-**Zettelkasten (method = zettelkasten):**
-```
-00-fleeting/
-01-literature/
-02-permanent/
-03-archive/
-04-logs/
-```
-
 ---
 
-## Step 12: Apply Folder Reference Replacements
+## Step 11: Write vault.yml
 
-If `method` is `onebrain`, skip this step — no replacements needed.
+Write `vault.yml` to the vault root with the folder mapping:
 
-Otherwise, update all folder path references across the vault's system files. This ensures skills, hooks, and instruction files use the correct folder names.
-
-**Files to update:**
-- `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`
-- All `.md` files under `.claude/plugins/onebrain/` (skills, hooks, agents)
-
-**Important:** Do NOT replace references inside `skills/onboarding/SKILL.md` or `skills/update/SKILL.md` — these files contain hardcoded default names as templates and must stay unmodified so future onboardings and updates work correctly.
-
-Use your file editing tools (Read, Edit) to make these replacements — do not use shell commands. This ensures the step works on all platforms (macOS, Linux, Windows).
-
-**For PARA:**
-
-In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
-- `02-knowledge/` → `03-resources/`
-- `03-archive/` → `04-archive/`
-- `04-logs/` → `05-logs/`
-- "Consolidated notes, insights, and reference material" → "Topics of interest and reference material"
-- "Completed projects and archived items" → "Inactive items from any category"
-
-Also insert a line for `02-areas/` in the vault structure sections (PARA adds a folder with no OneBrain counterpart):
-- In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`: add `02-areas/        Ongoing responsibilities (health, finance, career)` immediately after the `01-projects/` line in the vault structure code block
-
-In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
-- `02-knowledge/` → `03-resources/`
-- `03-archive/` → `04-archive/`
-- `04-logs/` → `05-logs/`
-
-**For Zettelkasten:**
-
-In `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md`, replace all occurrences of:
-- `00-inbox/` → `00-fleeting/`
-- `01-projects/` → `01-literature/`
-- `02-knowledge/` → `02-permanent/`
-- "Raw braindumps and quick captures (process regularly)" → "Temporary capture — raw ideas and quick notes"
-- "Active projects with tasks and notes" → "Notes from sources you've read"
-- "Consolidated notes, insights, and reference material" → "Atomic, linked notes — your knowledge graph"
-- "Completed projects and archived items" → "Inactive items"
-
-In all `.md` files under `.claude/plugins/onebrain/` (excluding `skills/onboarding/SKILL.md` and `skills/update/SKILL.md`), replace all occurrences of:
-- `00-inbox/` → `00-fleeting/`
-- `01-projects/` → `01-literature/`
-- `02-knowledge/` → `02-permanent/`
-
-After completing all replacements, tell the user: "Applied [method_display_name] folder structure to all system files."
-
----
-
-## Step 13: Write vault.yml
-
-Write `vault.yml` to the vault root with the chosen method and folder mapping.
-
-**OneBrain:**
 ```yaml
 method: onebrain
 folders:
@@ -331,40 +239,21 @@ folders:
   logs: 04-logs
 ```
 
-**PARA:**
-```yaml
-method: para
-folders:
-  inbox: 00-inbox
-  projects: 01-projects
-  areas: 02-areas
-  knowledge: 03-resources
-  archive: 04-archive
-  logs: 05-logs
-```
-
-**Zettelkasten:**
-```yaml
-method: zettelkasten
-folders:
-  inbox: 00-fleeting
-  projects: 01-literature
-  knowledge: 02-permanent
-  archive: 03-archive
-  logs: 04-logs
-```
-
 ---
 
-## Step 14: Completion Message
+## Step 12: Completion Message
 
 Say:
 
 > You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help. Here's what's set up:
 >
 > - Your identity and personality are saved in MEMORY.md
-> - Your vault is organized using the **[method_display_name]** method with these folders:
->   [list each folder created in Step 11 for the chosen method, one per line]
+> - Your vault is organized using the **OneBrain** method with these folders:
+>   - `00-inbox/` — raw captures (process regularly)
+>   - `01-projects/` — active projects with tasks
+>   - `02-knowledge/` — consolidated notes & reference
+>   - `03-archive/` — completed & inactive items
+>   - `04-logs/` — session logs
 >
 > **First things to try:**
 > - `/braindump` — dump anything on your mind right now
