@@ -204,10 +204,14 @@ function Install-Plugins {
           }
         }
       } catch {
-        # Network/TLS/unexpected errors — warn but don't fail the plugin
+        # Network/TLS/HTTP 4xx errors — warn but don't fail the plugin.
+        # Only attempt cleanup if a partial file was actually written (e.g. mid-transfer
+        # network drop); Invoke-WebRequest does not create the file on a clean 4xx.
         Write-Host "  ⚠️  Could not download styles.css for $pluginId`: $($_.Exception.Message)" -ForegroundColor Yellow
-        try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
-          Write-Host "  ⚠️  Could not remove partial styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+        if (Test-Path $cssPath) {
+          try { Remove-Item $cssPath -Force -ErrorAction Stop } catch {
+            Write-Host "  ⚠️  Could not remove partial styles.css for ${pluginId}: $($_.Exception.Message)" -ForegroundColor Yellow
+          }
         }
       }
     }
