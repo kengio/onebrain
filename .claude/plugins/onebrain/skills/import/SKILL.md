@@ -361,4 +361,44 @@ Handles: `.py`, `.sh`, `.bash`, `.zsh`, `.sql`
 
 ## Note Template
 
-[TO BE FILLED IN TASK 8]
+All handlers use this base template. Type-specific sections are added by each handler.
+
+The note structure:
+
+---
+tags: [import, <type-tag>]
+created: YYYY-MM-DD
+source: /import
+file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
+file_path: /absolute/path/to/original
+---
+
+# [Filename or derived title]
+
+> **Original file:** [Open](file:///absolute/path/to/original)
+> **Imported:** YYYY-MM-DD
+
+[If --attach flag was used and file type supports it, add: ![[filename]] ]
+
+## Summary
+
+[2-3 sentence distillation, AI description, or plain-language explanation]
+
+## Key Points / Contents
+
+[Extracted structure — key sections, data highlights, slide outline, script analysis, etc.]
+
+## Related
+
+[[linked vault notes]]
+
+---
+
+**Type-specific section additions (after Key Points):**
+- **Scripts**: `## Code` — full file content in a fenced code block
+- **PowerPoint**: `## Slide Outline` — numbered slide titles and key points
+- **Excel**: `## Data Overview` — left blank for user to fill in
+
+**Scan for related notes:** After creating the note, grep `04-resources/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found.
+
+> **Note on `file_path`:** For inbox-staged files, this records the staging path — which is deleted after import. The note is the permanent artifact. If you need to record the original source location, add it to the frontmatter manually.
