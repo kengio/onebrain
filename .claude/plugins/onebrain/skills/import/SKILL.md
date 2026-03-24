@@ -330,7 +330,32 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 ## Script Handler
 
-[TO BE FILLED IN TASK 7]
+Executed by a subagent. Inputs: file path, vault root, inbox flag.
+
+Handles: `.py`, `.sh`, `.bash`, `.zsh`, `.sql`
+
+1. Read the file content verbatim using the Read tool.
+
+2. Analyze the script:
+   - **Purpose**: what does this script do? (1-2 sentences)
+   - **Inputs**: what does it take as arguments or reads from? (files, env vars, stdin)
+   - **Outputs**: what does it produce? (files, stdout, database changes)
+   - **Key logic**: notable algorithms, external dependencies, or non-obvious behavior
+
+3. Choose output subfolder (suggest `scripts`, or topic-based like `data-processing`). Create note using Note Template:
+   - `file_type`: `script`
+   - Summary: the purpose description from step 2
+   - Key Points: inputs, outputs, key logic
+   - Add a `## Code` section after Key Points with the full file content in a fenced code block using the correct language tag:
+     - `.py` → python
+     - `.sh`, `.bash`, `.zsh` → bash
+     - `.sql` → sql
+
+4. `--attach` is NOT supported for scripts (content is already in the note as a code block).
+
+5. Cleanup: same rule (delete from inbox if staged there).
+
+6. Return: note path.
 
 ---
 
