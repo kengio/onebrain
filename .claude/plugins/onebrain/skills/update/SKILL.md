@@ -17,14 +17,12 @@ Tell the user what will and won't be updated:
 **WILL update (system files only):**
 - `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.gitignore`
 - `.claude/plugins/onebrain/` — all skills, hooks, and agents
-- `.obsidian/plugins/` — bundled plugin files
-- `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
 - `[agent_folder]/MEMORY.md` — your identity and session context (inside your agent folder)
 - `vault.yml` — your vault configuration
-- `.obsidian/*` (except `community-plugins.json` and `core-plugins.json`) — all per-device Obsidian settings are gitignored and never touched
+- `.obsidian/` — all Obsidian settings and plugins are yours to manage after onboarding
 - `.claude/settings.local.json` — your local Claude settings
 - `.claude/onebrain.local.md` — your local plugin config
 - `install.sh`, `install.ps1` — only used for fresh installs
@@ -59,9 +57,6 @@ For each path in the allowlist, compare the upstream version against the local v
 | `AGENTS.md` | file |
 | `.gitignore` | file |
 | `.claude/plugins/onebrain/` | directory |
-| `.obsidian/plugins/` | directory |
-| `.obsidian/core-plugins.json` | file |
-| `.obsidian/community-plugins.json` | file |
 
 **For individual files:** Fetch the upstream content using WebFetch:
 `https://raw.githubusercontent.com/kengio/onebrain/main/[path]`
@@ -77,7 +72,7 @@ Also identify **local files that no longer exist upstream** (present locally but
 Present the summary before asking to apply. Example:
 > Found: 2 modified, 1 new, 7 unchanged.
 > Modified: `.claude/plugins/onebrain/`, `CLAUDE.md`
-> New: `.obsidian/plugins/new-plugin/`
+> New: `.claude/plugins/onebrain/skills/new-skill/SKILL.md`
 >
 > Apply these updates?
 
@@ -228,5 +223,4 @@ Show a final summary of what was updated. Then suggest:
 > **Done.** OneBrain has been updated.
 >
 > Next steps:
-> - **Restart Obsidian** if any plugins were updated (`.obsidian/plugins/` changed)
 > - **Restart your AI session** if system instructions changed (`CLAUDE.md`, `GEMINI.md`, or `AGENTS.md`)
