@@ -116,6 +116,7 @@ Vault folders are created during `/onboarding`.
 ```
 onebrain/
 ├── 00-inbox/          Raw braindumps and captures (process regularly)
+│   └── imports/       Staging area for /import (drop files here)
 ├── 01-projects/       Active projects with inline tasks
 ├── 02-areas/          Ongoing responsibilities (health, finances, career...)
 ├── 03-knowledge/      Your own synthesized thinking and insights
@@ -136,7 +137,7 @@ onebrain/
 The core workflow: capture everything to inbox → process with `/consolidate` → synthesize into knowledge or save as reference → archive what's done.
 
 **`00-inbox/`** — Raw braindumps and captures
-Process regularly. Everything unclassified lands here first.
+Process regularly. Everything unclassified lands here first. The `imports/` subfolder is the staging area for `/import` — copy files there and run `/import` to distill them into vault notes.
 
 **`01-projects/`** — Active work with a clear goal and end date
 Examples: `work/Website Redesign.md`, `personal/Japan Trip 2026.md`

@@ -131,6 +131,29 @@ No action needed. User will need to run `/onboarding`.
 
 ---
 
+## Step 4c: Create Missing Vault Folders (Migration)
+
+After applying updates, ensure any folders introduced in newer versions exist. Check and create if missing — do not report unchanged folders, only new ones.
+
+**Folders to ensure exist:**
+
+| Folder | Purpose | Introduced |
+|--------|---------|-----------|
+| `[inbox]/imports/` | Staging area for `/import` skill | v1.2.0 |
+
+Where `[inbox]` is resolved from `vault.yml` `folders.inbox` (default: `00-inbox`).
+
+For each missing folder: create it with an empty `.gitkeep` file inside and report:
+> Created `[folder]/` — new in this version.
+
+Also ensure `vault.yml` contains the `import_inbox` key. If `vault.yml` exists and the key is missing, append it under `folders`:
+```yaml
+  import_inbox: [inbox]/imports
+```
+Report: "Added `import_inbox` to vault.yml."
+
+---
+
 ## Step 5: Update Obsidian Skills Plugin
 
 Update the kepano/obsidian-skills plugin to the latest version.
