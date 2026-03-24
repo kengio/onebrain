@@ -373,7 +373,6 @@ function Main {
   }
 
   try {
-    Write-Step "📦" "Downloading OneBrain..."
     $zipPath = Join-Path $tmpDir "onebrain.zip"
 
     try {
@@ -385,7 +384,6 @@ function Main {
     }
     Write-Done "Downloaded"
 
-    Write-Step "🔧" "Extracting..."
     try {
       Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
     } catch {
