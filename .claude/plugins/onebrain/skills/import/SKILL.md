@@ -160,19 +160,101 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 ## Word Handler (.docx)
 
-[TO BE FILLED IN TASK 4]
+Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox flag.
+
+> Requires `pandoc` (`brew install pandoc` on macOS). Falls back to stub note if unavailable.
+
+1. Check if pandoc is available:
+   ```bash
+   which pandoc
+   ```
+   If not found: skip to step 5 (stub note).
+
+2. Extract text:
+   ```bash
+   pandoc "[filepath]" -t plain
+   ```
+   Capture the output as plain text.
+
+3. From the extracted text, identify:
+   - **Title**: first heading or document title, or derive from filename
+   - **Headings and key sections**: structure of the document
+   - **Core content**: main points, arguments, or information
+
+4. Choose output subfolder (same rule as PDF Handler). Create note using Note Template:
+   - `file_type`: `docx`
+   - Summary: 2-3 sentence distillation
+   - Key Points: bullet list of main points
+
+5. **Stub note fallback** (if pandoc unavailable):
+   Create a minimal note with:
+   - Summary: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
+   - Key Points: "_Open the file to review its contents and fill in this section._"
+
+6. `--attach` is NOT supported for Word files (no Obsidian preview value).
+
+7. Cleanup: same as PDF Handler (delete from inbox if staged there).
+
+8. Return: note path, or error with reason.
 
 ---
 
 ## Excel Handler (.xlsx / .xls)
 
-[TO BE FILLED IN TASK 4]
+Executed by a subagent. Inputs: file path, vault root, inbox flag.
+
+> Excel binary formats cannot be reliably extracted without specialized tools. This handler creates a stub note with a link to the original file.
+
+1. Record: filename, file size (via `ls -lh "[filepath]"` bash command), file extension.
+
+2. Choose output subfolder. Create note using Note Template:
+   - `file_type`: `xlsx`
+   - Include the `> **Original file:** [Open](file:///[filepath])` link in the note body
+   - Summary: "⚠ Excel content was not extracted automatically. Open the file to review its contents and fill in this section."
+   - Key Points / Contents section header: `## Data Overview` (left blank for user to fill)
+
+3. `--attach` is NOT supported for Excel files.
+
+4. Cleanup: same rule (delete from inbox if staged there).
+
+5. Return: note path.
 
 ---
 
 ## PowerPoint Handler (.pptx / .ppt)
 
-[TO BE FILLED IN TASK 4]
+Executed by a subagent. Inputs: file path, vault root, inbox flag.
+
+> Requires `pandoc` (`brew install pandoc` on macOS). Falls back to stub note if unavailable.
+
+1. Check if pandoc is available:
+   ```bash
+   which pandoc
+   ```
+   If not found: skip to step 4 (stub note).
+
+2. Extract text:
+   ```bash
+   pandoc "[filepath]" -t plain
+   ```
+
+3. From the extracted text, create a slide outline:
+   - Identify slide titles and main text per slide
+   - Note section: `## Slide Outline` with numbered slides
+
+   Choose output subfolder. Create note using Note Template:
+   - `file_type`: `pptx`
+   - Summary: 2-3 sentences describing the presentation's purpose and audience
+   - Key section: `## Slide Outline` (numbered list of slide titles + key points)
+
+4. **Stub note fallback** (if pandoc unavailable):
+   Summary: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
+
+5. `--attach` is NOT supported for PowerPoint files.
+
+6. Cleanup: same rule.
+
+7. Return: note path, or error with reason.
 
 ---
 
