@@ -25,11 +25,7 @@ Tell the user what will and won't be updated:
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
 - `[agent_folder]/MEMORY.md` — your identity and session context (inside your agent folder)
 - `vault.yml` — your vault configuration
-- `.obsidian/app.json` — per-device Obsidian app settings (gitignored, not shared)
-- `.obsidian/themes/` — your chosen theme
-- `.obsidian/appearance.json` — your theme preference
-- `.obsidian/workspace.json` — your panel layout
-- `.obsidian/hotkeys.json` — your keybindings
+- `.obsidian/*` (except `community-plugins.json` and `core-plugins.json`) — all per-device Obsidian settings are gitignored and never touched
 - `.claude/settings.local.json` — your local Claude settings
 - `.claude/onebrain.local.md` — your local plugin config
 - `install.sh`, `install.ps1` — only used for fresh installs

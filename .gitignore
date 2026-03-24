@@ -2,17 +2,10 @@
 .DS_Store
 Thumbs.db
 
-# ── Obsidian — User preferences (per-device, not shared) ─────────────────────
-.obsidian/workspace.json
-.obsidian/workspace-mobile.json
-.obsidian/hotkeys.json
-.obsidian/appearance.json
-.obsidian/app.json
-.obsidian/themes/
-
-# ── Obsidian — Plugins ────────────────────────────────────────────────────────
-# community-plugins.json    — TRACKED (defines which plugins install.sh downloads)
-# plugins/                  — not present in repo (downloaded at install time)
+# ── Obsidian — ignore all per-device settings; allow only shared config ───────
+.obsidian/*
+!.obsidian/community-plugins.json
+!.obsidian/core-plugins.json
 
 # ── AI Agents ─────────────────────────────────────────────────────────────────
 .claude/settings.local.json
