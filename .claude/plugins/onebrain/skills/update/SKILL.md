@@ -19,12 +19,13 @@ Tell the user what will and won't be updated:
 - `.claude/plugins/onebrain/` — all skills, hooks, and agents
 - `.claude/plugins/obsidian-skills/` — Obsidian Skills plugin (kepano/obsidian-skills)
 - `.obsidian/plugins/` — bundled plugin files
-- `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
+- `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
 - `[agent_folder]/MEMORY.md` — your identity and session context (inside your agent folder)
 - `vault.yml` — your vault configuration
+- `.obsidian/app.json` — per-device Obsidian app settings (gitignored, not shared)
 - `.obsidian/themes/` — your chosen theme
 - `.obsidian/appearance.json` — your theme preference
 - `.obsidian/workspace.json` — your panel layout
@@ -64,7 +65,6 @@ For each path in the allowlist, compare the upstream version against the local v
 | `.gitignore` | file |
 | `.claude/plugins/onebrain/` | directory |
 | `.obsidian/plugins/` | directory |
-| `.obsidian/app.json` | file |
 | `.obsidian/core-plugins.json` | file |
 | `.obsidian/community-plugins.json` | file |
 
