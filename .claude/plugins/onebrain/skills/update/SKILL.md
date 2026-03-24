@@ -17,6 +17,7 @@ Tell the user what will and won't be updated:
 **WILL update (system files only):**
 - `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.gitignore`
 - `.claude/plugins/onebrain/` — all skills, hooks, and agents
+- `.claude-plugin/` — local plugin marketplace registry
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
@@ -57,6 +58,7 @@ For each path in the allowlist, compare the upstream version against the local v
 | `AGENTS.md` | file |
 | `.gitignore` | file |
 | `.claude/plugins/onebrain/` | directory |
+| `.claude-plugin/` | directory |
 
 **For individual files:** Fetch the upstream content using WebFetch:
 `https://raw.githubusercontent.com/kengio/onebrain/main/[path]`
