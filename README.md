@@ -239,8 +239,9 @@ These are recommended but optional:
 
 For Obsidian-specific Claude Code skills (markdown, bases, canvas, and more), install the [Obsidian Skills](https://github.com/kepano/obsidian-skills) plugin separately:
 
-```bash
-git clone --depth 1 https://github.com/kepano/obsidian-skills .claude/plugins/obsidian-skills
+```
+/plugin marketplace add kepano/obsidian-skills
+/plugin install obsidian@obsidian-skills
 ```
 
 </details>
