@@ -248,6 +248,7 @@ method: onebrain
 folders:
   inbox: 00-inbox
   import_inbox: 00-inbox/imports
+  attachments: attachments
   projects: 01-projects
   areas: 02-areas
   knowledge: 03-knowledge

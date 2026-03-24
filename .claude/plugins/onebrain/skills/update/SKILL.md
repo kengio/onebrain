@@ -143,14 +143,28 @@ After applying updates, ensure any folders introduced in newer versions exist. C
 
 Where `[inbox]` is resolved from `vault.yml` `folders.inbox` (default: `00-inbox`).
 
-For each missing folder: create it with an empty `.gitkeep` file inside and report:
-> Created `[folder]/` — new in this version.
+**For each folder in the table:**
+1. Check if it exists (glob or ls). If it exists: skip silently.
+2. If it does not exist: write an empty `.gitkeep` file inside it (this creates the folder).
+   - If the write fails: report the error and tell the user to create the folder manually before using `/import`. Continue to the next folder — do not stop.
+3. Report: "Created `[folder]/` — new in this version."
 
-Also ensure `vault.yml` contains the `import_inbox` key. If `vault.yml` exists and the key is missing, append it under `folders`:
-```yaml
-  import_inbox: [inbox]/imports
-```
-Report: "Added `import_inbox` to vault.yml."
+**vault.yml key migration — explicit procedure:**
+
+Run this procedure for each vault.yml key in the table below:
+
+| Key | Value | Introduced |
+|-----|-------|-----------|
+| `import_inbox` | `[inbox]/imports` | v1.2.0 |
+| `attachments` | `attachments` | v1.2.0 |
+
+For each key:
+1. **Check if vault.yml exists.** If it does not exist: skip this key entirely (the user needs to run `/onboarding` first — do not create or modify vault.yml here).
+2. **Read vault.yml.** If it cannot be read or parsed: report the error, skip this key, continue.
+3. **Check if `folders:` block is present** in the parsed content. If the `folders:` block is absent: report "vault.yml exists but has no `folders:` block — cannot safely add `[key]`. Please check vault.yml manually." Skip this key.
+4. **Search for the key** (grep for `[key]:` within the `folders:` block). If it is already present: skip silently.
+5. **Insert the key** as a new line within the `folders:` mapping — after the last existing folder entry, inside the `folders:` block. Do NOT append to the end of the file. Use the Write tool to write the entire updated vault.yml content (read → modify in memory → write back), never a partial append.
+6. Report: "Added `[key]` to vault.yml."
 
 ---
 
