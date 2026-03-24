@@ -129,6 +129,52 @@ No action needed.
 **Case D — Neither exists:**
 No action needed. User will need to run `/onboarding`.
 
+After running whichever case above applies, proceed to Step 4b-ii.
+
+---
+
+## Step 4b-ii: Patch MEMORY.md Frontmatter (If Needed)
+
+After the location migration above, ensure `[agent_folder]/MEMORY.md` has correct frontmatter.
+
+**Required frontmatter fields** (as defined by the onboarding skill):
+```yaml
+---
+tags: [agent-memory]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+```
+
+**Procedure:**
+
+1. If `[agent_folder]/MEMORY.md` does not exist (Case D above): skip this step entirely.
+2. Read `[agent_folder]/MEMORY.md`.
+3. Check whether the file begins with a frontmatter block (first line is exactly `---`).
+
+**If frontmatter is entirely missing:**
+- Prepend the following block before the existing file content (read-modify-write — do not truncate existing content):
+  ```yaml
+  ---
+  tags: [agent-memory]
+  created: YYYY-MM-DD
+  updated: YYYY-MM-DD
+  ---
+  ```
+  Use today's date for both `created` and `updated`.
+- Report: "Added missing frontmatter to `[agent_folder]/MEMORY.md`."
+
+**If frontmatter is present but incomplete** (the `---` block exists, but one or more required keys are missing):
+- Parse the existing frontmatter block (content between the first and second `---`).
+- For each missing key, insert it into the frontmatter block:
+  - `tags` missing → add `tags: [agent-memory]`
+  - `created` missing → add `created: YYYY-MM-DD` (today's date)
+  - `updated` missing → add `updated: YYYY-MM-DD` (today's date)
+- Write back the full file with the patched frontmatter (read-modify-write).
+- Report: "Patched frontmatter in `[agent_folder]/MEMORY.md` — added: [list of added keys]."
+
+**If frontmatter is present and complete:** Skip silently.
+
 ---
 
 ## Step 4c: Create Missing Vault Folders (Migration)
