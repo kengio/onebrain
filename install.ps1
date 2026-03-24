@@ -81,7 +81,6 @@ function Install-Plugins {
   Print-Header "Installing community plugins..."
 
   # Fetch Obsidian plugin registry once
-  Write-Step "📦" "Fetching plugin registry..."
   try {
     $registry = Invoke-RestMethod -Uri $registryUrl -ErrorAction Stop
   } catch {
@@ -125,8 +124,6 @@ function Install-Plugins {
       continue
     }
     $repo = $entry.repo
-
-    Write-Step "🔌" "Installing $pluginId..."
 
     try {
       $release = Invoke-RestMethod `
@@ -252,8 +249,6 @@ function Install-ObsidianSkills {
   $targetDir = Join-Path $VaultPath ".claude\plugins\obsidian-skills"
   $repoUrl   = "https://github.com/kepano/obsidian-skills.git"
 
-  Write-Step "📦" "Installing Obsidian Skills plugin..."
-
   # Already installed in a valid state — show confirmation and skip
   if ((Test-Path $targetDir -PathType Container) -and
       -not (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
@@ -276,7 +271,6 @@ function Install-ObsidianSkills {
       Print-Info "  Remove-Item -Path `"$targetDir`" -Recurse -Force"
       return  # Non-fatal — overall install continues without this plugin
     }
-    Write-Step "📦" "Installing Obsidian Skills plugin..."
   }
 
   # Clone the repo (shallow, quiet); join all output lines for readable error display
@@ -366,6 +360,7 @@ function Main {
 
   Write-Host
   Write-Host "Vault will be created at: $vaultPath" -ForegroundColor Cyan
+  Write-Host
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
   $repoUrl = "https://github.com/kengio/onebrain/archive/refs/heads/main.zip"
@@ -501,7 +496,7 @@ function Main {
   if ($script:FailedPlugins.Count -gt 0) {
     Write-Host "  $step. Install missing plugins manually (Settings → Community plugins → Browse):"
     foreach ($p in $script:FailedPlugins) {
-      Write-Host "     $p" -ForegroundColor Cyan
+      if ($p) { Write-Host "     $p" -ForegroundColor Cyan }
     }
     $step++
   }
