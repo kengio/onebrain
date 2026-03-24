@@ -18,10 +18,9 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 02-areas/        Ongoing responsibilities (health, finances, career...)
 03-knowledge/    Your own synthesized thinking and insights
 04-resources/    External info — research output, summaries, reference
-05-agent/        AI-specific context and memory (context/ + memory/)
+05-agent/        AI-specific context and memory (MEMORY.md + context/ + memory/)
 06-archive/      Completed projects and archived areas
 07-logs/         Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
-05-agent/MEMORY.md  Identity and evolving knowledge (loaded every session)
 ```
 
 ## Task Syntax (Obsidian Tasks Plugin)
@@ -123,9 +122,8 @@ Before your final response in a session, silently save a session summary if ALL 
 2. No `/wrapup` was run during this session (check the logs folder for a file matching today's date with matching topics)
 
 If conditions are met:
-- If not already resolved, read `vault.yml` to determine the logs folder name (default: `07-logs`)
-- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in `[logs_folder]/YYYY/MM/` for today, use the next number (zero-padded: 01, 02, etc.)
-- Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
+- Determine file name: count existing `YYYY-MM-DD-session-*.md` files in `[logs folder]/YYYY/MM/` for today, use the next number (zero-padded: 01, 02, etc.)
+- Write to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
 - Add `auto-saved: true` to the frontmatter
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `[agent folder]/MEMORY.md` and update the `updated:` frontmatter date to today
 - Do NOT show any output about the auto-save to the user
