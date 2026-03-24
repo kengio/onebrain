@@ -15,7 +15,7 @@ Your notes, memory, and personal settings are never touched.
 Tell the user what will and won't be updated:
 
 **WILL update (system files only):**
-- `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `README.md`, `.gitignore`
+- `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.gitignore`
 - `.claude/plugins/onebrain/` — all skills, hooks, and agents
 - `.claude/plugins/obsidian-skills/` — Obsidian Skills plugin (kepano/obsidian-skills)
 - `.obsidian/plugins/` — bundled plugin files
@@ -31,7 +31,8 @@ Tell the user what will and won't be updated:
 - `.obsidian/hotkeys.json` — your keybindings
 - `.claude/settings.local.json` — your local Claude settings
 - `.claude/onebrain.local.md` — your local plugin config
-- `install.sh` — only used for fresh installs
+- `install.sh`, `install.ps1` — only used for fresh installs
+- `README.md`, `CONTRIBUTING.md`, `LICENSE`, `assets/` — repo-only files, not part of the vault
 
 Ask: **"Proceed with update?"** and wait for confirmation before continuing.
 
@@ -60,7 +61,6 @@ For each path in the allowlist, compare the upstream version against the local v
 | `CLAUDE.md` | file |
 | `GEMINI.md` | file |
 | `AGENTS.md` | file |
-| `README.md` | file |
 | `.gitignore` | file |
 | `.claude/plugins/onebrain/` | directory |
 | `.obsidian/plugins/` | directory |

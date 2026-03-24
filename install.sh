@@ -173,10 +173,12 @@ check_deps() {
 
 # ─── Prompt helpers ───────────────────────────────────────────────────────────
 prompt_with_default() {
-  local question="$1"
-  local default="$2"
+  local number="$1"
+  local question="$2"
+  local default="$3"
   local answer
-  print_prompt "$question [${default}]:"
+  echo "${YELLOW}  ${number}) ${RESET}${BOLD}$question${RESET} ${CYAN}[${default}]${RESET}" >&2
+  printf "${YELLOW}  > ${RESET}" >&2
   if ! read -r answer <&"$TTY_FD"; then
     echo >&2
     print_error "No input received (EOF). Aborted."
@@ -497,7 +499,7 @@ main() {
   fi
 
   print_banner
-  print_info "This script downloads OneBrain and sets up a fresh Obsidian vault."
+  echo "${BOLD}${CYAN}This script downloads OneBrain and sets up a fresh Obsidian vault.${RESET}"
   echo
 
   check_deps
@@ -505,7 +507,7 @@ main() {
   # ── Step 1: Install location ────────────────────────────────────────────────
   local default_location="$PWD"
   local install_location
-  install_location=$(prompt_with_default "Where should the vault be created?" "$default_location")
+  install_location=$(prompt_with_default 1 "Where should the vault be created?" "$default_location")
 
   # Expand a leading ~ to $HOME (note: ~username forms are not expanded)
   install_location="${install_location/#\~/$HOME}"
@@ -531,8 +533,9 @@ main() {
   fi
 
   # ── Step 2: Vault name ──────────────────────────────────────────────────────
+  echo >&2
   local vault_name
-  vault_name=$(prompt_with_default "Vault name?" "onebrain")
+  vault_name=$(prompt_with_default 2 "Vault name?" "onebrain")
 
   # Validate: no spaces or path-breaking characters
   if [[ "$vault_name" =~ [[:space:]/\\] ]]; then
@@ -549,7 +552,7 @@ main() {
   fi
 
   echo
-  print_info "Vault will be created at: ${BOLD}${vault_path}${RESET}"
+  echo "${BOLD}${CYAN}Vault will be created at: ${vault_path}${RESET}"
   echo
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
@@ -600,10 +603,15 @@ main() {
   fi
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
-  # Remove install scripts from the vault — they shouldn't live there.
+  # Remove install scripts, README and assets from the vault — they belong to the repo, not the vault.
   # rm -f silently succeeds if they are absent; the if-guard catches permission errors only.
-  if ! rm -f "$vault_path/install.sh" "$vault_path/install.ps1"; then
-    print_error "Could not remove install scripts from '$vault_path'. Check directory permissions."
+  if ! rm -f "$vault_path/install.sh" "$vault_path/install.ps1" "$vault_path/README.md" \
+             "$vault_path/CONTRIBUTING.md" "$vault_path/LICENSE"; then
+    print_error "Could not remove repo files from '$vault_path'. Check directory permissions."
+    exit 1
+  fi
+  if ! rm -rf "$vault_path/assets"; then
+    print_error "Could not remove assets directory from '$vault_path'. Check directory permissions."
     exit 1
   fi
 
@@ -626,7 +634,8 @@ main() {
   echo
   print_success "Vault path: ${vault_path}"
   echo
-  echo "Next steps:"
+  echo "${BOLD}${CYAN}Next steps:${RESET}"
+  echo
   echo "  1. Open Obsidian"
   echo "     File → Open Folder as Vault → select: ${vault_path}"
   local step=2
