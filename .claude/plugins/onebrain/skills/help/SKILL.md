@@ -16,10 +16,11 @@ Display a formatted table with all available commands:
 | `/onboarding` | First-run setup — personalizes your agent, vault structure, and preferences | Use once when setting up a new vault |
 | `/braindump` | Capture a stream of raw thoughts, ideas, and tasks | When your head is full and you need to offload everything |
 | `/capture` | Quick note capture with automatic wikilink suggestions | When you want to save a single idea, reference, or thought |
+| `/bookmark` | Save a URL with AI-generated name, description, and category to Bookmarks.md | When you want to quickly park a link for later without full processing |
 | `/consolidate` | Review and merge inbox items into your knowledge base | When your inbox is getting full and needs processing |
 | `/connect` | Find connections between notes and suggest wikilinks | When you want to strengthen the web of ideas in your vault |
 | `/research` | Web research on a topic → structured knowledge note | When you want to learn about something and save it |
-| `/summarize-url` | Fetch a URL and create a structured summary note | When you want to save and summarize an article or page |
+| `/summarize` | Fetch a URL and create a structured summary note | When you want to deeply process an article or page into a permanent vault note |
 | `/reading-notes` | Book or article → structured progressive summary | When finishing a book or long article and want to capture it |
 | `/tasks` | Task dashboard — overdue, due soon, open, completed | When you want an overview of what needs doing |
 | `/weekly` | Weekly reflection — review sessions, patterns, intentions | At the end of each week for review and planning |

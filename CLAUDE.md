@@ -76,7 +76,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base |
 | `/connect` | `connect/SKILL.md` | Find note connections |
 | `/research` | `research/SKILL.md` | Web research → vault |
-| `/summarize-url` | `summarize-url/SKILL.md` | URL → summary note |
+| `/summarize` | `summarize/SKILL.md` | URL → deep summary note (checks Bookmarks.md for cleanup) |
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
 | `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
@@ -85,6 +85,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/export` | `export/SKILL.md` | Package agent context for vault transfer |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub |
+| `/bookmark` | `bookmark/SKILL.md` | Save a URL to Bookmarks.md with AI-generated name, description, and category |
 | `/help` | `help/SKILL.md` | List available commands with use cases |
 
 When a user invokes a command, read the corresponding SKILL.md and follow it.

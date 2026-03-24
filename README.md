@@ -5,7 +5,7 @@ OneBrain — Where human and AI thinking become one. Turn Claude Code, Gemini CL
 ## What It Does
 
 - **Memory across sessions** — your AI remembers your name, role, goals, and past conversations
-- **16 slash commands** — braindump, capture, research, consolidate, connect, and more
+- **17 slash commands** — braindump, capture, bookmark, research, consolidate, connect, and more
 - **Vault-native** — all notes are Markdown, everything stays in your Obsidian vault
 - **Multi-agent** — works with Claude Code, Gemini CLI, or any AI that reads Markdown
 - **Pre-configured** — open in Obsidian and everything is ready to go
@@ -136,10 +136,11 @@ The core workflow: capture everything to inbox → process with `/consolidate` �
 | `/onboarding` | First-run setup — run this first |
 | `/braindump` | Dump everything on your mind — it gets classified and filed |
 | `/capture` | Quick note with auto-linking to related notes |
+| `/bookmark [url]` | Save a URL with AI-generated name, description, and category to Bookmarks.md |
 | `/consolidate` | Process inbox into permanent knowledge |
 | `/connect` | Find connections between notes, suggest wikilinks |
 | `/research [topic]` | Web research → structured note in your vault |
-| `/summarize-url [url]` | Fetch a URL and save a summary note |
+| `/summarize [url]` | Fetch a URL and save a deep summary note |
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/tasks` | Task dashboard — overdue, due soon, open, and completed this week |
