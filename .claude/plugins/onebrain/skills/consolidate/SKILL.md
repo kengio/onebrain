@@ -48,7 +48,7 @@ Read the file fully. Identify:
 
 ### 3b. Decide Destination
 
-**Primary signal (check first):** If the inbox item has a `source:` frontmatter field matching `/research`, `/summarize`, `/summarize-url`, or `/reading-notes`, route it directly to `04-resources/` — no judgment needed.
+**Primary signal (check first):** If the inbox item has a `source:` frontmatter field matching `/research`, `/summarize`, or `/reading-notes`, route it directly to `04-resources/` — no judgment needed.
 
 **Secondary signal (for all other notes):** Apply the content-type rule below.
 
