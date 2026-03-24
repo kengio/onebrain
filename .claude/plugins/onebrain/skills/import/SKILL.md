@@ -42,7 +42,7 @@ Parse arguments:
 5. Skip Steps 2 and 3 below. Go directly to Step 4 with this single file.
 
 **Batch mode:**
-1. Read `vault.yml` for `folders.import_inbox` (default: `00-inbox/imports`).
+1. Use `[inbox]` resolved in Step 1 above (default: `[inbox]/imports` from vault.yml).
 2. List all files recursively in the inbox folder.
 3. If inbox is empty, report:
    > Inbox is empty (`[inbox path]`). Add files there and run `/import` again, or run `/import /path/to/file`.
