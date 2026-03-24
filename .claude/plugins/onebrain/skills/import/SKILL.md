@@ -303,7 +303,28 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 ## Video Handler
 
-[TO BE FILLED IN TASK 6]
+Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox flag.
+
+1. Collect metadata:
+   - Filename (without extension) → use as note title
+   - File size: `ls -lh "[filepath]"` via Bash
+   - File extension (format type: MP4, MOV, WebM, MKV)
+
+2. Choose output subfolder (suggest `media` or `video`). Create note using Note Template:
+   - `file_type`: `video`
+   - Summary: "Video file: [filename]. Format: [extension]. Size: [size]."
+   - Key Points: left blank — add context about this video manually
+
+3. `--attach` behavior:
+   - Copy the file into `[attachments]/[filename]` using Bash:
+     ```bash
+     cp "[filepath]" "[vault-root]/[attachments]/[filename]"
+     ```
+   - Add `![[filename]]` embed above the Summary section
+
+4. Cleanup: same rule.
+
+5. Return: note path.
 
 ---
 
