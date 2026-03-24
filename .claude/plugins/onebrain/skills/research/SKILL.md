@@ -117,4 +117,4 @@ After creating the note:
 > - [Related topic 1]
 > - [Related topic 2]
 >
-> Or run `/summarize-url [url]` to go deeper on a specific source.
+> Or run `/summarize [url]` to go deeper on a specific source.

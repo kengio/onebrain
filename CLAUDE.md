@@ -73,10 +73,11 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/onboarding` | `onboarding/SKILL.md` | First-run setup |
 | `/braindump` | `braindump/SKILL.md` | Capture raw thoughts |
 | `/capture` | `capture/SKILL.md` | Quick note with links |
+| `/bookmark` | `bookmark/SKILL.md` | Save a URL to Bookmarks.md with AI-generated name, description, and category |
 | `/consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base |
 | `/connect` | `connect/SKILL.md` | Find note connections |
 | `/research` | `research/SKILL.md` | Web research → vault |
-| `/summarize-url` | `summarize-url/SKILL.md` | URL → summary note |
+| `/summarize` | `summarize/SKILL.md` | URL → deep summary note (checks Bookmarks.md for cleanup) |
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
 | `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
