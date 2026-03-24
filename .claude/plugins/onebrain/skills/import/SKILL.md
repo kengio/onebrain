@@ -20,6 +20,8 @@ Usage:
 ### Step 1: Resolve source and parse flags
 
 Resolve folders from `vault.yml` (read the file if it exists at the vault root):
+- If `vault.yml` does not exist: use all defaults below.
+- If `vault.yml` exists but cannot be parsed: report the error and stop — do not proceed with unknown folder paths.
 - `folders.inbox` → default: `00-inbox` (vault inbox; used to derive import staging path)
 - `folders.import_inbox` → default: `[inbox]/imports` (import staging folder; substituting the resolved `[inbox]` value)
 - `folders.resources` → default: `04-resources` (output folder for notes)
@@ -44,7 +46,10 @@ Parse arguments:
 **Batch mode:**
 1. Use `[inbox]` resolved in Step 1 above (default: `[inbox]/imports` from vault.yml).
 2. List all files recursively in the inbox folder.
-3. If inbox is empty, report:
+3. If the inbox folder does not exist, report:
+   > Import inbox not found at `[inbox path]`. Run `/onboarding` to set up your vault, or use `/import /path/to/file` to import a specific file.
+   Then stop.
+4. If inbox is empty, report:
    > Inbox is empty (`[inbox path]`). Add files there and run `/import` again, or run `/import /path/to/file`.
    Then stop.
 
@@ -109,6 +114,19 @@ If any subagent failed:
   deck.pptx — pandoc not installed. File left in inbox. Install with: brew install pandoc
 ```
 
+If any files were skipped due to unsupported type:
+```
+⏭ 2 files skipped (unsupported — left in inbox):
+  unknown.xyz
+  notes.txt
+```
+
+If any subagent failed:
+```
+⚠ 1 file failed:
+  deck.pptx — pandoc not installed. File left in inbox. Install with: brew install pandoc
+```
+
 If a note was created but the inbox delete failed (partial success):
 ```
 ⚠ 1 partial success:
@@ -129,6 +147,30 @@ If a note was created but the inbox delete failed (partial success):
 | `.py` | Python | Script Handler |
 | `.sh`, `.bash`, `.zsh` | Shell | Script Handler |
 | `.sql` | SQL | Script Handler |
+
+---
+
+## Handler Safety Rules
+
+These rules apply to **all** handlers. No exceptions.
+
+**1. Cleanup is conditional on note creation success.**
+Delete an inbox file ONLY after the Write tool confirms the note was created. If note creation fails for any reason: return an error, leave the inbox file untouched, stop.
+
+**2. Stub notes do NOT trigger cleanup.**
+When a stub note is created (pandoc unavailable, pandoc failed, empty document): do NOT delete the inbox file. The user needs it to retry after fixing the issue.
+
+**3. Read/extraction failures stop processing.**
+If the Read tool, pandoc, or any extraction step returns an error or empty output: do NOT create a note. Return an error. Do NOT delete the inbox file.
+
+**4. File validation before processing.**
+Check file size with `ls -la "[filepath]"`. If 0 bytes: create a stub note ("File is empty — no content to extract."), do NOT delete inbox file, return.
+
+**5. `--attach` directory creation.**
+Before every `cp`, run `mkdir -p` for the target directory. If `cp` fails: skip the embed, report the failure, do NOT delete inbox file, stop.
+
+**6. Filename collision.**
+Before writing a note, check if the target path already exists. If it does: append ` (Imported YYYY-MM-DD)` to the filename and note the rename in the summary.
 
 ---
 
@@ -158,12 +200,13 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Key Points: bullet list of 3-7 main points from the document
 
 5. If `--attach` flag is set:
-   - Read `vault.yml` for `folders.attachments` (default: `attachments`)
-   - Copy the PDF into `[attachments]/pdf/[filename]`
+   - Run: `mkdir -p "[vault-root]/[attachments]/pdf/"`
+   - Run: `cp "[filepath]" "[vault-root]/[attachments]/pdf/[filename]"`
+   - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed to the note body (above the Summary section)
 
-6. Cleanup:
-   - If the file was inside the inbox folder: delete it with the Bash tool (`rm "[filepath]"`)
+6. Cleanup — only if step 4 (note creation) succeeded:
+   - If the file was inside the inbox folder: `rm "[filepath]"`
    - If the file was an explicit path outside the inbox: do NOT delete it
    - If delete fails: report as partial success (note created, manual delete needed)
 
@@ -187,7 +230,8 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    ```bash
    pandoc "[filepath]" -t plain
    ```
-   Capture the output as plain text.
+   - If pandoc exits non-zero OR output is empty/whitespace: skip to step 5 (stub note, reason: "pandoc failed or document is empty").
+   - Otherwise capture the output as plain text.
 
 3. From the extracted text, identify:
    - **Title**: first heading or document title, or derive from filename
@@ -199,14 +243,16 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Summary: 2-3 sentence distillation
    - Key Points: bullet list of main points
 
-5. **Stub note fallback** (if pandoc unavailable):
-   Create a minimal note with:
-   - Summary: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
+5. **Stub note fallback** (if pandoc unavailable or failed):
+   Create a minimal note with the appropriate message:
+   - Not installed: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
+   - Failed / empty: "⚠ Content could not be extracted — pandoc returned an error or the document is empty. File left in inbox for retry."
    - Key Points: "_Open the file to review its contents and fill in this section._"
+   **Do NOT delete the inbox file when a stub note is created.**
 
 6. `--attach` is NOT supported for Word files (no Obsidian preview value).
 
-7. Cleanup: same as PDF Handler (delete from inbox if staged there).
+7. Cleanup — only if a full note was created (pandoc succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
 
 8. Return: note path, or error with reason.
 
@@ -218,7 +264,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 
 > Excel binary formats cannot be reliably extracted without specialized tools. This handler creates a stub note with a link to the original file.
 
-1. Record: filename, file size (via `ls -lh "[filepath]"` bash command), file extension.
+1. Record: filename, file size (via `ls -lh "[filepath]"` — if the command fails, record size as "unknown"), file extension.
 
 2. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
    - `file_type`: `xlsx`
@@ -250,6 +296,8 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
    ```bash
    pandoc "[filepath]" -t plain
    ```
+   - If pandoc exits non-zero OR output is empty/whitespace: skip to step 4 (stub note, reason: "pandoc failed or presentation is empty").
+   - Otherwise capture the output as plain text.
 
 3. From the extracted text, create a slide outline:
    - Identify slide titles and main text per slide
@@ -260,12 +308,14 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
    - Summary: 2-3 sentences describing the presentation's purpose and audience
    - Key section: `## Slide Outline` (numbered list of slide titles + key points)
 
-4. **Stub note fallback** (if pandoc unavailable):
-   Summary: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
+4. **Stub note fallback** (if pandoc unavailable or failed):
+   - Not installed: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
+   - Failed / empty: "⚠ Content could not be extracted — pandoc returned an error or the presentation is empty. File left in inbox for retry."
+   **Do NOT delete the inbox file when a stub note is created.**
 
 5. `--attach` is NOT supported for PowerPoint files.
 
-6. Cleanup: same rule.
+6. Cleanup — only if a full note was created (pandoc succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
 
 7. Return: note path, or error with reason.
 
@@ -301,11 +351,9 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 3. Create note same as above (same subfolder selection rule — confirm in single-file mode, auto-select in batch mode), but with `file_type`: `svg`.
 
 **--attach behavior (PNG, JPG, JPEG, GIF, WebP, SVG):**
-- Read `vault.yml` for `folders.attachments` (default: `attachments`)
-- Copy the file into `[attachments]/images/[filename]` using Bash:
-  ```bash
-  cp "[filepath]" "[vault-root]/[attachments]/images/[filename]"
-  ```
+- Run: `mkdir -p "[vault-root]/[attachments]/images/"`
+- Run: `cp "[filepath]" "[vault-root]/[attachments]/images/[filename]"`
+- If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
 - Add `![[filename]]` embed above the Summary section in the note
 
 **Cleanup:** Same rule (delete from inbox if staged there).
@@ -320,7 +368,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 1. Collect metadata:
    - Filename (without extension) → use as note title
-   - File size: `ls -lh "[filepath]"` via Bash
+   - File size: `ls -lh "[filepath]"` via Bash — if the command fails, record size as "unknown"
    - File extension (format type: MP4, MOV, WebM, MKV)
 
 2. Choose output subfolder (suggest `media` or `video`; confirm with user in single-file mode, auto-select in batch mode). Create note using Note Template:
@@ -329,10 +377,9 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Key Points: left blank — add context about this video manually
 
 3. `--attach` behavior:
-   - Copy the file into `[attachments]/video/[filename]` using Bash:
-     ```bash
-     cp "[filepath]" "[vault-root]/[attachments]/video/[filename]"
-     ```
+   - Run: `mkdir -p "[vault-root]/[attachments]/video/"`
+   - Run: `cp "[filepath]" "[vault-root]/[attachments]/video/[filename]"`
+   - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed above the Summary section
 
 4. Cleanup: same rule.
@@ -443,6 +490,6 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 - **PowerPoint**: `## Slide Outline` — numbered slide titles and key points
 - **Excel**: `## Data Overview` — left blank for user to fill in
 
-**Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found.
+**Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found — add links manually._`
 
-> **Note on `file_path`:** For inbox-staged files, this records the staging path — which is deleted after import. The note is the permanent artifact. If you need to record the original source location, add it to the frontmatter manually.
+> **Note on `file_path`:** `file_path` is only included for files imported from an explicit path (kept in place after import). For inbox-staged files, `file_path` is omitted — the staging copy is deleted and the note is the permanent artifact.
