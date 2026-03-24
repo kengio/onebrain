@@ -3,8 +3,6 @@
 # Scoped to content folders only. Enforces vault boundary.
 # No external dependencies — PowerShell built-ins only.
 
-$ErrorActionPreference = "SilentlyContinue"
-
 # ── Debug logging ─────────────────────────────────────────────────────────────
 $debugLog = $null
 if ($env:DEBUG -eq "1") {
@@ -18,7 +16,7 @@ function Write-Log($msg) {
 # ── Read stdin ────────────────────────────────────────────────────────────────
 # Collect into $json directly — do NOT reassign $input (it's a PowerShell automatic variable)
 try {
-    $json = $input | ConvertFrom-Json
+    $json = $input | ConvertFrom-Json -ErrorAction SilentlyContinue
 } catch {
     Write-Log "JSON parse failed, exiting"
     exit 0
@@ -67,6 +65,7 @@ function Get-ContentFolders($vaultRootPath) {
     $inFolders = $false
     foreach ($line in Get-Content $yml) {
         if ($inFolders -and $line -match "^\S" -and $line.Trim() -ne "folders:") { break }
+        if ($inFolders -and $line.Trim() -eq "") { break }
         if ($line.Trim() -eq "folders:") { $inFolders = $true; continue }
         if ($inFolders -and $line -match "^\s+(\w+):\s*(.+)") {
             $folders[$Matches[1]] = $Matches[2].Trim()
@@ -97,13 +96,18 @@ if (-not $matched) {
 }
 
 # ── URL-encode path ────────────────────────────────────────────────────────────
-# EscapeDataString encodes all characters including / and : which we need preserved
-# Use a manual approach: encode only unsafe chars, preserve path separators
+# EscapeDataString over-encodes path separators; restore them manually:
+# %2F → / (forward slash), %3A → : (drive letter colon), %5C → / (backslash → forward slash)
+# Windows paths use backslash but obsidian:// URIs require forward slashes
 $encoded = [Uri]::EscapeDataString($absPath) -replace '%2F','/' -replace '%3A',':'  -replace '%5C','/'
 $uri = "obsidian://open?path=$encoded"
 Write-Log "opening URI: $uri"
 
 # ── Open in Obsidian ──────────────────────────────────────────────────────────
-Start-Process "$uri"
-Write-Log "done"
+try {
+    Start-Process "$uri"
+    Write-Log "done"
+} catch {
+    Write-Log "Start-Process failed: $_"
+}
 exit 0

@@ -19,6 +19,10 @@ fi
 log() { [ -n "$LOG" ] && echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] $*" >> "$LOG" || true; }
 
 # ── Read stdin ────────────────────────────────────────────────────────────────
+if [ -t 0 ]; then
+  log "stdin is a TTY (not a pipe), exiting"
+  exit 0
+fi
 input=$(cat)
 
 # ── Extract file_path ─────────────────────────────────────────────────────────
@@ -60,7 +64,7 @@ if [[ "$abs_path" != "$vault_root"/* ]]; then
 fi
 
 # ── Read content folders from vault.yml ───────────────────────────────────────
-# Pure bash — no Python required
+# POSIX tools only (grep, sed, cut, tr) — no Python or jq required
 read_content_folders() {
   # $vault_root is set from $CLAUDE_PROJECT_DIR (trailing slash already stripped)
   local yml="$vault_root/vault.yml"
@@ -70,6 +74,10 @@ read_content_folders() {
   while IFS= read -r line || [ -n "$line" ]; do
     # Exit folders block on any non-indented, non-comment line after block started
     if [ "$in_folders" -eq 1 ] && printf '%s' "$line" | grep -qE '^[^[:space:]#]'; then
+      break
+    fi
+    # Also break on blank lines after block has been entered
+    if [ "$in_folders" -eq 1 ] && [ -z "$(printf '%s' "$line" | tr -d '[:space:]')" ]; then
       break
     fi
     if printf '%s' "$line" | grep -qE '^\s*folders:\s*$'; then
@@ -87,8 +95,13 @@ read_content_folders() {
   printf '%s' "${result%|}"
 }
 
-folders_raw=$(read_content_folders 2>/dev/null || true)
-if [ -z "$folders_raw" ]; then
+if [ -f "$vault_root/vault.yml" ]; then
+  folders_raw=$(read_content_folders 2>/dev/null || true)
+  if [ -z "$folders_raw" ]; then
+    log "vault.yml found but no content folder keys parsed — using defaults"
+    folders_raw="00-inbox|01-projects|02-areas|03-knowledge|04-resources"
+  fi
+else
   folders_raw="00-inbox|01-projects|02-areas|03-knowledge|04-resources"
 fi
 log "content folders: $folders_raw"
@@ -110,7 +123,7 @@ if [ "$matched" -eq 0 ]; then
 fi
 
 # ── URL-encode path ────────────────────────────────────────────────────────────
-# Node.js is always available (Claude Code requires it) — use as primary encoder
+# Try Node.js first (usually on PATH when Claude Code is running), then fall back to python3/python
 encoded=$(FP="$abs_path" node -e \
   "const p=process.env.FP;process.stdout.write(encodeURIComponent(p).replace(/%2F/gi,'/').replace(/%3A/gi,':'));" \
   2>/dev/null \
@@ -119,7 +132,7 @@ encoded=$(FP="$abs_path" node -e \
   || true)
 
 if [ -z "$encoded" ]; then
-  log "URL encoding failed (node/python3/python all absent), exiting"
+  log "URL encoding failed (node, python3, and python all failed or are absent), exiting"
   exit 0
 fi
 
@@ -133,14 +146,16 @@ case "$OSTYPE" in
     ;;
   linux-gnu*)
     if grep -qiE 'microsoft|wsl' /proc/sys/kernel/osrelease 2>/dev/null; then
-      cmd.exe /c start "" "$uri" 2>/dev/null || \
-        /mnt/c/Windows/System32/cmd.exe /c start "" "$uri" 2>/dev/null || true
+      cmd_uri="${uri//%/%%}"
+      cmd.exe /c start "" "$cmd_uri" 2>/dev/null || \
+        /mnt/c/Windows/System32/cmd.exe /c start "" "$cmd_uri" 2>/dev/null || true
     else
       xdg-open "$uri" &>/dev/null &
     fi
     ;;
   msys*|cygwin*)
-    cmd.exe /c start "" "$uri"
+    cmd_uri="${uri//%/%%}"
+    cmd.exe /c start "" "$cmd_uri" 2>/dev/null || true
     ;;
   *)
     log "unknown OSTYPE: $OSTYPE, exiting"
