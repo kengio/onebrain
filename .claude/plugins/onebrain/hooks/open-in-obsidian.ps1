@@ -9,10 +9,10 @@ $ErrorActionPreference = "SilentlyContinue"
 $debugLog = $null
 if ($env:DEBUG -eq "1") {
     $debugLog = Join-Path $env:TEMP "onebrain-hook-debug.log"
-    Add-Content $debugLog "[$([datetime]::Now.ToString('o'))] open-in-obsidian.ps1 started"
+    Add-Content -Encoding UTF8 $debugLog "[$([datetime]::Now.ToString('o'))] open-in-obsidian.ps1 started"
 }
 function Write-Log($msg) {
-    if ($debugLog) { Add-Content $debugLog "[$([datetime]::Now.ToString('o'))] $msg" }
+    if ($debugLog) { Add-Content -Encoding UTF8 $debugLog "[$([datetime]::Now.ToString('o'))] $msg" }
 }
 
 # ── Read stdin ────────────────────────────────────────────────────────────────
@@ -34,8 +34,13 @@ if (-not $filePath) {
 Write-Log "file_path: $filePath"
 
 # ── Resolve absolute path ──────────────────────────────────────────────────────
-# Use GetFullPath — handles non-existent new files safely (Resolve-Path throws)
-$absPath = [System.IO.Path]::GetFullPath($filePath)
+# Claude Code always provides absolute paths — use directly if already absolute.
+# GetFullPath handles the rare relative-path case; note CLR cwd may differ from PS $PWD.
+if ([System.IO.Path]::IsPathRooted($filePath)) {
+    $absPath = $filePath
+} else {
+    $absPath = [System.IO.Path]::GetFullPath($filePath)
+}
 Write-Log "abs_path: $absPath"
 
 # ── Vault boundary check ───────────────────────────────────────────────────────
@@ -99,6 +104,6 @@ $uri = "obsidian://open?path=$encoded"
 Write-Log "opening URI: $uri"
 
 # ── Open in Obsidian ──────────────────────────────────────────────────────────
-Start-Process $uri
+Start-Process "$uri"
 Write-Log "done"
 exit 0
