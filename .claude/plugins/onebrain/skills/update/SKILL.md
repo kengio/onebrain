@@ -113,10 +113,11 @@ After applying updates, check for the old MEMORY.md location:
 3. Check if `[agent_folder]/MEMORY.md` exists
 
 **Case A — Root MEMORY.md exists, agent folder MEMORY.md does not:**
-Move the file automatically:
+Copy the file and ask before deleting:
+- If `[agent_folder]/` does not exist, create the folder along with `context/` and `memory/` subfolders (each with a `.gitkeep`)
 - Copy the content of `MEMORY.md` to `[agent_folder]/MEMORY.md`
-- Delete the root `MEMORY.md`
-- Tell the user: "Migrated MEMORY.md → `[agent_folder]/MEMORY.md` (new location in this version)."
+- Ask the user: "Copied MEMORY.md to `[agent_folder]/MEMORY.md` (new location in this version). Can I delete the root copy?"
+- Delete the root `MEMORY.md` only after confirmation
 
 **Case B — Both exist:**
 Do not move. Tell the user:

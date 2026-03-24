@@ -91,7 +91,7 @@ created: YYYY-MM-DD
 
 ## Step 5: Check for Project Links
 
-If any item mentions an active project from MEMORY.md:
+If any item mentions an active project from `[agent folder]/MEMORY.md` (already loaded in context):
 - Mention it: "This looks related to [Project] — want me to also add a note there?"
 - If yes, find the project file by searching `01-projects/**/*.md` and append a brief note to it (the subfolder is wherever the project file already lives)
 
