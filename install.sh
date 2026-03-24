@@ -40,7 +40,7 @@ print_banner() {
   echo "${CYAN}${BOLD}| |_| | | | |  __/ |_) | | | (_| | | | | |${RESET}"
   echo "${CYAN}${BOLD} \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|${RESET}"
   echo
-  echo "${YELLOW} > Think. Sync. OneBrain.${RESET}"
+  echo "${YELLOW} > Two Minds, Think as One, in OneBrain${RESET}"
   echo
 }
 
@@ -209,7 +209,7 @@ install_plugins() {
     return 0
   fi
 
-  print_header "Installing community plugins..."
+  print_header "Installing Obsidian community plugins..."
 
   # Fetch the Obsidian community plugin registry once.
   # Reuse _INSTALL_TMPDIR (cleaned by the EXIT trap) to avoid a separate tempfile leak.
@@ -227,8 +227,12 @@ install_plugins() {
     FAILED_PLUGINS=("${failed_plugins[@]}")
     return 0
   fi
-  spinner_stop "$ICON_OK" "Registry fetched"
-
+  if [ -n "${SPINNER_PID:-}" ]; then
+    kill "$SPINNER_PID" 2>/dev/null || true
+    wait "$SPINNER_PID" 2>/dev/null || true
+    SPINNER_PID=""
+    printf "\r\033[K" >&2
+  fi
   local plugins_dir="$vault/.obsidian/plugins"
   local mkdir_err
   if ! mkdir_err=$(mkdir -p "$plugins_dir" 2>&1); then
@@ -409,11 +413,9 @@ install_obsidian_skills() {
   local target_dir="$vault/.claude/plugins/obsidian-skills"
   local repo_url="https://github.com/kepano/obsidian-skills.git"
 
-  spinner_start "Installing Obsidian Skills plugin..."
-
   # Already installed in a valid state — show confirmation and skip
   if [ -d "$target_dir" ] && [ ! -d "$target_dir/.git" ]; then
-    spinner_stop "$ICON_OK" "Obsidian Skills already present"
+    print_success "Obsidian Skills already present"
     return 0
   fi
 
@@ -421,7 +423,7 @@ install_obsidian_skills() {
   # or clone was interrupted before checkout completed). Remove the whole directory so the
   # next run can retry cleanly — a partial clone's skill files may be incomplete too.
   if [ -d "$target_dir" ] && [ -d "$target_dir/.git" ]; then
-    spinner_stop "$ICON_FAIL" "Obsidian Skills: incomplete previous install"
+    print_error "Obsidian Skills: incomplete previous install"
     print_info "${YELLOW}Found an incomplete obsidian-skills install. Removing and retrying...${RESET}"
     if ! rm -rf "$target_dir"; then
       print_info "${YELLOW}Could not remove partial install at:${RESET} $target_dir"
@@ -429,7 +431,6 @@ install_obsidian_skills() {
       print_info "  ${CYAN}rm -rf \"$target_dir\"${RESET}"
       return 0  # Non-fatal — overall install continues without this plugin
     fi
-    spinner_start "Installing Obsidian Skills plugin..."
   fi
 
   # Capture both output and exit code; `if ! cmd=$(...)` discards $? after negation.
@@ -437,7 +438,7 @@ install_obsidian_skills() {
   clone_err=$(git clone --depth 1 -q "$repo_url" "$target_dir" 2>&1)
   clone_exit=$?
   if [ $clone_exit -ne 0 ]; then
-    spinner_stop "$ICON_FAIL" "Obsidian Skills install failed"
+    print_error "Obsidian Skills install failed"
     print_info "${YELLOW}Could not clone obsidian-skills (exit ${clone_exit}):${RESET}"
     print_info "  ${clone_err:-no output from git}"
     # Clean up any partial directory git may have created before failing.
@@ -456,7 +457,7 @@ install_obsidian_skills() {
   # repo and 'git status' silently ignores the subtree, which is confusing.
   # The .gitignore entry suppresses tracking, but does not suppress the warning.
   if ! rm -rf "$target_dir/.git"; then
-    spinner_stop "$ICON_FAIL" "Obsidian Skills install failed"
+    print_error "Obsidian Skills install failed"
     print_info "${YELLOW}Cloned obsidian-skills but could not remove its nested .git directory.${RESET}"
     print_info "Without removing it, 'git add' will warn about an embedded repository."
     print_info "Fix manually before running git commands in this vault:"
@@ -464,7 +465,6 @@ install_obsidian_skills() {
     return 0  # Non-fatal — overall install continues without this plugin
   fi
 
-  spinner_stop "$ICON_OK" "Obsidian Skills installed"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────

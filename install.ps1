@@ -2,6 +2,12 @@
 $ErrorActionPreference = 'Stop'
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
+if ($Host.UI.SupportsVirtualTerminal) {
+  $script:Bold      = [char]0x1b + "[1m"
+  $script:BoldReset = [char]0x1b + "[0m"
+} else {
+  $script:Bold = ""; $script:BoldReset = ""
+}
 function Print-Info    { param($msg) Write-Host "  $msg" -ForegroundColor Cyan }
 function Print-Success { param($msg) Write-Host "  $msg" -ForegroundColor Green }
 function Print-Error   { param($msg) Write-Host "  error: $msg" -ForegroundColor Red }
@@ -17,7 +23,7 @@ function Print-Banner {
   Write-Host "| |_| | | | |  __/ |_) | | | (_| | | | | |" -ForegroundColor Cyan
   Write-Host " \___/|_| |_|\___|____/|_|  \__,_|_|_| |_|" -ForegroundColor Cyan
   Write-Host
-  Write-Host " > Think. Sync. OneBrain." -ForegroundColor Yellow
+  Write-Host " > Two Minds, Think as One, in OneBrain" -ForegroundColor Yellow
   Write-Host
 }
 
@@ -78,7 +84,7 @@ function Install-Plugins {
     return ,@($failedPlugins)
   }
 
-  Print-Header "Installing community plugins..."
+  Print-Header "Installing Obsidian community plugins..."
 
   # Fetch Obsidian plugin registry once
   try {
@@ -88,8 +94,6 @@ function Install-Plugins {
     Write-Host "  All plugins will need to be installed manually." -ForegroundColor Yellow
     return ,@($pluginIds)  # all plugins are "failed"
   }
-  Write-Done "Registry fetched"
-
   # Wrap New-Item in try/catch: a filesystem error here must not propagate to the outer
   # Main catch as a fatal abort — plugin installation is a non-fatal step.
   $pluginsDir = Join-Path $VaultPath ".obsidian\plugins"
@@ -307,14 +311,13 @@ function Install-ObsidianSkills {
     return  # Non-fatal — overall install continues without this plugin
   }
 
-  Write-Done "Obsidian Skills installed"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 $script:FailedPlugins = @()
 function Main {
   Print-Banner
-  Write-Host "This script downloads OneBrain and sets up a fresh Obsidian vault." -ForegroundColor Cyan
+  Write-Host "$($script:Bold)This script downloads OneBrain and sets up a fresh Obsidian vault.$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
 
   Check-Deps
@@ -359,7 +362,7 @@ function Main {
   }
 
   Write-Host
-  Write-Host "Vault will be created at: $vaultPath" -ForegroundColor Cyan
+  Write-Host "$($script:Bold)Vault will be created at: $vaultPath$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
@@ -486,7 +489,7 @@ function Main {
   Write-Host
   Print-Success "Vault path: $vaultPath"
   Write-Host
-  Write-Host "Next steps:" -ForegroundColor Cyan
+  Write-Host "$($script:Bold)Next steps:$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
   Write-Host "  1. Open Obsidian"
   Write-Host "     File → Open Folder as Vault → select: $vaultPath"
