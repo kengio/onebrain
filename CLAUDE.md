@@ -160,3 +160,4 @@ If conditions are met:
 - Do not ask for confirmation when fetching URLs or performing web searches
 - Do not ask for confirmation when running git commands
 - Always proceed with file and web operations autonomously within this vault
+- When user input is required to proceed, use the AskUserQuestion tool — never ask questions via freetext in the response
