@@ -13,7 +13,9 @@ Best run on Friday afternoon or over the weekend.
 
 ## Before You Begin
 
-Read `vault.yml` and extract `folders.logs` as `logs_folder`. Default to `07-logs` if absent.
+Read `vault.yml` and extract:
+- `folders.logs` as `logs_folder` (default: `07-logs`)
+- `folders.agent` as `agent_folder` (default: `05-agent`)
 
 ---
 
@@ -112,7 +114,7 @@ Ask where to put these tasks: in a project note, or a new "Weekly Intentions" se
 
 ## Step 7: Update MEMORY.md (If Warranted)
 
-If the weekly review reveals a persistent pattern or learning, add it to MEMORY.md:
+If the weekly review reveals a persistent pattern or learning, add it to `[agent_folder]/MEMORY.md`. Also update the `updated:` field in the frontmatter to today's date.
 
 ```
 ## Key Learnings & Patterns
@@ -126,6 +128,6 @@ If the weekly review reveals a persistent pattern or learning, add it to MEMORY.
 > Great week review, [Name]!
 >
 > [If tasks created]: I logged your 3 intentions for next week.
-> [If insights saved]: Added a pattern to your MEMORY.md.
+> [If insights saved]: Added a pattern to your `[agent_folder]/MEMORY.md`.
 >
 > Enjoy your [weekend/time off]. See you next week!
