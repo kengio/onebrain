@@ -2,8 +2,14 @@
 $ErrorActionPreference = 'Stop'
 
 # ─── Colors ───────────────────────────────────────────────────────────────────
-function Print-Info    { param($msg) Write-Host "   $msg" -ForegroundColor Cyan }
-function Print-Success { param($msg) Write-Host "   $msg" -ForegroundColor Green }
+if ($Host.UI.SupportsVirtualTerminal) {
+  $script:Bold      = [char]0x1b + "[1m"
+  $script:BoldReset = [char]0x1b + "[0m"
+} else {
+  $script:Bold = ""; $script:BoldReset = ""
+}
+function Print-Info    { param($msg) Write-Host "  $msg" -ForegroundColor Cyan }
+function Print-Success { param($msg) Write-Host "  $msg" -ForegroundColor Green }
 function Print-Error   { param($msg) Write-Host "  error: $msg" -ForegroundColor Red }
 function Print-Header  { param($msg) Write-Host; Write-Host $msg -ForegroundColor Cyan; Write-Host }
 function Write-Step    { param($emoji, $msg) Write-Host "  $emoji $msg" }
@@ -11,20 +17,13 @@ function Write-Done    { param($msg) Write-Host "  ✅ $msg" -ForegroundColor Gr
 
 function Print-Banner {
   Write-Host
-  Write-Host " ██████╗ ███╗   ██╗███████╗" -ForegroundColor Blue
-  Write-Host "██╔═══██╗████╗  ██║██╔════╝" -ForegroundColor Blue
-  Write-Host "██║   ██║██╔██╗ ██║█████╗  " -ForegroundColor Blue
-  Write-Host "██║   ██║██║╚██╗██║██╔══╝  " -ForegroundColor Blue
-  Write-Host "╚██████╔╝██║ ╚████║███████╗" -ForegroundColor Blue
-  Write-Host " ╚═════╝ ╚═╝  ╚═══╝╚══════╝" -ForegroundColor Blue
-  Write-Host "██████╗ ██████╗  █████╗ ██╗███╗   ██╗" -ForegroundColor Blue
-  Write-Host "██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║" -ForegroundColor Blue
-  Write-Host "██████╔╝██████╔╝███████║██║██╔██╗ ██║" -ForegroundColor Blue
-  Write-Host "██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║" -ForegroundColor Blue
-  Write-Host "██████╔╝██║  ██║██║  ██║██║██║ ╚████║" -ForegroundColor Blue
-  Write-Host "╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝" -ForegroundColor Blue
+  Write-Host "  ___             ____            _       " -ForegroundColor Cyan
+  Write-Host " / _ \ _ __   ___| __ ) _ __ __ _(_)_ __  " -ForegroundColor Cyan
+  Write-Host "| | | | '_ \ / _ \  _ \| '__/ _`` | | '_ \ " -ForegroundColor Cyan
+  Write-Host "| |_| | | | |  __/ |_) | | | (_| | | | | |" -ForegroundColor Cyan
+  Write-Host " \___/|_| |_|\___|____/|_|  \__,_|_|_| |_|" -ForegroundColor Cyan
   Write-Host
-  Write-Host " > Think. Sync. OneBrain." -ForegroundColor Yellow
+  Write-Host " > Two Minds, Think as One, in OneBrain" -ForegroundColor Yellow
   Write-Host
 }
 
@@ -45,8 +44,12 @@ function Check-Deps {
 
 # ─── Prompt helpers ───────────────────────────────────────────────────────────
 function Prompt-WithDefault {
-  param([string]$Question, [string]$Default)
-  $answer = Read-Host "  ? $Question [$Default]"
+  param([string]$Number, [string]$Question, [string]$Default)
+  Write-Host "  $Number) " -NoNewline -ForegroundColor Yellow
+  Write-Host "$Question " -NoNewline
+  Write-Host "[$Default]" -ForegroundColor Cyan
+  Write-Host "  > " -NoNewline -ForegroundColor Yellow
+  $answer = $host.UI.ReadLine()
   if ([string]::IsNullOrWhiteSpace($answer)) { $Default } else { $answer }
 }
 
@@ -81,12 +84,9 @@ function Install-Plugins {
     return ,@($failedPlugins)
   }
 
-  Write-Host
-  Write-Host "  Installing community plugins..." -ForegroundColor Cyan
-  Write-Host
+  Print-Header "Installing Obsidian community plugins..."
 
   # Fetch Obsidian plugin registry once
-  Write-Step "📦" "Fetching plugin registry..."
   try {
     $registry = Invoke-RestMethod -Uri $registryUrl -ErrorAction Stop
   } catch {
@@ -94,8 +94,6 @@ function Install-Plugins {
     Write-Host "  All plugins will need to be installed manually." -ForegroundColor Yellow
     return ,@($pluginIds)  # all plugins are "failed"
   }
-  Write-Done "Registry fetched"
-
   # Wrap New-Item in try/catch: a filesystem error here must not propagate to the outer
   # Main catch as a fatal abort — plugin installation is a non-fatal step.
   $pluginsDir = Join-Path $VaultPath ".obsidian\plugins"
@@ -130,8 +128,6 @@ function Install-Plugins {
       continue
     }
     $repo = $entry.repo
-
-    Write-Step "🔌" "Installing $pluginId..."
 
     try {
       $release = Invoke-RestMethod `
@@ -234,11 +230,11 @@ function Install-Plugins {
 
   if ($failedPlugins.Count -gt 0) {
     Write-Host
-    Write-Host "  Some plugins could not be installed automatically:" -ForegroundColor Yellow
+    Print-Info "Some plugins could not be installed automatically:"
     foreach ($p in $failedPlugins) {
-      Write-Host "    • $p" -ForegroundColor Yellow
+      Print-Info "  • $p"
     }
-    Write-Host "  Install them manually: Settings -> Community plugins -> Browse" -ForegroundColor Yellow
+    Print-Info "Install them manually: Settings → Community plugins → Browse"
   }
 
   return ,@($failedPlugins)
@@ -256,8 +252,6 @@ function Install-ObsidianSkills {
 
   $targetDir = Join-Path $VaultPath ".claude\plugins\obsidian-skills"
   $repoUrl   = "https://github.com/kepano/obsidian-skills.git"
-
-  Write-Step "📦" "Installing Obsidian Skills plugin..."
 
   # Already installed in a valid state — show confirmation and skip
   if ((Test-Path $targetDir -PathType Container) -and
@@ -281,7 +275,6 @@ function Install-ObsidianSkills {
       Print-Info "  Remove-Item -Path `"$targetDir`" -Recurse -Force"
       return  # Non-fatal — overall install continues without this plugin
     }
-    Write-Step "📦" "Installing Obsidian Skills plugin..."
   }
 
   # Clone the repo (shallow, quiet); join all output lines for readable error display
@@ -318,24 +311,25 @@ function Install-ObsidianSkills {
     return  # Non-fatal — overall install continues without this plugin
   }
 
-  Write-Done "Obsidian Skills installed"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 $script:FailedPlugins = @()
 function Main {
   Print-Banner
-  Print-Info "This script downloads OneBrain and sets up a fresh Obsidian vault."
+  Write-Host "$($script:Bold)This script downloads OneBrain and sets up a fresh Obsidian vault.$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
 
   Check-Deps
 
   # ── Step 1: Install location ────────────────────────────────────────────────
   $defaultLocation = (Get-Location).Path
-  $installLocation = Prompt-WithDefault "Where should the vault be created?" $defaultLocation
+  $installLocation = Prompt-WithDefault "1" "Where should the vault be created?" $defaultLocation
 
   if (-not (Test-Path $installLocation)) {
-    $confirm = Read-Host "  ? Directory '$installLocation' does not exist. Create it? [Y/n]"
+    Write-Host "  ? " -NoNewline -ForegroundColor Yellow
+    Write-Host "Directory '$installLocation' does not exist. Create it? [Y/n] " -NoNewline
+    $confirm = $host.UI.ReadLine()
     if ($confirm -eq '' -or $confirm -match '^[Yy]') {
       try {
         New-Item -ItemType Directory -Path $installLocation -Force | Out-Null
@@ -351,7 +345,8 @@ function Main {
   }
 
   # ── Step 2: Vault name ──────────────────────────────────────────────────────
-  $vaultName = Prompt-WithDefault "Vault name?" "onebrain"
+  Write-Host
+  $vaultName = Prompt-WithDefault "2" "Vault name?" "onebrain"
 
   if ($vaultName -match '[\s/\\]') {
     Print-Error "Vault name must not contain spaces or slashes. Got: '$vaultName'"
@@ -367,7 +362,7 @@ function Main {
   }
 
   Write-Host
-  Print-Info "Vault will be created at: $vaultPath"
+  Write-Host "$($script:Bold)Vault will be created at: $vaultPath$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
@@ -381,7 +376,6 @@ function Main {
   }
 
   try {
-    Write-Step "📦" "Downloading OneBrain..."
     $zipPath = Join-Path $tmpDir "onebrain.zip"
 
     try {
@@ -393,7 +387,6 @@ function Main {
     }
     Write-Done "Downloaded"
 
-    Write-Step "🔧" "Extracting..."
     try {
       Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
     } catch {
@@ -427,25 +420,31 @@ function Main {
     }
 
     # ── Step 4: Clean up installed vault ────────────────────────────────────
-    # Remove install scripts — they shouldn't live in the vault.
+    # Remove install scripts, README and assets from the vault — they belong to the repo, not the vault.
     # Test-Path first so we error only on real failures (permissions/locks),
     # not on the file simply being absent from the archive.
-    $shPath  = Join-Path $vaultPath "install.sh"
-    $ps1Path = Join-Path $vaultPath "install.ps1"
-    if (Test-Path $shPath) {
-      try {
-        Remove-Item $shPath -Force -ErrorAction Stop
-      } catch {
-        Print-Error "Could not remove install.sh from '$vaultPath'. Check directory permissions."
-        Print-Error $_.Exception.Message
-        throw "error:already-printed"
+    $shPath     = Join-Path $vaultPath "install.sh"
+    $ps1Path    = Join-Path $vaultPath "install.ps1"
+    $readmePath = Join-Path $vaultPath "README.md"
+    $assetsPath = Join-Path $vaultPath "assets"
+    $contributingPath = Join-Path $vaultPath "CONTRIBUTING.md"
+    $licensePath      = Join-Path $vaultPath "LICENSE"
+    foreach ($filePath in @($shPath, $ps1Path, $readmePath, $contributingPath, $licensePath)) {
+      if (Test-Path $filePath) {
+        try {
+          Remove-Item $filePath -Force -ErrorAction Stop
+        } catch {
+          Print-Error "Could not remove '$filePath'. Check directory permissions."
+          Print-Error $_.Exception.Message
+          throw "error:already-printed"
+        }
       }
     }
-    if (Test-Path $ps1Path) {
+    if (Test-Path $assetsPath) {
       try {
-        Remove-Item $ps1Path -Force -ErrorAction Stop
+        Remove-Item $assetsPath -Recurse -Force -ErrorAction Stop
       } catch {
-        Print-Error "Could not remove install.ps1 from '$vaultPath'. Check directory permissions."
+        Print-Error "Could not remove assets directory from '$vaultPath'. Check directory permissions."
         Print-Error $_.Exception.Message
         throw "error:already-printed"
       }
@@ -490,19 +489,25 @@ function Main {
   Write-Host
   Print-Success "Vault path: $vaultPath"
   Write-Host
-  Write-Host "Next steps:" -ForegroundColor White
+  Write-Host "$($script:Bold)Next steps:$($script:BoldReset)" -ForegroundColor Cyan
+  Write-Host
   Write-Host "  1. Open Obsidian"
-  Write-Host "     File -> Open Folder as Vault -> select: $vaultPath"
+  Write-Host "     File → Open Folder as Vault → select: $vaultPath"
   $step = 2
   if ($script:FailedPlugins.Count -gt 0) {
-    Write-Host "  $step. Install missing plugins manually (Settings -> Community plugins -> Browse):" -ForegroundColor White
+    Write-Host "  $step. Install missing plugins manually (Settings → Community plugins → Browse):"
     foreach ($p in $script:FailedPlugins) {
-      Write-Host "     $p" -ForegroundColor Cyan
+      if ($p) { Write-Host "     $p" -ForegroundColor Cyan }
     }
     $step++
   }
-  Write-Host "  $step. Open your terminal in the vault directory and run your AI agent:"
-  Write-Host "     claude  or  gemini" -ForegroundColor Cyan
+  Write-Host "  $step. Open your terminal in the vault directory:"
+  Write-Host "     cd `"$vaultPath`"" -ForegroundColor Cyan
+  $step++
+  Write-Host "  $step. Start your AI assistant:"
+  Write-Host "     claude" -NoNewline -ForegroundColor Cyan
+  Write-Host "  or  " -NoNewline
+  Write-Host "gemini" -ForegroundColor Cyan
   $step++
   Write-Host "  $step. Run the onboarding command:"
   Write-Host "     /onboarding" -ForegroundColor Cyan

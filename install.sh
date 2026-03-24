@@ -18,9 +18,9 @@ else
 fi
 
 # ─── Print helpers ────────────────────────────────────────────────────────────
-print_info()    { echo "${CYAN}  ${RESET} $*"; }
-print_success() { echo "${GREEN}  ${RESET} $*"; }
-print_error()   { echo "${RED}  error:${RESET} $*" >&2; }
+print_info()    { echo "${CYAN}  $*${RESET}"; }
+print_success() { echo "${GREEN}  $*${RESET}"; }
+print_error()   { echo "${RED}  error: $*${RESET}" >&2; }
 print_prompt()  { printf "${YELLOW}  ? ${RESET}${BOLD}%s${RESET} " "$*" >&2; }
 print_header()  { echo; echo "${BOLD}${CYAN}$*${RESET}"; echo; }
 
@@ -34,20 +34,13 @@ fi
 # ─── Banner ───────────────────────────────────────────────────────────────────
 print_banner() {
   echo
-  echo "${BLUE}${BOLD} ██████╗ ███╗   ██╗███████╗${RESET}"
-  echo "${BLUE}${BOLD}██╔═══██╗████╗  ██║██╔════╝${RESET}"
-  echo "${BLUE}${BOLD}██║   ██║██╔██╗ ██║█████╗  ${RESET}"
-  echo "${BLUE}${BOLD}██║   ██║██║╚██╗██║██╔══╝  ${RESET}"
-  echo "${BLUE}${BOLD}╚██████╔╝██║ ╚████║███████╗${RESET}"
-  echo "${BLUE}${BOLD} ╚═════╝ ╚═╝  ╚═══╝╚══════╝${RESET}"
-  echo "${BLUE}${BOLD}██████╗ ██████╗  █████╗ ██╗███╗   ██╗${RESET}"
-  echo "${BLUE}${BOLD}██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║${RESET}"
-  echo "${BLUE}${BOLD}██████╔╝██████╔╝███████║██║██╔██╗ ██║${RESET}"
-  echo "${BLUE}${BOLD}██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║${RESET}"
-  echo "${BLUE}${BOLD}██████╔╝██║  ██║██║  ██║██║██║ ╚████║${RESET}"
-  echo "${BLUE}${BOLD}╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝${RESET}"
+  echo "${CYAN}${BOLD}  ___             ____            _       ${RESET}"
+  echo "${CYAN}${BOLD} / _ \\ _ __   ___| __ ) _ __ __ _(_)_ __  ${RESET}"
+  echo "${CYAN}${BOLD}| | | | '_ \\ / _ \\  _ \\| '__/ _\` | | '_ \\ ${RESET}"
+  echo "${CYAN}${BOLD}| |_| | | | |  __/ |_) | | | (_| | | | | |${RESET}"
+  echo "${CYAN}${BOLD} \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|${RESET}"
   echo
-  echo "${YELLOW} > Think. Sync. OneBrain.${RESET}"
+  echo "${YELLOW} > Two Minds, Think as One, in OneBrain${RESET}"
   echo
 }
 
@@ -180,10 +173,12 @@ check_deps() {
 
 # ─── Prompt helpers ───────────────────────────────────────────────────────────
 prompt_with_default() {
-  local question="$1"
-  local default="$2"
+  local number="$1"
+  local question="$2"
+  local default="$3"
   local answer
-  print_prompt "$question [${default}]:"
+  echo "${YELLOW}  ${number}) ${RESET}${BOLD}$question${RESET} ${CYAN}[${default}]${RESET}" >&2
+  printf "${YELLOW}  > ${RESET}" >&2
   if ! read -r answer <&"$TTY_FD"; then
     echo >&2
     print_error "No input received (EOF). Aborted."
@@ -214,7 +209,7 @@ install_plugins() {
     return 0
   fi
 
-  print_header "Installing community plugins..."
+  print_header "Installing Obsidian community plugins..."
 
   # Fetch the Obsidian community plugin registry once.
   # Reuse _INSTALL_TMPDIR (cleaned by the EXIT trap) to avoid a separate tempfile leak.
@@ -232,8 +227,12 @@ install_plugins() {
     FAILED_PLUGINS=("${failed_plugins[@]}")
     return 0
   fi
-  spinner_stop "$ICON_OK" "Registry fetched"
-
+  if [ -n "${SPINNER_PID:-}" ]; then
+    kill "$SPINNER_PID" 2>/dev/null || true
+    wait "$SPINNER_PID" 2>/dev/null || true
+    SPINNER_PID=""
+    printf "\r\033[K" >&2
+  fi
   local plugins_dir="$vault/.obsidian/plugins"
   local mkdir_err
   if ! mkdir_err=$(mkdir -p "$plugins_dir" 2>&1); then
@@ -414,11 +413,9 @@ install_obsidian_skills() {
   local target_dir="$vault/.claude/plugins/obsidian-skills"
   local repo_url="https://github.com/kepano/obsidian-skills.git"
 
-  spinner_start "Installing Obsidian Skills plugin..."
-
   # Already installed in a valid state — show confirmation and skip
   if [ -d "$target_dir" ] && [ ! -d "$target_dir/.git" ]; then
-    spinner_stop "$ICON_OK" "Obsidian Skills already present"
+    print_success "Obsidian Skills already present"
     return 0
   fi
 
@@ -426,7 +423,7 @@ install_obsidian_skills() {
   # or clone was interrupted before checkout completed). Remove the whole directory so the
   # next run can retry cleanly — a partial clone's skill files may be incomplete too.
   if [ -d "$target_dir" ] && [ -d "$target_dir/.git" ]; then
-    spinner_stop "$ICON_FAIL" "Obsidian Skills: incomplete previous install"
+    print_error "Obsidian Skills: incomplete previous install"
     print_info "${YELLOW}Found an incomplete obsidian-skills install. Removing and retrying...${RESET}"
     if ! rm -rf "$target_dir"; then
       print_info "${YELLOW}Could not remove partial install at:${RESET} $target_dir"
@@ -434,7 +431,6 @@ install_obsidian_skills() {
       print_info "  ${CYAN}rm -rf \"$target_dir\"${RESET}"
       return 0  # Non-fatal — overall install continues without this plugin
     fi
-    spinner_start "Installing Obsidian Skills plugin..."
   fi
 
   # Capture both output and exit code; `if ! cmd=$(...)` discards $? after negation.
@@ -442,7 +438,7 @@ install_obsidian_skills() {
   clone_err=$(git clone --depth 1 -q "$repo_url" "$target_dir" 2>&1)
   clone_exit=$?
   if [ $clone_exit -ne 0 ]; then
-    spinner_stop "$ICON_FAIL" "Obsidian Skills install failed"
+    print_error "Obsidian Skills install failed"
     print_info "${YELLOW}Could not clone obsidian-skills (exit ${clone_exit}):${RESET}"
     print_info "  ${clone_err:-no output from git}"
     # Clean up any partial directory git may have created before failing.
@@ -461,7 +457,7 @@ install_obsidian_skills() {
   # repo and 'git status' silently ignores the subtree, which is confusing.
   # The .gitignore entry suppresses tracking, but does not suppress the warning.
   if ! rm -rf "$target_dir/.git"; then
-    spinner_stop "$ICON_FAIL" "Obsidian Skills install failed"
+    print_error "Obsidian Skills install failed"
     print_info "${YELLOW}Cloned obsidian-skills but could not remove its nested .git directory.${RESET}"
     print_info "Without removing it, 'git add' will warn about an embedded repository."
     print_info "Fix manually before running git commands in this vault:"
@@ -469,7 +465,6 @@ install_obsidian_skills() {
     return 0  # Non-fatal — overall install continues without this plugin
   fi
 
-  spinner_stop "$ICON_OK" "Obsidian Skills installed"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -504,7 +499,7 @@ main() {
   fi
 
   print_banner
-  print_info "This script downloads OneBrain and sets up a fresh Obsidian vault."
+  echo "${BOLD}${CYAN}This script downloads OneBrain and sets up a fresh Obsidian vault.${RESET}"
   echo
 
   check_deps
@@ -512,7 +507,7 @@ main() {
   # ── Step 1: Install location ────────────────────────────────────────────────
   local default_location="$PWD"
   local install_location
-  install_location=$(prompt_with_default "Where should the vault be created?" "$default_location")
+  install_location=$(prompt_with_default 1 "Where should the vault be created?" "$default_location")
 
   # Expand a leading ~ to $HOME (note: ~username forms are not expanded)
   install_location="${install_location/#\~/$HOME}"
@@ -538,8 +533,9 @@ main() {
   fi
 
   # ── Step 2: Vault name ──────────────────────────────────────────────────────
+  echo >&2
   local vault_name
-  vault_name=$(prompt_with_default "Vault name?" "onebrain")
+  vault_name=$(prompt_with_default 2 "Vault name?" "onebrain")
 
   # Validate: no spaces or path-breaking characters
   if [[ "$vault_name" =~ [[:space:]/\\] ]]; then
@@ -556,7 +552,7 @@ main() {
   fi
 
   echo
-  print_info "Vault will be created at: ${BOLD}${vault_path}${RESET}"
+  echo "${BOLD}${CYAN}Vault will be created at: ${vault_path}${RESET}"
   echo
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
@@ -607,10 +603,15 @@ main() {
   fi
 
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
-  # Remove install scripts from the vault — they shouldn't live there.
+  # Remove install scripts, README and assets from the vault — they belong to the repo, not the vault.
   # rm -f silently succeeds if they are absent; the if-guard catches permission errors only.
-  if ! rm -f "$vault_path/install.sh" "$vault_path/install.ps1"; then
-    print_error "Could not remove install scripts from '$vault_path'. Check directory permissions."
+  if ! rm -f "$vault_path/install.sh" "$vault_path/install.ps1" "$vault_path/README.md" \
+             "$vault_path/CONTRIBUTING.md" "$vault_path/LICENSE"; then
+    print_error "Could not remove repo files from '$vault_path'. Check directory permissions."
+    exit 1
+  fi
+  if ! rm -rf "$vault_path/assets"; then
+    print_error "Could not remove assets directory from '$vault_path'. Check directory permissions."
     exit 1
   fi
 
@@ -629,13 +630,14 @@ main() {
 
   # ── Step 5: Success ──────────────────────────────────────────────────────────
   echo
-  echo "${BLUE}${BOLD}  $ICON_DONE OneBrain is ready!${RESET}"
+  echo "${GREEN}  $ICON_DONE OneBrain is ready!${RESET}"
   echo
-  print_success "Vault path: ${BOLD}${vault_path}${RESET}"
+  print_success "Vault path: ${vault_path}"
   echo
-  echo "${BOLD}Next steps:${RESET}"
+  echo "${BOLD}${CYAN}Next steps:${RESET}"
+  echo
   echo "  1. Open Obsidian"
-  echo "     File → Open Folder as Vault → select: ${CYAN}${vault_path}${RESET}"
+  echo "     File → Open Folder as Vault → select: ${vault_path}"
   local step=2
   if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
     echo "  ${step}. Install missing plugins manually (Settings → Community plugins → Browse):"
