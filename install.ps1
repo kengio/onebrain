@@ -390,7 +390,7 @@ function Main {
       }
     }
 
-    # ── Step 4b: Install community plugins ──────────────────────────────────
+    # ── Step 4: Install community plugins ───────────────────────────────────
     $script:FailedPlugins = @(Install-Plugins $vaultPath)
 
   } catch {
@@ -439,7 +439,7 @@ function Main {
   Write-Host "     (Onboarding personalizes your vault and creates your folders)"
   $step++
   Write-Host "  $step. (Optional) Add Obsidian-specific Claude Code skills:"
-  Write-Host "     https://github.com/kepano/obsidian-skills" -ForegroundColor Cyan
+  Write-Host "     git clone --depth 1 https://github.com/kepano/obsidian-skills .claude\plugins\obsidian-skills" -ForegroundColor Cyan
   Write-Host
 }
 

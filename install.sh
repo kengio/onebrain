@@ -557,7 +557,7 @@ main() {
     exit 1
   fi
 
-  # ── Step 4b: Install community plugins ──────────────────────────────────
+  # ── Step 4: Install community plugins ───────────────────────────────────
   install_plugins "$vault_path"
 
   # ── Step 5: Success ──────────────────────────────────────────────────────────
@@ -589,7 +589,7 @@ main() {
   echo "     (Onboarding personalizes your vault and creates your folders)"
   step=$((step + 1))
   echo "  ${step}. (Optional) Add Obsidian-specific Claude Code skills:"
-  echo "     ${CYAN}https://github.com/kepano/obsidian-skills${RESET}"
+  echo "     ${CYAN}git clone --depth 1 https://github.com/kepano/obsidian-skills .claude/plugins/obsidian-skills${RESET}"
   echo
 }
 
