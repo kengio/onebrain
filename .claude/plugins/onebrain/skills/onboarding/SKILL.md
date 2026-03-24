@@ -225,6 +225,7 @@ Create the following folders. For each folder, check if it exists first; if not,
 
 ```
 00-inbox/
+00-inbox/imports/      ← staging area for /import (files to be processed)
 01-projects/
 02-areas/
 03-knowledge/
@@ -234,6 +235,10 @@ Create the following folders. For each folder, check if it exists first; if not,
 05-agent/memory/       ← subfolder only (no README)
 06-archive/
 07-logs/
+attachments/           ← copied files when using /import --attach
+attachments/pdf/
+attachments/images/
+attachments/video/
 ```
 
 ---
@@ -246,6 +251,8 @@ Write `vault.yml` to the vault root with the folder mapping:
 method: onebrain
 folders:
   inbox: 00-inbox
+  import_inbox: 00-inbox/imports
+  attachments: attachments
   projects: 01-projects
   areas: 02-areas
   knowledge: 03-knowledge
@@ -265,7 +272,7 @@ Say:
 >
 > - Your identity and personality are saved in `05-agent/MEMORY.md`
 > - Your vault is set up with these folders:
->   - `00-inbox/` — raw captures (process regularly)
+>   - `00-inbox/` — raw captures (process regularly); `imports/` subfolder for `/import` staging
 >   - `01-projects/` — active projects with tasks
 >   - `02-areas/` — ongoing responsibilities (health, finances, career...)
 >   - `03-knowledge/` — your own synthesized thinking

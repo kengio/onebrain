@@ -19,16 +19,13 @@ Tell the user what will and won't be updated:
 - `.claude/plugins/onebrain/` — all skills, hooks, and agents
 - `.claude/plugins/obsidian-skills/` — Obsidian Skills plugin (kepano/obsidian-skills)
 - `.obsidian/plugins/` — bundled plugin files
-- `.obsidian/app.json`, `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
+- `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
 - `[agent_folder]/MEMORY.md` — your identity and session context (inside your agent folder)
 - `vault.yml` — your vault configuration
-- `.obsidian/themes/` — your chosen theme
-- `.obsidian/appearance.json` — your theme preference
-- `.obsidian/workspace.json` — your panel layout
-- `.obsidian/hotkeys.json` — your keybindings
+- `.obsidian/*` (except `community-plugins.json` and `core-plugins.json`) — all per-device Obsidian settings are gitignored and never touched
 - `.claude/settings.local.json` — your local Claude settings
 - `.claude/onebrain.local.md` — your local plugin config
 - `install.sh`, `install.ps1` — only used for fresh installs
@@ -64,7 +61,6 @@ For each path in the allowlist, compare the upstream version against the local v
 | `.gitignore` | file |
 | `.claude/plugins/onebrain/` | directory |
 | `.obsidian/plugins/` | directory |
-| `.obsidian/app.json` | file |
 | `.obsidian/core-plugins.json` | file |
 | `.obsidian/community-plugins.json` | file |
 
@@ -128,6 +124,101 @@ No action needed.
 
 **Case D — Neither exists:**
 No action needed. User will need to run `/onboarding`.
+
+After running whichever case above applies, proceed to Step 4b-ii.
+
+---
+
+## Step 4b-ii: Patch MEMORY.md Frontmatter (If Needed)
+
+After the location migration above, ensure `[agent_folder]/MEMORY.md` has correct frontmatter.
+
+**Required frontmatter fields** (as defined by the onboarding skill):
+```yaml
+---
+tags: [agent-memory]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+```
+
+**Procedure:**
+
+1. If `[agent_folder]/MEMORY.md` does not exist (Case D above): skip this step entirely.
+2. Read `[agent_folder]/MEMORY.md`.
+3. Check whether the file begins with a frontmatter block (first line is exactly `---`).
+
+**If frontmatter is malformed** (file begins with `---` but no second `---` line exists before end of file):
+- Do NOT write anything. Report: "MEMORY.md has a malformed frontmatter block (opening `---` with no closing `---`). Skipping frontmatter patch — please fix it manually before re-running `/update`."
+- Skip to Step 4c.
+
+**If frontmatter is entirely missing:**
+- Prepend the following block before the existing file content (read-modify-write — the new content is the frontmatter block + a blank line + the entire original file content unchanged, do not truncate anything):
+  ```yaml
+  ---
+  tags: [agent-memory]
+  created: YYYY-MM-DD
+  updated: YYYY-MM-DD
+  ---
+  ```
+  Use today's date for both `created` and `updated`.
+- If the write fails: report the error and the exact change attempted (so the user can apply it manually). Do not retry.
+- Report: "Added missing frontmatter to `[agent_folder]/MEMORY.md`."
+
+**If frontmatter is present but incomplete** (the `---` block exists, but one or more required keys are missing):
+- Parse the existing frontmatter block (content between the first and second `---`).
+- For each missing key, insert it into the frontmatter block:
+  - `tags` missing → add `tags: [agent-memory]`
+  - `created` missing → add `created: YYYY-MM-DD` (today's date)
+  - `updated` missing → add `updated: YYYY-MM-DD` (today's date)
+- Write back the full file: the patched frontmatter followed by the entire original body content unchanged (read-modify-write — do not truncate any part of the body).
+- If the write fails: report the error and the exact keys that needed to be added. Do not retry.
+- Report: "Patched frontmatter in `[agent_folder]/MEMORY.md` — added: [list of added keys]."
+
+**If frontmatter is present and complete:** Skip silently.
+
+---
+
+## Step 4c: Create Missing Vault Folders (Migration)
+
+After applying updates, ensure any folders introduced in newer versions exist. Check and create if missing — do not report unchanged folders, only new ones.
+
+**Folders to ensure exist:**
+
+| Folder | Purpose | Introduced |
+|--------|---------|-----------|
+| `[inbox]/imports/` | Staging area for `/import` skill | v1.2.0 |
+| `[attachments]/` | Copied attachments root (`--attach` flag) | v1.2.0 |
+| `[attachments]/pdf/` | PDF attachments subfolder | v1.2.0 |
+| `[attachments]/images/` | Image attachments subfolder | v1.2.0 |
+| `[attachments]/video/` | Video attachments subfolder | v1.2.0 |
+
+Where `[attachments]` is resolved from `vault.yml` `folders.attachments` (default: `attachments`).
+
+Where `[inbox]` is resolved from `vault.yml` `folders.inbox` (default: `00-inbox`).
+
+**For each folder in the table:**
+1. Check if it exists (glob or ls). If it exists: skip silently.
+2. If it does not exist: write an empty `.gitkeep` file inside it (this creates the folder).
+   - If the write fails: report the error and tell the user to create the folder manually before using `/import`. Continue to the next folder — do not stop.
+3. Report: "Created `[folder]/` — new in this version."
+
+**vault.yml key migration — explicit procedure:**
+
+Run this procedure for each vault.yml key in the table below:
+
+| Key | Value | Introduced |
+|-----|-------|-----------|
+| `import_inbox` | `[inbox]/imports` | v1.2.0 |
+| `attachments` | `attachments` | v1.2.0 |
+
+For each key:
+1. **Check if vault.yml exists.** If it does not exist: skip this key entirely (the user needs to run `/onboarding` first — do not create or modify vault.yml here).
+2. **Read vault.yml.** If it cannot be read or parsed: report the error, skip this key, continue.
+3. **Check if `folders:` block is present** in the parsed content. If the `folders:` block is absent: report "vault.yml exists but has no `folders:` block — cannot safely add `[key]`. Please check vault.yml manually." Skip this key.
+4. **Search for the key** (grep for `[key]:` within the `folders:` block). If it is already present: skip silently.
+5. **Insert the key** as a new line within the `folders:` mapping — after the last existing folder entry, inside the `folders:` block. If `folders:` is present but has no entries (the value is null or the block is empty), insert the key as the first and only entry under `folders:`. Do NOT append to the end of the file. Use the Write tool to write the entire updated vault.yml content (read → modify in memory → write back), never a partial append.
+6. Report: "Added `[key]` to vault.yml."
 
 ---
 
