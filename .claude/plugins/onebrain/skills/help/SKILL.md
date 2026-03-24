@@ -21,6 +21,7 @@ Display a formatted table with all available commands:
 | `/connect` | Find connections between notes and suggest wikilinks | When you want to strengthen the web of ideas in your vault |
 | `/research` | Web research on a topic → structured knowledge note | When you want to learn about something and save it |
 | `/summarize` | Fetch a URL and create a structured summary note | When you want to deeply process an article or page into a permanent vault note |
+| `/import` | Import local files (PDF, Word, Excel, images, video, scripts) into vault notes | When you have files on disk you want distilled into your knowledge base |
 | `/reading-notes` | Book or article → structured progressive summary | When finishing a book or long article and want to capture it |
 | `/tasks` | Task dashboard — overdue, due soon, open, completed | When you want an overview of what needs doing |
 | `/weekly` | Weekly reflection — review sessions, patterns, intentions | At the end of each week for review and planning |

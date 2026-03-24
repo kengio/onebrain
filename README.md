@@ -18,7 +18,7 @@
 
 **🧠 Memory across sessions** — Your AI remembers your name, goals, preferences, and past conversations. Every session picks up where the last one left off.
 
-**⚡ 17 slash commands** — Braindump, capture, research, consolidate, connect, bookmark, and more. Capture an idea or deep-research a topic in seconds.
+**⚡ 18 slash commands** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. Capture an idea or deep-research a topic in seconds.
 
 **📂 Vault-native Markdown** — Every note is plain Markdown. No lock-in, no proprietary format. Your data stays in your vault, forever.
 
@@ -81,7 +81,7 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 ---
 
 <details>
-<summary><strong>📋 All 17 Commands</strong></summary>
+<summary><strong>📋 All 18 Commands</strong></summary>
 <br>
 
 | Command | What it does |
@@ -94,6 +94,7 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 | `/connect` | Find connections between notes, suggest wikilinks |
 | `/research [topic]` | Web research → structured note in your vault |
 | `/summarize [url]` | Fetch a URL and save a deep summary note |
+| `/import [path]` | Import local files (PDF, Word, images, scripts) into vault notes |
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/tasks` | Task dashboard — overdue, due soon, open, and completed this week |
@@ -148,7 +149,7 @@ Conclusions, frameworks, and insights you've developed — not raw reference mat
 Examples: `productivity/Deep Work Principles.md`, `technology/When to Use Microservices.md`
 
 **`04-resources/`** — External information saved for reference
-Output from `/research`, `/summarize`, `/reading-notes`, and saved reference material.
+Output from `/research`, `/summarize`, `/reading-notes`, `/import`, and saved reference material.
 Examples: `research/Zettelkasten Method.md`, `code-snippets/Go HTTP Middleware.md`
 
 **`05-agent/`** — Your agent's portable mind
