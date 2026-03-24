@@ -29,7 +29,7 @@ Only run if `vault.yml` is missing `folders.areas`.
 3. Rename `04-logs/` → `07-logs/`: move all contents preserving `YYYY/MM/` structure
 4. Classify existing `02-knowledge/` notes:
    - If tags include `research`, `summary`, or `reference` in frontmatter → move to `04-resources/[same subfolder]`
-   - If frontmatter has a `source:` field matching `/research`, `/summarize-url`, or `/reading-notes` → move to `04-resources/[same subfolder]`
+   - If frontmatter has a `source:` field matching `/research`, `/summarize`, `/summarize-url`, or `/reading-notes` → move to `04-resources/[same subfolder]`
    - Otherwise → keep in `03-knowledge/` (treat as synthesized content)
    - Notes that cannot be automatically classified → list them and ask the user before moving
 5. Write `README.md` into each new root folder (content from `.claude/plugins/onebrain/skills/onboarding/SKILL.md` Step 10b)

@@ -34,7 +34,20 @@ Use the user's answers for all three fields and skip to Step 4.
 
 ---
 
-## Step 3: Suggest Category and Subcategory
+## Step 3: Pre-Save Checks
+
+Resolve the resources folder: read `vault.yml` for `folders.resources`, defaulting to `04-resources`.
+
+**Check for duplicate bookmark:** Grep `[resources]/Bookmarks.md` for the URL. If already present, tell the user:
+> This URL is already in your Bookmarks.md under `## [Category]`. Want to save it again, or skip?
+
+Stop if they say skip.
+
+**Check for existing summarize note:** Grep `[resources]/**/*.md` for `url: [URL]` in frontmatter. If a matching note is found, record its title — it will be added as a wikilink in the bookmark entry (Step 5).
+
+---
+
+## Step 4: Suggest Category and Subcategory
 
 Bookmarks.md supports **2 levels maximum**, like a real awesome list:
 
@@ -49,27 +62,37 @@ New categories and subcategories can be created freely.
 
 ---
 
-## Step 4: Confirm and Save
+## Step 5: Confirm and Save
+
+Build the entry line. If a summarize note was found in Step 3, append a wikilink:
+
+```markdown
+- **[Name](URL)** — Description. → [[Summary Note Title]]
+```
+
+Otherwise:
+
+```markdown
+- **[Name](URL)** — Description.
+```
 
 Show a preview. Include subcategory only if one was suggested:
 
 **With subcategory:**
-> Saving to **Bookmarks.md** under `## AI Tools > ### Writing`:
-> **[Name]** — `[URL]` — [Description]
+> Saving to **Bookmarks.md** under `## AI Tools` / `### Writing`:
+> `- **[Name](URL)** — Description. → [[Summary Note Title]]`
 > OK? (or type a different category or category/subcategory)
 
 **Without subcategory:**
 > Saving to **Bookmarks.md** under `## Design`:
-> **[Name]** — `[URL]` — [Description]
+> `- **[Name](URL)** — Description.`
 > OK? (or type a different category)
 
 Save immediately on confirmation. Accept overrides in any form: `Design`, `Design / Icons`, `AI Tools > Code`.
 
 ---
 
-## Step 5: Append to Bookmarks.md
-
-**Resolve file path:** Read `vault.yml` for `folders.resources`, defaulting to `04-resources`. File: `[resources]/Bookmarks.md`.
+## Step 6: Append to Bookmarks.md
 
 **If the file does not exist**, create it:
 
@@ -83,13 +106,7 @@ updated: YYYY-MM-DD
 # Bookmarks
 ```
 
-**Append the entry** under the correct section:
-
-```markdown
-- **[Name](URL)** — Description.
-```
-
-Rules:
+**Append the entry** under the correct section. Rules:
 
 - `##` headers = top-level categories (Level 1)
 - `###` headers = subcategories (Level 2, optional) — nested under their parent `##`
@@ -110,7 +127,7 @@ Rules:
 
 ### Writing
 
-- **[Notion AI](https://notion.so)** — AI writing assistant built into Notion pages.
+- **[Notion AI](https://notion.so)** — AI writing assistant built into Notion pages. → [[Notion AI Summary]]
 
 ## Design
 
@@ -125,6 +142,8 @@ Confirm after saving:
 ## Recategorize
 
 If the user asks to move or recategorize a bookmark (e.g., *"move Raycast to Productivity"*, *"recategorize my last bookmark"*):
+
+Resolve file path as in Step 3 (read `vault.yml` for `folders.resources`, default `04-resources`).
 
 1. Find the entry by name, or use the last bullet line in the file for "last bookmark"
 2. Remove from current section; append to bottom of target section (create `##` or `###` as needed)

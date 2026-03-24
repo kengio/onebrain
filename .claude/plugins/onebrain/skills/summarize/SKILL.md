@@ -115,7 +115,7 @@ published: [Publication date if known]
 
 ## Step 7: Suggest Links and Clean Up Bookmark
 
-**Suggest links:** Scan `[resources]/**/*.md` for notes related to the article's topic.
+**Suggest links:** Scan `[resources]/**/*.md` and `03-knowledge/**/*.md` for notes related to the article's topic.
 
 > Summary saved to `[resources]/[subfolder]/[Title].md`.
 >
@@ -125,8 +125,18 @@ published: [Publication date if known]
 >
 > Want me to add links?
 
-**Clean up bookmark:** If the URL was found in `Bookmarks.md` in Step 2, ask:
+**Update bookmark with wikilink:** If the URL was found in `Bookmarks.md` in Step 2, append a wikilink to the existing bookmark entry so it points to the new summary note:
 
-> This URL was in your Bookmarks.md. Now that you have a full summary note, want me to remove it from there?
+Find the line in `Bookmarks.md` containing the URL and append ` → [[Article Title]]` to it:
+
+```markdown
+- **[Name](URL)** — Description. → [[Article Title]]
+```
+
+Refresh `updated` in the Bookmarks.md frontmatter. Do this silently — no confirmation needed.
+
+**Clean up bookmark:** After adding the wikilink, ask:
+
+> This URL was in your Bookmarks.md — I've linked it to [[Article Title]]. Want me to remove the bookmark entry now that you have a full summary note?
 
 If the user confirms, remove the bookmark entry from `Bookmarks.md` and refresh `updated` in its frontmatter.

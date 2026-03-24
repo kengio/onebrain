@@ -333,7 +333,7 @@ External information saved for reference — research output, summaries, how-tos
 
 ## Use cases
 - Output from /research on a topic
-- Summary of a URL from /summarize-url
+- Summary of a URL from /summarize
 - Book or article notes from /reading-notes
 - Code snippets and cheat sheets
 - How-to guides and tutorials

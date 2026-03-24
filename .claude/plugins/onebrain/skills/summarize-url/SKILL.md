@@ -7,6 +7,4 @@ description: Renamed to /summarize — redirects to the summarize skill.
 
 This command has been renamed to `/summarize`.
 
-Please use `/summarize [url]` instead.
-
-> Read `.claude/plugins/onebrain/skills/summarize/SKILL.md` and follow it.
+Read `.claude/plugins/onebrain/skills/summarize/SKILL.md` and follow it, passing through any URL argument the user provided.
