@@ -11,11 +11,11 @@ function Write-Done    { param($msg) Write-Host "  ✅ $msg" -ForegroundColor Gr
 
 function Print-Banner {
   Write-Host
-  Write-Host "  ___             ____            _       " -ForegroundColor Blue
-  Write-Host " / _ \ _ __   ___| __ ) _ __ __ _(_)_ __  " -ForegroundColor Blue
-  Write-Host "| | | | '_ \ / _ \  _ \| '__/ _`` | | '_ \ " -ForegroundColor Blue
-  Write-Host "| |_| | | | |  __/ |_) | | | (_| | | | | |" -ForegroundColor Blue
-  Write-Host " \___/|_| |_|\___|____/|_|  \__,_|_|_| |_|" -ForegroundColor Blue
+  Write-Host "  ___             ____            _       " -ForegroundColor Cyan
+  Write-Host " / _ \ _ __   ___| __ ) _ __ __ _(_)_ __  " -ForegroundColor Cyan
+  Write-Host "| | | | '_ \ / _ \  _ \| '__/ _`` | | '_ \ " -ForegroundColor Cyan
+  Write-Host "| |_| | | | |  __/ |_) | | | (_| | | | | |" -ForegroundColor Cyan
+  Write-Host " \___/|_| |_|\___|____/|_|  \__,_|_|_| |_|" -ForegroundColor Cyan
   Write-Host
   Write-Host " > Think. Sync. OneBrain." -ForegroundColor Yellow
   Write-Host

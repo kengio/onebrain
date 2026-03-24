@@ -34,11 +34,11 @@ fi
 # ─── Banner ───────────────────────────────────────────────────────────────────
 print_banner() {
   echo
-  echo "${BLUE}${BOLD}  ___             ____            _       ${RESET}"
-  echo "${BLUE}${BOLD} / _ \\ _ __   ___| __ ) _ __ __ _(_)_ __  ${RESET}"
-  echo "${BLUE}${BOLD}| | | | '_ \\ / _ \\  _ \\| '__/ _\` | | '_ \\ ${RESET}"
-  echo "${BLUE}${BOLD}| |_| | | | |  __/ |_) | | | (_| | | | | |${RESET}"
-  echo "${BLUE}${BOLD} \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|${RESET}"
+  echo "${CYAN}${BOLD}  ___             ____            _       ${RESET}"
+  echo "${CYAN}${BOLD} / _ \\ _ __   ___| __ ) _ __ __ _(_)_ __  ${RESET}"
+  echo "${CYAN}${BOLD}| | | | '_ \\ / _ \\  _ \\| '__/ _\` | | '_ \\ ${RESET}"
+  echo "${CYAN}${BOLD}| |_| | | | |  __/ |_) | | | (_| | | | | |${RESET}"
+  echo "${CYAN}${BOLD} \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|${RESET}"
   echo
   echo "${YELLOW} > Think. Sync. OneBrain.${RESET}"
   echo
