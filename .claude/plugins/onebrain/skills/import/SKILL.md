@@ -159,7 +159,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 5. If `--attach` flag is set:
    - Read `vault.yml` for `folders.attachments` (default: `attachments`)
-   - Copy the PDF into `[attachments]/[filename]`
+   - Copy the PDF into `[attachments]/pdf/[filename]`
    - Add `![[filename]]` embed to the note body (above the Summary section)
 
 6. Cleanup:
@@ -302,9 +302,9 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 **--attach behavior (PNG, JPG, JPEG, GIF, WebP, SVG):**
 - Read `vault.yml` for `folders.attachments` (default: `attachments`)
-- Copy the file into `[attachments]/[filename]` using Bash:
+- Copy the file into `[attachments]/images/[filename]` using Bash:
   ```bash
-  cp "[filepath]" "[vault-root]/[attachments]/[filename]"
+  cp "[filepath]" "[vault-root]/[attachments]/images/[filename]"
   ```
 - Add `![[filename]]` embed above the Summary section in the note
 
@@ -329,9 +329,9 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Key Points: left blank — add context about this video manually
 
 3. `--attach` behavior:
-   - Copy the file into `[attachments]/[filename]` using Bash:
+   - Copy the file into `[attachments]/video/[filename]` using Bash:
      ```bash
-     cp "[filepath]" "[vault-root]/[attachments]/[filename]"
+     cp "[filepath]" "[vault-root]/[attachments]/video/[filename]"
      ```
    - Add `![[filename]]` embed above the Summary section
 
