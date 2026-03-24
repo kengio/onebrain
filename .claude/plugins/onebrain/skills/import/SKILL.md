@@ -121,12 +121,6 @@ If any files were skipped due to unsupported type:
   notes.txt
 ```
 
-If any subagent failed:
-```
-⚠ 1 file failed:
-  deck.pptx — pandoc not installed. File left in inbox. Install with: brew install pandoc
-```
-
 If a note was created but the inbox delete failed (partial success):
 ```
 ⚠ 1 partial success:
@@ -274,7 +268,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 
 3. `--attach` is NOT supported for Excel files.
 
-4. Cleanup: same rule (delete from inbox if staged there).
+4. Cleanup — the Excel stub note IS a successful import (content extraction is intentionally skipped for binary Excel files, not a failure). Delete the inbox file after the Write tool confirms the stub note was created. If delete fails, report as partial success.
 
 5. Return: note path.
 
@@ -356,7 +350,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
 - Add `![[filename]]` embed above the Summary section in the note
 
-**Cleanup:** Same rule (delete from inbox if staged there).
+**Cleanup** — only after note creation succeeded AND (if `--attach` was set) `cp` succeeded. If `cp` failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
 
 **Return:** Note path, or error with reason.
 
@@ -382,7 +376,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed above the Summary section
 
-4. Cleanup: same rule.
+4. Cleanup — only after note creation succeeded AND (if `--attach` was set) `cp` succeeded. If `cp` failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
 
 5. Return: note path.
 
@@ -395,6 +389,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag.
 Handles: `.py`, `.sh`, `.bash`, `.zsh`, `.sql`
 
 1. Read the file content verbatim using the Read tool.
+   - If Read returns an error or empty output: return an error ("Could not read [filename] — file may be empty or unreadable. File left in inbox."). Do NOT create a note. Do NOT delete inbox file. Stop.
 
 2. Analyze the script:
    - **Purpose**: what does this script do? (1-2 sentences)
@@ -413,7 +408,7 @@ Handles: `.py`, `.sh`, `.bash`, `.zsh`, `.sql`
 
 4. `--attach` is NOT supported for scripts (content is already in the note as a code block).
 
-5. Cleanup: same rule (delete from inbox if staged there).
+5. Cleanup — only if step 1 (Read) succeeded and the note was created. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
 
 6. Return: note path.
 
