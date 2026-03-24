@@ -28,7 +28,7 @@ For steps that present a fixed set of choices (personality archetype, communicat
 
 Say:
 
-> Welcome to OneBrain — your AI-powered second brain inside Obsidian.
+> Welcome to OneBrain — where human and AI thinking become one.
 >
 > I'm going to ask you a few quick questions to personalize your vault. This takes about 2 minutes, and you can always update your settings later by editing MEMORY.md directly.
 >
