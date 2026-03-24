@@ -8,7 +8,7 @@ description: Import local files (PDF, Word, PowerPoint, Excel, images, video, sc
 Process local files into permanent vault notes in `[resources]/` (resolved from vault.yml; default: `04-resources/`).
 
 Usage:
-- `/import` — scan default inbox (`00-inbox/imports/`)
+- `/import` — scan default import staging inbox (`[inbox]/imports/`, resolved from vault.yml)
 - `/import /path/to/file` — import a single explicit file
 - `/import --attach` — scan inbox and copy supported files into vault for inline Obsidian preview
 - `/import /path/to/file --attach` — single file with attach
@@ -20,7 +20,8 @@ Usage:
 ### Step 1: Resolve source and parse flags
 
 Resolve folders from `vault.yml` (read the file if it exists at the vault root):
-- `folders.import_inbox` → default: `00-inbox/imports` (import staging folder)
+- `folders.inbox` → default: `00-inbox` (vault inbox; used to derive import staging path)
+- `folders.import_inbox` → default: `[inbox]/imports` (import staging folder; substituting the resolved `[inbox]` value)
 - `folders.resources` → default: `04-resources` (output folder for notes)
 - `folders.attachments` → default: `attachments` (for --attach copies)
 
