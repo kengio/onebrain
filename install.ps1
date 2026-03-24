@@ -233,7 +233,7 @@ function Install-Plugins {
     foreach ($p in $failedPlugins) {
       Print-Info "  • $p"
     }
-    Print-Info "Install them manually: Settings -> Community plugins -> Browse"
+    Print-Info "Install them manually: Settings → Community plugins → Browse"
   }
 
   return ,@($failedPlugins)
@@ -331,8 +331,7 @@ function Main {
 
   if (-not (Test-Path $installLocation)) {
     Write-Host "  ? " -NoNewline -ForegroundColor Yellow
-    Write-Host "Directory '$installLocation' does not exist. Create it? [Y/n]"
-    Write-Host "  > " -NoNewline -ForegroundColor Yellow
+    Write-Host "Directory '$installLocation' does not exist. Create it? [Y/n] " -NoNewline
     $confirm = $host.UI.ReadLine()
     if ($confirm -eq '' -or $confirm -match '^[Yy]') {
       try {
@@ -367,7 +366,6 @@ function Main {
 
   Write-Host
   Write-Host "Vault will be created at: $vaultPath" -ForegroundColor Cyan
-  Write-Host
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
   $repoUrl = "https://github.com/kengio/onebrain/archive/refs/heads/main.zip"
@@ -498,10 +496,10 @@ function Main {
   Write-Host "Next steps:" -ForegroundColor Cyan
   Write-Host
   Write-Host "  1. Open Obsidian"
-  Write-Host "     File -> Open Folder as Vault -> select: $vaultPath"
+  Write-Host "     File → Open Folder as Vault → select: $vaultPath"
   $step = 2
   if ($script:FailedPlugins.Count -gt 0) {
-    Write-Host "  $step. Install missing plugins manually (Settings -> Community plugins -> Browse):"
+    Write-Host "  $step. Install missing plugins manually (Settings → Community plugins → Browse):"
     foreach ($p in $script:FailedPlugins) {
       Write-Host "     $p" -ForegroundColor Cyan
     }
