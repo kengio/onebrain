@@ -8,11 +8,13 @@
   <a href="https://github.com/kengio/onebrain/commits/main"><img src="https://img.shields.io/github/last-commit/kengio/onebrain?style=flat-square" alt="Last Commit" /></a>
 </p>
 
+<h1 align="center">OneBrain</h1>
+
 <h3 align="center">Turn Claude Code, Gemini CLI, or any AI agent into a thinking partner that remembers everything — right inside your Obsidian vault.</h3>
 
 ---
 
-## Why OneBrain
+## Features
 
 **🧠 Memory across sessions** — Your AI remembers your name, goals, preferences, and past conversations. Every session picks up where the last one left off.
 
@@ -23,6 +25,12 @@
 **🤖 Multi-agent** — Works with Claude Code, Gemini CLI, or any AI that reads Markdown instructions. Switch agents without losing context.
 
 **🔌 Zero config** — Clone the repo, open in Obsidian, run `/onboarding`. Your vault and AI are ready in under 2 minutes.
+
+**📓 Session logs** — Every conversation is auto-saved with summaries, decisions, and action items. Nothing gets lost between sessions.
+
+**🔗 Knowledge synthesis** — `/consolidate` processes your inbox into permanent, connected knowledge — turning raw notes into insights you can actually find.
+
+**🎓 Teach your AI** — `/learn` lets you permanently shape how your agent thinks and responds. Teach it your stack, your team, your preferences.
 
 ---
 
