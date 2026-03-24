@@ -8,11 +8,6 @@
       "name": "onebrain",
       "source": "./.claude/plugins/onebrain",
       "description": "OneBrain — Where human and AI thinking become one"
-    },
-    {
-      "name": "obsidian",
-      "source": "./.claude/plugins/obsidian-skills",
-      "description": "Claude Skills for Obsidian — markdown, bases, canvas, CLI, and web extraction"
     }
   ]
 }

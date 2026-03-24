@@ -401,71 +401,6 @@ install_plugins() {
   FAILED_PLUGINS=("${failed_plugins[@]}")
 }
 
-# ─── Obsidian Skills plugin (kepano/obsidian-skills) ─────────────────────────
-# install_obsidian_skills <vault_path>
-# Shallow-clones kepano/obsidian-skills into .claude/plugins/obsidian-skills/
-# so the Obsidian-specific Claude Code skills from that repo are available
-# immediately after vault setup. See https://github.com/kepano/obsidian-skills
-# for the current skill list. Non-fatal: warns on failure and continues.
-# Idempotent: skips if directory already exists in a valid state.
-install_obsidian_skills() {
-  local vault="$1"
-  local target_dir="$vault/.claude/plugins/obsidian-skills"
-  local repo_url="https://github.com/kepano/obsidian-skills.git"
-
-  # Already installed in a valid state — show confirmation and skip
-  if [ -d "$target_dir" ] && [ ! -d "$target_dir/.git" ]; then
-    print_success "Obsidian Skills already present"
-    return 0
-  fi
-
-  # Partial install: directory exists but still has a .git (previous .git removal failed,
-  # or clone was interrupted before checkout completed). Remove the whole directory so the
-  # next run can retry cleanly — a partial clone's skill files may be incomplete too.
-  if [ -d "$target_dir" ] && [ -d "$target_dir/.git" ]; then
-    print_error "Obsidian Skills: incomplete previous install"
-    print_info "${YELLOW}Found an incomplete obsidian-skills install. Removing and retrying...${RESET}"
-    if ! rm -rf "$target_dir"; then
-      print_info "${YELLOW}Could not remove partial install at:${RESET} $target_dir"
-      print_info "Remove it manually, then re-run the installer:"
-      print_info "  ${CYAN}rm -rf \"$target_dir\"${RESET}"
-      return 0  # Non-fatal — overall install continues without this plugin
-    fi
-  fi
-
-  # Capture both output and exit code; `if ! cmd=$(...)` discards $? after negation.
-  local clone_err clone_exit
-  clone_err=$(git clone --depth 1 -q "$repo_url" "$target_dir" 2>&1)
-  clone_exit=$?
-  if [ $clone_exit -ne 0 ]; then
-    print_error "Obsidian Skills install failed"
-    print_info "${YELLOW}Could not clone obsidian-skills (exit ${clone_exit}):${RESET}"
-    print_info "  ${clone_err:-no output from git}"
-    # Clean up any partial directory git may have created before failing.
-    # Warn if removal fails so the user knows to clean up before retrying.
-    if ! rm -rf "$target_dir"; then
-      print_info "${YELLOW}Could not remove partial clone at:${RESET} $target_dir"
-      print_info "Remove it manually: ${CYAN}rm -rf \"$target_dir\"${RESET}"
-    fi
-    print_info "You can install it later:"
-    print_info "  ${CYAN}git clone --depth 1 $repo_url \"$target_dir\"${RESET}"
-    return 0  # Non-fatal — overall install continues without this plugin
-  fi
-
-  # Remove the nested .git so the parent repo does not treat this directory as
-  # an embedded repository. Without removal, 'git add' warns about an embedded
-  # repo and 'git status' silently ignores the subtree, which is confusing.
-  # The .gitignore entry suppresses tracking, but does not suppress the warning.
-  if ! rm -rf "$target_dir/.git"; then
-    print_error "Obsidian Skills install failed"
-    print_info "${YELLOW}Cloned obsidian-skills but could not remove its nested .git directory.${RESET}"
-    print_info "Without removing it, 'git add' will warn about an embedded repository."
-    print_info "Fix manually before running git commands in this vault:"
-    print_info "  ${CYAN}rm -rf \"$target_dir/.git\"${RESET}"
-    return 0  # Non-fatal — overall install continues without this plugin
-  fi
-
-}
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 FAILED_PLUGINS=()
@@ -625,9 +560,6 @@ main() {
   # ── Step 4b: Install community plugins ──────────────────────────────────
   install_plugins "$vault_path"
 
-  # ── Step 4c: Install Obsidian Skills Claude plugin ───────────────────────
-  install_obsidian_skills "$vault_path"
-
   # ── Step 5: Success ──────────────────────────────────────────────────────────
   echo
   echo "${GREEN}  $ICON_DONE OneBrain is ready!${RESET}"
@@ -655,6 +587,9 @@ main() {
   echo "  ${step}. Run the onboarding command:"
   echo "     ${CYAN}/onboarding${RESET}"
   echo "     (Onboarding personalizes your vault and creates your folders)"
+  step=$((step + 1))
+  echo "  ${step}. (Optional) Add Obsidian-specific Claude Code skills:"
+  echo "     ${CYAN}https://github.com/kepano/obsidian-skills${RESET}"
   echo
 }
 

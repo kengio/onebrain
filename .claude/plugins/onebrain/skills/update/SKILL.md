@@ -17,7 +17,6 @@ Tell the user what will and won't be updated:
 **WILL update (system files only):**
 - `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.gitignore`
 - `.claude/plugins/onebrain/` — all skills, hooks, and agents
-- `.claude/plugins/obsidian-skills/` — Obsidian Skills plugin (kepano/obsidian-skills)
 - `.obsidian/plugins/` — bundled plugin files
 - `.obsidian/core-plugins.json`, `.obsidian/community-plugins.json`
 
@@ -222,46 +221,7 @@ For each key:
 
 ---
 
-## Step 5: Update Obsidian Skills Plugin
-
-Update the kepano/obsidian-skills plugin to the latest version.
-
-**If `.claude/plugins/obsidian-skills/` does NOT exist:**
-
-Ask the user:
-> The Obsidian Skills plugin is not installed. Would you like to install it now?
-
-If yes:
-1. Run: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills`
-   - If the clone fails: warn the user, clean up `obsidian-skills/` unconditionally (it may be partially created), and skip this step.
-2. Remove `.claude/plugins/obsidian-skills/.git`:
-   - If this fails: warn the user. Tell them to either remove the whole directory and re-run `/update` (`rm -rf .claude/plugins/obsidian-skills/`), or if they know the skill files are complete, remove only the nested `.git` (`rm -rf .claude/plugins/obsidian-skills/.git`). Skip this step.
-
-If no, skip this step.
-
-**If `.claude/plugins/obsidian-skills/` exists:**
-
-First check: if `.claude/plugins/obsidian-skills/.git` still exists (incomplete previous install), stop and tell the user to remove the whole directory and re-run `/update`: `rm -rf .claude/plugins/obsidian-skills/` — or, if the skill files are known complete, remove only the nested `.git`: `rm -rf .claude/plugins/obsidian-skills/.git`.
-
-Otherwise, since the `.git` directory was removed at install time, update by re-cloning to a temp location first, then swapping:
-
-1. Clone to temp: `git clone --depth 1 https://github.com/kepano/obsidian-skills.git .claude/plugins/obsidian-skills-new`
-   - If the clone fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new` unconditionally. If that cleanup also fails, warn the user to remove it manually (`rm -rf .claude/plugins/obsidian-skills-new`) before the next update attempt.
-
-2. Remove `.claude/plugins/obsidian-skills-new/.git`:
-   - If this fails: warn the user, keep the existing version intact, and stop. Clean up `obsidian-skills-new`.
-
-3. Delete `.claude/plugins/obsidian-skills/`:
-   - If this fails: warn the user, keep both directories, and stop. Tell the user to manually remove `obsidian-skills/` and rename `obsidian-skills-new` to `obsidian-skills`.
-
-4. Rename `obsidian-skills-new` → `obsidian-skills`:
-   - If this fails (e.g., cross-device move): warn the user that the old directory was removed and the new one is at `obsidian-skills-new`. Tell the user to manually rename it: `mv .claude/plugins/obsidian-skills-new .claude/plugins/obsidian-skills`
-
-Report: "Obsidian Skills plugin updated to latest version." on success, or the specific failure message if any step failed.
-
----
-
-## Step 6: Report
+## Step 5: Report
 
 Show a final summary of what was updated. Then suggest:
 

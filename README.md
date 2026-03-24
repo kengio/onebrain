@@ -235,6 +235,10 @@ These are recommended but optional:
 - **QuickAdd** — fast capture workflows
 - **Obsidian Git** — version control for your vault
 
+### Claude Code Skills (Optional)
+
+For Obsidian-specific Claude Code skills (markdown, bases, canvas, and more), install the [Obsidian Skills](https://github.com/kepano/obsidian-skills) plugin separately by cloning it into your vault's `.claude/plugins/` directory.
+
 </details>
 
 ---

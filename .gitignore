@@ -10,7 +10,6 @@ Thumbs.db
 # ── AI Agents ─────────────────────────────────────────────────────────────────
 .claude/settings.local.json
 .claude/onebrain.local.md
-.claude/plugins/obsidian-skills/
 
 # ── Git ───────────────────────────────────────────────────────────────────────
 .worktrees/
