@@ -34,8 +34,8 @@ updated: YYYY-MM-DD
 # Agent Clone Manifest
 
 ## Identity
-- Source: MEMORY.md
-- Agent name: [read from MEMORY.md Agent Identity section]
+- Source: [agent_folder]/MEMORY.md
+- Agent name: [read from [agent_folder]/MEMORY.md Agent Identity section]
 - Last updated: [TODAY'S DATE]
 
 ## Context Notes
