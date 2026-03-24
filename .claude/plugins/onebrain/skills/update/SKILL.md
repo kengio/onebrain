@@ -82,6 +82,28 @@ Wait for confirmation.
 
 ---
 
+## Step 3b: Clear Plugin Cache (If Version Unchanged)
+
+Before applying updates, check whether the upstream plugin version matches the local plugin version:
+
+1. Read `[vault root]/.claude/plugins/onebrain/.claude-plugin/plugin.json` and note `version` as **local_version**.
+2. The upstream `plugin.json` was already fetched in Step 3 — note its `version` as **upstream_version**.
+
+**If upstream_version == local_version (no version bump):**
+
+The plugin cache directory for this version must be removed so the plugin manager picks up the updated source files on next load. Run:
+
+```bash
+rm -rf ~/.claude/plugins/cache/onebrain-local/onebrain/[local_version]
+```
+
+Report: "Cleared plugin cache for v[local_version] — will reinstall from updated source on next session."
+
+**If upstream_version != local_version:**
+No cache action needed — the plugin manager will create a new cache directory for the new version automatically.
+
+---
+
 ## Step 4: Apply Updates
 
 After user confirms, apply each changed or new item from the allowlist using the Write tool:
