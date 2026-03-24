@@ -72,7 +72,7 @@ Also identify **local files that no longer exist upstream** (present locally but
 Present the summary before asking to apply. Example:
 > Found: 2 modified, 1 new, 7 unchanged.
 > Modified: `.claude/plugins/onebrain/`, `CLAUDE.md`
-> New: `.obsidian/plugins/new-plugin/`
+> New: `.claude/plugins/onebrain/skills/new-skill/SKILL.md`
 >
 > Apply these updates?
 
