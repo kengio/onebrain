@@ -23,7 +23,7 @@ Tell the user what will and won't be updated:
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
-- `MEMORY.md` — your identity and session context
+- `[agent_folder]/MEMORY.md` — your identity and session context (inside your agent folder)
 - `vault.yml` — your vault configuration
 - `.obsidian/themes/` — your chosen theme
 - `.obsidian/appearance.json` — your theme preference
@@ -100,7 +100,33 @@ After user confirms, apply each changed or new item from the allowlist using the
 - Write each upstream file that is `modified` or `new` to its local path.
 - Delete any local files identified as no longer existing upstream (removed from the repo). This keeps plugin and skill directories clean when files are renamed or removed.
 
-Only modify files that are in the allowlist. Never touch note folders, `MEMORY.md`, `vault.yml`, or any user preference files.
+Only modify files that are in the allowlist. Never touch note folders, `[agent_folder]/MEMORY.md`, `vault.yml`, or any user preference files.
+
+---
+
+## Step 4b: Migrate MEMORY.md (If Needed)
+
+After applying updates, check for the old MEMORY.md location:
+
+1. Read `vault.yml` to determine `agent_folder` (default: `05-agent`)
+2. Check if `MEMORY.md` exists at the vault root
+3. Check if `[agent_folder]/MEMORY.md` exists
+
+**Case A — Root MEMORY.md exists, agent folder MEMORY.md does not:**
+Move the file automatically:
+- Copy the content of `MEMORY.md` to `[agent_folder]/MEMORY.md`
+- Delete the root `MEMORY.md`
+- Tell the user: "Migrated MEMORY.md → `[agent_folder]/MEMORY.md` (new location in this version)."
+
+**Case B — Both exist:**
+Do not move. Tell the user:
+> Found `MEMORY.md` at the vault root AND at `[agent_folder]/MEMORY.md`. The agent will use `[agent_folder]/MEMORY.md`. Please review and delete the root copy manually when you're ready: `MEMORY.md`.
+
+**Case C — Only agent folder MEMORY.md exists (already migrated):**
+No action needed.
+
+**Case D — Neither exists:**
+No action needed. User will need to run `/onboarding`.
 
 ---
 
