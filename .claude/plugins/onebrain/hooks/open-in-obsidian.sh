@@ -14,9 +14,9 @@ if [ "${DEBUG:-}" = "1" ]; then
   LOG="/tmp/onebrain-hook-debug.log"
   # Truncate log if over 1MB to prevent unbounded growth
   [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 1048576 ] && : > "$LOG"
-  echo "[$(date -Iseconds)] open-in-obsidian.sh started" >> "$LOG"
+  echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] open-in-obsidian.sh started" >> "$LOG"
 fi
-log() { [ -n "$LOG" ] && echo "[$(date -Iseconds)] $*" >> "$LOG" || true; }
+log() { [ -n "$LOG" ] && echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] $*" >> "$LOG" || true; }
 
 # ── Read stdin ────────────────────────────────────────────────────────────────
 input=$(cat)
@@ -35,7 +35,10 @@ fi
 log "file_path: $file_path"
 
 # ── Resolve absolute path ──────────────────────────────────────────────────────
-if command -v realpath &>/dev/null; then
+if [[ "$file_path" == /* ]]; then
+  # Already absolute (Claude Code always provides absolute paths)
+  abs_path="$file_path"
+elif command -v realpath &>/dev/null; then
   abs_path=$(realpath -m "$file_path" 2>/dev/null || echo "$file_path")
 else
   abs_path=$(cd "$(dirname "$file_path")" 2>/dev/null && echo "$(pwd)/$(basename "$file_path")" || echo "$file_path")
@@ -75,7 +78,7 @@ read_content_folders() {
     if [ "$in_folders" -eq 1 ] && printf '%s' "$line" | grep -qE '^\s+\w+:\s+\S'; then
       local key value
       key=$(printf '%s' "$line" | sed 's/^[[:space:]]*//' | cut -d: -f1 | tr -d ' ')
-      value=$(printf '%s' "$line" | sed 's/^[[:space:]]*[^:]*:[[:space:]]*//' | tr -d ' \r')
+      value=$(printf '%s' "$line" | sed 's/^[[:space:]]*[^:]*:[[:space:]]*//' | tr -d ' \r"'"'"'')
       for ck in $content_keys; do
         [ "$key" = "$ck" ] && result="${result}${value}|" && break
       done
@@ -126,7 +129,7 @@ log "opening URI: $uri"
 # ── Platform detection and open ───────────────────────────────────────────────
 case "$OSTYPE" in
   darwin*)
-    open "$uri"
+    open "$uri" 2>/dev/null
     ;;
   linux-gnu*)
     if grep -qiE 'microsoft|wsl' /proc/sys/kernel/osrelease 2>/dev/null; then
