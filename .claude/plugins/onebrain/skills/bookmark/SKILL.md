@@ -22,6 +22,8 @@ If not, ask:
 
 ## Step 2: Fetch the Page
 
+**Resolve the resources folder first:** read `vault.yml` for `folders.resources`, defaulting to `04-resources`. Store as `[resources]` — used throughout the remaining steps.
+
 Fetch the page content. Extract:
 
 - **Name**: page title or product name (prefer `<title>` or `<h1>`)
@@ -30,15 +32,13 @@ Fetch the page content. Extract:
 **If fetch fails**, ask:
 > I couldn't fetch that URL. What should I call it, how would you describe it in one line, and what category fits best?
 
-Use the user's answers for all three fields and skip to Step 4.
+Use the user's answers for all three fields and continue to Step 3 normally.
 
 ---
 
 ## Step 3: Pre-Save Checks
 
-Resolve the resources folder: read `vault.yml` for `folders.resources`, defaulting to `04-resources`.
-
-**Check for duplicate bookmark:** Grep `[resources]/Bookmarks.md` for the URL. If already present, tell the user:
+**Check for duplicate bookmark:** Grep `[resources]/Bookmarks.md` for the URL (using the `[resources]` path resolved in Step 2). If already present, tell the user:
 > This URL is already in your Bookmarks.md under `## [Category]`. Want to save it again, or skip?
 
 Stop if they say skip.
@@ -94,6 +94,8 @@ Save immediately on confirmation. Accept overrides in any form: `Design`, `Desig
 
 ## Step 6: Append to Bookmarks.md
 
+File path: `[resources]/Bookmarks.md` (resolved in Step 2).
+
 **If the file does not exist**, create it:
 
 ```markdown
@@ -143,7 +145,7 @@ Confirm after saving:
 
 If the user asks to move or recategorize a bookmark (e.g., *"move Raycast to Productivity"*, *"recategorize my last bookmark"*):
 
-Resolve file path as in Step 3 (read `vault.yml` for `folders.resources`, default `04-resources`).
+Resolve file path as in Step 2 (read `vault.yml` for `folders.resources`, default `04-resources`).
 
 1. Find the entry by name, or use the last bullet line in the file for "last bookmark"
 2. Remove from current section; append to bottom of target section (create `##` or `###` as needed)

@@ -79,6 +79,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/connect` | `connect/SKILL.md` | Find note connections |
 | `/research` | `research/SKILL.md` | Web research → vault |
 | `/summarize` | `summarize/SKILL.md` | URL → deep summary note (checks Bookmarks.md for cleanup) |
+| `/summarize-url` | `summarize-url/SKILL.md` | Deprecated alias for `/summarize` — redirects automatically |
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
 | `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
