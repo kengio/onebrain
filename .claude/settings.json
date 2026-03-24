@@ -12,8 +12,7 @@
     ]
   },
   "enabledPlugins": {
-    "onebrain@onebrain-local": true,
-    "obsidian@onebrain-local": true
+    "onebrain@onebrain-local": true
   },
   "extraKnownMarketplaces": {
     "onebrain-local": {

@@ -240,78 +240,6 @@ function Install-Plugins {
   return ,@($failedPlugins)
 }
 
-# ─── Obsidian Skills plugin (kepano/obsidian-skills) ─────────────────────────
-# Install-ObsidianSkills <VaultPath>
-# Shallow-clones kepano/obsidian-skills into .claude\plugins\obsidian-skills\
-# so the Obsidian-specific Claude Code skills from that repo are available
-# immediately after vault setup. See https://github.com/kepano/obsidian-skills
-# for the current skill list. Non-fatal: warns on failure and continues.
-# Idempotent: skips if directory already exists in a valid state.
-function Install-ObsidianSkills {
-  param([string]$VaultPath)
-
-  $targetDir = Join-Path $VaultPath ".claude\plugins\obsidian-skills"
-  $repoUrl   = "https://github.com/kepano/obsidian-skills.git"
-
-  # Already installed in a valid state — show confirmation and skip
-  if ((Test-Path $targetDir -PathType Container) -and
-      -not (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
-    Write-Done "Obsidian Skills already present"
-    return
-  }
-
-  # Partial install: directory exists but still has a .git (previous .git removal failed,
-  # or clone was interrupted before checkout completed). Remove the whole directory so the
-  # next run can retry cleanly — a partial clone's skill files may be incomplete too.
-  if ((Test-Path $targetDir -PathType Container) -and
-      (Test-Path (Join-Path $targetDir ".git") -PathType Container)) {
-    Write-Host "  ⚠️  Obsidian Skills: incomplete previous install — retrying..." -ForegroundColor Yellow
-    try {
-      Remove-Item -Path $targetDir -Recurse -Force -ErrorAction Stop
-    } catch {
-      Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
-      Print-Info "Could not remove partial install at: $targetDir"
-      Print-Info "Remove it manually, then re-run the installer:"
-      Print-Info "  Remove-Item -Path `"$targetDir`" -Recurse -Force"
-      return  # Non-fatal — overall install continues without this plugin
-    }
-  }
-
-  # Clone the repo (shallow, quiet); join all output lines for readable error display
-  $cloneOutput = (git clone --depth 1 -q $repoUrl $targetDir 2>&1) -join "`n"
-  if ($LASTEXITCODE -ne 0) {
-    Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
-    Print-Info "Could not clone obsidian-skills:"
-    Print-Info "  $cloneOutput"
-    # Clean up any partial directory git may have created before failing.
-    # Warn if removal fails so the user knows to clean up before retrying.
-    try {
-      Remove-Item -Path $targetDir -Recurse -Force -ErrorAction Stop
-    } catch {
-      Write-Host "  ⚠️  Could not remove partial clone at: $targetDir" -ForegroundColor Yellow
-      Print-Info "Remove it manually: Remove-Item -Path `"$targetDir`" -Recurse -Force"
-    }
-    Print-Info "You can install it later:"
-    Print-Info "  git clone --depth 1 $repoUrl `"$targetDir`""
-    return  # Non-fatal — overall install continues without this plugin
-  }
-
-  # Remove the nested .git so the parent repo does not treat this directory as
-  # an embedded repository. Without removal, 'git add' warns about an embedded
-  # repo and 'git status' silently ignores the subtree, which is confusing.
-  # The .gitignore entry suppresses tracking, but does not suppress the warning.
-  try {
-    Remove-Item -Path (Join-Path $targetDir ".git") -Recurse -Force -ErrorAction Stop
-  } catch {
-    Write-Host "  ❌ Obsidian Skills install failed" -ForegroundColor Red
-    Print-Info "Cloned obsidian-skills but could not remove its nested .git directory."
-    Print-Info "Without removing it, 'git add' will warn about an embedded repository."
-    Print-Info "Fix manually before running git commands in this vault:"
-    Print-Info "  Remove-Item -Path `"$targetDir\.git`" -Recurse -Force"
-    return  # Non-fatal — overall install continues without this plugin
-  }
-
-}
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 $script:FailedPlugins = @()
@@ -462,11 +390,8 @@ function Main {
       }
     }
 
-    # ── Step 4b: Install community plugins ──────────────────────────────────
+    # ── Step 4: Install community plugins ───────────────────────────────────
     $script:FailedPlugins = @(Install-Plugins $vaultPath)
-
-    # ── Step 4c: Install Obsidian Skills Claude plugin ───────────────────────
-    Install-ObsidianSkills $vaultPath
 
   } catch {
     # Sentinel "error:already-printed" means a specific message was already shown to the user.
@@ -512,6 +437,9 @@ function Main {
   Write-Host "  $step. Run the onboarding command:"
   Write-Host "     /onboarding" -ForegroundColor Cyan
   Write-Host "     (Onboarding personalizes your vault and creates your folders)"
+  $step++
+  Write-Host "  $step. (Optional) Add Obsidian-specific Claude Code skills:"
+  Write-Host "     git clone --depth 1 https://github.com/kepano/obsidian-skills .claude\plugins\obsidian-skills" -ForegroundColor Cyan
   Write-Host
 }
 
