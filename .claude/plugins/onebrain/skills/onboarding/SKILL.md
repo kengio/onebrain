@@ -235,6 +235,10 @@ Create the following folders. For each folder, check if it exists first; if not,
 05-agent/memory/       ← subfolder only (no README)
 06-archive/
 07-logs/
+attachments/           ← copied files when using /import --attach
+attachments/pdf/
+attachments/images/
+attachments/video/
 ```
 
 ---

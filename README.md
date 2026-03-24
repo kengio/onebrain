@@ -127,6 +127,10 @@ onebrain/
 │   └── memory/        Behavioral patterns the AI has learned
 ├── 06-archive/        Completed projects and archived areas
 ├── 07-logs/           Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
+├── attachments/       Copied files from /import --attach
+│   ├── pdf/
+│   ├── images/
+│   └── video/
 ├── CLAUDE.md          Instructions for Claude Code
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions

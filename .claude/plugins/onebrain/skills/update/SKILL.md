@@ -140,6 +140,12 @@ After applying updates, ensure any folders introduced in newer versions exist. C
 | Folder | Purpose | Introduced |
 |--------|---------|-----------|
 | `[inbox]/imports/` | Staging area for `/import` skill | v1.2.0 |
+| `[attachments]/` | Copied attachments root (`--attach` flag) | v1.2.0 |
+| `[attachments]/pdf/` | PDF attachments subfolder | v1.2.0 |
+| `[attachments]/images/` | Image attachments subfolder | v1.2.0 |
+| `[attachments]/video/` | Video attachments subfolder | v1.2.0 |
+
+Where `[attachments]` is resolved from `vault.yml` `folders.attachments` (default: `attachments`).
 
 Where `[inbox]` is resolved from `vault.yml` `folders.inbox` (default: `00-inbox`).
 
