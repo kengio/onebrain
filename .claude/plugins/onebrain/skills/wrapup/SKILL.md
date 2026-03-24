@@ -11,9 +11,11 @@ Generates a summary of this session and saves it to the logs folder for future r
 
 ## Before You Begin
 
-If `vault.yml` exists, read it and extract `folders.logs` as `logs_folder`. Default to `07-logs` if the file does not exist or the key is absent.
+If `vault.yml` exists, read it and extract:
+- `folders.logs` as `logs_folder` (default: `07-logs`)
+- `folders.agent` as `agent_folder` (default: `05-agent`)
 
-Use `logs_folder` for all file paths in the steps below.
+Use these variables for all file paths in the steps below.
 
 ---
 
@@ -83,7 +85,7 @@ session: NN
 
 ## Step 4: Update MEMORY.md (If Warranted)
 
-If this session produced an insight or pattern that should persist across all future sessions, add it to the "Key Learnings & Patterns" section of `MEMORY.md`:
+If this session produced an insight or pattern that should persist across all future sessions, add it to the "Key Learnings & Patterns" section of `[agent_folder]/MEMORY.md`. Also update the `updated:` field in the frontmatter to today's date.
 
 ```markdown
 ## Key Learnings & Patterns
@@ -104,7 +106,7 @@ If a genuinely useful long-term insight emerged this session — a clear behavio
 - File naming: first note of day: `YYYY-MM-DD-slug.md`; if one already exists today: `YYYY-MM-DD-02-slug.md`, etc.
 - Keep it to 1-3 sentences
 - Only do this if the insight is genuinely useful long-term — do not overflow routine session details
-- Use this step only when the insight was too detailed to include in MEMORY.md (Step 4). Do not write the same insight to both MEMORY.md and agent memory.
+- Use this step only when the insight was too detailed to include in `[agent_folder]/MEMORY.md` (Step 4). Do not write the same insight to both `[agent_folder]/MEMORY.md` and agent memory.
 
 ---
 
@@ -114,6 +116,6 @@ Say:
 > Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
 >
 > [If action items]: I logged N action items — they'll appear in your Tasks view.
-> [If MEMORY.md updated]: I also added a learning to MEMORY.md.
+> [If MEMORY.md updated]: I also added a learning to `[agent_folder]/MEMORY.md`.
 >
 > Good session! See you next time.
