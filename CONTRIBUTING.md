@@ -21,7 +21,7 @@ Good contributions include:
 .claude/plugins/onebrain/                Main plugin directory
 ├── .claude-plugin/
 │   └── plugin.json                      Plugin manifest (name, version, description)
-├── skills/                              One directory per slash command (14 skills)
+├── skills/                              One directory per slash command (17 skills)
 │   └── [name]/
 │       └── SKILL.md                     The skill prompt — what the AI follows when invoked
 ├── hooks/
