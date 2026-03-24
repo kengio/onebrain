@@ -47,7 +47,7 @@ print_banner() {
   echo "${BLUE}${BOLD}██████╔╝██║  ██║██║  ██║██║██║ ╚████║${RESET}"
   echo "${BLUE}${BOLD}╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝${RESET}"
   echo
-  echo "${YELLOW} > all thoughts. one brain. zero friction.${RESET}"
+  echo "${YELLOW} > Think. Sync. OneBrain.${RESET}"
   echo
 }
 

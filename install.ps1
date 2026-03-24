@@ -24,7 +24,7 @@ function Print-Banner {
   Write-Host "██████╔╝██║  ██║██║  ██║██║██║ ╚████║" -ForegroundColor Blue
   Write-Host "╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝" -ForegroundColor Blue
   Write-Host
-  Write-Host " > all thoughts. one brain. zero friction." -ForegroundColor Yellow
+  Write-Host " > Think. Sync. OneBrain." -ForegroundColor Yellow
   Write-Host
 }
 

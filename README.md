@@ -1,6 +1,6 @@
 # OneBrain
 
-An AI-powered second brain for Obsidian. Turn Claude Code, Gemini CLI, or any AI agent into a personal chief of staff that lives inside your vault — one that knows you, remembers past sessions, and helps you capture, organize, and synthesize knowledge.
+OneBrain — Where human and AI thinking become one. Turn Claude Code, Gemini CLI, or any AI agent into a powerful thinking partner inside your Obsidian vault — creating AI-powered synergy that captures, organizes, and synthesizes your knowledge as one unified mind.
 
 ## What It Does
 
