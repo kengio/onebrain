@@ -260,7 +260,44 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag.
 
 ## Image / GIF / SVG Handler
 
-[TO BE FILLED IN TASK 5]
+Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox flag.
+
+**For PNG, JPG, JPEG, GIF, WebP (visual images):**
+
+1. Read the image using the Read tool. Claude is multimodal and can describe images visually.
+
+2. Generate a description covering:
+   - What the image shows (subject, composition, colors, style)
+   - Notable elements or text visible in the image
+   - Likely purpose or context (e.g., diagram, screenshot, photo, illustration)
+
+3. Choose output subfolder (suggest `media`, `images`, or topic-based). Create note using Note Template:
+   - `file_type`: `image`
+   - Summary: the visual description from step 2
+   - Key Points: notable elements, any visible text, inferred purpose
+
+**For SVG (vector graphics — treated as structured XML, not visual):**
+
+1. Read the SVG file as text using the Read tool.
+
+2. Describe:
+   - What the SVG represents (icon, diagram, illustration, chart)
+   - Key structural elements (paths, shapes, text, groups)
+   - Likely use case
+
+3. Create note same as above, but with `file_type`: `svg`.
+
+**--attach behavior (PNG, JPG, JPEG, GIF, WebP, SVG):**
+- Read `vault.yml` for `folders.attachments` (default: `attachments`)
+- Copy the file into `[attachments]/[filename]` using Bash:
+  ```bash
+  cp "[filepath]" "[vault-root]/[attachments]/[filename]"
+  ```
+- Add `![[filename]]` embed above the Summary section in the note
+
+**Cleanup:** Same rule (delete from inbox if staged there).
+
+**Return:** Note path, or error with reason.
 
 ---
 
