@@ -18,9 +18,9 @@ else
 fi
 
 # ─── Print helpers ────────────────────────────────────────────────────────────
-print_info()    { echo "${CYAN}  ${RESET} $*"; }
-print_success() { echo "${GREEN}  ${RESET} $*"; }
-print_error()   { echo "${RED}  error:${RESET} $*" >&2; }
+print_info()    { echo "${CYAN}  $*${RESET}"; }
+print_success() { echo "${GREEN}  $*${RESET}"; }
+print_error()   { echo "${RED}  error: $*${RESET}" >&2; }
 print_prompt()  { printf "${YELLOW}  ? ${RESET}${BOLD}%s${RESET} " "$*" >&2; }
 print_header()  { echo; echo "${BOLD}${CYAN}$*${RESET}"; echo; }
 
@@ -34,18 +34,11 @@ fi
 # ─── Banner ───────────────────────────────────────────────────────────────────
 print_banner() {
   echo
-  echo "${BLUE}${BOLD} ██████╗ ███╗   ██╗███████╗${RESET}"
-  echo "${BLUE}${BOLD}██╔═══██╗████╗  ██║██╔════╝${RESET}"
-  echo "${BLUE}${BOLD}██║   ██║██╔██╗ ██║█████╗  ${RESET}"
-  echo "${BLUE}${BOLD}██║   ██║██║╚██╗██║██╔══╝  ${RESET}"
-  echo "${BLUE}${BOLD}╚██████╔╝██║ ╚████║███████╗${RESET}"
-  echo "${BLUE}${BOLD} ╚═════╝ ╚═╝  ╚═══╝╚══════╝${RESET}"
-  echo "${BLUE}${BOLD}██████╗ ██████╗  █████╗ ██╗███╗   ██╗${RESET}"
-  echo "${BLUE}${BOLD}██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║${RESET}"
-  echo "${BLUE}${BOLD}██████╔╝██████╔╝███████║██║██╔██╗ ██║${RESET}"
-  echo "${BLUE}${BOLD}██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║${RESET}"
-  echo "${BLUE}${BOLD}██████╔╝██║  ██║██║  ██║██║██║ ╚████║${RESET}"
-  echo "${BLUE}${BOLD}╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝${RESET}"
+  echo "${BLUE}${BOLD}  ___             ____            _       ${RESET}"
+  echo "${BLUE}${BOLD} / _ \\ _ __   ___| __ ) _ __ __ _(_)_ __  ${RESET}"
+  echo "${BLUE}${BOLD}| | | | '_ \\ / _ \\  _ \\| '__/ _\` | | '_ \\ ${RESET}"
+  echo "${BLUE}${BOLD}| |_| | | | |  __/ |_) | | | (_| | | | | |${RESET}"
+  echo "${BLUE}${BOLD} \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|${RESET}"
   echo
   echo "${YELLOW} > Think. Sync. OneBrain.${RESET}"
   echo
@@ -629,13 +622,13 @@ main() {
 
   # ── Step 5: Success ──────────────────────────────────────────────────────────
   echo
-  echo "${BLUE}${BOLD}  $ICON_DONE OneBrain is ready!${RESET}"
+  echo "${GREEN}  $ICON_DONE OneBrain is ready!${RESET}"
   echo
-  print_success "Vault path: ${BOLD}${vault_path}${RESET}"
+  print_success "Vault path: ${vault_path}"
   echo
-  echo "${BOLD}Next steps:${RESET}"
+  echo "Next steps:"
   echo "  1. Open Obsidian"
-  echo "     File → Open Folder as Vault → select: ${CYAN}${vault_path}${RESET}"
+  echo "     File → Open Folder as Vault → select: ${vault_path}"
   local step=2
   if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
     echo "  ${step}. Install missing plugins manually (Settings → Community plugins → Browse):"
