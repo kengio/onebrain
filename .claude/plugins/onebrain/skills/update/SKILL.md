@@ -148,8 +148,12 @@ updated: YYYY-MM-DD
 2. Read `[agent_folder]/MEMORY.md`.
 3. Check whether the file begins with a frontmatter block (first line is exactly `---`).
 
+**If frontmatter is malformed** (file begins with `---` but no second `---` line exists before end of file):
+- Do NOT write anything. Report: "MEMORY.md has a malformed frontmatter block (opening `---` with no closing `---`). Skipping frontmatter patch — please fix it manually before re-running `/update`."
+- Skip to Step 4c.
+
 **If frontmatter is entirely missing:**
-- Prepend the following block before the existing file content (read-modify-write — do not truncate existing content):
+- Prepend the following block before the existing file content (read-modify-write — the new content is the frontmatter block + a blank line + the entire original file content unchanged, do not truncate anything):
   ```yaml
   ---
   tags: [agent-memory]
@@ -158,6 +162,7 @@ updated: YYYY-MM-DD
   ---
   ```
   Use today's date for both `created` and `updated`.
+- If the write fails: report the error and the exact change attempted (so the user can apply it manually). Do not retry.
 - Report: "Added missing frontmatter to `[agent_folder]/MEMORY.md`."
 
 **If frontmatter is present but incomplete** (the `---` block exists, but one or more required keys are missing):
@@ -166,7 +171,8 @@ updated: YYYY-MM-DD
   - `tags` missing → add `tags: [agent-memory]`
   - `created` missing → add `created: YYYY-MM-DD` (today's date)
   - `updated` missing → add `updated: YYYY-MM-DD` (today's date)
-- Write back the full file with the patched frontmatter (read-modify-write).
+- Write back the full file: the patched frontmatter followed by the entire original body content unchanged (read-modify-write — do not truncate any part of the body).
+- If the write fails: report the error and the exact keys that needed to be added. Do not retry.
 - Report: "Patched frontmatter in `[agent_folder]/MEMORY.md` — added: [list of added keys]."
 
 **If frontmatter is present and complete:** Skip silently.
@@ -211,7 +217,7 @@ For each key:
 2. **Read vault.yml.** If it cannot be read or parsed: report the error, skip this key, continue.
 3. **Check if `folders:` block is present** in the parsed content. If the `folders:` block is absent: report "vault.yml exists but has no `folders:` block — cannot safely add `[key]`. Please check vault.yml manually." Skip this key.
 4. **Search for the key** (grep for `[key]:` within the `folders:` block). If it is already present: skip silently.
-5. **Insert the key** as a new line within the `folders:` mapping — after the last existing folder entry, inside the `folders:` block. Do NOT append to the end of the file. Use the Write tool to write the entire updated vault.yml content (read → modify in memory → write back), never a partial append.
+5. **Insert the key** as a new line within the `folders:` mapping — after the last existing folder entry, inside the `folders:` block. If `folders:` is present but has no entries (the value is null or the block is empty), insert the key as the first and only entry under `folders:`. Do NOT append to the end of the file. Use the Write tool to write the entire updated vault.yml content (read → modify in memory → write back), never a partial append.
 6. Report: "Added `[key]` to vault.yml."
 
 ---
