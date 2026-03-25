@@ -1,11 +1,11 @@
 ---
 name: tasks
-description: Open the live task dashboard in Obsidian (creates TASKS.md if needed). Optionally filter by keyword.
+description: Create or update the live task dashboard (TASKS.md) in Obsidian and open it. Optionally filter by keyword.
 ---
 
 # Task Dashboard
 
-Opens a live task dashboard (`TASKS.md`) in Obsidian. The file uses Obsidian Tasks plugin query blocks — always current, no vault scanning needed.
+Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks, then opens it in Obsidian. The file is always current — no vault scanning needed.
 
 Usage:
 - `/tasks` — open the full dashboard
@@ -13,9 +13,13 @@ Usage:
 
 ---
 
-## Step 1: Read vault.yml
+## Step 1: Locate vault root
 
-Read `vault.yml` from the vault root to confirm the vault root path. If vault.yml does not exist, use the current working directory as the vault root.
+Read `vault.yml` from the current working directory. The directory containing `vault.yml` is the vault root. If `vault.yml` does not exist, warn the user:
+
+> "vault.yml not found — using current working directory as vault root: `<cwd>`. Run `/onboarding` to set up your vault configuration."
+
+Then proceed with cwd as vault root.
 
 ---
 
@@ -64,9 +68,8 @@ updated: YYYY-MM-DD
 > [!note] All Open
 > ```tasks
 > not done
-> ((no due date) OR (due after in 7 days))
+> no due date
 > sort by priority
-> sort by due
 > ```
 
 > [!tip] Due Later
@@ -86,11 +89,20 @@ updated: YYYY-MM-DD
 > ```
 ```
 
+If the write fails, stop immediately and tell the user:
+
+> "Could not create TASKS.md at `<tasks_path>`. Error: `<error>`. Check that the vault path is correct and that you have write permission. Vault root used: `<vault_root>`"
+
+Do not proceed to Steps 4, 5, or 6 if the write failed.
+
 **If TASKS.md already exists:**
 
 Read the file. Check the `updated:` value in frontmatter:
 - If `updated:` already equals today's date → skip the frontmatter write (no-op)
+- If `updated:` key is missing entirely → add `updated: YYYY-MM-DD` before the closing `---`
 - Otherwise → update only the `updated: YYYY-MM-DD` line to today's date using the Edit tool
+
+If the edit fails, stop and report the error to the user. Do not proceed.
 
 ---
 
@@ -98,12 +110,12 @@ Read the file. Check the `updated:` value in frontmatter:
 
 **If keyword is provided:**
 
-Look for an existing `> [!search]` callout block in TASKS.md (it starts with `> [!search]` on a line).
+Look for an existing `> [!search]` callout block in TASKS.md (a line that starts with `> [!search]`).
 
-- If found: replace the entire `> [!search]` block (all consecutive `> ` lines that follow it) with the new block below
-- If not found: insert the block immediately after the closing `---` of the frontmatter and before the `# Task Dashboard` heading
+- If found: replace the entire `> [!search]` block (all consecutive `> ` prefixed lines that follow it, until the first non-`> ` line or blank line) with the new block below
+- If not found: insert the block immediately before the `# Task Dashboard` heading line (preserve any blank line that already exists between the frontmatter `---` and the heading; insert the block between that blank line and the heading)
 
-Insert/replace with:
+Insert/replace with (replace `<keyword>` with the actual keyword text):
 
 ```
 > [!search] Filtered: "<keyword>"
@@ -117,11 +129,13 @@ Insert/replace with:
 
 ```
 
-(Replace `<keyword>` with the actual keyword text. Include a blank line after the closing ` ``` ` before the next section.)
+(Note: `[!search]` is not a native Obsidian callout type — it renders as a generic note style, which is intentional. Include a blank line after the closing ` ``` ` before the next section.)
+
+If the edit fails, stop and report the error to the user.
 
 **If no keyword:**
 
-Check if a `> [!search]` callout block exists in TASKS.md. If it does, remove it entirely (including the blank line that follows it).
+Check if a `> [!search]` callout block exists in TASKS.md. If it does, remove it entirely (including the blank line that follows it). If the removal fails, report the error to the user.
 
 ---
 
@@ -131,21 +145,36 @@ Build the `obsidian://` URI using path-based addressing:
 
 1. Take the absolute path to `TASKS.md`
 2. URL-encode it, keeping `/` and `:` as literal characters (do not percent-encode them):
+   - Priority order: Python3 first, then Node.js
+   - Python3: `urllib.parse.quote(path, safe='/:')`
    - Node.js: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':')`
-   - Python3: `urllib.parse.quote(path, safe='/:@')`
-3. URI = `obsidian://open?path=` + encoded path
+   - If neither runtime is available, warn the user: "Could not URL-encode the path — open TASKS.md manually in Obsidian." Then skip to Step 6 with the failure branch.
+3. `uri = "obsidian://open?path=" + encoded_path`
 
-Open via Bash based on platform (detect from `$OSTYPE`):
-- macOS: `open "obsidian://open?path={encoded}" 2>/dev/null || true`
-- Linux (non-WSL): `xdg-open "obsidian://open?path={encoded}" &>/dev/null & true`
-- Linux (WSL): `cmd.exe /c start "" "obsidian://open?path={encoded}" 2>/dev/null || true`
-- Windows (msys/cygwin): `cmd.exe /c start "" "obsidian://open?path={encoded}" 2>/dev/null || true`
+Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
+- macOS: `open "<uri>"`
+- Linux (non-WSL): `xdg-open "<uri>"`
+- Linux (WSL): `cmd.exe /c start "" "<uri>"`
+- Windows (msys/cygwin): `cmd.exe /c start "" "<uri>"`
 
-If the open command fails (Obsidian not installed, URI rejected, etc.), fail silently — never surface an error to the user.
+**If the open command succeeds (exit code 0):** proceed to Step 6 success branch.
+
+**If the open command fails (non-zero exit code):** proceed to Step 6 failure branch. Do not suppress the failure.
 
 ---
 
 ## Step 6: Print confirmation
 
+**Success:**
 - With keyword: `TASKS.md opened in Obsidian — filtered by "<keyword>".`
 - Without keyword: `TASKS.md opened in Obsidian.`
+
+**Failure (open command failed or encoding unavailable):**
+
+> "TASKS.md was updated but could not be opened automatically in Obsidian.
+>
+> Open it manually:
+> - In Obsidian: navigate to `TASKS.md` in your vault
+> - Via URI: `obsidian://open?path=<encoded_path>`
+>
+> If Obsidian is not installed, visit https://obsidian.md"

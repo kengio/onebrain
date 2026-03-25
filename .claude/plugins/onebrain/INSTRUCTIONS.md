@@ -37,7 +37,7 @@ Use these priority markers when relevant:
 - `⏫` Medium priority
 - `🔽` Low priority
 
-Tasks live inline in project/knowledge notes — never in a standalone tasks file.
+Tasks live inline in project/knowledge notes — never author tasks directly in a standalone file. `TASKS.md` at the vault root is a read-only dashboard (live query blocks), not a place to create tasks.
 
 ## Note Linking
 
