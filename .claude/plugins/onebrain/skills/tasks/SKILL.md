@@ -116,7 +116,7 @@ Read the file.
 
 Frontmatter: read `created:` from the existing frontmatter and preserve it; update `updated:` to today's date. If `created:` is absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter — set to today's date. Edit it manually if you know the original date."
 
-Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter and any `## 🔍 Filtered:` section — intact during this regeneration step. (Step 4 may subsequently modify the `## 🔍 Filtered:` section.)
+Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter — intact. Any existing `## 🔍 Filtered:` section (which lives after `# Task Dashboard`) will be overwritten by this regeneration; Step 4 will re-add or remove it as needed.
 
 Write the updated file (frontmatter and any content above `# Task Dashboard` preserved, body from `# Task Dashboard` onward regenerated). If the write fails, stop immediately and tell the user:
 
@@ -156,7 +156,7 @@ sort by due
 
 If the edit fails, stop immediately and tell the user:
 
-> "Could not update the keyword filter in TASKS.md at [tasks_path]. Error: [error]. Check write permissions."
+> "Could not update the keyword filter in TASKS.md at [tasks_path]. Error: [error]. Check write permissions. Vault root used: [vault_root]"
 
 Do not proceed.
 
@@ -164,7 +164,7 @@ Do not proceed.
 
 Check if a `## 🔍 Filtered:` section exists in TASKS.md. If it does, remove it entirely — the heading line, the blank line after it, the subtitle line, the blank line before the tasks block, the tasks block itself, and the blank line that follows — so there is no extra blank line between `# Task Dashboard` and `## 🔴 Overdue`. If removal fails, tell the user:
 
-> "Could not remove the keyword filter from TASKS.md at [tasks_path]. Error: [error]. Check write permissions."
+> "Could not remove the keyword filter from TASKS.md at [tasks_path]. Error: [error]. Check write permissions. Vault root used: [vault_root]"
 
 Do not proceed.
 
@@ -211,4 +211,4 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 
 **Encoding-failure (no Python3 or Node.js available):**
 
-> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open TASKS.md manually in Obsidian."
+> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open it manually in Obsidian by navigating to `[tasks_path]`."
