@@ -129,14 +129,15 @@ Look for an existing `> [!search]` callout block in TASKS.md (a line starting wi
 - If found: replace the entire block (all consecutive `> ` prefixed lines until the first non-`> ` line or blank line) with the new block below
 - If not found: insert immediately before the `# Task Dashboard` heading (between the existing blank line after frontmatter `---` and the heading)
 
-Insert/replace with (substitute actual keyword for `<keyword>`; keyword is quoted to support multi-word searches):
+Insert/replace with (substitute actual keyword for `<keyword>`):
 
 ```
-> [!search] Filtered: "<keyword>"
-> _Matches tasks where description or path contains "<keyword>"_
+> [!search] Filtered: <keyword>
+> _Matches tasks where description or path contains <keyword>_
 > ```tasks
 > not done
-> (description includes "<keyword>") OR (path includes "<keyword>")
+> exclude path includes [logs_folder]
+> (description includes <keyword>) OR (path includes <keyword>)
 > sort by priority
 > sort by due
 > ```
@@ -179,7 +180,7 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 ## Step 6: Print confirmation
 
 **Success:**
-- With keyword: `TASKS.md opened in Obsidian — filtered by "<keyword>".`
+- With keyword: `TASKS.md opened in Obsidian — filtered by <keyword>.`
 - Without keyword: `TASKS.md opened in Obsidian.`
 
 **Open-failure (open command returned non-zero, encoding succeeded):**
