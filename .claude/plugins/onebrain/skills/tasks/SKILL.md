@@ -21,7 +21,7 @@ Read `vault.yml` from the current working directory. The directory containing `v
 
 Then proceed with cwd as vault root.
 
-Also extract `folders.logs` from `vault.yml` (default: `07-logs`) and store as `[logs_folder]`. This value is used in Steps 3 and 4 to exclude session log tasks from dashboard queries.
+Also extract `folders.logs` from `vault.yml` and store as `[logs_folder]`. If the key is absent (or vault.yml was not found), use `07-logs` as the default and proceed without warning. This value is used in Steps 3 and 4 to exclude session log tasks from dashboard queries.
 
 ---
 
@@ -108,13 +108,13 @@ Do not proceed to Steps 4, 5, or 6 if the write failed.
 
 Read the file.
 
-Frontmatter: read `created:` from the existing frontmatter and preserve it (if absent, use today's date); update `updated:` to today's date.
+Frontmatter: read `created:` from the existing frontmatter and preserve it; update `updated:` to today's date. If `created:` is absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter — set to today's date. Edit it manually if you know the original date."
 
-Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter and any `[!search]` block — untouched.
+Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter and any `[!search]` block — intact during this regeneration step. (Step 4 may subsequently modify the `[!search]` block.)
 
 Write the updated file (frontmatter and any content above `# Task Dashboard` preserved, body from `# Task Dashboard` onward regenerated). If the write fails, stop immediately and tell the user:
 
-> "Could not update TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission."
+> "Could not update TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
 Do not proceed to Steps 4, 5, or 6 if the write failed.
 
@@ -129,7 +129,7 @@ Look for an existing `> [!search]` callout block in TASKS.md (a line starting wi
 - If found: replace the entire block (all consecutive `> ` prefixed lines until the first non-`> ` line or blank line) with the new block below
 - If not found: insert immediately before the `# Task Dashboard` heading (between the existing blank line after frontmatter `---` and the heading)
 
-Insert/replace with (substitute actual keyword for `<keyword>`):
+Insert/replace with (substitute actual keyword for `<keyword>` and actual logs folder path for `[logs_folder]`, e.g., `07-logs`):
 
 ```
 > [!search] Filtered: <keyword>
@@ -146,11 +146,19 @@ Insert/replace with (substitute actual keyword for `<keyword>`):
 
 (Note: `[!search]` renders as a generic note style in Obsidian — not a native callout type. Include a blank line after the closing ` ``` ` before the next section.)
 
-If the edit fails, stop and report the error to the user. Do not proceed.
+If the edit fails, stop immediately and tell the user:
+
+> "Could not update the keyword filter in TASKS.md at [tasks_path]. Error: [error]. Check write permissions."
+
+Do not proceed.
 
 **If no keyword:**
 
-Check if a `> [!search]` block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid a double blank line between frontmatter `---` and `# Task Dashboard`). If removal fails, report the error and do not proceed.
+Check if a `> [!search]` block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid a double blank line between frontmatter `---` and `# Task Dashboard`). If removal fails, tell the user:
+
+> "Could not remove the keyword filter from TASKS.md at [tasks_path]. Error: [error]. Check write permissions."
+
+Do not proceed.
 
 ---
 
