@@ -269,6 +269,36 @@ For each key:
 
 ---
 
+## Step 4d: Migrate Plugin Key (onebrain-local → onebrain)
+
+The OneBrain marketplace was renamed from `onebrain-local` to `onebrain` in v1.3.0. Existing installations may still have stale keys in their Claude Code settings. This step migrates both affected keys.
+
+Check the following settings files:
+- `.claude/settings.json` (project-level)
+- `.claude/settings.local.json` (project-level local)
+
+For each file that exists:
+1. Read the file. **If read fails:** Report the error and tell the user to manually rename the keys in `[file]`. Continue to the next file.
+2. Parse as JSON. **If the file is not valid JSON:** Report the parse error and skip this file. Continue to the next file.
+3. Check for either stale key.
+4. **If neither found:** Skip silently.
+5. **If either found:** Apply both changes to the parsed JSON structure (read → modify → write back):
+
+**Change 1 — `enabledPlugins`:**
+- If `"onebrain@onebrain-local"` exists as a key and `"onebrain@onebrain"` does NOT exist: rename the key.
+- If both keys exist: remove `"onebrain@onebrain-local"` (keep the new key, avoid duplicates).
+- If only `"onebrain@onebrain"` exists: skip (already migrated).
+
+**Change 2 — `extraKnownMarketplaces`:**
+- If `"onebrain-local"` exists as a key and `"onebrain"` does NOT exist: rename the key.
+- If both keys exist: remove `"onebrain-local"` (keep the new key, avoid duplicates).
+- If only `"onebrain"` exists: skip (already migrated).
+
+6. Write the full modified file back. **If write fails:** Report the error and tell the user to manually rename the keys in `[file]`. Continue to the next file.
+7. **On success:** Report: "Migrated stale marketplace keys in `[file]`."
+
+---
+
 ## Step 5: Report
 
 Show a final summary of what was updated. Then suggest:
