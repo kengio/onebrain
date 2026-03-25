@@ -170,13 +170,13 @@ Check the state of root `CLAUDE.md`:
 - **File exists but does not have that exact line** → append `@.claude/plugins/onebrain/INSTRUCTIONS.md` on a new line at the end
 - **File does not exist** → create `CLAUDE.md` with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
 
-No user interaction needed for this step.
+If the write or append fails, tell the user: "Could not update CLAUDE.md. Please manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a line in your CLAUDE.md — OneBrain will not load without it." Then continue to Step 9.
 
 ---
 
 ## Step 9: Generate MEMORY.md
 
-Write `05-agent/MEMORY.md` with personalized content.
+Write `05-agent/MEMORY.md` with personalized content. If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure `05-agent/` is writable and try again." Do not proceed to Step 10.
 
 > **Note:** vault.yml is not written until Step 11, so this step hardcodes `05-agent` as the agent folder. Do not change this to use vault.yml — the file doesn't exist yet at this point.
 
@@ -429,6 +429,8 @@ Create `CLAUDE.md` with content:
 ```
 Tell the user: `Created CLAUDE.md with OneBrain instructions.`
 
+If any write or append fails, tell the user: "Could not update CLAUDE.md. Please manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a line in your CLAUDE.md — OneBrain will not load without it." Then continue to Step 9b.
+
 ---
 
 ## Path B — Step 9b: Patch GEMINI.md and AGENTS.md (if present)
@@ -453,6 +455,8 @@ Check if `[agent_folder]/MEMORY.md` already exists:
 - options:
   - label: "Keep existing", description: "Keep your current identity settings unchanged"
   - label: "Overwrite", description: "Replace with the new settings from this onboarding"
+
+Fallback (if AskUserQuestion unavailable): ask as plain text "Found existing MEMORY.md — type 1 to keep it or 2 to overwrite." Default to Keep (1) if no clear answer.
 
 If they choose Keep, skip this step. If they choose Overwrite, proceed.
 

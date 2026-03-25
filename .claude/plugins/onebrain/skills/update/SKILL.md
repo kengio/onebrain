@@ -80,14 +80,17 @@ For each path in the allowlist, compare the upstream version against the local v
 
 **For individual files:** Fetch the upstream content using WebFetch:
 `https://raw.githubusercontent.com/kengio/onebrain/main/[path]`
-Read the local file with the Read tool and compare. Mark as `unchanged`, `modified`, or `new` (if the local file doesn't exist yet).
+Read the local file with the Read tool and compare. Mark as `unchanged`, `modified`, or `new` (if the local file doesn't exist yet). If the fetch fails, mark as `fetch-failed` — do NOT treat as unchanged.
 
 **For directories:** Filter the upstream file tree (from Step 2) to all blobs whose path starts with the directory prefix. For each upstream file:
 - Fetch its content from `https://raw.githubusercontent.com/kengio/onebrain/main/[path]`
 - Read the local file with the Read tool and compare
-- Mark as `unchanged`, `modified`, or `new`
+- Mark as `unchanged`, `modified`, `new`, or `fetch-failed` (if the fetch fails)
 
 Also identify **local files that no longer exist upstream** (present locally but absent from the upstream tree for that directory prefix). These will be deleted in Step 4 to keep the directory in sync.
+
+If any files are `fetch-failed`, include them in the summary and do not proceed to Step 4. Tell the user:
+> Could not fetch N file(s) from GitHub. This may be a transient network issue. Re-run `/update` to retry.
 
 Present the summary before asking to apply. Example:
 > Found: 2 modified, 1 new, 7 unchanged.
@@ -118,7 +121,9 @@ rm -rf ~/.claude/plugins/cache/onebrain/onebrain/[local_version]
 rm -rf ~/.claude/plugins/cache/onebrain-local/onebrain/[local_version]
 ```
 
-Only report an error if a path exists but deletion fails. Report: "Cleared plugin cache for v[local_version] — run /reload-plugins or start a new session to apply changes."
+Only report an error if a path exists but deletion fails. If deletion fails, tell the user: "Could not clear plugin cache at [path]. You can delete it manually, or start a new session — the plugin manager should detect the updated source files automatically." Continue with the update regardless.
+
+On success, report: "Cleared plugin cache for v[local_version] — run /reload-plugins or start a new session to apply changes."
 
 **If upstream_version != local_version:**
 No cache action needed — the plugin manager will create a new cache directory for the new version automatically.
@@ -129,13 +134,15 @@ No cache action needed — the plugin manager will create a new cache directory 
 
 After user confirms, apply each changed or new item from the allowlist using the Write tool:
 
-**For individual files:** Write the upstream content (fetched in Step 3) to the local path.
+**For individual files:** Write the upstream content (fetched in Step 3) to the local path. If the write fails, record it as `write-failed` and continue to the next file — do not stop.
 
 **For directories:**
-- Write each upstream file that is `modified` or `new` to its local path.
-- Delete any local files identified as no longer existing upstream (removed from the repo). This keeps plugin and skill directories clean when files are renamed or removed.
+- Write each upstream file that is `modified` or `new` to its local path. If any write fails, record it as `write-failed` and continue.
+- Delete any local files identified as no longer existing upstream (removed from the repo). If a delete fails, record it as `delete-failed` and continue. This keeps plugin and skill directories clean when files are renamed or removed.
 
 Only modify files that are in the allowlist. Never touch note folders, `[agent_folder]/MEMORY.md`, `vault.yml`, or any user preference files.
+
+After all writes and deletes are attempted: if any `write-failed` or `delete-failed` files exist, include them in the Step 5 report with instructions to manually replace or remove them, and advise re-running `/update`.
 
 ---
 
@@ -151,7 +158,8 @@ After applying updates, check for the old MEMORY.md location:
 Copy the file and ask before deleting:
 - If `[agent_folder]/` does not exist, create the folder along with `context/` and `memory/` subfolders (each with a `.gitkeep`)
 - Copy the content of `MEMORY.md` to `[agent_folder]/MEMORY.md`
-- Ask the user: "Copied MEMORY.md to `[agent_folder]/MEMORY.md` (new location in this version). Can I delete the root copy?"
+- **If the copy fails:** report the error and stop. Do not offer to delete the root copy — it is the only remaining copy. Tell the user: "Could not copy MEMORY.md to `[agent_folder]/MEMORY.md`. Ensure `[agent_folder]/` is writable, then re-run `/update`."
+- **If the copy succeeds:** verify `[agent_folder]/MEMORY.md` now exists and is non-empty, then ask the user: "Copied MEMORY.md to `[agent_folder]/MEMORY.md` (new location in this version). Can I delete the root copy?"
 - Delete the root `MEMORY.md` only after confirmation
 
 **Case B — Both exist:**
