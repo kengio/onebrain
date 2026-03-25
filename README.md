@@ -18,7 +18,7 @@
 
 **🧠 Memory across sessions** — Your AI remembers your name, goals, preferences, and past conversations. Every session picks up where the last one left off.
 
-**⚡ 18 slash commands** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. Capture an idea or deep-research a topic in seconds.
+**⚡ 18 slash commands and counting** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. More skills coming soon — capture an idea or deep-research a topic in seconds.
 
 **📂 Vault-native Markdown** — Every note is plain Markdown. No lock-in, no proprietary format. Your data stays in your vault, forever.
 
