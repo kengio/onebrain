@@ -3,6 +3,25 @@ name: update
 description: Update OneBrain skills, config, and plugins from GitHub — never touches your notes or data
 ---
 
+## Install Path Detection
+
+Before doing anything else, check whether OneBrain is installed at the project level or globally:
+
+Check if `.claude/plugins/onebrain/` exists in the current vault directory.
+
+**If it does NOT exist** (global plugin install — /onboarding has not been run yet):
+
+Stop and tell the user:
+> OneBrain is installed as a global plugin but hasn't been adopted into this vault yet.
+>
+> Run `/onboarding` first to bundle OneBrain into your vault — after that, `/update` will work normally.
+
+Do not proceed further.
+
+**If it DOES exist** (vault install — Path A or adopted Path B): continue with the steps below.
+
+---
+
 # Update OneBrain
 
 Fetch the latest OneBrain system files from GitHub and apply them to this vault.
@@ -94,10 +113,10 @@ Before applying updates, check whether the upstream plugin version matches the l
 The plugin cache directory for this version must be removed so the plugin manager picks up the updated source files on next load. Run:
 
 ```bash
-rm -rf ~/.claude/plugins/cache/onebrain-local/onebrain/[local_version]
+rm -rf ~/.claude/plugins/cache/onebrain/onebrain/[local_version]
 ```
 
-Report: "Cleared plugin cache for v[local_version] — will reinstall from updated source on next session."
+Report: "Cleared plugin cache for v[local_version] — run /reload-plugins or start a new session to apply changes."
 
 **If upstream_version != local_version:**
 No cache action needed — the plugin manager will create a new cache directory for the new version automatically.
@@ -247,4 +266,5 @@ Show a final summary of what was updated. Then suggest:
 > **Done.** OneBrain has been updated.
 >
 > Next steps:
-> - **Restart your AI session** if system instructions changed (`CLAUDE.md`, `GEMINI.md`, or `AGENTS.md`)
+> - Run `/reload-plugins` to apply changes immediately in this session (no restart needed)
+> - Or start a new Claude Code session — changes are picked up automatically
