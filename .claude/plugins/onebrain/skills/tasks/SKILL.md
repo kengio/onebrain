@@ -17,7 +17,7 @@ Usage:
 
 Read `vault.yml` from the current working directory. The directory containing `vault.yml` is the vault root. If `vault.yml` does not exist, warn the user:
 
-> "vault.yml not found — using current working directory as vault root: `<cwd>`. Run `/onboarding` to set up your vault configuration."
+> "vault.yml not found — using current working directory as vault root: [path]. Run `/onboarding` to set up your vault configuration."
 
 Then proceed with cwd as vault root.
 
@@ -65,7 +65,7 @@ updated: YYYY-MM-DD
 > sort by due
 > ```
 
-> [!note] All Open
+> [!note] Unscheduled
 > ```tasks
 > not done
 > no due date
@@ -91,7 +91,7 @@ updated: YYYY-MM-DD
 
 If the write fails, stop immediately and tell the user:
 
-> "Could not create TASKS.md at `<tasks_path>`. Error: `<error>`. Check that the vault path is correct and that you have write permission. Vault root used: `<vault_root>`"
+> "Could not create TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
 Do not proceed to Steps 4, 5, or 6 if the write failed.
 
@@ -99,10 +99,8 @@ Do not proceed to Steps 4, 5, or 6 if the write failed.
 
 Read the file. Check the `updated:` value in frontmatter:
 - If `updated:` already equals today's date → skip the frontmatter write (no-op)
-- If `updated:` key is missing entirely → add `updated: YYYY-MM-DD` before the closing `---`
-- Otherwise → update only the `updated: YYYY-MM-DD` line to today's date using the Edit tool
-
-If the edit fails, stop and report the error to the user. Do not proceed.
+- If `updated:` key is missing entirely → add `updated: YYYY-MM-DD` before the closing `---`. If this edit fails, stop and report the error to the user. Do not proceed.
+- Otherwise → update only the `updated: YYYY-MM-DD` line to today's date using the Edit tool. If the edit fails, stop and report the error to the user. Do not proceed.
 
 ---
 
@@ -115,27 +113,27 @@ Look for an existing `> [!search]` callout block in TASKS.md (a line that starts
 - If found: replace the entire `> [!search]` block (all consecutive `> ` prefixed lines that follow it, until the first non-`> ` line or blank line) with the new block below
 - If not found: insert the block immediately before the `# Task Dashboard` heading line (preserve any blank line that already exists between the frontmatter `---` and the heading; insert the block between that blank line and the heading)
 
-Insert/replace with (replace `<keyword>` with the actual keyword text):
+Insert/replace with (substitute the actual keyword text for `<keyword>`):
 
 ```
 > [!search] Filtered: "<keyword>"
 > _Matches tasks where description or path contains "<keyword>"_
 > ```tasks
 > not done
-> (description includes <keyword>) OR (path includes <keyword>)
+> (description includes "<keyword>") OR (path includes "<keyword>")
 > sort by priority
 > sort by due
 > ```
 
 ```
 
-(Note: `[!search]` is not a native Obsidian callout type — it renders as a generic note style, which is intentional. Include a blank line after the closing ` ``` ` before the next section.)
+(Note: `[!search]` is not a native Obsidian callout type — it renders as a generic note style, which is intentional. Keyword is quoted in the query to support multi-word searches. Include a blank line after the closing ` ``` ` before the next section.)
 
-If the edit fails, stop and report the error to the user.
+If the edit fails, stop and report the error to the user. Do not proceed.
 
 **If no keyword:**
 
-Check if a `> [!search]` callout block exists in TASKS.md. If it does, remove it entirely (including the blank line that follows it). If the removal fails, report the error to the user.
+Check if a `> [!search]` callout block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid leaving a double blank line between the frontmatter `---` and the `# Task Dashboard` heading). If the removal fails, report the error to the user and do not proceed.
 
 ---
 
@@ -144,11 +142,11 @@ Check if a `> [!search]` callout block exists in TASKS.md. If it does, remove it
 Build the `obsidian://` URI using path-based addressing:
 
 1. Take the absolute path to `TASKS.md`
-2. URL-encode it, keeping `/` and `:` as literal characters (do not percent-encode them):
+2. URL-encode it, keeping `/`, `:`, and `@` as literal characters (do not percent-encode them):
    - Priority order: Python3 first, then Node.js
-   - Python3: `urllib.parse.quote(path, safe='/:')`
-   - Node.js: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':')`
-   - If neither runtime is available, warn the user: "Could not URL-encode the path — open TASKS.md manually in Obsidian." Then skip to Step 6 with the failure branch.
+   - Python3: `urllib.parse.quote(path, safe='/:@')`
+   - Node.js: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':').replace(/%40/gi, '@')`
+   - If neither runtime is available: go to Step 6 encoding-failure branch (do not attempt to open)
 3. `uri = "obsidian://open?path=" + encoded_path`
 
 Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
@@ -159,7 +157,7 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 
 **If the open command succeeds (exit code 0):** proceed to Step 6 success branch.
 
-**If the open command fails (non-zero exit code):** proceed to Step 6 failure branch. Do not suppress the failure.
+**If the open command fails (non-zero exit code):** proceed to Step 6 open-failure branch.
 
 ---
 
@@ -169,7 +167,7 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 - With keyword: `TASKS.md opened in Obsidian — filtered by "<keyword>".`
 - Without keyword: `TASKS.md opened in Obsidian.`
 
-**Failure (open command failed or encoding unavailable):**
+**Open-failure (open command returned non-zero, encoding succeeded):**
 
 > "TASKS.md was updated but could not be opened automatically in Obsidian.
 >
@@ -178,3 +176,9 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 > - Via URI: `obsidian://open?path=<encoded_path>`
 >
 > If Obsidian is not installed, visit https://obsidian.md"
+
+**Encoding-failure (no Python3 or Node.js available):**
+
+> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable on this system (Python3 and Node.js both missing).
+>
+> Open it manually in Obsidian by navigating to `TASKS.md` in your vault."
