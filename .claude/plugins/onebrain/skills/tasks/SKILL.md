@@ -41,7 +41,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 **If TASKS.md does not exist:**
 
-Create it with this exact content (replace `YYYY-MM-DD` with today's date):
+Create it with this exact content (replace `YYYY-MM-DD` with today's date and `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`):
 
 ```markdown
 ---
@@ -110,7 +110,7 @@ Read the file.
 
 Frontmatter: read `created:` from the existing frontmatter and preserve it (if absent, use today's date); update `updated:` to today's date.
 
-Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (with `exclude path includes [logs_folder]`). Leave everything before `# Task Dashboard` — including the frontmatter and any `[!search]` block — untouched.
+Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter and any `[!search]` block — untouched.
 
 Write the updated file (frontmatter and any content above `# Task Dashboard` preserved, body from `# Task Dashboard` onward regenerated). If the write fails, stop immediately and tell the user:
 
