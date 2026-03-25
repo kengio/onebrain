@@ -16,6 +16,9 @@ Wait for confirmation. If they confirm, proceed with Path A flow (existing steps
 
 **Path B detected:** If `.claude/plugins/onebrain/` does NOT exist locally, skip to the **Path B** section at the bottom of this skill.
 
+> **Edge case:** If `vault.yml` exists but `.claude/plugins/onebrain/` does NOT exist, this vault was previously set up but the plugin directory is missing. Warn the user before proceeding with Path B:
+> `OneBrain vault config (vault.yml) found but plugin files are missing. Proceeding to re-adopt the plugin into this vault.`
+
 **Path A detected:** If `.claude/plugins/onebrain/` exists locally (and it is a first run or confirmed re-run), continue with the steps below (existing onboarding flow).
 
 ---
@@ -332,11 +335,17 @@ This section runs when `.claude/plugins/onebrain/` does NOT exist locally (user 
 
 Before any user interaction, copy plugin files from the global cache into the vault.
 
-1. Find the latest version directory at `~/.claude/plugins/cache/onebrain/onebrain/`
-2. Copy its full contents to `[vault root]/.claude/plugins/onebrain/` (create the directory if it doesn't exist)
-3. From this point, the project-level copy takes priority over the global cache
+1. **Locate the cache directory:** Check `~/.claude/plugins/cache/onebrain/onebrain/`. This directory contains one or more version subdirectories (e.g., `1.2.2/`). Find the latest version subdirectory (highest semver). If the directory does not exist or contains no version subdirectories, stop with the error below.
 
-If the source directory does not exist or the copy fails, tell the user:
+2. **Validate the source:** Confirm the version subdirectory is non-empty and contains at minimum a `.claude-plugin/plugin.json` file. If it is empty or the sentinel file is missing, stop with the error below.
+
+3. **Copy to vault:** Copy the full contents of the latest version subdirectory to `[vault root]/.claude/plugins/onebrain/` (create the directory if it doesn't exist). If the copy fails partway through, delete any partially copied `[vault root]/.claude/plugins/onebrain/` directory before stopping with the error below (avoid leaving a broken partial state).
+
+4. **Verify:** Confirm `[vault root]/.claude/plugins/onebrain/.claude-plugin/plugin.json` now exists. If not, delete the partial directory and stop with the error below.
+
+5. From this point, the project-level copy takes priority over the global cache.
+
+If any step above fails, tell the user:
 > Could not copy OneBrain plugin files to your vault. Please ensure you ran `/plugin install onebrain@onebrain` successfully, then try again.
 
 Stop here if Step 0 fails.
@@ -359,7 +368,7 @@ Say:
 
 ## Path B — Steps 2–8: Personalization
 
-Run Steps 2–8 from the standard onboarding flow above (ask name, role, agent name, personality archetype, detail level, tone, goals, recurring context). Identical behavior.
+Run Steps 2–8 from the standard onboarding flow above (ask name, role, agent name, personality archetype, detail level, tone, goals, recurring context). Identical behavior. **Do not run Step 8b here** — CLAUDE.md patching is handled in Path B Step 9 below.
 
 ---
 
@@ -369,19 +378,23 @@ Now that plugin files are local (copied in Step 0), the @import path resolves to
 
 Check if `CLAUDE.md` exists in the vault root:
 
-**If it exists:** Append on a new line at the end (after a blank line):
+**If it exists and already contains** `@.claude/plugins/onebrain/INSTRUCTIONS.md`:
+Skip silently — already patched (idempotent re-run).
+
+**If it exists but does not contain that line:**
+Append on a new line at the end (after a blank line):
 ```
 @.claude/plugins/onebrain/INSTRUCTIONS.md
 ```
 Do not modify any existing content.
+Tell the user: `Added OneBrain instructions to your CLAUDE.md. Your existing content is untouched.`
 
-**If it does not exist:** Create `CLAUDE.md` with content:
+**If it does not exist:**
+Create `CLAUDE.md` with content:
 ```
 @.claude/plugins/onebrain/INSTRUCTIONS.md
 ```
-
-Tell the user:
-> Added OneBrain instructions to your `CLAUDE.md`. Your existing content is untouched.
+Tell the user: `Created CLAUDE.md with OneBrain instructions.`
 
 ---
 
@@ -395,7 +408,18 @@ For each of `GEMINI.md` and `AGENTS.md`:
 
 ## Path B — Step 10: Write MEMORY.md
 
-Identical to Step 9 in the standard flow. Write to `[agent_folder]/MEMORY.md` using the personalization data collected in Steps 2–8.
+> **Note:** vault.yml is not written until Step 12, so this step hardcodes `05-agent` as the agent folder. Do not use vault.yml here — it doesn't exist yet.
+
+Check if `05-agent/MEMORY.md` already exists:
+
+**If it exists:** Ask the user:
+> I found an existing `05-agent/MEMORY.md`. Overwrite it with your new identity settings, or keep the existing one?
+
+Wait for response. If they choose to keep it, skip this step. If they choose to overwrite, proceed.
+
+**If it does not exist:** Proceed directly.
+
+Write `05-agent/MEMORY.md` using the same template and personalization data as Step 9 in the standard Path A flow.
 
 ---
 
@@ -407,7 +431,11 @@ Identical to Step 10 in the standard flow, with one difference: only create fold
 
 ## Path B — Step 12: Write vault.yml
 
-Identical to Step 11 in the standard flow.
+Check if `vault.yml` already exists in the vault root:
+
+**If it exists:** Skip this step silently — preserve the existing vault configuration.
+
+**If it does not exist:** Write `vault.yml` using the same template as Step 11 in the standard Path A flow.
 
 ---
 

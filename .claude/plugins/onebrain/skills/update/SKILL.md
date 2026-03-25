@@ -34,9 +34,11 @@ Your notes, memory, and personal settings are never touched.
 Tell the user what will and won't be updated:
 
 **WILL update (system files only):**
-- `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.gitignore`
-- `.claude/plugins/onebrain/` — all skills, hooks, and agents
+- `.gitignore`
+- `.claude/plugins/onebrain/` — all skills, hooks, agents, and INSTRUCTIONS.md
 - `.claude-plugin/` — local plugin marketplace registry
+
+> **Note:** `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` are NOT updated — they contain either user content (existing vault) or simple `@import` pointers that never need to change. OneBrain instructions live in `.claude/plugins/onebrain/INSTRUCTIONS.md` and are updated via the plugin directory above.
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
@@ -72,9 +74,6 @@ For each path in the allowlist, compare the upstream version against the local v
 
 | Path | Type |
 |------|------|
-| `CLAUDE.md` | file |
-| `GEMINI.md` | file |
-| `AGENTS.md` | file |
 | `.gitignore` | file |
 | `.claude/plugins/onebrain/` | directory |
 | `.claude-plugin/` | directory |
