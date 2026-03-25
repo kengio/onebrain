@@ -21,6 +21,8 @@ Read `vault.yml` from the current working directory. The directory containing `v
 
 Then proceed with cwd as vault root.
 
+Also extract `folders.logs` from `vault.yml` (default: `07-logs`) and store as `[logs_folder]`. This value is used in Steps 3 and 4 to exclude session log tasks from dashboard queries.
+
 ---
 
 ## Step 2: Parse keyword argument
