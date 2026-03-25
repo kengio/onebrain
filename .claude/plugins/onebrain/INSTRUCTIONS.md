@@ -13,16 +13,16 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 > **Note:** Vault folders are created during `/onboarding`.
 
 ```
-00-inbox/        Raw braindumps and quick captures (process regularly)
+00-inbox/          Raw braindumps and quick captures (process regularly)
 00-inbox/imports/  Staging area for /import (drop files here)
-01-projects/     Active projects with tasks and notes
-02-areas/        Ongoing responsibilities (health, finances, career...)
-03-knowledge/    Your own synthesized thinking and insights
-04-resources/    External info — research output, summaries, reference
-05-agent/        AI-specific context and memory (MEMORY.md + context/ + memory/)
-06-archive/      Completed projects and archived areas
-07-logs/         Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
-attachments/     Copied files from /import --attach (pdf/, images/, video/)
+01-projects/       Active projects with tasks and notes
+02-areas/          Ongoing responsibilities (health, finances, career...)
+03-knowledge/      Your own synthesized thinking and insights
+04-resources/      External info — research output, summaries, reference
+05-agent/          AI-specific context and memory (MEMORY.md + context/ + memory/)
+06-archive/        Completed projects and archived areas
+07-logs/           Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
+attachments/       Copied files from /import --attach (pdf/, images/, video/)
 ```
 
 ## Task Syntax (Obsidian Tasks Plugin)

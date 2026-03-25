@@ -15,7 +15,7 @@ Check if `.claude/plugins/onebrain/` exists locally in this vault directory.
 Wait for confirmation. If they confirm, proceed with Path A flow (existing steps). If they decline, stop.
 
 **Path B detected:** If `.claude/plugins/onebrain/` does NOT exist locally:
-- If `vault.yml` also exists — warn the user before continuing: `OneBrain vault config (vault.yml) found but plugin files are missing. Proceeding to re-adopt the plugin. Your existing vault.yml and MEMORY.md will be preserved.`
+- If `vault.yml` also exists — warn the user before continuing: `OneBrain vault config (vault.yml) found but plugin files are missing. Proceeding to re-adopt the plugin. Your existing vault.yml will be preserved. If MEMORY.md exists, you'll be asked whether to keep or replace it.`
 - Skip to the **Path B** section at the bottom of this skill.
 
 **Path A detected:** If `.claude/plugins/onebrain/` exists locally (and it is a first run or confirmed re-run), continue with the steps below (existing onboarding flow).
@@ -166,7 +166,7 @@ Wait for response. Store: `recurring_contexts`.
 ## Step 8b: Verify CLAUDE.md pointer
 
 Check the state of root `CLAUDE.md`:
-- **File exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (not in a comment, not prefixed with `>` or `<!--`) → skip silently (already set by install.sh)
+- **File exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment — not prefixed with `>`, `<!--`, or `#`) → skip silently (already set by install.sh)
 - **File exists but does not have that exact line** → append `@.claude/plugins/onebrain/INSTRUCTIONS.md` on a new line at the end
 - **File does not exist** → create `CLAUDE.md` with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
 
@@ -336,18 +336,18 @@ Before any user interaction, copy plugin files from the global cache into the va
 
 **1. Locate the cache directory:**
 
-Check these paths in order (both may exist depending on when the plugin was installed):
+Check both paths — both may exist depending on when the plugin was installed:
 - `~/.claude/plugins/cache/onebrain/onebrain/` — installs after marketplace rename
 - `~/.claude/plugins/cache/onebrain-local/onebrain/` — legacy installs before rename
 
-Use the first path that exists and contains version subdirectories. If neither exists or neither contains version subdirectories, tell the user:
+Collect all version subdirectories from both paths into a single combined list. If neither path exists or neither contains any version subdirectories, tell the user:
 > OneBrain plugin cache not found. Run `/plugin install onebrain@onebrain` to install it, then try `/onboarding` again.
 
 Stop here.
 
 **2. Select the latest version:**
 
-List the version subdirectories (e.g., `1.2.2/`, `1.3.0/`). Sort them numerically by each dot-separated component (major, minor, patch) in descending order — do NOT use string sort, as it would rank `1.9.0` above `1.10.0`. Select the highest version. If multiple version dirs exist but all fail validation in Step 3, report: "Found [N] version(s) in cache but all failed validation. The cache may be corrupted. Run `/plugin install onebrain@onebrain` to reinstall."
+From the combined list of all version directories across both cache paths, sort them numerically by each dot-separated component (major, minor, patch) in descending order — do NOT use string sort, as it would rank `1.9.0` above `1.10.0`. Proceed to Step 3 with the highest version.
 
 **3. Validate the source:**
 
@@ -355,16 +355,19 @@ Confirm the selected version subdirectory contains at minimum:
 - `.claude-plugin/plugin.json` — plugin manifest
 - `skills/onboarding/SKILL.md` — required for onboarding to function
 
-If either is missing, the cache entry is corrupt. Try the next-highest version. If all versions fail, report: "Cache exists but all version entries are corrupt or incomplete. Run `/plugin install onebrain@onebrain` to reinstall."
+If either is missing, the cache entry is corrupt. Try the next-highest version from the combined list. If all versions across both cache paths fail validation, tell the user:
+> Cache exists but all version entries are corrupt or incomplete. Run `/plugin install onebrain@onebrain` to reinstall.
 
 Stop here if no valid version found.
 
 **4. Copy to vault:**
 
+Before copying: if `[vault root]/.claude/plugins/onebrain/` already exists (e.g., partial state from a previous failed attempt), delete it entirely before proceeding to ensure a clean install. If the delete fails, tell the user: "Found an existing partial plugin directory but could not remove it. Please delete `[vault root]/.claude/plugins/onebrain/` manually and run `/onboarding` again." Stop here.
+
 Copy the full contents of the selected version subdirectory to `[vault root]/.claude/plugins/onebrain/` (create the directory if it doesn't exist).
 
 If the copy fails partway through:
-- Attempt to delete the partially copied `[vault root]/.claude/plugins/onebrain/` directory to avoid leaving a broken state.
+- Attempt to delete the partially copied `[vault root]/.claude/plugins/onebrain/` directory recursively to avoid leaving a broken state.
 - If the delete also fails (e.g., permissions), tell the user: "Copy failed and cleanup also failed. Please delete `[vault root]/.claude/plugins/onebrain/` manually before running `/onboarding` again." Stop here.
 - If the delete succeeds, tell the user: "Failed to copy plugin files. Check that you have write permission to `[vault root]/.claude/plugins/` and that there is sufficient disk space." Stop here.
 
@@ -374,11 +377,11 @@ Confirm both sentinel files now exist in the vault:
 - `[vault root]/.claude/plugins/onebrain/.claude-plugin/plugin.json`
 - `[vault root]/.claude/plugins/onebrain/skills/onboarding/SKILL.md`
 
-If either is missing, delete the partial directory and tell the user: "Copy appeared to succeed but verification failed. Check disk space and try again." Stop here.
+If either is missing, delete the partial directory recursively and tell the user: "Copy appeared to succeed but verification failed. Check disk space and try again." Stop here.
 
-**6.** From this point, the project-level copy takes priority over the global cache.
+**6. Handoff:**
 
-Stop here if any step above fails.
+From this point, the project-level copy takes priority over the global cache.
 
 ---
 
@@ -408,7 +411,7 @@ Now that plugin files are local (copied in Step 0), the @import path resolves to
 
 Check if `CLAUDE.md` exists in the vault root:
 
-**If it exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (not inside a comment, not prefixed with `>` or `<!--`):
+**If it exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment — not prefixed with `>`, `<!--`, or `#`):
 Skip silently — already patched.
 
 **If it exists but does not have that exact live line:**
@@ -439,7 +442,7 @@ For each of `GEMINI.md` and `AGENTS.md`:
 
 ## Path B — Step 10: Write MEMORY.md
 
-> **Note:** If `vault.yml` already exists (the edge case where plugin dir was missing), read its `folders.agent` key to determine the agent folder. If `vault.yml` does not exist yet (normal first-time Path B), use `05-agent` as the agent folder — vault.yml is not written until Step 12.
+> **Note:** If `vault.yml` already exists (the edge case where plugin dir was missing), read its `agent` key under the `folders` mapping (i.e., `folders.agent` in dot-notation) to determine the agent folder. If `vault.yml` does not exist, is unreadable, or lacks the `folders.agent` key, default to `05-agent`. If `vault.yml` does not exist yet (normal first-time Path B), use `05-agent` — vault.yml is not written until Step 12.
 
 Check if `[agent_folder]/MEMORY.md` already exists:
 
@@ -483,7 +486,7 @@ Say:
 > OneBrain is now bundled inside your vault:
 > - Plugin files copied to `.claude/plugins/onebrain/`
 > - [If Step 9 appended: "OneBrain instructions added to `CLAUDE.md`"] [If Step 9 created: "`CLAUDE.md` created with OneBrain instructions"] [If Step 9 skipped: "OneBrain instructions already present in `CLAUDE.md`"]
-> - Your identity saved in `05-agent/MEMORY.md`
+> - [If Step 10 wrote: "Your identity saved in `[agent_folder]/MEMORY.md`"] [If Step 10 kept: "Existing identity in `[agent_folder]/MEMORY.md` preserved"]
 > - Vault folders created (existing folders untouched)
 >
 > Use `/update` to keep OneBrain current — it works the same as a fresh vault install.

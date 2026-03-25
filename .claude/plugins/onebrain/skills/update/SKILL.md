@@ -35,7 +35,7 @@ Tell the user what will and won't be updated:
 
 **WILL update (system files only):**
 - `.gitignore`
-- `.claude/plugins/onebrain/` — all skills, hooks, agents, and INSTRUCTIONS.md
+- `.claude/plugins/onebrain/` — all plugin files (skills, hooks, agents, INSTRUCTIONS.md)
 - `.claude-plugin/` — local plugin marketplace registry
 
 > **Note:** `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` are NOT updated — they contain either user content (existing vault) or simple `@import` pointers that never need to change. OneBrain instructions live in `.claude/plugins/onebrain/INSTRUCTIONS.md` and are updated via the plugin directory above.
@@ -111,12 +111,14 @@ Before applying updates, check whether the upstream plugin version matches the l
 
 The plugin cache directory for this version must be removed so the plugin manager picks up the updated source files on next load. Run:
 
+Run the following, skipping silently any path that does not exist (this is expected when only one cache variant was used):
+
 ```bash
 rm -rf ~/.claude/plugins/cache/onebrain/onebrain/[local_version]
 rm -rf ~/.claude/plugins/cache/onebrain-local/onebrain/[local_version]
 ```
 
-Report: "Cleared plugin cache for v[local_version] — run /reload-plugins or start a new session to apply changes."
+Only report an error if a path exists but deletion fails. Report: "Cleared plugin cache for v[local_version] — run /reload-plugins or start a new session to apply changes."
 
 **If upstream_version != local_version:**
 No cache action needed — the plugin manager will create a new cache directory for the new version automatically.
