@@ -86,12 +86,32 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 
 **Available hook events:**
 
-| Event | Fires when |
-|-------|-----------|
-| `PostToolUse` | After any tool call (filterable by tool name) |
-| `PreToolUse` | Before any tool call (can block execution) |
-| `Stop` | When Claude finishes responding |
-| `SessionStart` | At the start of a new session |
+| Event | Fires when | Can block? |
+|-------|-----------|------------|
+| `PreToolUse` | Before a tool call executes | Yes |
+| `PostToolUse` | After a tool call succeeds | No |
+| `PostToolUseFailure` | After a tool call fails | No |
+| `PermissionRequest` | When a permission dialog appears | Yes |
+| `UserPromptSubmit` | When user submits a prompt, before Claude processes it | Yes |
+| `Stop` | When Claude finishes responding | Yes |
+| `StopFailure` | When turn ends due to an API error | No |
+| `SessionStart` | When a session begins or resumes | No |
+| `SessionEnd` | When a session terminates | No |
+| `InstructionsLoaded` | When CLAUDE.md or `.claude/rules/*.md` files are loaded | No |
+| `SubagentStart` | When a subagent is spawned | No |
+| `SubagentStop` | When a subagent finishes | Yes |
+| `PreCompact` | Before context compaction | No |
+| `PostCompact` | After context compaction completes | No |
+| `Notification` | When Claude Code sends a notification | No |
+| `ConfigChange` | When a configuration file changes during a session | Yes |
+| `WorktreeCreate` | When a worktree is being created | Yes |
+| `WorktreeRemove` | When a worktree is being removed | No |
+| `TeammateIdle` | When an agent team teammate is about to go idle | Yes |
+| `TaskCompleted` | When a task is being marked as completed | Yes |
+| `Elicitation` | When an MCP server requests user input during a tool call | Yes |
+| `ElicitationResult` | After user responds to MCP elicitation | Yes |
+
+Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
 
 **To add a hook:**
 
