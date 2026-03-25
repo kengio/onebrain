@@ -23,6 +23,7 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 06-archive/        Completed projects and archived areas
 07-logs/           Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
 attachments/       Copied files from /import --attach (pdf/, images/, video/)
+TASKS.md           Live task dashboard (created by /tasks, read-only query blocks)
 ```
 
 ## Task Syntax (Obsidian Tasks Plugin)
