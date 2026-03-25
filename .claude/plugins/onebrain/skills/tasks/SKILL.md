@@ -5,7 +5,7 @@ description: Create or update the live task dashboard (TASKS.md) in Obsidian and
 
 # Task Dashboard
 
-Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks, then opens it in Obsidian. The file is always current — no vault scanning needed.
+Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks, then opens it in Obsidian. The file is always current — no vault scanning needed. Mark tasks complete directly in Obsidian by clicking the checkboxes.
 
 Usage:
 - `/tasks` — open the full dashboard
@@ -27,7 +27,7 @@ Then proceed with cwd as vault root.
 
 Check if any text was passed after `/tasks`:
 - `/tasks` → `keyword = none`
-- `/tasks <keyword>` → `keyword = everything after "/tasks "` (preserve spaces, do not trim)
+- `/tasks <keyword>` → `keyword = everything after "/tasks "` (trim leading/trailing whitespace; preserve internal spaces for multi-word keywords)
 
 ---
 
@@ -108,12 +108,12 @@ Read the file. Check the `updated:` value in frontmatter:
 
 **If keyword is provided:**
 
-Look for an existing `> [!search]` callout block in TASKS.md (a line that starts with `> [!search]`).
+Look for an existing `> [!search]` callout block in TASKS.md (a line starting with `> [!search]`).
 
-- If found: replace the entire `> [!search]` block (all consecutive `> ` prefixed lines that follow it, until the first non-`> ` line or blank line) with the new block below
-- If not found: insert the block immediately before the `# Task Dashboard` heading line (preserve any blank line that already exists between the frontmatter `---` and the heading; insert the block between that blank line and the heading)
+- If found: replace the entire block (all consecutive `> ` prefixed lines until the first non-`> ` line or blank line) with the new block below
+- If not found: insert immediately before the `# Task Dashboard` heading (between the existing blank line after frontmatter `---` and the heading)
 
-Insert/replace with (substitute the actual keyword text for `<keyword>`):
+Insert/replace with (substitute actual keyword for `<keyword>`; keyword is quoted to support multi-word searches):
 
 ```
 > [!search] Filtered: "<keyword>"
@@ -127,13 +127,13 @@ Insert/replace with (substitute the actual keyword text for `<keyword>`):
 
 ```
 
-(Note: `[!search]` is not a native Obsidian callout type — it renders as a generic note style, which is intentional. Keyword is quoted in the query to support multi-word searches. Include a blank line after the closing ` ``` ` before the next section.)
+(Note: `[!search]` renders as a generic note style in Obsidian — not a native callout type. Include a blank line after the closing ` ``` ` before the next section.)
 
 If the edit fails, stop and report the error to the user. Do not proceed.
 
 **If no keyword:**
 
-Check if a `> [!search]` callout block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid leaving a double blank line between the frontmatter `---` and the `# Task Dashboard` heading). If the removal fails, report the error to the user and do not proceed.
+Check if a `> [!search]` block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid a double blank line between frontmatter `---` and `# Task Dashboard`). If removal fails, report the error and do not proceed.
 
 ---
 
@@ -142,11 +142,11 @@ Check if a `> [!search]` callout block exists in TASKS.md. If it does, remove it
 Build the `obsidian://` URI using path-based addressing:
 
 1. Take the absolute path to `TASKS.md`
-2. URL-encode it, keeping `/`, `:`, and `@` as literal characters (do not percent-encode them):
+2. URL-encode it, keeping `/`, `:`, and `@` as literal characters:
    - Priority order: Python3 first, then Node.js
    - Python3: `urllib.parse.quote(path, safe='/:@')`
    - Node.js: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':').replace(/%40/gi, '@')`
-   - If neither runtime is available: go to Step 6 encoding-failure branch (do not attempt to open)
+   - If neither runtime is available: go to Step 6 encoding-failure branch
 3. `uri = "obsidian://open?path=" + encoded_path`
 
 Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
@@ -155,9 +155,8 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 - Linux (WSL): `cmd.exe /c start "" "<uri>"`
 - Windows (msys/cygwin): `cmd.exe /c start "" "<uri>"`
 
-**If the open command succeeds (exit code 0):** proceed to Step 6 success branch.
-
-**If the open command fails (non-zero exit code):** proceed to Step 6 open-failure branch.
+**If exit code 0:** proceed to Step 6 success branch.
+**If non-zero exit code:** proceed to Step 6 open-failure branch.
 
 ---
 
@@ -173,12 +172,10 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 >
 > Open it manually:
 > - In Obsidian: navigate to `TASKS.md` in your vault
-> - Via URI: `obsidian://open?path=<encoded_path>`
+> - Via URI: `obsidian://open?path=[encoded_path]`
 >
 > If Obsidian is not installed, visit https://obsidian.md"
 
 **Encoding-failure (no Python3 or Node.js available):**
 
-> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable on this system (Python3 and Node.js both missing).
->
-> Open it manually in Obsidian by navigating to `TASKS.md` in your vault."
+> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open TASKS.md manually in Obsidian."
