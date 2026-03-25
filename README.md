@@ -34,7 +34,11 @@
 
 ---
 
-## Quick Start
+## Installation
+
+### Option 1 — Fresh vault (recommended)
+
+For users who want a dedicated OneBrain vault from scratch.
 
 **macOS / Linux:**
 
@@ -50,11 +54,36 @@ irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
 
 > Or clone manually: `git clone https://github.com/kengio/onebrain.git`
 
-### Get Running
-
 1. **Open in Obsidian** — Open folder as vault, install community plugins when prompted
 2. **Start your agent** — Open the terminal plugin, run `claude` or `gemini`
 3. **Run `/onboarding`** — 2 minutes to personalize your vault and AI assistant
+
+---
+
+### Option 2 — Add to existing vault
+
+For users who already have an Obsidian vault and want OneBrain skills inside it.
+
+Run from within your existing vault in Claude Code:
+
+```
+/plugin marketplace add kengio/onebrain
+/plugin install onebrain@onebrain
+```
+
+Then run `/onboarding` — this bundles OneBrain into your vault, creates your folders, and sets up your AI identity. After onboarding, use `/update` to keep OneBrain current, same as a fresh vault install.
+
+---
+
+### After running `/update`
+
+`/update` clears the plugin cache and writes new files to disk. To pick up changes in your **current session** without restarting:
+
+```
+/reload-plugins
+```
+
+Or simply start a new Claude Code session — changes are picked up automatically.
 
 ---
 
