@@ -269,6 +269,22 @@ For each key:
 
 ---
 
+## Step 4d: Migrate Plugin Key (onebrain-local → onebrain)
+
+The OneBrain marketplace was renamed from `onebrain-local` to `onebrain` in v1.3.0. Existing installations may still have the old plugin key `onebrain@onebrain-local` in their Claude Code settings. This step migrates the key to `onebrain@onebrain`.
+
+Check the following settings files for the stale key:
+- `.claude/settings.json` (project-level)
+- `.claude/settings.local.json` (project-level local)
+
+For each file that exists:
+1. Read the file and check if it contains `"onebrain@onebrain-local"` as a key inside `enabledPlugins` or any other plugin-related object.
+2. **If found:** Replace every occurrence of `"onebrain@onebrain-local"` with `"onebrain@onebrain"` (read → modify → write back the full file). Report: "Migrated plugin key `onebrain@onebrain-local` → `onebrain@onebrain` in `[file]`."
+3. **If not found:** Skip silently.
+4. **If write fails:** Report the error and tell the user to manually rename the key in `[file]`.
+
+---
+
 ## Step 5: Report
 
 Show a final summary of what was updated. Then suggest:
