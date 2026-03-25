@@ -3,6 +3,25 @@ name: update
 description: Update OneBrain skills, config, and plugins from GitHub — never touches your notes or data
 ---
 
+## Install Path Detection
+
+Before doing anything else, check whether OneBrain is installed at the project level or globally:
+
+Check if `.claude/plugins/onebrain/` exists in the current vault directory.
+
+**If it does NOT exist** (global plugin install — /onboarding has not been run yet):
+
+Stop and tell the user:
+> OneBrain is installed as a global plugin but hasn't been adopted into this vault yet.
+>
+> Run `/onboarding` first to bundle OneBrain into your vault — after that, `/update` will work normally.
+
+Do not proceed further.
+
+**If it DOES exist** (vault install — Path A or adopted Path B): continue with the steps below.
+
+---
+
 # Update OneBrain
 
 Fetch the latest OneBrain system files from GitHub and apply them to this vault.
@@ -15,9 +34,11 @@ Your notes, memory, and personal settings are never touched.
 Tell the user what will and won't be updated:
 
 **WILL update (system files only):**
-- `CLAUDE.md`, `GEMINI.md`, `AGENTS.md`, `.gitignore`
-- `.claude/plugins/onebrain/` — all skills, hooks, and agents
+- `.gitignore`
+- `.claude/plugins/onebrain/` — all plugin files (skills, hooks, agents, INSTRUCTIONS.md)
 - `.claude-plugin/` — local plugin marketplace registry
+
+> **Note:** `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` are NOT updated — they contain either user content (existing vault) or simple `@import` pointers that never need to change. OneBrain instructions live in `.claude/plugins/onebrain/INSTRUCTIONS.md` and are updated via the plugin directory above.
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
@@ -53,27 +74,27 @@ For each path in the allowlist, compare the upstream version against the local v
 
 | Path | Type |
 |------|------|
-| `CLAUDE.md` | file |
-| `GEMINI.md` | file |
-| `AGENTS.md` | file |
 | `.gitignore` | file |
 | `.claude/plugins/onebrain/` | directory |
 | `.claude-plugin/` | directory |
 
 **For individual files:** Fetch the upstream content using WebFetch:
 `https://raw.githubusercontent.com/kengio/onebrain/main/[path]`
-Read the local file with the Read tool and compare. Mark as `unchanged`, `modified`, or `new` (if the local file doesn't exist yet).
+Read the local file with the Read tool and compare. Mark as `unchanged`, `modified`, or `new` (if the local file doesn't exist yet). If the fetch fails, mark as `fetch-failed` — do NOT treat as unchanged.
 
 **For directories:** Filter the upstream file tree (from Step 2) to all blobs whose path starts with the directory prefix. For each upstream file:
 - Fetch its content from `https://raw.githubusercontent.com/kengio/onebrain/main/[path]`
 - Read the local file with the Read tool and compare
-- Mark as `unchanged`, `modified`, or `new`
+- Mark as `unchanged`, `modified`, `new`, or `fetch-failed` (if the fetch fails)
 
 Also identify **local files that no longer exist upstream** (present locally but absent from the upstream tree for that directory prefix). These will be deleted in Step 4 to keep the directory in sync.
 
+If any files are `fetch-failed`, include them in the summary and do not proceed to Step 4. Tell the user:
+> Could not fetch N file(s) from GitHub. This may be a transient network issue. Re-run `/update` to retry.
+
 Present the summary before asking to apply. Example:
 > Found: 2 modified, 1 new, 7 unchanged.
-> Modified: `.claude/plugins/onebrain/`, `CLAUDE.md`
+> Modified: `.claude/plugins/onebrain/`
 > New: `.claude/plugins/onebrain/skills/new-skill/SKILL.md`
 >
 > Apply these updates?
@@ -93,11 +114,16 @@ Before applying updates, check whether the upstream plugin version matches the l
 
 The plugin cache directory for this version must be removed so the plugin manager picks up the updated source files on next load. Run:
 
+Run the following, skipping silently any path that does not exist (this is expected when only one cache variant was used):
+
 ```bash
+rm -rf ~/.claude/plugins/cache/onebrain/onebrain/[local_version]
 rm -rf ~/.claude/plugins/cache/onebrain-local/onebrain/[local_version]
 ```
 
-Report: "Cleared plugin cache for v[local_version] — will reinstall from updated source on next session."
+Only report an error if a path exists but deletion fails. If deletion fails, tell the user: "Could not clear plugin cache at [path]. You can delete it manually, or start a new session — the plugin manager should detect the updated source files automatically." Continue with the update regardless.
+
+On success, report: "Cleared plugin cache for v[local_version] — run /reload-plugins or start a new session to apply changes."
 
 **If upstream_version != local_version:**
 No cache action needed — the plugin manager will create a new cache directory for the new version automatically.
@@ -108,13 +134,15 @@ No cache action needed — the plugin manager will create a new cache directory 
 
 After user confirms, apply each changed or new item from the allowlist using the Write tool:
 
-**For individual files:** Write the upstream content (fetched in Step 3) to the local path.
+**For individual files:** Write the upstream content (fetched in Step 3) to the local path. If the write fails, record it as `write-failed` and continue to the next file — do not stop.
 
 **For directories:**
-- Write each upstream file that is `modified` or `new` to its local path.
-- Delete any local files identified as no longer existing upstream (removed from the repo). This keeps plugin and skill directories clean when files are renamed or removed.
+- Write each upstream file that is `modified` or `new` to its local path. If any write fails, record it as `write-failed` and continue.
+- Delete any local files identified as no longer existing upstream (removed from the repo). If a delete fails, record it as `delete-failed` and continue. This keeps plugin and skill directories clean when files are renamed or removed.
 
 Only modify files that are in the allowlist. Never touch note folders, `[agent_folder]/MEMORY.md`, `vault.yml`, or any user preference files.
+
+After all writes and deletes are attempted: if any `write-failed` or `delete-failed` files exist, include them in the Step 5 report with instructions to manually replace or remove them, and advise re-running `/update`.
 
 ---
 
@@ -130,7 +158,8 @@ After applying updates, check for the old MEMORY.md location:
 Copy the file and ask before deleting:
 - If `[agent_folder]/` does not exist, create the folder along with `context/` and `memory/` subfolders (each with a `.gitkeep`)
 - Copy the content of `MEMORY.md` to `[agent_folder]/MEMORY.md`
-- Ask the user: "Copied MEMORY.md to `[agent_folder]/MEMORY.md` (new location in this version). Can I delete the root copy?"
+- **If the copy fails:** report the error and stop. Do not offer to delete the root copy — it is the only remaining copy. Tell the user: "Could not copy MEMORY.md to `[agent_folder]/MEMORY.md`. Ensure `[agent_folder]/` is writable, then re-run `/update`."
+- **If the copy succeeds:** verify `[agent_folder]/MEMORY.md` now exists and is non-empty, then ask the user: "Copied MEMORY.md to `[agent_folder]/MEMORY.md` (new location in this version). Can I delete the root copy?"
 - Delete the root `MEMORY.md` only after confirmation
 
 **Case B — Both exist:**
@@ -247,4 +276,5 @@ Show a final summary of what was updated. Then suggest:
 > **Done.** OneBrain has been updated.
 >
 > Next steps:
-> - **Restart your AI session** if system instructions changed (`CLAUDE.md`, `GEMINI.md`, or `AGENTS.md`)
+> - Run `/reload-plugins` to apply changes immediately in this session (no restart needed)
+> - Or start a new Claude Code session — changes are picked up automatically

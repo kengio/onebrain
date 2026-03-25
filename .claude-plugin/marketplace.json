@@ -1,7 +1,7 @@
 {
-  "name": "onebrain-local",
+  "name": "onebrain",
   "owner": {
-    "name": "OneBrain"
+    "name": "OneBrain Contributors"
   },
   "plugins": [
     {
