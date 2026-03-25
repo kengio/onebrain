@@ -38,7 +38,7 @@ Tell the user what will and won't be updated:
 - `.claude/plugins/onebrain/` — all plugin files (skills, hooks, agents, INSTRUCTIONS.md)
 - `.claude-plugin/` — local plugin marketplace registry
 
-> **Note:** `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` are NOT updated — they contain either user content (existing vault) or simple `@import` pointers that never need to change. OneBrain instructions live in `.claude/plugins/onebrain/INSTRUCTIONS.md` and are updated via the plugin directory above.
+> **Note:** `CLAUDE.md`, `GEMINI.md`, and `AGENTS.md` are not in the fetch allowlist. Instead, Step 4e ensures they contain the `@import` pointer to `INSTRUCTIONS.md` (migrating old inline instructions if needed).
 
 **WILL NOT touch (your data and preferences):**
 - All your note folders (00-inbox, 01-projects, 02-areas, 03-knowledge, 04-resources, 05-agent, 06-archive, 07-logs) — all your notes
@@ -296,6 +296,75 @@ For each file that exists:
 
 6. Write the full modified file back. **If write fails:** Report the error and tell the user to manually rename the keys in `[file]`. Continue to the next file.
 7. **On success:** Report: "Migrated stale marketplace keys in `[file]`."
+
+---
+
+## Step 4e: Migrate Instruction Files to @import (If Needed)
+
+Old installations may have `CLAUDE.md`, `GEMINI.md`, and/or `AGENTS.md` with ~160 lines of inline OneBrain instructions instead of the single `@import` pointer. This step ensures all three files use the `@import` pattern so the agent always reads the current `INSTRUCTIONS.md`.
+
+**The @import line:** `@.claude/plugins/onebrain/INSTRUCTIONS.md`
+
+**Detection — "already has the @import line":** any non-blank line in the file equals `@.claude/plugins/onebrain/INSTRUCTIONS.md` after stripping leading/trailing whitespace.
+
+**Detection — "old inline instructions":** the file contains a line that starts with `# OneBrain` (the first heading of all old inline instruction blocks).
+
+---
+
+### CLAUDE.md
+
+Read `CLAUDE.md` at the vault root.
+- **If read fails:** report the error and tell the user to manually inspect `CLAUDE.md` and ensure it contains the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md` — until resolved, the agent will continue using whatever is currently in that file. Continue to GEMINI.md.
+
+Apply the matching case:
+
+**Case 1 — File does not exist:**
+Create `CLAUDE.md` with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
+- If write fails: report the error and tell the user to create `CLAUDE.md` manually with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to GEMINI.md.
+- On success: report "Created `CLAUDE.md` with @import pointer." Continue to GEMINI.md.
+
+**Case 2 — File exists and already has the @import line:**
+Skip silently. Continue to GEMINI.md.
+
+**Case 3 — File exists, no @import line, contains old OneBrain instructions (`# OneBrain` heading present):**
+1. Find the line index of the first line starting with `# OneBrain`.
+2. Extract **user content**: everything before that line (may be empty).
+3. Build new file content:
+   - If user content is non-empty (non-blank lines exist before `# OneBrain`): keep that content, then append a blank line followed by `@.claude/plugins/onebrain/INSTRUCTIONS.md`
+   - If no user content exists (the file starts with `# OneBrain`): replace the entire file with just `@.claude/plugins/onebrain/INSTRUCTIONS.md`
+4. Write back (read-modify-write).
+   - If write fails: report the error and tell the user to manually replace the OneBrain block in `CLAUDE.md` with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to GEMINI.md.
+5. On success: report "Migrated `CLAUDE.md` — replaced inline OneBrain instructions with @import pointer." If user content was preserved, add: "Your custom content above the OneBrain block was preserved." Continue to GEMINI.md.
+
+**Case 4 — File exists, no @import line, no `# OneBrain` heading (unrecognized content):**
+Do not replace. Append the @import line after a blank line at the end of the file.
+- If write fails: report the error and tell the user to manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a new line at the end of `CLAUDE.md`. Continue to GEMINI.md.
+- On success: report "Appended @import pointer to `CLAUDE.md` — existing content preserved." Continue to GEMINI.md.
+
+---
+
+### GEMINI.md and AGENTS.md
+
+For each of `GEMINI.md` and `AGENTS.md`:
+
+Read the file.
+- **If read fails:** report the error and tell the user to manually inspect `[filename]` and ensure it contains the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to the next file.
+
+Apply the matching case:
+
+**Case 1 — File does not exist:**
+Create the file with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
+- If write fails: report the error and tell the user to create `[filename]` manually with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to the next file.
+- On success: report "Created `[filename]` with @import pointer."
+
+**Case 2 — File exists and already has the @import line:**
+Skip silently.
+
+**Case 3 — File exists, no @import line:**
+Replace the entire file content with: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
+(These files were never intended for user content — no preservation needed.)
+- If write fails: report the error and tell the user to manually replace the contents of `[filename]` with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to the next file.
+- On success: report "Migrated `[filename]` — replaced with @import pointer."
 
 ---
 
