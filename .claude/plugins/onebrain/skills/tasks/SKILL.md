@@ -55,6 +55,7 @@ updated: YYYY-MM-DD
 > [!warning] Overdue
 > ```tasks
 > not done
+> exclude path includes [logs_folder]
 > due before today
 > sort by priority
 > sort by due
@@ -63,6 +64,7 @@ updated: YYYY-MM-DD
 > [!info] Due This Week
 > ```tasks
 > not done
+> exclude path includes [logs_folder]
 > due after yesterday
 > due before in 8 days
 > sort by priority
@@ -72,6 +74,7 @@ updated: YYYY-MM-DD
 > [!note] Unscheduled
 > ```tasks
 > not done
+> exclude path includes [logs_folder]
 > no due date
 > sort by priority
 > ```
@@ -79,6 +82,7 @@ updated: YYYY-MM-DD
 > [!tip] Due Later
 > ```tasks
 > not done
+> exclude path includes [logs_folder]
 > due after in 7 days
 > sort by due
 > sort by priority
@@ -88,6 +92,7 @@ updated: YYYY-MM-DD
 > _Note: Shows tasks marked complete in Obsidian with a done-date (✅). Tasks completed via terminal do not appear here._
 > ```tasks
 > done
+> exclude path includes [logs_folder]
 > sort by done date
 > limit 20
 > ```
