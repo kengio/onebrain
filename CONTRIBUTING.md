@@ -31,6 +31,8 @@ Good contributions include:
     └── knowledge-linker.md              Knowledge graph agent (used by /connect)
 ```
 
+Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
+
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
 ## Adding a New Skill
@@ -45,10 +47,10 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    ---
    ```
 
-   No `triggers:` field is needed. Skill routing is handled by the command table in `.claude/plugins/onebrain/INSTRUCTIONS.md` — register your command there (see step 4).
+   No `triggers:` field is needed. Skill routing is handled by the command table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) — register your command there (see step 4).
 
 3. Write the skill as a numbered sequence of steps the AI should follow
-4. Register the command in `.claude/plugins/onebrain/INSTRUCTIONS.md` and `README.md` (also increment the command count in the README feature list)
+4. Register the command in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and [README.md](README.md) (also increment the command count in the README feature list)
 
 ## Editing an Existing Skill
 
@@ -58,8 +60,8 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 
 ## Install Scripts
 
-- `install.sh` — bash, targets macOS and Linux
-- `install.ps1` — PowerShell 5+, targets Windows
+- [`install.sh`](install.sh) — bash, targets macOS and Linux
+- [`install.ps1`](install.ps1) — PowerShell 5+, targets Windows
 
 Both scripts download the repo tarball, extract it, remove themselves from the vault, and install community plugins. Keep them simple — vault setup belongs in `/onboarding`, not here.
 
