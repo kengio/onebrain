@@ -91,7 +91,7 @@ Also identify **local files that no longer exist upstream** (present locally but
 
 Present the summary before asking to apply. Example:
 > Found: 2 modified, 1 new, 7 unchanged.
-> Modified: `.claude/plugins/onebrain/`, `CLAUDE.md`
+> Modified: `.claude/plugins/onebrain/`
 > New: `.claude/plugins/onebrain/skills/new-skill/SKILL.md`
 >
 > Apply these updates?
@@ -113,6 +113,7 @@ The plugin cache directory for this version must be removed so the plugin manage
 
 ```bash
 rm -rf ~/.claude/plugins/cache/onebrain/onebrain/[local_version]
+rm -rf ~/.claude/plugins/cache/onebrain-local/onebrain/[local_version]
 ```
 
 Report: "Cleared plugin cache for v[local_version] — run /reload-plugins or start a new session to apply changes."
