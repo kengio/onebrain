@@ -58,6 +58,68 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 - Prefer adding steps over removing them — removals can break workflows users depend on
 - Test manually: open a vault, invoke the command, follow it through
 
+## Adding a New Agent
+
+Agents are specialized subprocesses invoked by skills for focused, autonomous tasks. The existing example is [`knowledge-linker.md`](.claude/plugins/onebrain/agents/knowledge-linker.md), used by `/connect`.
+
+1. Create `.claude/plugins/onebrain/agents/[agent-name].md`
+2. Add YAML frontmatter:
+
+   ```yaml
+   ---
+   name: Agent Display Name
+   description: One-line description — when this agent should be invoked
+   color: blue
+   ---
+   ```
+
+   Supported colors: `blue`, `green`, `red`, `yellow`, `purple`, `orange`.
+
+3. Write the agent's system prompt — its role, process, and output format
+4. Invoke the agent from a skill using the Agent tool, passing it the task context
+
+Agents are stateless — they receive context from the invoking skill and return a result. Keep them focused on a single task.
+
+## Adding a New Hook
+
+Hooks run shell commands automatically when Claude performs certain actions. Hook configuration lives in [`hooks.json`](.claude/plugins/onebrain/hooks/hooks.json). Shell scripts go in the same `hooks/` directory.
+
+**Available hook events:**
+
+| Event | Fires when |
+|-------|-----------|
+| `PostToolUse` | After any tool call (filterable by tool name) |
+| `PreToolUse` | Before any tool call (can block execution) |
+| `Stop` | When Claude finishes responding |
+| `SessionStart` | At the start of a new session |
+
+**To add a hook:**
+
+1. Add an entry to [hooks.json](.claude/plugins/onebrain/hooks/hooks.json):
+
+   ```json
+   {
+     "hooks": {
+       "PostToolUse": [
+         {
+           "matcher": "Write|Edit",
+           "hooks": [
+             {
+               "type": "command",
+               "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/your-hook.sh\"",
+               "async": true
+             }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+
+2. Create the corresponding script in `.claude/plugins/onebrain/hooks/`. Use `${CLAUDE_PLUGIN_ROOT}` to reference other files in the plugin directory. For cross-platform support, provide both `.sh` (macOS/Linux) and `.ps1` (Windows) variants and chain them with `||`.
+
+3. Make scripts defensive — they run on every matching tool call, so they should exit silently if there's nothing to do.
+
 ## Install Scripts
 
 - [`install.sh`](install.sh) — bash, targets macOS and Linux
