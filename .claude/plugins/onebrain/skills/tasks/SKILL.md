@@ -31,6 +31,8 @@ Check if any text was passed after `/tasks`:
 - `/tasks` → `keyword = none`
 - `/tasks <keyword>` → `keyword = everything after "/tasks "` (trim leading/trailing whitespace; preserve internal spaces for multi-word keywords)
 
+After extracting the keyword, strip surrounding quote characters if the entire argument is wrapped in matching `"..."` or `'...'`. Only outermost surrounding quotes are removed — internal spaces and characters are preserved (e.g., `/tasks "client project"` → keyword `client project`).
+
 ---
 
 ## Step 3: Ensure TASKS.md exists and frontmatter is current
