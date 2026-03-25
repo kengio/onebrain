@@ -21,6 +21,8 @@ Read `vault.yml` from the current working directory. The directory containing `v
 
 Then proceed with cwd as vault root.
 
+Also extract `folders.logs` from `vault.yml` and store as `[logs_folder]`. If the key is absent (or vault.yml was not found), use `07-logs` as the default and proceed without warning. This value is used in Steps 3 and 4 to exclude session log tasks from dashboard queries.
+
 ---
 
 ## Step 2: Parse keyword argument
@@ -28,6 +30,8 @@ Then proceed with cwd as vault root.
 Check if any text was passed after `/tasks`:
 - `/tasks` → `keyword = none`
 - `/tasks <keyword>` → `keyword = everything after "/tasks "` (trim leading/trailing whitespace; preserve internal spaces for multi-word keywords)
+
+If a keyword was extracted, strip surrounding quote characters if the entire argument is wrapped in matching `"..."` or `'...'`. Only outermost surrounding quotes are removed — internal spaces and characters are preserved (e.g., `/tasks "client project"` → keyword `client project`).
 
 ---
 
@@ -37,7 +41,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 **If TASKS.md does not exist:**
 
-Create it with this exact content (replace `YYYY-MM-DD` with today's date):
+Create it with this exact content (replace `YYYY-MM-DD` with today's date and `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`):
 
 ```markdown
 ---
@@ -48,45 +52,56 @@ updated: YYYY-MM-DD
 
 # Task Dashboard
 
-> [!warning] Overdue
-> ```tasks
-> not done
-> due before today
-> sort by priority
-> sort by due
-> ```
+## 🔴 Overdue
 
-> [!info] Due This Week
-> ```tasks
-> not done
-> due after yesterday
-> due before in 8 days
-> sort by priority
-> sort by due
-> ```
+```tasks
+not done
+exclude path includes [logs_folder]
+due before today
+sort by priority
+sort by due
+```
 
-> [!note] Unscheduled
-> ```tasks
-> not done
-> no due date
-> sort by priority
-> ```
+## 🗓 Due This Week
 
-> [!tip] Due Later
-> ```tasks
-> not done
-> due after in 7 days
-> sort by due
-> sort by priority
-> ```
+```tasks
+not done
+exclude path includes [logs_folder]
+due after yesterday
+due before in 8 days
+sort by priority
+sort by due
+```
 
-> [!success] Completed
-> _Note: Shows tasks marked complete in Obsidian with a done-date (✅). Tasks completed via terminal do not appear here._
-> ```tasks
-> done
-> sort by done date
-> limit 20
-> ```
+## 📋 Unscheduled
+
+```tasks
+not done
+exclude path includes [logs_folder]
+no due date
+sort by priority
+```
+
+## 🔵 Due Later
+
+```tasks
+not done
+exclude path includes [logs_folder]
+due after in 7 days
+sort by due
+sort by priority
+```
+
+## ✅ Completed
+
+_Note: Shows tasks marked complete in Obsidian with a done-date (✅). Tasks completed via terminal do not appear here._
+
+```tasks
+done
+exclude path includes [logs_folder]
+sort by done date
+limit 20
+```
 ```
 
 If the write fails, stop immediately and tell the user:
@@ -97,10 +112,17 @@ Do not proceed to Steps 4, 5, or 6 if the write failed.
 
 **If TASKS.md already exists:**
 
-Read the file. Check the `updated:` value in frontmatter:
-- If `updated:` already equals today's date → skip the frontmatter write (no-op)
-- If `updated:` key is missing entirely → add `updated: YYYY-MM-DD` before the closing `---`. If this edit fails, stop and report the error to the user. Do not proceed.
-- Otherwise → update only the `updated: YYYY-MM-DD` line to today's date using the Edit tool. If the edit fails, stop and report the error to the user. Do not proceed.
+Read the file.
+
+Frontmatter: read `created:` from the existing frontmatter and preserve it; update `updated:` to today's date. If `created:` is absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter — set to today's date. Edit it manually if you know the original date."
+
+Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter — intact. Any existing `## 🔍 Filtered:` section (which lives after `# Task Dashboard`) will be overwritten by this regeneration; Step 4 will re-add or remove it as needed.
+
+Write the updated file (frontmatter and any content above `# Task Dashboard` preserved, body from `# Task Dashboard` onward regenerated). If the write fails, stop immediately and tell the user:
+
+> "Could not update TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
+
+Do not proceed to Steps 4, 5, or 6 if the write failed.
 
 ---
 
@@ -108,32 +130,43 @@ Read the file. Check the `updated:` value in frontmatter:
 
 **If keyword is provided:**
 
-Look for an existing `> [!search]` callout block in TASKS.md (a line starting with `> [!search]`).
+Look for an existing `## 🔍 Filtered:` section in TASKS.md (a line starting with `## 🔍 Filtered:`). Note: Step 3 always regenerates the body from `# Task Dashboard` onward, so this section will not be present — the "if not found" path always applies. The "if found" path is kept as a safety fallback for manually edited files.
 
-- If found: replace the entire block (all consecutive `> ` prefixed lines until the first non-`> ` line or blank line) with the new block below
-- If not found: insert immediately before the `# Task Dashboard` heading (between the existing blank line after frontmatter `---` and the heading)
+- If found: replace from that heading line through the closing ` ``` ` of its tasks block with the new block below
+- If not found: insert immediately after the `# Task Dashboard` heading line (followed by a blank line, then the new block)
 
-Insert/replace with (substitute actual keyword for `<keyword>`; keyword is quoted to support multi-word searches):
-
-```
-> [!search] Filtered: "<keyword>"
-> _Matches tasks where description or path contains "<keyword>"_
-> ```tasks
-> not done
-> (description includes "<keyword>") OR (path includes "<keyword>")
-> sort by priority
-> sort by due
-> ```
+Insert/replace with (substitute actual keyword for `<keyword>` and actual logs folder path for `[logs_folder]`, e.g., `07-logs`):
 
 ```
+## 🔍 Filtered: <keyword>
 
-(Note: `[!search]` renders as a generic note style in Obsidian — not a native callout type. Include a blank line after the closing ` ``` ` before the next section.)
+_Matches tasks where description or path contains <keyword>_
 
-If the edit fails, stop and report the error to the user. Do not proceed.
+```tasks
+not done
+exclude path includes [logs_folder]
+(description includes <keyword>) OR (path includes <keyword>)
+sort by priority
+sort by due
+```
+
+```
+
+(Include a blank line after the closing ` ``` ` before the next section.)
+
+If the edit fails, stop immediately and tell the user:
+
+> "Could not update the keyword filter in TASKS.md at [tasks_path]. Error: [error]. Check write permissions. Vault root used: [vault_root]"
+
+Do not proceed.
 
 **If no keyword:**
 
-Check if a `> [!search]` block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid a double blank line between frontmatter `---` and `# Task Dashboard`). If removal fails, report the error and do not proceed.
+Check if a `## 🔍 Filtered:` section exists in TASKS.md. If it does, remove it entirely — the heading line, the blank line after it, the subtitle line, the blank line before the tasks block, the tasks block itself, and the blank line that follows — so there is no extra blank line between `# Task Dashboard` and `## 🔴 Overdue`. If removal fails, tell the user:
+
+> "Could not remove the keyword filter from TASKS.md at [tasks_path]. Error: [error]. Check write permissions. Vault root used: [vault_root]"
+
+Do not proceed.
 
 ---
 
@@ -163,7 +196,7 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 ## Step 6: Print confirmation
 
 **Success:**
-- With keyword: `TASKS.md opened in Obsidian — filtered by "<keyword>".`
+- With keyword: `TASKS.md opened in Obsidian — filtered by <keyword>.`
 - Without keyword: `TASKS.md opened in Obsidian.`
 
 **Open-failure (open command returned non-zero, encoding succeeded):**
@@ -178,4 +211,4 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 
 **Encoding-failure (no Python3 or Node.js available):**
 
-> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open TASKS.md manually in Obsidian."
+> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open it manually in Obsidian by navigating to `[tasks_path]`."
