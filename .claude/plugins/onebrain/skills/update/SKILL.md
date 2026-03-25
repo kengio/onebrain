@@ -313,15 +313,18 @@ Old installations may have `CLAUDE.md`, `GEMINI.md`, and/or `AGENTS.md` with ~16
 
 ### CLAUDE.md
 
-Read `CLAUDE.md` at the vault root and apply the matching case:
+Read `CLAUDE.md` at the vault root.
+- **If read fails:** report the error and tell the user to manually inspect `CLAUDE.md` and ensure it contains the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md` — until resolved, the agent will continue using whatever is currently in that file. Continue to GEMINI.md.
+
+Apply the matching case:
 
 **Case 1 — File does not exist:**
 Create `CLAUDE.md` with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
-- If write fails: report the error and tell the user to create the file manually with that single line. Continue to GEMINI.md.
-- On success: report "Created `CLAUDE.md` with @import pointer."
+- If write fails: report the error and tell the user to create `CLAUDE.md` manually with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to GEMINI.md.
+- On success: report "Created `CLAUDE.md` with @import pointer." Continue to GEMINI.md.
 
 **Case 2 — File exists and already has the @import line:**
-Skip silently.
+Skip silently. Continue to GEMINI.md.
 
 **Case 3 — File exists, no @import line, contains old OneBrain instructions (`# OneBrain` heading present):**
 1. Find the line index of the first line starting with `# OneBrain`.
@@ -330,23 +333,28 @@ Skip silently.
    - If user content is non-empty (non-blank lines exist before `# OneBrain`): keep that content, then append a blank line followed by `@.claude/plugins/onebrain/INSTRUCTIONS.md`
    - If no user content exists (the file starts with `# OneBrain`): replace the entire file with just `@.claude/plugins/onebrain/INSTRUCTIONS.md`
 4. Write back (read-modify-write).
-   - If write fails: report the error and tell the user to manually replace the OneBrain block with the @import line. Continue.
-5. On success: report "Migrated `CLAUDE.md` — replaced inline OneBrain instructions with @import pointer." If user content was preserved, add: "Your custom content above the OneBrain block was preserved."
+   - If write fails: report the error and tell the user to manually replace the OneBrain block in `CLAUDE.md` with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to GEMINI.md.
+5. On success: report "Migrated `CLAUDE.md` — replaced inline OneBrain instructions with @import pointer." If user content was preserved, add: "Your custom content above the OneBrain block was preserved." Continue to GEMINI.md.
 
 **Case 4 — File exists, no @import line, no `# OneBrain` heading (unrecognized content):**
 Do not replace. Append the @import line after a blank line at the end of the file.
-- If write fails: report the error and tell the user to manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` to `CLAUDE.md`. Continue.
-- On success: report "Appended @import pointer to `CLAUDE.md` — existing content preserved."
+- If write fails: report the error and tell the user to manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a new line at the end of `CLAUDE.md`. Continue to GEMINI.md.
+- On success: report "Appended @import pointer to `CLAUDE.md` — existing content preserved." Continue to GEMINI.md.
 
 ---
 
 ### GEMINI.md and AGENTS.md
 
-For each of `GEMINI.md` and `AGENTS.md`, apply the matching case:
+For each of `GEMINI.md` and `AGENTS.md`:
+
+Read the file.
+- **If read fails:** report the error and tell the user to manually inspect `[filename]` and ensure it contains the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to the next file.
+
+Apply the matching case:
 
 **Case 1 — File does not exist:**
 Create the file with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
-- If write fails: report the error and continue to the next file.
+- If write fails: report the error and tell the user to create `[filename]` manually with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to the next file.
 - On success: report "Created `[filename]` with @import pointer."
 
 **Case 2 — File exists and already has the @import line:**
@@ -355,7 +363,7 @@ Skip silently.
 **Case 3 — File exists, no @import line:**
 Replace the entire file content with: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
 (These files were never intended for user content — no preservation needed.)
-- If write fails: report the error and continue.
+- If write fails: report the error and tell the user to manually replace the contents of `[filename]` with the single line `@.claude/plugins/onebrain/INSTRUCTIONS.md`. Continue to the next file.
 - On success: report "Migrated `[filename]` — replaced with @import pointer."
 
 ---
