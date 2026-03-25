@@ -277,21 +277,25 @@ Check the following settings files:
 - `.claude/settings.json` (project-level)
 - `.claude/settings.local.json` (project-level local)
 
-For each file that exists, perform two replacements in a single read → modify → write pass:
+For each file that exists:
+1. Read the file. **If read fails:** Report the error and tell the user to manually rename the keys in `[file]`. Continue to the next file.
+2. Parse as JSON. **If the file is not valid JSON:** Report the parse error and skip this file. Continue to the next file.
+3. Check for either stale key.
+4. **If neither found:** Skip silently.
+5. **If either found:** Apply both changes to the parsed JSON structure (read → modify → write back):
 
-**Replacement 1 — `enabledPlugins` key:**
-- Find: `"onebrain@onebrain-local"` (as a key or value)
-- Replace with: `"onebrain@onebrain"`
+**Change 1 — `enabledPlugins`:**
+- If `"onebrain@onebrain-local"` exists as a key and `"onebrain@onebrain"` does NOT exist: rename the key.
+- If both keys exist: remove `"onebrain@onebrain-local"` (keep the new key, avoid duplicates).
+- If only `"onebrain@onebrain"` exists: skip (already migrated).
 
-**Replacement 2 — `extraKnownMarketplaces` key:**
-- Find: `"onebrain-local"` (as a top-level key inside `extraKnownMarketplaces`)
-- Replace with: `"onebrain"`
+**Change 2 — `extraKnownMarketplaces`:**
+- If `"onebrain-local"` exists as a key and `"onebrain"` does NOT exist: rename the key.
+- If both keys exist: remove `"onebrain-local"` (keep the new key, avoid duplicates).
+- If only `"onebrain"` exists: skip (already migrated).
 
-For each file:
-1. Read the file and check for either stale string.
-2. **If either found:** Apply both replacements (read → modify → write back the full file). Report: "Migrated stale marketplace keys in `[file]`."
-3. **If neither found:** Skip silently.
-4. **If write fails:** Report the error and tell the user to manually rename the keys in `[file]`.
+6. Write the full modified file back. **If write fails:** Report the error and tell the user to manually rename the keys in `[file]`. Continue to the next file.
+7. **On success:** Report: "Migrated stale marketplace keys in `[file]`."
 
 ---
 
