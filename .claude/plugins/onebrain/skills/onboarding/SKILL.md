@@ -3,6 +3,23 @@ name: onboarding
 description: First-run setup for OneBrain — personalize identity, communication style, and vault configuration
 ---
 
+## Install Path Detection
+
+At the very start, before any user interaction, detect which install path was used:
+
+Check if `.claude/plugins/onebrain/` exists locally in this vault directory.
+
+**Re-run check:** If `.claude/plugins/onebrain/` exists AND `vault.yml` exists, this is a re-run on an already-configured vault. Tell the user:
+> OneBrain is already set up in this vault. Running onboarding again will update your identity and preferences — your notes and vault structure will not change. Continue?
+
+Wait for confirmation. If they confirm, proceed with Path A flow (existing steps). If they decline, stop.
+
+**Path B detected:** If `.claude/plugins/onebrain/` does NOT exist locally, skip to the **Path B** section at the bottom of this skill.
+
+**Path A detected:** If `.claude/plugins/onebrain/` exists locally (and it is a first run or confirmed re-run), continue with the steps below (existing onboarding flow).
+
+---
+
 # OneBrain Onboarding
 
 Welcome to OneBrain! This skill personalizes your vault and sets up your AI chief of staff.
@@ -141,6 +158,17 @@ Ask:
 This is optional — they can say "skip" or "nothing".
 
 Wait for response. Store: `recurring_contexts`.
+
+---
+
+## Step 8b: Verify CLAUDE.md pointer
+
+Check the state of root `CLAUDE.md`:
+- **File exists and contains** `@.claude/plugins/onebrain/INSTRUCTIONS.md` → skip silently (already set by install.sh)
+- **File exists but does not contain it** → append `@.claude/plugins/onebrain/INSTRUCTIONS.md` on a new line at the end
+- **File does not exist** → create `CLAUDE.md` with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
+
+No user interaction needed for this step.
 
 ---
 
@@ -289,5 +317,113 @@ Say:
 > **How notes are organized:** Project and area notes go into kebab-case subfolders (e.g. `01-projects/work/Website Redesign.md`). I'll suggest a subfolder whenever you create a note — just confirm or adjust. Research and summary output goes to `04-resources/` — use `/consolidate` to turn it into your own thinking in `03-knowledge/`. Use `/learn` to teach me things about your world (domain, tools, terminology) and I'll save them to `05-agent/`. Session logs go into `07-logs/YYYY/MM/` and archive items go into `06-archive/YYYY/MM/`.
 >
 > When you're done working, run `/wrapup` to save a session summary.
+>
+> What would you like to do first?
+
+---
+
+# Path B — Existing Vault Onboarding
+
+This section runs when `.claude/plugins/onebrain/` does NOT exist locally (user installed via `/plugin install`).
+
+---
+
+## Path B — Step 0: Adopt plugin into vault
+
+Before any user interaction, copy plugin files from the global cache into the vault.
+
+1. Find the latest version directory at `~/.claude/plugins/cache/onebrain/onebrain/`
+2. Copy its full contents to `[vault root]/.claude/plugins/onebrain/` (create the directory if it doesn't exist)
+3. From this point, the project-level copy takes priority over the global cache
+
+If the source directory does not exist or the copy fails, tell the user:
+> Could not copy OneBrain plugin files to your vault. Please ensure you ran `/plugin install onebrain@onebrain` successfully, then try again.
+
+Stop here if Step 0 fails.
+
+---
+
+## Path B — Step 1: Welcome
+
+Say:
+> Welcome to OneBrain! I'm going to set up OneBrain inside your existing vault. This will:
+> - Add OneBrain instructions to your CLAUDE.md
+> - Create OneBrain folders alongside your existing notes (only missing folders will be created)
+> - Personalize your AI assistant
+>
+> Your existing notes and CLAUDE.md content will not be modified or removed.
+>
+> Let's start!
+
+---
+
+## Path B — Steps 2–8: Personalization
+
+Run Steps 2–8 from the standard onboarding flow above (ask name, role, agent name, personality archetype, detail level, tone, goals, recurring context). Identical behavior.
+
+---
+
+## Path B — Step 9: Patch CLAUDE.md
+
+Now that plugin files are local (copied in Step 0), the @import path resolves to the project-level file.
+
+Check if `CLAUDE.md` exists in the vault root:
+
+**If it exists:** Append on a new line at the end (after a blank line):
+```
+@.claude/plugins/onebrain/INSTRUCTIONS.md
+```
+Do not modify any existing content.
+
+**If it does not exist:** Create `CLAUDE.md` with content:
+```
+@.claude/plugins/onebrain/INSTRUCTIONS.md
+```
+
+Tell the user:
+> Added OneBrain instructions to your `CLAUDE.md`. Your existing content is untouched.
+
+---
+
+## Path B — Step 9b: Patch GEMINI.md and AGENTS.md (if present)
+
+For each of `GEMINI.md` and `AGENTS.md`:
+- If the file exists in the vault root: append `@.claude/plugins/onebrain/INSTRUCTIONS.md` on a new line at the end
+- If it does not exist: skip silently (do not create these files unprompted)
+
+---
+
+## Path B — Step 10: Write MEMORY.md
+
+Identical to Step 9 in the standard flow. Write to `[agent_folder]/MEMORY.md` using the personalization data collected in Steps 2–8.
+
+---
+
+## Path B — Step 11: Create vault folders
+
+Identical to Step 10 in the standard flow, with one difference: only create folders that don't already exist. Skip silently for any folder that is present. Do not report unchanged folders.
+
+---
+
+## Path B — Step 12: Write vault.yml
+
+Identical to Step 11 in the standard flow.
+
+---
+
+## Path B — Step 13: Completion message
+
+Say:
+> You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help.
+>
+> OneBrain is now bundled inside your vault:
+> - Plugin files copied to `.claude/plugins/onebrain/`
+> - Instructions added to `CLAUDE.md`
+> - Your identity saved in `[agent_folder]/MEMORY.md`
+> - Vault folders created (existing folders untouched)
+>
+> Use `/update` to keep OneBrain current — it works the same as a fresh vault install.
+>
+> The global plugin install is no longer needed for this vault. You can remove it with `/plugin uninstall onebrain@onebrain` if you like, but it's safe to leave as-is.
 >
 > What would you like to do first?
