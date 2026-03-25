@@ -37,7 +37,7 @@ Use these priority markers when relevant:
 - `⏫` Medium priority
 - `🔽` Low priority
 
-Tasks live inline in project/knowledge notes — never in a standalone tasks file.
+Tasks live inline in project/knowledge notes — never author tasks directly in a standalone file. `TASKS.md` at the vault root is a read-only dashboard (live query blocks), not a place to create tasks.
 
 ## Note Linking
 
@@ -82,7 +82,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/import` | `import/SKILL.md` | Import local files (PDF, docs, images, scripts) → vault notes |
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
-| `/tasks` | `tasks/SKILL.md` | Task dashboard — overdue, due soon, open, completed |
+| `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian — optionally filter by keyword (e.g., `/tasks project-name`) |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
 | `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer |

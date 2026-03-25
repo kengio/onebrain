@@ -126,7 +126,7 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 | `/import [path]` | Import local files (PDF, Word, images, scripts) into vault notes |
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
-| `/tasks` | Task dashboard — overdue, due soon, open, and completed this week |
+| `/tasks [keyword]` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections. Filter with `/tasks <keyword>` |
 | `/wrapup` | Wrap up session and save summary to session log |
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences |
 | `/clone` | Package your agent context for transfer to a new vault |
@@ -160,6 +160,7 @@ onebrain/
 │   ├── pdf/
 │   ├── images/
 │   └── video/
+├── TASKS.md           Live task dashboard (created by /tasks, opened in Obsidian)
 ├── CLAUDE.md          Instructions for Claude Code
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions
@@ -224,7 +225,7 @@ OneBrain uses the [Obsidian Tasks](https://publish.obsidian.md/tasks/) plugin fo
 - [ ] High priority task 🔺 📅 2026-03-22
 ```
 
-Tasks live inline in your notes — the Tasks plugin surfaces them across the vault.
+Tasks live inline in your notes — the Tasks plugin surfaces them across the vault. Run `/tasks` to open a live dashboard in Obsidian (`TASKS.md` at vault root) with sections for overdue, due this week, unscheduled, due later, and recently completed. Use `/tasks <keyword>` to filter by project or topic.
 
 </details>
 

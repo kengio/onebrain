@@ -1,132 +1,181 @@
 ---
 name: tasks
-description: Show a dashboard of all tasks across the vault — overdue, due soon, open, and recently completed
+description: Create or update the live task dashboard (TASKS.md) in Obsidian and open it. Optionally filter by keyword.
 ---
 
 # Task Dashboard
 
-Shows all tasks across the vault, organized by urgency, with quick actions to update them.
+Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks, then opens it in Obsidian. The file is always current — no vault scanning needed. Mark tasks complete directly in Obsidian by clicking the checkboxes.
+
+Usage:
+- `/tasks` — open the full dashboard
+- `/tasks <keyword>` — open with a filtered view (e.g., `/tasks onebrain`, `/tasks client project`)
 
 ---
 
-## Step 1: Scan the Vault
+## Step 1: Locate vault root
 
-Use the Grep tool to find all task lines across active vault folders.
+Read `vault.yml` from the current working directory. The directory containing `vault.yml` is the vault root. If `vault.yml` does not exist, warn the user:
 
-Search for `- \[.\]` (regex) recursively in these directories only:
-- `00-inbox/`
-- `01-projects/**`
-- `02-areas/**`
-- `03-knowledge/**`
-- `04-resources/**`
-- `07-logs/**`
+> "vault.yml not found — using current working directory as vault root: [path]. Run `/onboarding` to set up your vault configuration."
 
-**Skip entirely:** `05-agent/`, `06-archive/`, `.obsidian/`, `.claude/`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`
-
-These excluded files contain template examples or system instructions, not real tasks.
+Then proceed with cwd as vault root.
 
 ---
 
-## Step 2: Parse Each Task Line
+## Step 2: Parse keyword argument
 
-For each matched line, extract:
-
-| Field | How to extract |
-|-------|---------------|
-| **Status** | `- [ ]` = open, `- [x]` = completed |
-| **Description** | Text after the checkbox, minus emoji markers |
-| **Due date** | `📅 YYYY-MM-DD` if present |
-| **Priority** | `🔺` high, `⏫` medium, `🔽` low (absent = none) |
-| **Source** | File path → strip extension and leading path → `[[Note Name]]` |
+Check if any text was passed after `/tasks`:
+- `/tasks` → `keyword = none`
+- `/tasks <keyword>` → `keyword = everything after "/tasks "` (trim leading/trailing whitespace; preserve internal spaces for multi-word keywords)
 
 ---
 
-## Step 3: Categorize by Urgency
+## Step 3: Ensure TASKS.md exists and frontmatter is current
 
-Today's date is available from the system. Using it:
+Determine `tasks_path = {vault_root}/TASKS.md`.
 
-- **Overdue** — open tasks with due date < today
-- **Due Soon** — open tasks with due date within the next 7 days (today through today+7)
-- **All Open** — open tasks with no due date, or due date > 7 days out
-- **Completed This Week** — completed (`- [x]`) tasks found in files modified in the last 7 days
+**If TASKS.md does not exist:**
 
-Within each section, sort by:
-1. Priority: 🔺 → ⏫ → 🔽 → none
-2. Then by due date (earliest first)
+Create it with this exact content (replace `YYYY-MM-DD` with today's date):
 
+```markdown
+---
+tags: [dashboard, tasks]
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
 ---
 
-## Step 4: Display the Dashboard
+# Task Dashboard
 
-Print the dashboard in this format:
+> [!warning] Overdue
+> ```tasks
+> not done
+> due before today
+> sort by priority
+> sort by due
+> ```
 
-```
-## 🔴 Overdue (N)
-- [ ] Task description 📅 YYYY-MM-DD  🔺  ← [[Source Note]]
+> [!info] Due This Week
+> ```tasks
+> not done
+> due after yesterday
+> due before in 8 days
+> sort by priority
+> sort by due
+> ```
 
-## 🟡 Due Soon (N)
-- [ ] Task description 📅 YYYY-MM-DD  ← [[Source Note]]
+> [!note] Unscheduled
+> ```tasks
+> not done
+> no due date
+> sort by priority
+> ```
 
-## 📋 All Open (N)
-- [ ] Task description  ← [[Source Note]]
+> [!tip] Due Later
+> ```tasks
+> not done
+> due after in 7 days
+> sort by due
+> sort by priority
+> ```
 
-## ✅ Completed This Week (N)
-- [x] Task description 📅 YYYY-MM-DD  ← [[Source Note]]
-```
-
-If a section has no tasks, show:
-> None — you're clear!
-
-Show the count `(N)` in every section header, even when zero.
-
----
-
-## Step 5: Quick Actions
-
-After the dashboard, say:
-
-> **Quick actions:**
-> 1. ✅ Mark tasks complete — tell me which ones
-> 2. ➕ Add a quick task — I'll ask for details
-> 3. 👋 Done — no changes needed
-
-Wait for the user's choice, then follow the matching branch below.
-
-### Branch 1 — Mark Complete
-
-- Ask the user to identify tasks by number (based on dashboard order) or description.
-- Read the source file for each identified task.
-- Change `- [ ]` to `- [x]` for the matching line(s).
-- Confirm: "Marked N task(s) complete in [[Source Note]]."
-
-### Branch 2 — Add a Task
-
-Ask in sequence:
-1. **Description** — what's the task?
-2. **Due date** — any deadline? (optional, skip if none)
-3. **Priority** — high 🔺, medium ⏫, low 🔽, or none?
-4. **Where to add it** — suggest existing project notes by name; default to `00-inbox/YYYY-MM-DD-tasks.md` if no preference.
-
-Write the task in Obsidian Tasks format:
-```
-- [ ] Task description 📅 YYYY-MM-DD  🔺
+> [!success] Completed
+> _Note: Shows tasks marked complete in Obsidian with a done-date (✅). Tasks completed via terminal do not appear here._
+> ```tasks
+> done
+> sort by done date
+> limit 20
+> ```
 ```
 
-Confirm: "Added to [[Note Name]]."
+If the write fails, stop immediately and tell the user:
 
-### Branch 3 — Done
+> "Could not create TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
-Say:
-> All good — your task list is up to date. See you next time!
+Do not proceed to Steps 4, 5, or 6 if the write failed.
+
+**If TASKS.md already exists:**
+
+Read the file. Check the `updated:` value in frontmatter:
+- If `updated:` already equals today's date → skip the frontmatter write (no-op)
+- If `updated:` key is missing entirely → add `updated: YYYY-MM-DD` before the closing `---`. If this edit fails, stop and report the error to the user. Do not proceed.
+- Otherwise → update only the `updated: YYYY-MM-DD` line to today's date using the Edit tool. If the edit fails, stop and report the error to the user. Do not proceed.
 
 ---
 
-## Step 6: Empty State
+## Step 4: Handle keyword filter
 
-If no tasks are found anywhere after scanning:
+**If keyword is provided:**
 
-> No tasks found in your vault yet. Tasks get created when you use `/braindump`, `/weekly`, or add them manually to notes.
+Look for an existing `> [!search]` callout block in TASKS.md (a line starting with `> [!search]`).
+
+- If found: replace the entire block (all consecutive `> ` prefixed lines until the first non-`> ` line or blank line) with the new block below
+- If not found: insert immediately before the `# Task Dashboard` heading (between the existing blank line after frontmatter `---` and the heading)
+
+Insert/replace with (substitute actual keyword for `<keyword>`; keyword is quoted to support multi-word searches):
+
+```
+> [!search] Filtered: "<keyword>"
+> _Matches tasks where description or path contains "<keyword>"_
+> ```tasks
+> not done
+> (description includes "<keyword>") OR (path includes "<keyword>")
+> sort by priority
+> sort by due
+> ```
+
+```
+
+(Note: `[!search]` renders as a generic note style in Obsidian — not a native callout type. Include a blank line after the closing ` ``` ` before the next section.)
+
+If the edit fails, stop and report the error to the user. Do not proceed.
+
+**If no keyword:**
+
+Check if a `> [!search]` block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid a double blank line between frontmatter `---` and `# Task Dashboard`). If removal fails, report the error and do not proceed.
+
+---
+
+## Step 5: Open in Obsidian
+
+Build the `obsidian://` URI using path-based addressing:
+
+1. Take the absolute path to `TASKS.md`
+2. URL-encode it, keeping `/`, `:`, and `@` as literal characters:
+   - Priority order: Python3 first, then Node.js
+   - Python3: `urllib.parse.quote(path, safe='/:@')`
+   - Node.js: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':').replace(/%40/gi, '@')`
+   - If neither runtime is available: go to Step 6 encoding-failure branch
+3. `uri = "obsidian://open?path=" + encoded_path`
+
+Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
+- macOS: `open "<uri>"`
+- Linux (non-WSL): `xdg-open "<uri>"`
+- Linux (WSL): `cmd.exe /c start "" "<uri>"`
+- Windows (msys/cygwin): `cmd.exe /c start "" "<uri>"`
+
+**If exit code 0:** proceed to Step 6 success branch.
+**If non-zero exit code:** proceed to Step 6 open-failure branch.
+
+---
+
+## Step 6: Print confirmation
+
+**Success:**
+- With keyword: `TASKS.md opened in Obsidian — filtered by "<keyword>".`
+- Without keyword: `TASKS.md opened in Obsidian.`
+
+**Open-failure (open command returned non-zero, encoding succeeded):**
+
+> "TASKS.md was updated but could not be opened automatically in Obsidian.
 >
-> Want to add one now?
+> Open it manually:
+> - In Obsidian: navigate to `TASKS.md` in your vault
+> - Via URI: `obsidian://open?path=[encoded_path]`
+>
+> If Obsidian is not installed, visit https://obsidian.md"
 
-If yes, proceed with Branch 2 above.
+**Encoding-failure (no Python3 or Node.js available):**
+
+> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open TASKS.md manually in Obsidian."
