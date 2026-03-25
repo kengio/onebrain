@@ -271,17 +271,27 @@ For each key:
 
 ## Step 4d: Migrate Plugin Key (onebrain-local → onebrain)
 
-The OneBrain marketplace was renamed from `onebrain-local` to `onebrain` in v1.3.0. Existing installations may still have the old plugin key `onebrain@onebrain-local` in their Claude Code settings. This step migrates the key to `onebrain@onebrain`.
+The OneBrain marketplace was renamed from `onebrain-local` to `onebrain` in v1.3.0. Existing installations may still have stale keys in their Claude Code settings. This step migrates both affected keys.
 
-Check the following settings files for the stale key:
+Check the following settings files:
 - `.claude/settings.json` (project-level)
 - `.claude/settings.local.json` (project-level local)
 
-For each file that exists:
-1. Read the file and check if it contains `"onebrain@onebrain-local"` as a key inside `enabledPlugins` or any other plugin-related object.
-2. **If found:** Replace every occurrence of `"onebrain@onebrain-local"` with `"onebrain@onebrain"` (read → modify → write back the full file). Report: "Migrated plugin key `onebrain@onebrain-local` → `onebrain@onebrain` in `[file]`."
-3. **If not found:** Skip silently.
-4. **If write fails:** Report the error and tell the user to manually rename the key in `[file]`.
+For each file that exists, perform two replacements in a single read → modify → write pass:
+
+**Replacement 1 — `enabledPlugins` key:**
+- Find: `"onebrain@onebrain-local"` (as a key or value)
+- Replace with: `"onebrain@onebrain"`
+
+**Replacement 2 — `extraKnownMarketplaces` key:**
+- Find: `"onebrain-local"` (as a top-level key inside `extraKnownMarketplaces`)
+- Replace with: `"onebrain"`
+
+For each file:
+1. Read the file and check for either stale string.
+2. **If either found:** Apply both replacements (read → modify → write back the full file). Report: "Migrated stale marketplace keys in `[file]`."
+3. **If neither found:** Skip silently.
+4. **If write fails:** Report the error and tell the user to manually rename the keys in `[file]`.
 
 ---
 

@@ -12,10 +12,10 @@
     ]
   },
   "enabledPlugins": {
-    "onebrain@onebrain-local": true
+    "onebrain@onebrain": true
   },
   "extraKnownMarketplaces": {
-    "onebrain-local": {
+    "onebrain": {
       "source": {
         "source": "directory",
         "path": "."
