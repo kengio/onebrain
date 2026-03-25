@@ -130,7 +130,7 @@ Do not proceed to Steps 4, 5, or 6 if the write failed.
 
 **If keyword is provided:**
 
-Look for an existing `## 🔍 Filtered:` section in TASKS.md (a line starting with `## 🔍 Filtered:`).
+Look for an existing `## 🔍 Filtered:` section in TASKS.md (a line starting with `## 🔍 Filtered:`). Note: Step 3 always regenerates the body from `# Task Dashboard` onward, so this section will not be present — the "if not found" path always applies. The "if found" path is kept as a safety fallback for manually edited files.
 
 - If found: replace from that heading line through the closing ` ``` ` of its tasks block with the new block below
 - If not found: insert immediately after the `# Task Dashboard` heading line (followed by a blank line, then the new block)
