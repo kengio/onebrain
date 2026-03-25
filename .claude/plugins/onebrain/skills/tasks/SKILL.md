@@ -52,50 +52,56 @@ updated: YYYY-MM-DD
 
 # Task Dashboard
 
-> [!warning] Overdue
-> ```tasks
-> not done
-> exclude path includes [logs_folder]
-> due before today
-> sort by priority
-> sort by due
-> ```
+## 🔴 Overdue
 
-> [!info] Due This Week
-> ```tasks
-> not done
-> exclude path includes [logs_folder]
-> due after yesterday
-> due before in 8 days
-> sort by priority
-> sort by due
-> ```
+```tasks
+not done
+exclude path includes [logs_folder]
+due before today
+sort by priority
+sort by due
+```
 
-> [!note] Unscheduled
-> ```tasks
-> not done
-> exclude path includes [logs_folder]
-> no due date
-> sort by priority
-> ```
+## 🗓 Due This Week
 
-> [!tip] Due Later
-> ```tasks
-> not done
-> exclude path includes [logs_folder]
-> due after in 7 days
-> sort by due
-> sort by priority
-> ```
+```tasks
+not done
+exclude path includes [logs_folder]
+due after yesterday
+due before in 8 days
+sort by priority
+sort by due
+```
 
-> [!success] Completed
-> _Note: Shows tasks marked complete in Obsidian with a done-date (✅). Tasks completed via terminal do not appear here._
-> ```tasks
-> done
-> exclude path includes [logs_folder]
-> sort by done date
-> limit 20
-> ```
+## 📋 Unscheduled
+
+```tasks
+not done
+exclude path includes [logs_folder]
+no due date
+sort by priority
+```
+
+## 🔵 Due Later
+
+```tasks
+not done
+exclude path includes [logs_folder]
+due after in 7 days
+sort by due
+sort by priority
+```
+
+## ✅ Completed
+
+_Note: Shows tasks marked complete in Obsidian with a done-date (✅). Tasks completed via terminal do not appear here._
+
+```tasks
+done
+exclude path includes [logs_folder]
+sort by done date
+limit 20
+```
 ```
 
 If the write fails, stop immediately and tell the user:
@@ -124,27 +130,29 @@ Do not proceed to Steps 4, 5, or 6 if the write failed.
 
 **If keyword is provided:**
 
-Look for an existing `> [!search]` callout block in TASKS.md (a line starting with `> [!search]`).
+Look for an existing `## 🔍 Filtered:` section in TASKS.md (a line starting with `## 🔍 Filtered:`).
 
-- If found: replace the entire block (all consecutive `> ` prefixed lines until the first non-`> ` line or blank line) with the new block below
-- If not found: insert immediately before the `# Task Dashboard` heading (between the existing blank line after frontmatter `---` and the heading)
+- If found: replace from that heading line through the closing ` ``` ` of its tasks block with the new block below
+- If not found: insert immediately after the `# Task Dashboard` heading line (followed by a blank line, then the new block)
 
 Insert/replace with (substitute actual keyword for `<keyword>` and actual logs folder path for `[logs_folder]`, e.g., `07-logs`):
 
 ```
-> [!search] Filtered: <keyword>
-> _Matches tasks where description or path contains <keyword>_
-> ```tasks
-> not done
-> exclude path includes [logs_folder]
-> (description includes <keyword>) OR (path includes <keyword>)
-> sort by priority
-> sort by due
-> ```
+## 🔍 Filtered: <keyword>
+
+_Matches tasks where description or path contains <keyword>_
+
+```tasks
+not done
+exclude path includes [logs_folder]
+(description includes <keyword>) OR (path includes <keyword>)
+sort by priority
+sort by due
+```
 
 ```
 
-(Note: `[!search]` renders as a generic note style in Obsidian — not a native callout type. Include a blank line after the closing ` ``` ` before the next section.)
+(Include a blank line after the closing ` ``` ` before the next section.)
 
 If the edit fails, stop immediately and tell the user:
 
@@ -154,7 +162,7 @@ Do not proceed.
 
 **If no keyword:**
 
-Check if a `> [!search]` block exists in TASKS.md. If it does, remove it entirely — including the blank line that follows it and the blank line that precedes it (to avoid a double blank line between frontmatter `---` and `# Task Dashboard`). If removal fails, tell the user:
+Check if a `## 🔍 Filtered:` section exists in TASKS.md. If it does, remove it entirely — the heading line, the blank line after it, the subtitle line, the blank line before the tasks block, the tasks block itself, and the blank line that follows — so there is no extra blank line between `# Task Dashboard` and `## 🔴 Overdue`. If removal fails, tell the user:
 
 > "Could not remove the keyword filter from TASKS.md at [tasks_path]. Error: [error]. Check write permissions."
 
