@@ -42,6 +42,7 @@ Display a formatted table with all available commands:
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
 | `/clone` | Package your agent context (agent folder including MEMORY.md) for vault transfer | When moving to a new vault and want to preserve your agent's memory |
 | `/reorganize` | Migrate existing flat notes into subfolders — one-time migration | After upgrading to a version with subfolder organization |
+| `/qmd` | Set up and manage qmd search index (setup, embed, status, reindex, uninstall) | When you want faster vault search or need to manage the search index |
 | `/update` | Update OneBrain system files from GitHub | When a new version is available |
 | `/help` | List all available commands | You're already here! |
 
