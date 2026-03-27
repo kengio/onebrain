@@ -45,7 +45,7 @@ read_qmd_collection() {
   printf '%s' "$collection"
 }
 
-collection=$(read_qmd_collection 2>/dev/null || true)
+collection=$(read_qmd_collection 2>&1) || { log "vault.yml parse error: ${collection}"; collection=""; }
 if [ -z "$collection" ]; then
   log "qmd_collection not set in vault.yml, exiting"
   exit 0
@@ -54,8 +54,13 @@ log "collection: $collection"
 
 # ── Run qmd update ─────────────────────────────────────────────────────────────
 log "running: qmd update -c ${collection}"
-qmd update -c "$collection" &>/dev/null &
-disown $!
-log "qmd update dispatched"
+if [ -n "$LOG" ]; then
+  qmd update -c "$collection" >> "$LOG" 2>&1 &
+else
+  qmd update -c "$collection" &>/dev/null &
+fi
+pid=$!
+disown "$pid"
+log "qmd update dispatched (pid ${pid})"
 
 exit 0

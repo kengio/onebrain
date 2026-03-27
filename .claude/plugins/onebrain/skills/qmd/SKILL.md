@@ -63,7 +63,7 @@ After installation, verify with `which qmd`. If still not found, tell user to ch
 ### Step 4: Generate collection name
 
 1. Get vault root directory name: `basename "$CLAUDE_PROJECT_DIR"` (or PowerShell equivalent)
-2. Generate a 6-character random hex string: `openssl rand -hex 3` or `python3 -c "import secrets; print(secrets.token_hex(3))"`
+2. Generate a 6-character random hex string: try `openssl rand -hex 3` first; if that fails, try `python3 -c "import secrets; print(secrets.token_hex(3))"`. If both fail, tell the user "Could not generate a unique collection name. Please run `/qmd setup` again." and stop.
 3. Collection name = `<vault-dirname>-<hex>` (e.g., `onebrain-a3f2c1`)
 
 ### Step 5: Read archive folder from vault.yml
@@ -74,15 +74,10 @@ Read vault.yml. Get `folders.archive` value (default: `06-archive`).
 
 Run:
 ```
-qmd collection add <vault-root-path> --name <collection-name>
+qmd collection add <vault-root-path> --name <collection-name> --ignore ".obsidian/**" --ignore ".claude/**" --ignore ".git/**" --ignore "docs/**" --ignore "<archive-folder>/**" --ignore "attachments/**"
 ```
 
-Where `<vault-root-path>` is the value of `$CLAUDE_PROJECT_DIR`.
-
-If this command supports ignore patterns, also pass:
-```
---ignore ".obsidian/**" --ignore ".claude/**" --ignore ".git/**" --ignore "docs/**" --ignore "<archive-folder>/**" --ignore "attachments/**"
-```
+Where `<vault-root-path>` is the value of `$CLAUDE_PROJECT_DIR` and `<archive-folder>` is the value read in Step 5.
 
 If the command fails, show the error and stop.
 
@@ -125,7 +120,7 @@ Say:
 > qmd is set up! Collection `<collection-name>` is indexed and ready.
 >
 > - The agent will now use qmd for vault-wide searches automatically
-> - The index updates after every file change (via hook)
+> - The index updates whenever Claude writes or edits files in this vault (via hook)
 > - Run `/qmd embed` to enable semantic/similarity search (optional, slower first run)
 > - Run `/qmd status` to check index health
 > - Run `/qmd uninstall` to remove qmd integration from this vault
@@ -150,10 +145,15 @@ Stop.
 
 ### Step 2: Warn about time
 
-Tell user:
-> Generating embeddings for the first time may take several minutes depending on vault size. This runs locally — no data leaves your machine. Continue?
+Ask using AskUserQuestion:
+- question: "Generating embeddings for the first time may take several minutes depending on vault size. This runs locally — no data leaves your machine. Continue?"
+- header: "Generate Embeddings"
+- multiSelect: false
+- options:
+  - label: "Yes, generate embeddings", description: "Run qmd embed — may take a few minutes for large vaults"
+  - label: "Cancel", description: "Skip for now"
 
-Use AskUserQuestion with Yes / Cancel options.
+If Cancel, stop.
 
 ### Step 3: Run embed
 

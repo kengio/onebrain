@@ -104,7 +104,7 @@ When qmd MCP tools are available (look for `mcp__plugin_onebrain_qmd__query` in 
 
 When qmd tools are NOT available (not installed or not set up), use Glob/Grep/Read as normal — this is the default and requires no special handling.
 
-To enable semantic/similarity search (finding conceptually related notes, not just keyword matches), the user must run `qmd embed` at least once. Suggest `/qmd embed` if the user asks for similarity-based or "related notes" queries and qmd is available but embeddings haven't been run.
+Without embeddings, `mcp__plugin_onebrain_qmd__query` uses BM25 keyword search only. To enable semantic/similarity search (finding conceptually related notes, not just keyword matches), the user must run `/qmd embed` at least once. Suggest this if the user asks for similarity-based or "related notes" queries and qmd is available but embeddings haven't been run.
 
 ## Session Behavior
 
