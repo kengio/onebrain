@@ -10,7 +10,7 @@ When this skill is invoked, present all available OneBrain commands to the user.
 ## Step 0: Show Plugin Version and Install Location
 
 1. Read `.claude/plugins/onebrain/.claude-plugin/plugin.json` to get the version
-2. Determine install location: use Glob to check if `.claude/plugins/onebrain/.claude-plugin/plugin.json` exists in the current working directory
+2. Determine install location: use Glob to check if `.claude/plugins/onebrain/.claude-plugin/plugin.json` exists in the project root
    - If it exists → this is a **project plugin**
    - If it does not exist → this is a **global plugin** (installed at `~/.claude/plugins/`)
 3. Display as the first line of your response:
