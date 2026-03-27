@@ -99,13 +99,14 @@ Do not proceed to Steps 3 or 4 if the write failed.
 
 **If TASKS.md already exists:**
 
-Read the file.
+Read the file. Extract `created:` from the frontmatter — if absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter — set to today's date. Edit it manually if you know the original date."
 
-Frontmatter: read `created:` from the existing frontmatter and preserve it; update `updated:` to today's date. If `created:` is absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter — set to today's date. Edit it manually if you know the original date."
+Overwrite the entire file using the same template as above, substituting:
+- `created:` with the extracted (or today's) date
+- `updated:` with today's date
+- `[logs_folder]` with the actual logs folder path extracted in Step 1
 
-Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter — intact.
-
-Write the updated file (frontmatter and any content above `# Task Dashboard` preserved, body from `# Task Dashboard` onward regenerated). If the write fails, stop immediately and tell the user:
+If the write fails, stop immediately and tell the user:
 
 > "Could not update TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
