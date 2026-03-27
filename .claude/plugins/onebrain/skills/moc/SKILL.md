@@ -33,6 +33,9 @@ Read `vault.yml` from the current working directory. Extract folder paths with t
 If `vault.yml` does not exist, use all defaults and warn the user:
 > "vault.yml not found — using default folder paths. Run `/onboarding` to set up your vault configuration."
 
+If `vault.yml` exists but cannot be read or parsed, stop immediately and tell the user:
+> "vault.yml exists but could not be parsed — aborting. Check vault.yml for syntax errors and try again. Error: [error]."
+
 Store `moc_path = {vault_root}/MOC.md`.
 
 ---
@@ -48,19 +51,27 @@ Collect the following using Glob to count `.md` files:
 - **inbox_count** — `.md` files directly in `[folders.inbox]/` (non-recursive, direct children only)
 - **focus_note** — the single most recently modified `.md` file across projects, areas, knowledge, and resources folders. Store its display name (filename without `.md` extension) and its vault-relative path for use as a wikilink.
 
-If any folder does not exist, use count 0 for that folder.
+If a folder does not exist on disk, use count 0 for that folder — this is expected for new vaults.
+
+If the Glob tool returns an error or cannot enumerate a folder that appears to exist, stop immediately and tell the user:
+> "Could not scan [folder] — MOC.md was not written. Error: [error]. Resolve the issue and try again."
+
+Do not write MOC.md with potentially incorrect counts.
 
 ---
 
 ## Step 3: Preserve existing Pinned section
 
 **If `MOC.md` exists:**
-- Read the file
+- Read the file. If the read fails, stop immediately and tell the user:
+  > "Could not read existing MOC.md at [moc_path] — aborting to protect your Pinned section. Error: [error]. Resolve the file access issue and try again."
 - Extract `created:` from the frontmatter — store as `created_date` (fall back to today if absent)
 - Set `is_new_file = false`
 - Find the line that starts with `## 📌 Pinned`
 - Store everything from that line to the end of file as `pinned_content`
-- If `## 📌 Pinned` is not found, use the default pinned block (defined in Step 4)
+- If `## 📌 Pinned` is not found in the existing file, warn the user before continuing:
+  > "Warning: Pinned section (`## 📌 Pinned`) not found in existing MOC.md — the default placeholder will be used instead. Any content you added below the last recognized section header may not be preserved."
+  Then use the default pinned block.
 
 **If `MOC.md` does not exist:**
 - Set `created_date` to today
@@ -127,7 +138,7 @@ sort by due
 ```dataview
 TABLE file.mtime AS "Modified"
 FROM ""
-WHERE !startswith(file.folder, "LOGS_FOLDER") AND !startswith(file.folder, "AGENT_FOLDER") AND file.name != "MOC" AND file.name != "TASKS"
+WHERE !startswith(file.folder, "LOGS_FOLDER") AND !startswith(file.folder, "AGENT_FOLDER") AND !startswith(file.folder, "ARCHIVE_FOLDER") AND file.name != "MOC" AND file.name != "TASKS"
 SORT file.mtime DESC
 LIMIT 10
 ```
@@ -201,6 +212,7 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture exit code:
 - Linux (non-WSL): `xdg-open "<uri>"`
 - Linux (WSL): `cmd.exe /c start "" "<uri>"`
 - Windows (msys/cygwin): `cmd.exe /c start "" "<uri>"`
+- Unrecognized platform: skip the open attempt and go to the encoding-failure branch, replacing the reason with "platform not recognized".
 
 ---
 
