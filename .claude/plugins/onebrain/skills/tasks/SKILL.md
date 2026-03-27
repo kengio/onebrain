@@ -20,7 +20,9 @@ Read `vault.yml` from the current working directory. The directory containing `v
 
 Then proceed with cwd as vault root.
 
-Also extract `folders.logs` from `vault.yml` and store as `[logs_folder]`. If the key is absent (or vault.yml was not found), use `07-logs` as the default and proceed without warning. This value is used in Steps 2 and 3 to exclude session log tasks from dashboard queries.
+Also extract `folders.logs` from `vault.yml` and store as `[logs_folder]`. If the key is absent (or vault.yml was not found), use `07-logs` as the default and proceed without warning. This value is used in Step 2 to exclude session log tasks from dashboard queries.
+
+Also extract `folders.archive` from `vault.yml` and store as `[archive_folder]`. If the key is absent, use `06-archive` as the default and proceed without warning. This value is used in Step 2 to exclude archived notes from dashboard queries.
 
 ---
 
@@ -30,7 +32,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 **If TASKS.md does not exist:**
 
-Create it with this exact content (replace `YYYY-MM-DD` with today's date and `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`):
+Create it with this exact content (replace `YYYY-MM-DD` with today's date, `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`, and `[archive_folder]` with the actual archive folder path extracted in Step 1, e.g., `06-archive`):
 
 `````markdown
 ---
@@ -46,6 +48,7 @@ updated: YYYY-MM-DD
 ```tasks
 not done
 path does not include [logs_folder]
+path does not include [archive_folder]
 due before today
 sort by priority
 sort by due
@@ -56,6 +59,7 @@ sort by due
 ```tasks
 not done
 path does not include [logs_folder]
+path does not include [archive_folder]
 due after yesterday
 due before in 8 days
 sort by priority
@@ -67,6 +71,7 @@ sort by due
 ```tasks
 not done
 path does not include [logs_folder]
+path does not include [archive_folder]
 no due date
 sort by priority
 ```
@@ -76,6 +81,7 @@ sort by priority
 ```tasks
 not done
 path does not include [logs_folder]
+path does not include [archive_folder]
 due after in 7 days
 sort by due
 sort by priority
@@ -86,6 +92,7 @@ sort by priority
 ```tasks
 done
 path does not include [logs_folder]
+path does not include [archive_folder]
 sort by done date
 limit 20
 ```
@@ -105,6 +112,7 @@ Overwrite the entire file using the same template as above, substituting:
 - `created:` with the extracted (or today's) date
 - `updated:` with today's date
 - `[logs_folder]` with the actual logs folder path extracted in Step 1
+- `[archive_folder]` with the actual archive folder path extracted in Step 1
 
 If the write fails, stop immediately and tell the user:
 
