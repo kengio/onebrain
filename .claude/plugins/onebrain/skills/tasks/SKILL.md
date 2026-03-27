@@ -32,7 +32,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 Create it with this exact content (replace `YYYY-MM-DD` with today's date and `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`):
 
-```markdown
+`````markdown
 ---
 tags: [dashboard, tasks]
 created: YYYY-MM-DD
@@ -89,7 +89,7 @@ path does not include [logs_folder]
 sort by done date
 limit 20
 ```
-```
+`````
 
 If the write fails, stop immediately and tell the user:
 
