@@ -1,6 +1,6 @@
 ---
 name: tasks
-description: Create or update the live task dashboard (TASKS.md) in Obsidian and open it. Optionally filter by keyword.
+description: Create or update the live task dashboard (TASKS.md) in Obsidian and open it.
 ---
 
 # Task Dashboard
@@ -9,7 +9,6 @@ Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks
 
 Usage:
 - `/tasks` — open the full dashboard
-- `/tasks <keyword>` — open with a filtered view (e.g., `/tasks onebrain`, `/tasks client project`)
 
 ---
 
@@ -21,21 +20,11 @@ Read `vault.yml` from the current working directory. The directory containing `v
 
 Then proceed with cwd as vault root.
 
-Also extract `folders.logs` from `vault.yml` and store as `[logs_folder]`. If the key is absent (or vault.yml was not found), use `07-logs` as the default and proceed without warning. This value is used in Steps 3 and 4 to exclude session log tasks from dashboard queries.
+Also extract `folders.logs` from `vault.yml` and store as `[logs_folder]`. If the key is absent (or vault.yml was not found), use `07-logs` as the default and proceed without warning. This value is used in Steps 2 and 3 to exclude session log tasks from dashboard queries.
 
 ---
 
-## Step 2: Parse keyword argument
-
-Check if any text was passed after `/tasks`:
-- `/tasks` → `keyword = none`
-- `/tasks <keyword>` → `keyword = everything after "/tasks "` (trim leading/trailing whitespace; preserve internal spaces for multi-word keywords)
-
-If a keyword was extracted, strip surrounding quote characters if the entire argument is wrapped in matching `"..."` or `'...'`. Only outermost surrounding quotes are removed — internal spaces and characters are preserved (e.g., `/tasks "client project"` → keyword `client project`).
-
----
-
-## Step 3: Ensure TASKS.md exists and frontmatter is current
+## Step 2: Ensure TASKS.md exists and frontmatter is current
 
 Determine `tasks_path = {vault_root}/TASKS.md`.
 
@@ -56,7 +45,7 @@ updated: YYYY-MM-DD
 
 ```tasks
 not done
-exclude path includes [logs_folder]
+path does not include [logs_folder]
 due before today
 sort by priority
 sort by due
@@ -66,7 +55,7 @@ sort by due
 
 ```tasks
 not done
-exclude path includes [logs_folder]
+path does not include [logs_folder]
 due after yesterday
 due before in 8 days
 sort by priority
@@ -77,7 +66,7 @@ sort by due
 
 ```tasks
 not done
-exclude path includes [logs_folder]
+path does not include [logs_folder]
 no due date
 sort by priority
 ```
@@ -86,7 +75,7 @@ sort by priority
 
 ```tasks
 not done
-exclude path includes [logs_folder]
+path does not include [logs_folder]
 due after in 7 days
 sort by due
 sort by priority
@@ -94,11 +83,9 @@ sort by priority
 
 ## ✅ Completed
 
-_Note: Shows tasks marked complete in Obsidian with a done-date (✅). Tasks completed via terminal do not appear here._
-
 ```tasks
 done
-exclude path includes [logs_folder]
+path does not include [logs_folder]
 sort by done date
 limit 20
 ```
@@ -108,7 +95,7 @@ If the write fails, stop immediately and tell the user:
 
 > "Could not create TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
-Do not proceed to Steps 4, 5, or 6 if the write failed.
+Do not proceed to Steps 3 or 4 if the write failed.
 
 **If TASKS.md already exists:**
 
@@ -116,61 +103,17 @@ Read the file.
 
 Frontmatter: read `created:` from the existing frontmatter and preserve it; update `updated:` to today's date. If `created:` is absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter — set to today's date. Edit it manually if you know the original date."
 
-Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter — intact. Any existing `## 🔍 Filtered:` section (which lives after `# Task Dashboard`) will be overwritten by this regeneration; Step 4 will re-add or remove it as needed.
+Body: regenerate all content from the `# Task Dashboard` heading onward using the same five-block template above (substitute `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`). Leave everything before `# Task Dashboard` — including the frontmatter — intact.
 
 Write the updated file (frontmatter and any content above `# Task Dashboard` preserved, body from `# Task Dashboard` onward regenerated). If the write fails, stop immediately and tell the user:
 
 > "Could not update TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
-Do not proceed to Steps 4, 5, or 6 if the write failed.
+Do not proceed to Steps 3 or 4 if the write failed.
 
 ---
 
-## Step 4: Handle keyword filter
-
-**If keyword is provided:**
-
-Look for an existing `## 🔍 Filtered:` section in TASKS.md (a line starting with `## 🔍 Filtered:`). Note: Step 3 always regenerates the body from `# Task Dashboard` onward, so this section will not be present — the "if not found" path always applies. The "if found" path is kept as a safety fallback for manually edited files.
-
-- If found: replace from that heading line through the closing ` ``` ` of its tasks block with the new block below
-- If not found: insert immediately after the `# Task Dashboard` heading line (followed by a blank line, then the new block)
-
-Insert/replace with (substitute actual keyword for `<keyword>` and actual logs folder path for `[logs_folder]`, e.g., `07-logs`):
-
-```
-## 🔍 Filtered: <keyword>
-
-_Matches tasks where description or path contains <keyword>_
-
-```tasks
-not done
-exclude path includes [logs_folder]
-(description includes <keyword>) OR (path includes <keyword>)
-sort by priority
-sort by due
-```
-
-```
-
-(Include a blank line after the closing ` ``` ` before the next section.)
-
-If the edit fails, stop immediately and tell the user:
-
-> "Could not update the keyword filter in TASKS.md at [tasks_path]. Error: [error]. Check write permissions. Vault root used: [vault_root]"
-
-Do not proceed.
-
-**If no keyword:**
-
-Check if a `## 🔍 Filtered:` section exists in TASKS.md. If it does, remove it entirely — the heading line, the blank line after it, the subtitle line, the blank line before the tasks block, the tasks block itself, and the blank line that follows — so there is no extra blank line between `# Task Dashboard` and `## 🔴 Overdue`. If removal fails, tell the user:
-
-> "Could not remove the keyword filter from TASKS.md at [tasks_path]. Error: [error]. Check write permissions. Vault root used: [vault_root]"
-
-Do not proceed.
-
----
-
-## Step 5: Open in Obsidian
+## Step 3: Open in Obsidian
 
 Build the `obsidian://` URI using path-based addressing:
 
@@ -179,7 +122,7 @@ Build the `obsidian://` URI using path-based addressing:
    - Priority order: Python3 first, then Node.js
    - Python3: `urllib.parse.quote(path, safe='/:@')`
    - Node.js: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':').replace(/%40/gi, '@')`
-   - If neither runtime is available: go to Step 6 encoding-failure branch
+   - If neither runtime is available: go to Step 4 encoding-failure branch
 3. `uri = "obsidian://open?path=" + encoded_path`
 
 Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
@@ -188,16 +131,14 @@ Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
 - Linux (WSL): `cmd.exe /c start "" "<uri>"`
 - Windows (msys/cygwin): `cmd.exe /c start "" "<uri>"`
 
-**If exit code 0:** proceed to Step 6 success branch.
-**If non-zero exit code:** proceed to Step 6 open-failure branch.
+**If exit code 0:** proceed to Step 4 success branch.
+**If non-zero exit code:** proceed to Step 4 open-failure branch.
 
 ---
 
-## Step 6: Print confirmation
+## Step 4: Print confirmation
 
-**Success:**
-- With keyword: `TASKS.md opened in Obsidian — filtered by <keyword>.`
-- Without keyword: `TASKS.md opened in Obsidian.`
+**Success:** `TASKS.md opened in Obsidian.`
 
 **Open-failure (open command returned non-zero, encoding succeeded):**
 
