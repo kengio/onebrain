@@ -259,6 +259,8 @@ Run this procedure for each vault.yml key in the table below:
 | `import_inbox` | `[inbox]/imports` | v1.2.0 |
 | `attachments` | `attachments` | v1.2.0 |
 
+> **Note:** `qmd_collection` is a user-specific key set by `/qmd setup`. It is never included in the migration table above and must never be added or removed by `/update`. If `qmd_collection` is already present in vault.yml, leave it unchanged. If it is absent, leave it absent — the user may not have set up qmd.
+
 For each key:
 1. **Check if vault.yml exists.** If it does not exist: skip this key entirely (the user needs to run `/onboarding` first — do not create or modify vault.yml here).
 2. **Read vault.yml.** If it cannot be read or parsed: report the error, skip this key, continue.
