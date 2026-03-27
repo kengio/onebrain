@@ -18,7 +18,7 @@ When this skill is invoked, present all available OneBrain commands to the user.
 3. Display as the first line of your response:
    - If project plugin: **OneBrain v{version}** (project plugin)
    - If global plugin: **OneBrain v{version}** (global plugin)
-   - If version could not be determined: **OneBrain** (version unknown)
+   - If version could not be determined: **OneBrain**
 
 ## Step 1: Present the Command Table
 
