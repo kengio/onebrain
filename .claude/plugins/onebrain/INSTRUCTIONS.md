@@ -84,6 +84,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian |
+| `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
 | `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer |
@@ -116,6 +117,7 @@ At the start of every session, perform these steps:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
+3b. Refresh MOC.md AI zone — if `MOC.md` exists at vault root, silently rewrite only the `[!info] Agent Summary` callout with fresh counts (steps 1–2 from the `/moc` skill). The AI zone boundary is all content between the `# 🧠 Vault Portal` heading and the first `## ` section heading — replace only that block. Do not rewrite Dataview sections or the Pinned section. If `MOC.md` does not exist, skip silently. No output to the user.
 4. Read the most recent session log entry
 5. Greet the user by name with relevant context
 
