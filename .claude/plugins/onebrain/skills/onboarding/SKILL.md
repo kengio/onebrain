@@ -292,6 +292,23 @@ folders:
   logs: 07-logs
 ```
 
+
+---
+
+## Step 11b: qmd Setup (Optional)
+
+Ask the user using AskUserQuestion:
+- question: "Would you like to set up qmd for faster vault search? qmd is a local search engine that makes finding notes much faster."
+- header: "qmd Search"
+- multiSelect: false
+- options:
+  - label: "Yes, set up qmd", description: "Recommended — enables faster search, especially as your vault grows"
+  - label: "Skip for now", description: "You can always run /qmd setup later"
+
+If user selects "Yes, set up qmd": run the `/qmd setup` flow from `skills/qmd/SKILL.md` (skip the initial confirmation question — they already confirmed). If qmd setup fails for any reason, report the error and continue to Step 12 without stopping onboarding.
+
+If user selects "Skip for now": continue to Step 12.
+
 ---
 
 ## Step 12: Completion Message
@@ -310,6 +327,8 @@ Say:
 >   - `05-agent/` — AI context and memory
 >   - `06-archive/` — completed and archived items
 >   - `07-logs/` — session logs
+>
+> [If qmd was set up in Step 11b:] qmd search index active (collection: `<name>`) — the agent will use qmd automatically
 >
 > **First things to try:**
 > - `/braindump` — dump anything on your mind right now
@@ -480,6 +499,13 @@ Check if `vault.yml` already exists in the vault root:
 
 **If it does not exist:** Write `vault.yml` using the same template as Step 11 in the standard Path A flow.
 
+
+---
+
+## Path B — Step 12b: qmd Setup (Optional)
+
+Identical to Step 11b in Path A. Ask the user whether to set up qmd, and if yes, run the `/qmd setup` flow (skipping its initial confirmation question). Continue to Step 13 regardless of outcome.
+
 ---
 
 ## Path B — Step 13: Completion message
@@ -496,5 +522,7 @@ Say:
 > Use `/update` to keep OneBrain current — it works the same as a fresh vault install.
 >
 > The global plugin install is no longer needed for this vault. You can remove it with `/plugin uninstall onebrain@onebrain` if you like, but it's safe to leave as-is.
+>
+> [If qmd was set up in Step 12b:] qmd search index active (collection: `<name>`)
 >
 > What would you like to do first?
