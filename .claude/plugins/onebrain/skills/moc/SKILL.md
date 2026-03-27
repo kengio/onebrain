@@ -57,6 +57,7 @@ If any folder does not exist, use count 0 for that folder.
 **If `MOC.md` exists:**
 - Read the file
 - Extract `created:` from the frontmatter — store as `created_date` (fall back to today if absent)
+- Set `is_new_file = false`
 - Find the line that starts with `## 📌 Pinned`
 - Store everything from that line to the end of file as `pinned_content`
 - If `## 📌 Pinned` is not found, use the default pinned block (defined in Step 4)
@@ -91,7 +92,7 @@ Write the complete file. Replace every placeholder in the template with actual v
 | `RESOURCES_COUNT` | resources_count |
 | `INBOX_COUNT` | inbox_count |
 | `FOCUS_LINK` | `[[vault-relative-path\|display-name]]` of focus_note — e.g. `[[01-projects/alpha/Project Alpha\|Project Alpha]]`. Use `—` if no notes found. |
-| `FIRST_RUN_LINE` | If `is_new_file` is true: `> 💡 Install the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) to activate live query sections.` — otherwise omit this line entirely (do not leave a blank line in its place) |
+| `FIRST_RUN_LINE` | If `is_new_file` is true: `> 💡 Install the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) to activate live query sections.` — otherwise remove this line entirely from the output; do not insert a blank line where it was. |
 | `PINNED_CONTENT` | preserved pinned section (or default below) |
 
 **Template:**
@@ -126,7 +127,7 @@ sort by due
 ```dataview
 TABLE file.mtime AS "Modified"
 FROM ""
-WHERE file.folder != "AGENT_FOLDER" AND file.folder != "LOGS_FOLDER" AND file.name != "MOC" AND file.name != "TASKS"
+WHERE !contains(file.folder, "LOGS_FOLDER") AND !contains(file.folder, "AGENT_FOLDER") AND file.name != "MOC" AND file.name != "TASKS"
 SORT file.mtime DESC
 LIMIT 10
 ```
