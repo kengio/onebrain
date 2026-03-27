@@ -23,7 +23,7 @@ Display a formatted table with all available commands:
 | `/summarize` | Fetch a URL and create a structured summary note | When you want to deeply process an article or page into a permanent vault note |
 | `/import` | Import local files (PDF, Word, Excel, images, video, scripts) into vault notes | When you have files on disk you want distilled into your knowledge base |
 | `/reading-notes` | Book or article → structured progressive summary | When finishing a book or long article and want to capture it |
-| `/tasks` | Open live task dashboard in Obsidian — creates/updates `TASKS.md` with live query sections. Filter with `/tasks <keyword>` | When you want an overview of what needs doing, or to focus on a specific project |
+| `/tasks` | Open live task dashboard in Obsidian — creates/updates `TASKS.md` with live query sections | When you want an overview of what needs doing |
 | `/weekly` | Weekly reflection — review sessions, patterns, intentions | At the end of each week for review and planning |
 | `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
