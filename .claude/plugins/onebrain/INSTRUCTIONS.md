@@ -83,7 +83,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/import` | `import/SKILL.md` | Import local files (PDF, docs, images, scripts) → vault notes |
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
-| `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian — optionally filter by keyword (e.g., `/tasks project-name`) |
+| `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
 | `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer |
