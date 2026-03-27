@@ -38,7 +38,7 @@ read_qmd_collection() {
   while IFS= read -r line || [ -n "$line" ]; do
     # Match top-level key: qmd_collection: <value>
     if printf '%s' "$line" | grep -qE '^qmd_collection:[[:space:]]+\S'; then
-      collection=$(printf '%s' "$line" | sed 's/^qmd_collection:[[:space:]]*//' | tr -d ' \r"'"'"'')
+      collection=$(printf '%s' "$line" | sed 's/^qmd_collection:[[:space:]]*//' | sed 's/[[:space:]]*#.*//' | tr -d ' \r"'"'"'')
       break
     fi
   done < "$yml"
@@ -53,8 +53,9 @@ fi
 log "collection: $collection"
 
 # ── Run qmd update ─────────────────────────────────────────────────────────────
-log "running: qmd update -c $collection"
+log "running: qmd update -c ${collection}"
 qmd update -c "$collection" &>/dev/null &
-log "qmd update dispatched (pid $!)"
+disown $!
+log "qmd update dispatched"
 
 exit 0
