@@ -98,8 +98,8 @@ When a user invokes a command, read the corresponding SKILL.md and follow it.
 
 When qmd MCP tools are available (look for `mcp__plugin_onebrain_qmd__query` in your tool list), prefer them for vault content searches:
 
-- **Use qmd `query`** for broad, natural-language searches: "find notes about machine learning", "what did I write about project X", topic exploration across the vault
-- **Use qmd `get` / `multi_get`** to retrieve full document content after identifying relevant results
+- **Use `mcp__plugin_onebrain_qmd__query`** for broad, natural-language searches: "find notes about machine learning", "what did I write about project X", topic exploration across the vault
+- **Use `mcp__plugin_onebrain_qmd__get` / `mcp__plugin_onebrain_qmd__multi_get`** to retrieve full document content after identifying relevant results
 - **Use Glob/Grep/Read** for precise lookups: specific file paths, exact string matches, frontmatter field checks, file existence checks
 
 When qmd tools are NOT available (not installed or not set up), use Glob/Grep/Read as normal — this is the default and requires no special handling.
