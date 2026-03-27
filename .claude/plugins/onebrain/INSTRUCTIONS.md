@@ -84,6 +84,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian |
+| `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
 | `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer |
@@ -116,8 +117,9 @@ At the start of every session, perform these steps:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
-4. Read the most recent session log entry
-5. Greet the user by name with relevant context
+4. Refresh MOC.md AI zone — if `MOC.md` exists at vault root, silently update the `[!info] Agent Summary` callout using folder paths already loaded in step 1. Scan note counts via Glob (projects, areas, knowledge, resources, inbox) and find the most recently modified note across those folders. Then read `MOC.md`, find the callout block (all consecutive lines starting with `>` immediately after `# 🧠 Vault Portal`), replace those lines with fresh counts, and write the file back. Do not touch any other content. If `MOC.md` does not exist, skip silently. No output to the user.
+5. Read the most recent session log entry
+6. Greet the user by name with relevant context
 
 ### Recalling Information
 
