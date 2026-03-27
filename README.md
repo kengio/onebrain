@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/kengio/onebrain/main/.claude/plugins/onebrain/.claude-plugin/plugin.json&query=%24.version&label=version&style=flat-square&color=blue" alt="Version" />
   <a href="LICENSE"><img src="https://img.shields.io/github/license/kengio/onebrain?style=flat-square" alt="License" /></a>
   <a href="https://github.com/kengio/onebrain/stargazers"><img src="https://img.shields.io/github/stars/kengio/onebrain?style=flat-square" alt="GitHub Stars" /></a>
   <a href="https://github.com/kengio/onebrain/commits/main"><img src="https://img.shields.io/github/last-commit/kengio/onebrain?style=flat-square" alt="Last Commit" /></a>
