@@ -7,6 +7,12 @@ description: List all available OneBrain commands with descriptions and use case
 
 When this skill is invoked, present all available OneBrain commands to the user.
 
+## Step 0: Show Plugin Version
+
+Read `.claude/plugins/onebrain/.claude-plugin/plugin.json` and display the version as the first line of your response:
+
+**OneBrain v{version}**
+
 ## Step 1: Present the Command Table
 
 Display a formatted table with all available commands:
