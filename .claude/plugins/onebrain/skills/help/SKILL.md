@@ -37,6 +37,7 @@ Display a formatted table with all available commands:
 | `/import` | Import local files (PDF, Word, Excel, images, video, scripts) into vault notes | When you have files on disk you want distilled into your knowledge base |
 | `/reading-notes` | Book or article → structured progressive summary | When finishing a book or long article and want to capture it |
 | `/tasks` | Open live task dashboard in Obsidian — creates/updates `TASKS.md` with live query sections | When you want an overview of what needs doing |
+| `/moc` | Create or refresh vault portal (MOC.md) — a Map of Content with live queries, AI summary, and your pinned links | When you want a bird's-eye view of your entire vault |
 | `/weekly` | Weekly reflection — review sessions, patterns, intentions | At the end of each week for review and planning |
 | `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
