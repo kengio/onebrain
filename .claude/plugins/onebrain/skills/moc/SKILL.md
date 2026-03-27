@@ -127,7 +127,7 @@ sort by due
 ```dataview
 TABLE file.mtime AS "Modified"
 FROM ""
-WHERE !contains(file.folder, "LOGS_FOLDER") AND !contains(file.folder, "AGENT_FOLDER") AND file.name != "MOC" AND file.name != "TASKS"
+WHERE !startswith(file.folder, "LOGS_FOLDER") AND !startswith(file.folder, "AGENT_FOLDER") AND file.name != "MOC" AND file.name != "TASKS"
 SORT file.mtime DESC
 LIMIT 10
 ```
@@ -154,7 +154,7 @@ SORT file.name ASC
 TABLE length(rows) AS "Notes"
 FROM "KNOWLEDGE_FOLDER"
 GROUP BY file.folder
-SORT file.folder ASC
+SORT key ASC
 ```
 
 ## 📚 Resources

@@ -117,7 +117,7 @@ At the start of every session, perform these steps:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
-4. Refresh MOC.md AI zone — if `MOC.md` exists at vault root, silently rewrite only the `[!info] Agent Summary` callout with fresh counts (steps 1–2 from the `/moc` skill). The AI zone boundary is all content between the `# 🧠 Vault Portal` heading and the first `## ` section heading — replace only that block. Do not rewrite Dataview sections or the Pinned section. If `MOC.md` does not exist, skip silently. No output to the user.
+4. Refresh MOC.md AI zone — if `MOC.md` exists at vault root, silently update the `[!info] Agent Summary` callout using folder paths already loaded in step 1. Scan note counts via Glob (projects, areas, knowledge, resources, inbox) and find the most recently modified note across those folders. Then read `MOC.md`, find the callout block (all consecutive lines starting with `>` immediately after `# 🧠 Vault Portal`), replace those lines with fresh counts, and write the file back. Do not touch any other content. If `MOC.md` does not exist, skip silently. No output to the user.
 5. Read the most recent session log entry
 6. Greet the user by name with relevant context
 
