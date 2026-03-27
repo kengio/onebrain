@@ -9,15 +9,16 @@ When this skill is invoked, present all available OneBrain commands to the user.
 
 ## Step 0: Show Plugin Version and Install Location
 
-1. Determine install location: use Glob to check if `.claude/plugins/onebrain/.claude-plugin/plugin.json` exists in the project root
+1. Determine install location: use Glob to check if `.claude/plugins/onebrain/.claude-plugin/plugin.json` exists relative to the vault root
    - If it exists → this is a **project plugin**
    - If it does not exist → this is a **global plugin** (installed at `~/.claude/plugins/`)
 2. Read the version from the correct path:
    - If project plugin: read from `.claude/plugins/onebrain/.claude-plugin/plugin.json`
-   - If global plugin: use Glob on `~/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` to find the installed version, then read that file
+   - If global plugin: use Glob on `~/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` to find all cached versions. If multiple matches are returned, use the one with the highest version number (compare the version directory name as semver). If no matches are found, skip the version display.
 3. Display as the first line of your response:
    - If project plugin: **OneBrain v{version}** (project plugin)
    - If global plugin: **OneBrain v{version}** (global plugin)
+   - If version could not be determined: **OneBrain** (version unknown)
 
 ## Step 1: Present the Command Table
 
