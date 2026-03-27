@@ -19,7 +19,7 @@
 
 **🧠 Memory across sessions** — Your AI remembers your name, goals, preferences, and past conversations. Every session picks up where the last one left off.
 
-**⚡ 18 slash commands and counting** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. More skills coming soon — capture an idea or deep-research a topic in seconds.
+**⚡ 20 slash commands and counting** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. More skills coming soon — capture an idea or deep-research a topic in seconds.
 
 **📂 Vault-native Markdown** — Every note is plain Markdown. No lock-in, no proprietary format. Your data stays in your vault, forever.
 
@@ -111,7 +111,7 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 ---
 
 <details>
-<summary><strong>📋 All 18 Commands</strong></summary>
+<summary><strong>📋 All 20 Commands</strong></summary>
 <br>
 
 | Command | What it does |
@@ -128,10 +128,12 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
+| `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
 | `/wrapup` | Wrap up session and save summary to session log |
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences |
 | `/clone` | Package your agent context for transfer to a new vault |
 | `/reorganize` | Migrate flat notes into organized subfolders |
+| `/qmd` | Set up fast vault search index — enables semantic search across all notes |
 | `/update` | Update skills, config, and plugins from GitHub |
 | `/help` | List all available commands with descriptions |
 
@@ -162,6 +164,7 @@ onebrain/
 │   ├── images/
 │   └── video/
 ├── TASKS.md           Live task dashboard (created by /tasks, opened in Obsidian)
+├── MOC.md             Vault portal — Map of Content (created by /moc)
 ├── CLAUDE.md          Instructions for Claude Code
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions
