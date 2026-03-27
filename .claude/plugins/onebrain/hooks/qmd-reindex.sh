@@ -45,7 +45,7 @@ read_qmd_collection() {
   printf '%s' "$collection"
 }
 
-collection=$(read_qmd_collection 2>/dev/null)
+collection=$(read_qmd_collection 2>/dev/null) || true
 if [ -z "$collection" ]; then
   log "qmd_collection not set in vault.yml, exiting"
   exit 0
