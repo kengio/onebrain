@@ -45,7 +45,7 @@ read_qmd_collection() {
   printf '%s' "$collection"
 }
 
-collection=$(read_qmd_collection 2>&1) || { log "vault.yml parse error: ${collection}"; collection=""; }
+collection=$(read_qmd_collection 2>/dev/null)
 if [ -z "$collection" ]; then
   log "qmd_collection not set in vault.yml, exiting"
   exit 0

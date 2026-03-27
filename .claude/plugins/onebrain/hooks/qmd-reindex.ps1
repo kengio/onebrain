@@ -69,8 +69,9 @@ Write-Log "collection: $collection"
 Write-Log "running: qmd update -c $collection"
 try {
     if ($LogFile) {
+        $LogFileErr = $LogFile -replace '\.log$', '-err.log'
         $proc = Start-Process -FilePath "qmd" -ArgumentList "update", "-c", $collection `
-            -NoNewWindow -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError $LogFile
+            -NoNewWindow -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError $LogFileErr
     } else {
         $proc = Start-Process -FilePath "qmd" -ArgumentList "update", "-c", $collection `
             -NoNewWindow -PassThru
