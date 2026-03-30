@@ -15,4 +15,5 @@ Thumbs.db
 .worktrees/
 
 # ── Internal tooling ──────────────────────────────────────────────────────────
+.superpowers/
 docs/superpowers/
