@@ -109,6 +109,18 @@ When qmd tools are NOT available (not installed or not set up), use Glob/Grep/Re
 
 Without embeddings, `mcp__plugin_onebrain_qmd__query` uses BM25 keyword search only. To enable semantic/similarity search (finding conceptually related notes, not just keyword matches), the user must run `/qmd embed` at least once. Suggest this if the user asks for similarity-based or "related notes" queries and qmd is available but embeddings haven't been run.
 
+## qmd Index Maintenance
+
+Whenever you add, edit, or delete any file in the vault, check first whether qmd is available by looking for `mcp__plugin_onebrain_qmd__status` in your tool list. If it is available, immediately run:
+
+```bash
+qmd update -c <collection>
+```
+
+where `<collection>` is the collection name from `vault.yml` (`qmd_collection` field, e.g. `ob-1-441565`). This keeps the search index in sync and prevents stale entries from appearing in results.
+
+If qmd tools are not available, skip this step entirely.
+
 ## Session Behavior
 
 At the start of every session, perform these steps:
