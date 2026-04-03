@@ -163,6 +163,19 @@ If conditions are met:
 - When creating a note, suggest a subfolder and confirm with the user before saving
 - To migrate existing flat notes into subfolders, run `/reorganize`
 
+## Command Response Profiles
+
+Different commands have different verbosity expectations. Match output to the profile:
+
+| Profile | Commands | Behavior |
+|---------|----------|----------|
+| **Capture** | `/capture`, `/braindump`, `/bookmark` | Write the note, confirm done in 1 line. No elaboration. |
+| **Automated** | cron jobs, auto wrapup, `/wrapup` | Structured output only (bullets/sections). No commentary. Under 300 words. |
+| **Interactive** | `/research`, `/connect`, `/consolidate`, `/reading-notes`, `/weekly` | Normal verbosity — depth matches task complexity. |
+| **Config/Setup** | `/onboarding`, `/tasks`, `/moc`, `/qmd` | Confirm actions taken. No verbose explanation unless asked. |
+
+For cron/automated agents specifically: output is read by the user async (often via Telegram) — lead with the content, skip all meta-commentary about what you're doing.
+
 ## Boundaries
 
 - Don't delete notes without confirmation
