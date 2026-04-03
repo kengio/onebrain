@@ -117,9 +117,34 @@ At the start of every session, perform these steps:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
-4. Refresh MOC.md AI zone — if `MOC.md` exists at vault root, silently update the `[!info] Agent Summary` callout using folder paths already loaded in step 1. Scan note counts via Glob (projects, areas, knowledge, resources, inbox) and find the most recently modified note across those folders. Then read `MOC.md`, find the callout block (all consecutive lines starting with `>` immediately after `# 🧠 Vault Portal`), replace those lines with fresh counts, and write the file back. Do not touch any other content. If `MOC.md` does not exist, skip silently. No output to the user.
-5. Read the most recent session log entry
-6. Greet the user by name with relevant context
+4. Read the most recent session log entries — up to 3, or fewer if not enough exist (used for pattern detection in step 5)
+5. Greet the user by name with time-aware tone and one proactive insight
+
+   **Time of day** — default timezone: `Asia/Bangkok`. Use current local time:
+
+   | Time | Label | Tone |
+   |------|-------|------|
+   | before 9:00 | morning | brief, energizing |
+   | 9:00–12:00 | mid-morning | normal |
+   | 12:00–17:00 | afternoon | normal |
+   | 17:00–21:00 | evening | winding down, reflective |
+   | after 21:00 | late night | quiet, concise |
+
+   **Proactive insight** — surface exactly ONE item, in priority order:
+   1. A task that is overdue or due within 2 days on weekdays, or due within 1 day on weekends — sourced from task dates listed in active projects in MEMORY.md
+   2. A pattern or recurring theme — only if at least 2 of the logs loaded in step 4 mention the same topic or project; do not surface if only 1 log was available
+   3. A connection between a recent inbox capture (since the last session log timestamp) and an existing knowledge note — attempt only if priorities 1 and 2 yield nothing; find via Glob `00-inbox/*.md` sorted by date
+   4. A project listed as active in MEMORY.md with no mention in any of the logs loaded in step 4 and no session log from the past 7 days
+
+   Keep the insight to 1–2 sentences. Don't ask a question — just surface it.
+
+   **Skip the insight** if: MEMORY.md active projects list no tasks AND no session log exists from the past 7 days. Also skip if the user's opening message already addresses the highest-priority qualifying item.
+
+   On weekends (Saturday/Sunday): use a lighter, less task-focused tone.
+
+   **Command Response Profiles take precedence** — time-of-day tone applies only to greetings and free responses, not to skill outputs (those follow their own profile).
+
+   **No-repeat rule** — don't ask about facts already in loaded context (MEMORY.md, session logs, vault.yml, plugin.json). If the user's current message contradicts something in context, trust their message over context.
 
 ### Recalling Information
 
@@ -160,7 +185,7 @@ If conditions are met:
 **Subfolder rules:**
 - Always kebab-case (lowercase, hyphens not spaces): `machine-learning`, `web-development`
 - Max 2 levels deep: `technology/ai` is OK, `technology/ai/deep-learning` is NOT
-- When creating a note, suggest a subfolder and confirm with the user before saving
+- When creating a note, pick the best subfolder automatically — the user can ask to move it later
 - To migrate existing flat notes into subfolders, run `/reorganize`
 
 ## Command Response Profiles
