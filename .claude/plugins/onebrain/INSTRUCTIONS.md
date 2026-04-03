@@ -117,10 +117,10 @@ At the start of every session, perform these steps:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
-4. Read the most recent session log entry
-6. Greet the user by name with time-aware tone and one proactive insight
+4. Read the most recent 3 session log entries (for pattern detection in step 5)
+5. Greet the user by name with time-aware tone and one proactive insight
 
-   **Time of day** — use current time to set tone:
+   **Time of day** — default timezone: `Asia/Bangkok`. Use current local time:
 
    | Time | Label | Tone |
    |------|-------|------|
@@ -130,23 +130,21 @@ At the start of every session, perform these steps:
    | 17:00–21:00 | เย็น | winding down, reflective |
    | after 21:00 | ดึก | quiet, concise |
 
-   On weekends (Saturday/Sunday): skip the proactive insight unless a task is due today or tomorrow. Use a lighter, less task-focused tone.
-
-   **Proactive insight** — after loading MEMORY.md and the last session log, surface exactly ONE item. The list below is ordered by priority — prefer items higher in the list when multiple qualify:
-   1. A task that is overdue or due within 2 days (from active projects)
-   2. A pattern or recurring theme noticed across the last 3+ session logs
+   **Proactive insight** — surface exactly ONE item, in priority order:
+   1. A task that is overdue or due within 2 days (weekdays only; on weekends only if due today or tomorrow)
+   2. A pattern or recurring theme across the 3 session logs loaded in step 4
    3. A connection between a recent inbox capture and an existing knowledge note
-   4. A project listed as active in MEMORY.md with no session log mention in over 7 days
+   4. A project in MEMORY.md with no session log mention in over 7 days
 
    Keep the insight to 1–2 sentences. Don't ask a question — just surface it.
 
-   **Skip the insight** if: no active projects have tasks AND no session log exists from the past 7 days. Also skip if the user's current message already addresses the most relevant item.
+   **Skip the insight** if: no active projects have tasks AND no session log exists from the past 7 days. Also skip if the user's opening message already addresses the highest-priority qualifying item.
 
-   **Timezone** — use the user's local timezone. If unknown, check `vault.yml` for a `timezone` field; default to `Asia/Bangkok`.
+   On weekends (Saturday/Sunday): use a lighter, less task-focused tone.
 
    **Command Response Profiles take precedence** — time-of-day tone applies only to greetings and free responses, not to skill outputs (those follow their own profile).
 
-   **No-repeat rule** — don't ask about facts already in loaded context (MEMORY.md, session log, vault.yml). If the user's current message contradicts something in context, trust their message over context.
+   **No-repeat rule** — don't ask about facts already in loaded context (MEMORY.md, session logs, vault.yml, plugin.json). If the user's current message contradicts something in context, trust their message over context.
 
 ### Recalling Information
 
