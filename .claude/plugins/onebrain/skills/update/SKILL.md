@@ -44,11 +44,16 @@ Ask: **"Proceed with update?"** and wait for confirmation before continuing.
 
 ## Step 2: Compare (Dry-Run)
 
-Run the update script in dry-run mode:
+Detect the platform and run the appropriate script in dry-run mode:
 
-```bash
-bash .claude/plugins/onebrain/skills/update/update.sh
-```
+- **Unix/macOS** — check if `bash` is available (e.g. `which bash` succeeds or `$OSTYPE` is set):
+  ```bash
+  bash .claude/plugins/onebrain/skills/update/update.sh
+  ```
+- **Windows** — check if running in PowerShell or `$env:OS` contains "Windows":
+  ```powershell
+  powershell -File .claude/plugins/onebrain/skills/update/update.ps1
+  ```
 
 Parse the output and present a summary to the user:
 
@@ -67,11 +72,16 @@ Wait for confirmation before continuing.
 
 ## Step 3: Apply
 
-Run the update script in apply mode:
+Run the update script in apply mode (same platform detection as Step 2):
 
-```bash
-bash .claude/plugins/onebrain/skills/update/update.sh --apply
-```
+- **Unix/macOS:**
+  ```bash
+  bash .claude/plugins/onebrain/skills/update/update.sh --apply
+  ```
+- **Windows:**
+  ```powershell
+  powershell -File .claude/plugins/onebrain/skills/update/update.ps1 -Apply
+  ```
 
 If the output contains `status: partial_failure`, report which files failed and advise re-running `/update`.
 
