@@ -84,7 +84,7 @@ Overwrite the `## Today's Focus` section only — preserve everything else. Do N
 ```markdown
 ---
 tags: [daily]
-date: YYYY-MM-DD
+created: YYYY-MM-DD
 ---
 
 # Daily — DD Mon YYYY
