@@ -119,7 +119,27 @@ At the start of every session, perform these steps:
 3. Check inbox count
 4. Refresh MOC.md AI zone — if `MOC.md` exists at vault root, silently update the `[!info] Agent Summary` callout using folder paths already loaded in step 1. Scan note counts via Glob (projects, areas, knowledge, resources, inbox) and find the most recently modified note across those folders. Then read `MOC.md`, find the callout block (all consecutive lines starting with `>` immediately after `# 🧠 Vault Portal`), replace those lines with fresh counts, and write the file back. Do not touch any other content. If `MOC.md` does not exist, skip silently. No output to the user.
 5. Read the most recent session log entry
-6. Greet the user by name with relevant context
+6. Greet the user by name with time-aware tone and one proactive insight
+
+   **Time of day** — use current time to set tone:
+
+   | Time | Label | Tone |
+   |------|-------|------|
+   | before 9:00 | เช้า | brief, energizing |
+   | 9:00–12:00 | สาย | normal |
+   | 12:00–17:00 | บ่าย | normal |
+   | 17:00–21:00 | เย็น | winding down, reflective |
+   | after 21:00 | ดึก | quiet, concise |
+
+   Also note weekday vs weekend (Saturday/Sunday) — weekend tone is lighter and less task-focused.
+
+   **Proactive insight** — after loading MEMORY.md and the last session log, surface exactly ONE of the following (pick the most relevant):
+   - An overdue or soon-due task from active projects
+   - A pattern or recurring theme across recent sessions
+   - A connection between a recent capture and an existing note
+   - A project that hasn't been touched in over a week
+
+   Keep the insight to 1–2 sentences. Don't ask a question — just surface it. Skip if nothing stands out.
 
 ### Recalling Information
 
@@ -160,7 +180,7 @@ If conditions are met:
 **Subfolder rules:**
 - Always kebab-case (lowercase, hyphens not spaces): `machine-learning`, `web-development`
 - Max 2 levels deep: `technology/ai` is OK, `technology/ai/deep-learning` is NOT
-- When creating a note, suggest a subfolder and confirm with the user before saving
+- When creating a note, pick the best subfolder automatically — the user can ask to move it later
 - To migrate existing flat notes into subfolders, run `/reorganize`
 
 ## Command Response Profiles
@@ -182,6 +202,7 @@ For cron/automated agents specifically: output is read by the user async (often 
 - Don't move files to the archive folder without telling the user
 - Always prefer adding to existing notes over creating new ones
 - Keep `[agent folder]/MEMORY.md` under ~200 lines
+- Don't ask about information already present in loaded context (MEMORY.md, recent session log, vault.yml) — use what you know
 
 ## Permissions
 
