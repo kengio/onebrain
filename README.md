@@ -111,7 +111,7 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 ---
 
 <details>
-<summary><strong>📋 All 20 Commands</strong></summary>
+<summary><strong>📋 All 21 Commands</strong></summary>
 <br>
 
 | Command | What it does |
