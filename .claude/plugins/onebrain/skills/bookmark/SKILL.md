@@ -38,7 +38,7 @@ Use the user's answers and continue normally.
 
 ## Step 3: Pre-Save Checks
 
-**Duplicate check:** grep `[resources]/Bookmarks.md` for the URL. If already present, tell the user and stop (unless they confirm to save again).
+**Duplicate check:** grep `[resources]/Bookmarks.md` for the URL (`[resources]` from Step 2). If already present, tell the user and stop (unless they confirm to save again).
 
 **Existing summary note:** grep `[resources]/**/*.md` for `url: [URL]` in frontmatter. If found, record its title for use as a wikilink in the entry.
 
@@ -65,7 +65,7 @@ Build the entry:
 
 (Omit the wikilink if no summary note was found in Step 3.)
 
-File path: `[resources]/Bookmarks.md`.
+File path: `[resources]/Bookmarks.md` (`[resources]` from Step 2).
 
 **If the file does not exist**, create it:
 

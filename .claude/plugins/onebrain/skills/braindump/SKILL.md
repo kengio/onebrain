@@ -71,6 +71,7 @@ created: YYYY-MM-DD
 ## Related Notes
 
 [[Link to relevant existing notes if any]]
+(Omit this section if no related notes are found)
 ```
 
 ---
