@@ -117,7 +117,7 @@ At the start of every session, perform these steps:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
-4. Read the most recent 3 session log entries (for pattern detection in step 5)
+4. Read the most recent session log entries — up to 3, or fewer if not enough exist (used for pattern detection in step 5)
 5. Greet the user by name with time-aware tone and one proactive insight
 
    **Time of day** — default timezone: `Asia/Bangkok`. Use current local time:
@@ -131,14 +131,14 @@ At the start of every session, perform these steps:
    | after 21:00 | ดึก | quiet, concise |
 
    **Proactive insight** — surface exactly ONE item, in priority order:
-   1. A task that is overdue or due within 2 days (weekdays only; on weekends only if due today or tomorrow)
-   2. A pattern or recurring theme across the 3 session logs loaded in step 4
-   3. A connection between a recent inbox capture and an existing knowledge note
-   4. A project in MEMORY.md with no session log mention in over 7 days
+   1. A task that is overdue or due within 2 days on weekdays, or due within 1 day on weekends — sourced from task dates listed in active projects in MEMORY.md
+   2. A pattern or recurring theme — only if at least 2 of the logs loaded in step 4 mention the same topic or project; do not surface if only 1 log was available
+   3. A connection between a recent inbox capture (since the last session log timestamp) and an existing knowledge note — attempt only if priorities 1 and 2 yield nothing; find via Glob `00-inbox/*.md` sorted by date
+   4. A project listed as active in MEMORY.md with no mention in any of the logs loaded in step 4 and no session log from the past 7 days
 
    Keep the insight to 1–2 sentences. Don't ask a question — just surface it.
 
-   **Skip the insight** if: no active projects have tasks AND no session log exists from the past 7 days. Also skip if the user's opening message already addresses the highest-priority qualifying item.
+   **Skip the insight** if: MEMORY.md active projects list no tasks AND no session log exists from the past 7 days. Also skip if the user's opening message already addresses the highest-priority qualifying item.
 
    On weekends (Saturday/Sunday): use a lighter, less task-focused tone.
 
