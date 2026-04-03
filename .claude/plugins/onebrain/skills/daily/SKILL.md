@@ -39,7 +39,7 @@ Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for task lines matchi
 
 **Source 2 — Open action items from last session:**
 If morning mode: already loaded from recap step above — extract unchecked `- [ ]` items from the `## Action Items` section.
-If normal mode: load the most recent prior session logs now and extract unchecked `- [ ]` items from `## Action Items`.
+If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log whose `date` frontmatter is before today. Read that log and extract unchecked `- [ ]` items from the `## Action Items` section.
 
 ### Display the Briefing
 
@@ -103,9 +103,11 @@ date: YYYY-MM-DD
 [User's stated intention]
 ```
 
-If a section has no content (e.g. no tasks, no open items), write the heading with a single line: `(none)`
+If a section has no content — including when `## Action Items` is absent from the session log or all its items are already checked — write the heading with a single line: `(none)`
 
 ### Open in Obsidian (new file only)
+
+**Only run this section if the daily note was newly created above. If you updated an existing file, skip to Confirm.**
 
 Build the `obsidian://` URI:
 1. Take the absolute path of the daily note file
