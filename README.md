@@ -19,7 +19,7 @@
 
 **🧠 Memory across sessions** — Your AI remembers your name, goals, preferences, and past conversations. Every session picks up where the last one left off.
 
-**⚡ 20 slash commands and counting** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. More skills coming soon — capture an idea or deep-research a topic in seconds.
+**⚡ 22 slash commands and counting** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. More skills coming soon — capture an idea or deep-research a topic in seconds.
 
 **📂 Vault-native Markdown** — Every note is plain Markdown. No lock-in, no proprietary format. Your data stays in your vault, forever.
 
@@ -111,7 +111,7 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 ---
 
 <details>
-<summary><strong>📋 All 21 Commands</strong></summary>
+<summary><strong>📋 All 22 Commands</strong></summary>
 <br>
 
 | Command | What it does |
@@ -127,6 +127,7 @@ Under the hood, OneBrain uses a **three-layer memory system**: your identity (al
 | `/import [path]` | Import local files (PDF, Word, images, scripts) into vault notes |
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
+| `/daily` | Daily briefing — surfaces tasks and last session context, then saves your focus as a daily note |
 | `/recap` | Cross-session synthesis — surface patterns across sessions and update long-term memory |
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
