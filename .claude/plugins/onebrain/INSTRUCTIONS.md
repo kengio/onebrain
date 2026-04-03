@@ -117,8 +117,7 @@ At the start of every session, perform these steps:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
 3. Check inbox count
-4. Refresh MOC.md AI zone — if `MOC.md` exists at vault root, silently update the `[!info] Agent Summary` callout using folder paths already loaded in step 1. Scan note counts via Glob (projects, areas, knowledge, resources, inbox) and find the most recently modified note across those folders. Then read `MOC.md`, find the callout block (all consecutive lines starting with `>` immediately after `# 🧠 Vault Portal`), replace those lines with fresh counts, and write the file back. Do not touch any other content. If `MOC.md` does not exist, skip silently. No output to the user.
-5. Read the most recent session log entry
+4. Read the most recent session log entry
 6. Greet the user by name with time-aware tone and one proactive insight
 
    **Time of day** — use current time to set tone:
@@ -131,15 +130,23 @@ At the start of every session, perform these steps:
    | 17:00–21:00 | เย็น | winding down, reflective |
    | after 21:00 | ดึก | quiet, concise |
 
-   Also note weekday vs weekend (Saturday/Sunday) — weekend tone is lighter and less task-focused.
+   On weekends (Saturday/Sunday): skip the proactive insight unless a task is due today or tomorrow. Use a lighter, less task-focused tone.
 
-   **Proactive insight** — after loading MEMORY.md and the last session log, surface exactly ONE of the following (pick the most relevant):
-   - An overdue or soon-due task from active projects
-   - A pattern or recurring theme across recent sessions
-   - A connection between a recent capture and an existing note
-   - A project that hasn't been touched in over a week
+   **Proactive insight** — after loading MEMORY.md and the last session log, surface exactly ONE item. The list below is ordered by priority — prefer items higher in the list when multiple qualify:
+   1. A task that is overdue or due within 2 days (from active projects)
+   2. A pattern or recurring theme noticed across the last 3+ session logs
+   3. A connection between a recent inbox capture and an existing knowledge note
+   4. A project listed as active in MEMORY.md with no session log mention in over 7 days
 
-   Keep the insight to 1–2 sentences. Don't ask a question — just surface it. Skip if nothing stands out.
+   Keep the insight to 1–2 sentences. Don't ask a question — just surface it.
+
+   **Skip the insight** if: no active projects have tasks AND no session log exists from the past 7 days. Also skip if the user's current message already addresses the most relevant item.
+
+   **Timezone** — use the user's local timezone. If unknown, check `vault.yml` for a `timezone` field; default to `Asia/Bangkok`.
+
+   **Command Response Profiles take precedence** — time-of-day tone applies only to greetings and free responses, not to skill outputs (those follow their own profile).
+
+   **No-repeat rule** — don't ask about facts already in loaded context (MEMORY.md, session log, vault.yml). If the user's current message contradicts something in context, trust their message over context.
 
 ### Recalling Information
 
@@ -202,7 +209,6 @@ For cron/automated agents specifically: output is read by the user async (often 
 - Don't move files to the archive folder without telling the user
 - Always prefer adding to existing notes over creating new ones
 - Keep `[agent folder]/MEMORY.md` under ~200 lines
-- Don't ask about information already present in loaded context (MEMORY.md, recent session log, vault.yml) — use what you know
 
 ## Permissions
 
