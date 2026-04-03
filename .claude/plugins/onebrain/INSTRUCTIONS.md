@@ -83,6 +83,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/import` | `import/SKILL.md` | Import local files (PDF, docs, images, scripts) → vault notes |
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection |
+| `/daily` | `daily/SKILL.md` | Daily briefing + intention setter → saves daily note to inbox |
 | `/recap` | `recap/SKILL.md` | Cross-session synthesis → update MEMORY.md Key Learnings |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian |
