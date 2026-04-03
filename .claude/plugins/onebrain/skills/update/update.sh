@@ -36,11 +36,23 @@ import json, sys
 for item in json.load(sys.stdin).get('tree', []):
     if item['type'] == 'blob':
         print(item['path'])
-")
+" 2>/dev/null) || {
+  echo "ERROR: Could not parse file list from GitHub (unexpected response format)."
+  exit 1
+}
 
 # Allowlist
 ALLOW_FILES=(".gitignore")
 ALLOW_DIRS=(".claude/plugins/onebrain" ".claude-plugin")
+
+# Snapshot local version before any files are overwritten (used for cache logic later)
+LOCAL_VER=$(python3 -c "
+import json
+try:
+    print(json.load(open('${PLUGIN_DIR}/.claude-plugin/plugin.json'))['version'])
+except:
+    print('')
+" 2>/dev/null || echo "")
 
 # Tracking arrays
 MODIFIED=() ADDED=() UNCHANGED=() FAILED=() DELETED=()
@@ -58,17 +70,27 @@ compare_and_apply() {
   fi
 
   if [[ ! -f "${local_path}" ]]; then
-    ADDED+=("${path}")
     if [[ "${APPLY}" == true ]]; then
       mkdir -p "$(dirname "${local_path}")"
-      cp "${tmp_file}" "${local_path}"
+      if cp "${tmp_file}" "${local_path}" 2>/dev/null; then
+        ADDED+=("${path}")
+      else
+        FAILED+=("${path}")
+      fi
+    else
+      ADDED+=("${path}")
     fi
   elif diff -q "${tmp_file}" "${local_path}" > /dev/null 2>&1; then
     UNCHANGED+=("${path}")
   else
-    MODIFIED+=("${path}")
     if [[ "${APPLY}" == true ]]; then
-      cp "${tmp_file}" "${local_path}"
+      if cp "${tmp_file}" "${local_path}" 2>/dev/null; then
+        MODIFIED+=("${path}")
+      else
+        FAILED+=("${path}")
+      fi
+    else
+      MODIFIED+=("${path}")
     fi
   fi
 
@@ -105,15 +127,9 @@ for dir in "${ALLOW_DIRS[@]}"; do
 done
 
 # Clear plugin cache when version is unchanged (apply mode only)
+# LOCAL_VER was snapshotted before the apply loop to avoid reading the already-overwritten file.
 CACHE_NOTE=""
 if [[ "${APPLY}" == true ]]; then
-  LOCAL_VER=$(python3 -c "
-import json
-try:
-    print(json.load(open('${PLUGIN_DIR}/.claude-plugin/plugin.json'))['version'])
-except:
-    print('')
-" 2>/dev/null || echo "")
   UPSTREAM_VER=$(curl -sf "${RAW_BASE}/.claude/plugins/onebrain/.claude-plugin/plugin.json" 2>/dev/null | \
     python3 -c "import json,sys; print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "")
 

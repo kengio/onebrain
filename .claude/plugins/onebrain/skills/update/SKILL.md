@@ -123,6 +123,8 @@ updated: YYYY-MM-DD
 
 ## Step 4c: Create Missing Vault Folders
 
+Resolve `[inbox]` from `vault.yml` `folders.inbox` (default: `00-inbox`) and `[attachments]` from `vault.yml` `folders.attachments` (default: `attachments`) — both were already read in Step 4b.
+
 Ensure these folders exist (create with `.gitkeep` if missing, report only new ones):
 
 | Folder | Introduced |
