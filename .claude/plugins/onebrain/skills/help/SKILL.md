@@ -39,6 +39,7 @@ Display a formatted table with all available commands:
 | `/tasks` | Open live task dashboard in Obsidian — creates/updates `TASKS.md` with live query sections | When you want an overview of what needs doing |
 | `/moc` | Create or refresh vault portal (MOC.md) — a Map of Content with live queries, AI summary, and your pinned links | When you want a bird's-eye view of your entire vault |
 | `/weekly` | Weekly reflection — review sessions, patterns, intentions | At the end of each week for review and planning |
+| `/daily` | Two-phase daily briefing — surfaces tasks and last session context, then saves your stated focus as a daily note | Every morning (or any time you want to reset your focus for the day) |
 | `/recap` | Cross-session synthesis — reads 7 days of logs, surfaces patterns, updates MEMORY.md Key Learnings | Periodically, when you want to distill recent sessions into long-term memory |
 | `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
