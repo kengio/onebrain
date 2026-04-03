@@ -111,7 +111,7 @@ Without embeddings, `mcp__plugin_onebrain_qmd__query` uses BM25 keyword search o
 
 At the start of every session, perform these steps:
 
-1. Read vault.yml for folder names and configuration — sets `[agent folder]` from `folders.agent` (default: `05-agent`) and `[logs folder]` from `folders.logs` (default: `07-logs`)
+1. Read vault.yml for folder names and configuration — sets `[agent folder]` from `folders.agent` (default: `05-agent`) and `[logs folder]` from `folders.logs` (default: `07-logs`). Also read `.claude/plugins/onebrain/.claude-plugin/plugin.json` and note the `version` field — include it in your greeting (e.g. "OneBrain v1.5.6"). If the file doesn't exist, skip the version.
 2. Read `[agent folder]/MEMORY.md` to load identity, personality, and active projects
    > **Agent context (lazy load):** If the session involves a domain-specific topic (e.g., research, writing, technical work), grep `[agent folder]/context/` for notes relevant to that topic and use them as background context. Do not load all context files every session — only when relevant.
    >
