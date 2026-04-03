@@ -37,6 +37,9 @@ Tell the user what will and won't be updated:
 - `vault.yml` — your vault configuration
 - `.obsidian/` — all Obsidian settings
 - `.claude/settings.local.json` — your local Claude settings
+- `.claude/onebrain.local.md` — your local plugin config
+- `install.sh`, `install.ps1` — fresh-install only, not part of the vault
+- `README.md`, `CONTRIBUTING.md`, `LICENSE`, `assets/` — repo-only files
 
 Ask: **"Proceed with update?"** and wait for confirmation before continuing.
 
@@ -46,14 +49,18 @@ Ask: **"Proceed with update?"** and wait for confirmation before continuing.
 
 Detect the platform and run the appropriate script in dry-run mode:
 
-- **Unix/macOS** — check if `bash` is available (e.g. `which bash` succeeds or `$OSTYPE` is set):
+Use the platform reported in your session context (e.g. `Platform: darwin` or `Platform: win32`) to choose the right script. If the platform is Windows, use PowerShell; otherwise use bash.
+
+- **Unix/macOS:**
   ```bash
   bash .claude/plugins/onebrain/skills/update/update.sh
   ```
-- **Windows** — if the platform reported in your session context is Windows, or `$PSVersionTable` is defined in the current shell:
+- **Windows:**
   ```powershell
   powershell -File .claude/plugins/onebrain/skills/update/update.ps1
   ```
+
+> **Note:** The dry-run and apply passes each fetch files independently from GitHub. This is intentional — scripts are stateless and require no temp storage between runs. The window between passes is small enough that mid-run upstream changes are not a practical concern for a personal tool.
 
 Parse the output and present a summary to the user:
 
@@ -78,7 +85,7 @@ Run the update script in apply mode (same platform detection as Step 2):
   ```bash
   bash .claude/plugins/onebrain/skills/update/update.sh --apply
   ```
-- **Windows** (same detection as Step 2):
+- **Windows** (same platform detection as Step 2):
   ```powershell
   powershell -File .claude/plugins/onebrain/skills/update/update.ps1 -Apply
   ```

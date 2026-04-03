@@ -117,7 +117,7 @@ foreach ($Dir in $AllowDirs) {
     # Find local files absent from upstream (deleted in repo)
     $LocalDir = Join-Path $VaultRoot $Dir
     if (Test-Path $LocalDir) {
-        Get-ChildItem $LocalDir -Recurse -File | ForEach-Object {
+        Get-ChildItem $LocalDir -Recurse -File | Where-Object { $_.Name -ne ".gitkeep" } | ForEach-Object {
             $Rel = $_.FullName.Substring($VaultRoot.Length + 1).Replace("\", "/")
             if ($DirPaths -notcontains $Rel) {
                 $Deleted.Add($Rel)

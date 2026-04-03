@@ -122,7 +122,7 @@ for dir in "${ALLOW_DIRS[@]}"; do
           rm -f "${local_abs}"
         fi
       fi
-    done < <(find "${local_dir}" -type f)
+    done < <(find "${local_dir}" -type f -not -name ".gitkeep")
   fi
 done
 
