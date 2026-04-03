@@ -99,4 +99,4 @@ If the user asks to move or recategorize a bookmark:
 3. Remove from current section; append to target section (create `##` / `###` as needed)
 4. Refresh `updated` in frontmatter
 5. Confirm in one line:
-   > Moved **[Name]** from `## [Old]` → `## [New]`[` / ### [Sub]`].
+   > Moved **[Name]** from `## [Old]` → `## [New]`. [If subcategory: `/ ### [Sub]`]
