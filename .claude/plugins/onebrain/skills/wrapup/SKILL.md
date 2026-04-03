@@ -35,6 +35,7 @@ Reflect on the conversation that just occurred. Identify:
 - **Main topic(s)** — What did we work on?
 - **Key decisions made** — Any choices, directions, or conclusions reached
 - **Insights or learnings** — New understanding, patterns noticed, things discovered
+- **What worked / didn't work** — Approaches or tools that helped, and anything that slowed us down or failed (omit if nothing notable)
 - **Action items** — Tasks to do, things to follow up on
 - **Open questions** — Unresolved questions or things to investigate
 
@@ -66,6 +67,13 @@ session: NN
 
 - [Insight 1]
 - [Insight 2]
+
+## What Worked / Didn't Work
+
+- ✅ [Something that worked well]
+- ❌ [Something that didn't work or slowed things down]
+
+_Omit this section if the session had no notable friction or technique worth logging._
 
 ## Action Items
 
