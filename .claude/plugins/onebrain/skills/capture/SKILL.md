@@ -36,7 +36,7 @@ Classify the content — do not ask, infer from context:
 
 ## Step 3: Find and Link Related Notes
 
-Scan `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` for related notes. Include the top 1–3 most relevant as wikilinks in the note. Do not ask — add them automatically.
+Scan `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` for related notes. Exclude the destination file itself. Include the top 1–3 most relevant as wikilinks in the note. Do not ask — add them automatically.
 
 ---
 
@@ -59,6 +59,7 @@ created: YYYY-MM-DD
 ## Related
 
 [[Link 1]]
+[[Link 2]]
 ```
 
 **For knowledge / reference / area note:**

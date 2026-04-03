@@ -86,7 +86,7 @@ Append under the correct `##` / `###` section (alphabetical order). Create missi
 ## Step 6: Confirm
 
 Say in one line:
-> Saved to **Bookmarks.md** under `## [Category]`[` / ### [Subcategory]`].
+> Saved to **Bookmarks.md** under `## [Category]`. [If subcategory: `/ ### [Subcategory]`]
 
 ---
 
@@ -94,7 +94,7 @@ Say in one line:
 
 If the user asks to move or recategorize a bookmark:
 
-1. Resolve file path (read `vault.yml` for `folders.resources`, default `04-resources`)
+1. Resolve file path using `[resources]` from Step 2 if in the same session, otherwise read `vault.yml` for `folders.resources` (default `04-resources`)
 2. Find the entry by name, or use the last bullet for "last bookmark"
 3. Remove from current section; append to target section (create `##` / `###` as needed)
 4. Refresh `updated` in frontmatter

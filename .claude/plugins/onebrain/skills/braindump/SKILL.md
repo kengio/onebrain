@@ -77,7 +77,7 @@ created: YYYY-MM-DD
 
 ## Step 4: Check for Project Links
 
-If any item clearly relates to an active project in MEMORY.md, append a brief note to that project file automatically. Mention it in the confirmation.
+If any item is a direct update, task, or decision for an active project in MEMORY.md (not a passing mention), append a brief note to that project file automatically. Mention it in the confirmation.
 
 ---
 
