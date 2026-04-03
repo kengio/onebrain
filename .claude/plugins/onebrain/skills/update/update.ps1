@@ -33,7 +33,7 @@ if (Test-Path $PluginJsonPath) {
 
 # Fetch upstream file tree
 try {
-    $TreeJson = Invoke-RestMethod -Uri $ApiTree -UseBasicParsing
+    $TreeJson = Invoke-RestMethod -Uri $ApiTree
 } catch {
     Write-Host "ERROR: Could not fetch file list from GitHub (network error or rate limit)."
     exit 1
@@ -130,12 +130,17 @@ foreach ($Dir in $AllowDirs) {
 # Clear plugin cache when version is unchanged (apply mode only)
 $CacheNote = ""
 if ($Apply) {
+    # Use Invoke-WebRequest + ConvertFrom-Json because raw GitHub content returns text/plain,
+    # which Invoke-RestMethod returns as a string rather than a parsed object.
     $UpstreamVer = ""
     try {
-        $UpstreamVer = (Invoke-RestMethod -Uri "$RawBase/.claude/plugins/onebrain/.claude-plugin/plugin.json" -UseBasicParsing).version
+        $UpstreamVer = (Invoke-WebRequest -Uri "$RawBase/.claude/plugins/onebrain/.claude-plugin/plugin.json" -UseBasicParsing -ErrorAction Stop).Content |
+            ConvertFrom-Json |
+            Select-Object -ExpandProperty version
     } catch {}
 
     if ($LocalVer -and $LocalVer -eq $UpstreamVer) {
+        # Claude Code on Windows stores cache under %USERPROFILE%\.claude\ (mirrors Unix ~/.claude/)
         @(
             "$env:USERPROFILE\.claude\plugins\cache\onebrain\onebrain\$LocalVer",
             "$env:USERPROFILE\.claude\plugins\cache\onebrain-local\onebrain\$LocalVer"

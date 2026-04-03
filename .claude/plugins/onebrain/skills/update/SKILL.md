@@ -50,7 +50,7 @@ Detect the platform and run the appropriate script in dry-run mode:
   ```bash
   bash .claude/plugins/onebrain/skills/update/update.sh
   ```
-- **Windows** — check if running in PowerShell or `$env:OS` contains "Windows":
+- **Windows** — if the platform reported in your session context is Windows, or `$PSVersionTable` is defined in the current shell:
   ```powershell
   powershell -File .claude/plugins/onebrain/skills/update/update.ps1
   ```
@@ -78,7 +78,7 @@ Run the update script in apply mode (same platform detection as Step 2):
   ```bash
   bash .claude/plugins/onebrain/skills/update/update.sh --apply
   ```
-- **Windows:**
+- **Windows** (same detection as Step 2):
   ```powershell
   powershell -File .claude/plugins/onebrain/skills/update/update.ps1 -Apply
   ```
