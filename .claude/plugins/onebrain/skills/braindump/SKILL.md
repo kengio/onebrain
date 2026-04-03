@@ -14,43 +14,30 @@ Capture everything on your mind right now. Don't filter — just say it.
 Say:
 > Go for it — what's on your mind? Dump everything. I'll sort it out.
 
-Wait for the user to share their thoughts. They might write a few sentences or several paragraphs. Don't interrupt.
+Wait for the user to share their thoughts. Don't interrupt.
 
 ---
 
 ## Step 2: Classify the Content
 
-After they've finished, silently analyze the content and classify each item into:
+Silently analyze and classify each item:
 
 | Type | Description | Destination |
 |------|-------------|-------------|
 | **Task** | Something to do | Extract as task with date |
 | **Idea** | Creative or speculative thought | File to inbox |
-| **Note** | Fact, reference, or information | File to inbox (process later via `/consolidate`) |
-| **Project** | Something that needs a dedicated note | Create/update in 01-projects/ |
+| **Note** | Fact, reference, or information | File to inbox |
+| **Project** | Something needing a dedicated note | Create/update in 01-projects/ |
 | **Question** | Open question or uncertainty | File to inbox with `?` tag |
 | **Feeling/Reflection** | Personal reflection or emotion | File to inbox |
 
 ---
 
-## Step 3: Show Classification
+## Step 3: Create Inbox File
 
-Present a quick summary before filing:
+File immediately — do not ask for confirmation first.
 
-> Here's what I heard:
-> - **2 tasks** — I'll extract these with due dates
-> - **1 idea** about [topic]
-> - **1 note** about [topic]
->
-> Shall I file these to your inbox? (or say "adjust" to change anything)
-
-Wait for confirmation or adjustments.
-
----
-
-## Step 4: Create Inbox File
-
-Create a file in `00-inbox/` named `YYYY-MM-DD-braindump.md` (use today's date; if a file with that name exists, append `-2`, `-3`, etc.).
+Create `00-inbox/YYYY-MM-DD-braindump.md` (append `-2`, `-3` if file exists):
 
 ```markdown
 ---
@@ -72,7 +59,6 @@ created: YYYY-MM-DD
 ## Ideas
 
 - [idea 1]
-- [idea 2]
 
 ## Notes & References
 
@@ -85,22 +71,18 @@ created: YYYY-MM-DD
 ## Related Notes
 
 [[Link to relevant existing notes if any]]
+(Omit this section if no related notes are found)
 ```
 
 ---
 
-## Step 5: Check for Project Links
+## Step 4: Check for Project Links
 
-If any item mentions an active project from `[agent folder]/MEMORY.md` (already loaded in context):
-- Mention it: "This looks related to [Project] — want me to also add a note there?"
-- If yes, find the project file by searching `01-projects/**/*.md` and append a brief note to it (the subfolder is wherever the project file already lives)
+If any item is a direct update, task, or decision for an active project in MEMORY.md (not a passing mention), append a brief note to that project file automatically. Mention it in the confirmation.
 
 ---
 
-## Step 6: Confirm and Suggest Next
+## Step 5: Confirm
 
-Say:
-> Filed to `00-inbox/YYYY-MM-DD-braindump.md`.
-> [If tasks were extracted]: I extracted N tasks — they'll show up in your Tasks view.
->
-> Anything else on your mind, or shall we dive into something from this dump?
+Say in one line:
+> Filed to `00-inbox/YYYY-MM-DD-braindump.md`. [If tasks: Extracted N tasks.] [If project link: Added note to [[Project]].]
