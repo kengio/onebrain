@@ -124,11 +124,11 @@ At the start of every session, perform these steps:
 
    | Time | Label | Tone |
    |------|-------|------|
-   | before 9:00 | เช้า | brief, energizing |
-   | 9:00–12:00 | สาย | normal |
-   | 12:00–17:00 | บ่าย | normal |
-   | 17:00–21:00 | เย็น | winding down, reflective |
-   | after 21:00 | ดึก | quiet, concise |
+   | before 9:00 | morning | brief, energizing |
+   | 9:00–12:00 | mid-morning | normal |
+   | 12:00–17:00 | afternoon | normal |
+   | 17:00–21:00 | evening | winding down, reflective |
+   | after 21:00 | late night | quiet, concise |
 
    **Proactive insight** — surface exactly ONE item, in priority order:
    1. A task that is overdue or due within 2 days on weekdays, or due within 1 day on weekends — sourced from task dates listed in active projects in MEMORY.md
