@@ -14,8 +14,8 @@ Reads session logs from the past 7 days, surfaces patterns, decisions, and insig
 ## Before You Begin
 
 Read `vault.yml` and extract:
-- `folders.logs` as `logs_folder` (default: `07-logs`)
-- `folders.agent` as `agent_folder` (default: `05-agent`)
+- `folders.logs` as `[logs_folder]` (default: `07-logs`)
+- `folders.agent` as `[agent_folder]` (default: `05-agent`)
 
 ---
 
@@ -78,6 +78,8 @@ Compare every entry in "Insights worth keeping" against the existing `## Key Lea
 | Insight extends or refines an existing entry | Merge into the existing entry |
 | Insight is genuinely new | Keep for append |
 
+To merge: rewrite the existing bullet in-place to incorporate the new detail, keeping the original date.
+
 After dedup, if no new insights remain:
 > All insights are already captured in MEMORY.md — nothing new to add.
 
@@ -110,7 +112,7 @@ Do not modify `[agent_folder]/memory/` or `[agent_folder]/context/` — these ar
 ## Step 7: Confirm
 
 ```
-Recap complete. Added N insights to MEMORY.md.
+Recap complete. Added N new insights to MEMORY.md (M already captured — skipped).
 ```
 
 If overflow warning was triggered, append:
@@ -120,5 +122,5 @@ MEMORY.md is now N lines — consider /learn to trim.
 
 If nothing was written (all deduped):
 ```
-Recap complete. No new insights to add — MEMORY.md is already up to date.
+Recap complete. No new insights to add — all N insights already captured in MEMORY.md.
 ```
