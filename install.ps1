@@ -1,6 +1,9 @@
 #Requires -Version 5.0
 $ErrorActionPreference = 'Stop'
 
+# Ensure TLS 1.2 is enabled — required by GitHub (PS 5 defaults to TLS 1.0 which GitHub dropped)
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
 # ─── Colors ───────────────────────────────────────────────────────────────────
 if ($Host.UI.SupportsVirtualTerminal) {
   $script:Bold      = [char]0x1b + "[1m"
@@ -307,7 +310,7 @@ function Main {
     $zipPath = Join-Path $tmpDir "onebrain.zip"
 
     try {
-      Invoke-RestMethod -Uri $repoUrl -OutFile $zipPath
+      Invoke-WebRequest -Uri $repoUrl -OutFile $zipPath -UseBasicParsing
     } catch {
       Print-Error "Download failed. Check your internet connection and try again."
       Print-Error $_.Exception.Message
