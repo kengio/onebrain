@@ -112,11 +112,12 @@ for dir in "${ALLOW_DIRS[@]}"; do
   done <<< "${dir_paths}"
 
   # Find local files absent from upstream (deleted in repo)
+  # Guard: skip deletion scan if dir_paths is empty — avoids marking all local files as deleted.
   local_dir="${VAULT_ROOT}/${dir}"
-  if [[ -d "${local_dir}" ]]; then
+  if [[ -n "${dir_paths}" ]] && [[ -d "${local_dir}" ]]; then
     while IFS= read -r local_abs; do
       rel="${local_abs#${VAULT_ROOT}/}"
-      if ! echo "${dir_paths}" | grep -qF "${rel}"; then
+      if ! echo "${dir_paths}" | grep -qxF "${rel}"; then
         DELETED+=("${rel}")
         if [[ "${APPLY}" == true ]]; then
           rm -f "${local_abs}"

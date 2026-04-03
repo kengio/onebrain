@@ -159,11 +159,14 @@ Also ensure `vault.yml` has these keys under `folders:` (add if missing, never t
 | `import_inbox` | `[inbox]/imports` | v1.2.0 |
 | `attachments` | `attachments` | v1.2.0 |
 
+When inserting missing keys: read the file, insert within the existing `folders:` block (not at end of file), write back the full file. If the `folders:` block is absent, report and skip.
+
 ---
 
 ## Step 4d: Migrate Plugin Key (onebrain-local → onebrain)
 
 Check `.claude/settings.json` and `.claude/settings.local.json`. For each that exists:
+- If the file cannot be read or parsed as JSON: report the error and skip it
 - Rename `"onebrain@onebrain-local"` → `"onebrain@onebrain"` in `enabledPlugins`
 - Rename `"onebrain-local"` → `"onebrain"` in `extraKnownMarketplaces`
 - If both old and new keys exist: remove the old one

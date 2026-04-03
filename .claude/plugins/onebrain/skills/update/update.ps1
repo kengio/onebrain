@@ -85,8 +85,8 @@ function Compare-AndApply {
             $Added.Add($Path)
         }
     } else {
-        $UpstreamHash = (Get-FileHash $TmpFile    -Algorithm MD5).Hash
-        $LocalHash    = (Get-FileHash $LocalPath  -Algorithm MD5).Hash
+        $UpstreamHash = (Get-FileHash $TmpFile    -Algorithm SHA256).Hash
+        $LocalHash    = (Get-FileHash $LocalPath  -Algorithm SHA256).Hash
 
         if ($UpstreamHash -eq $LocalHash) {
             $Unchanged.Add($Path)
@@ -115,8 +115,9 @@ foreach ($Dir in $AllowDirs) {
     foreach ($Path in $DirPaths) { Compare-AndApply $Path }
 
     # Find local files absent from upstream (deleted in repo)
+    # Guard: skip deletion scan if $DirPaths is empty — avoids marking all local files as deleted.
     $LocalDir = Join-Path $VaultRoot $Dir
-    if (Test-Path $LocalDir) {
+    if ($DirPaths.Count -gt 0 -and (Test-Path $LocalDir)) {
         Get-ChildItem $LocalDir -Recurse -File | Where-Object { $_.Name -ne ".gitkeep" } | ForEach-Object {
             $Rel = $_.FullName.Substring($VaultRoot.Length + 1).Replace("\", "/")
             if ($DirPaths -notcontains $Rel) {
