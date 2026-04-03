@@ -111,7 +111,7 @@ Without embeddings, `mcp__plugin_onebrain_qmd__query` uses BM25 keyword search o
 
 ## qmd Index Maintenance
 
-Whenever you add, edit, or delete any file in the vault, check first whether qmd is available by looking for `mcp__plugin_onebrain_qmd__status` in your tool list. If it is available, immediately run:
+Whenever you add, edit, or delete any file in the vault, check first whether qmd is available by looking for `mcp__plugin_onebrain_qmd__query` in your tool list. If it is available, immediately run:
 
 ```bash
 qmd update -c <collection>
@@ -119,7 +119,7 @@ qmd update -c <collection>
 
 where `<collection>` is the collection name from `vault.yml` (`qmd_collection` field, e.g. `ob-1-441565`). This keeps the search index in sync and prevents stale entries from appearing in results.
 
-If qmd tools are not available, skip this step entirely.
+If qmd tools are not available, or if `qmd_collection` is not present in `vault.yml`, skip this step entirely.
 
 ## Session Behavior
 
