@@ -535,7 +535,7 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 
 **Type-specific section additions (after Key Points):**
 - **Scripts**: `## Code` — full file content in a fenced code block
-- **PowerPoint**: `## Slide Outline` — numbered slide titles and key points
+- **PowerPoint**: `## Slide Outline` — slide titles as headings + key points per slide
 - **Excel**: `## Data Overview` — left blank for user to fill in
 
 **Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found — add links manually._`
