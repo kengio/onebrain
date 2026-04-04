@@ -190,6 +190,7 @@ Run `uname`:
   create stub note:
   > ⚠ Windows detected (non-WSL). /import requires WSL. Run this in a WSL terminal and retry.
   Stop. Do NOT delete the inbox file.
+- `uname` not found (other): proceed to Python check (assume POSIX-compatible environment).
 
 ### 3. Python Check
 
@@ -215,7 +216,7 @@ pipx install markitdown   # preferred (isolated environment)
 If `pipx` is not found:
 ```bash
 pip3 install markitdown   # macOS/Linux/WSL
-pip install markitdown    # WSL/Windows fallback
+pip install markitdown    # fallback if pip3 not in PATH
 ```
 
 Install succeeded → retry the handler from the beginning (markitdown is now available).
