@@ -331,7 +331,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
    - Notable values, patterns, or structure
 
 4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
-   - `file_type`: `xlsx`
+   - `file_type`: `xlsx` (use for both .xlsx and .xls files)
    - Build the note body as follows (replace the standard Summary / Key Points structure):
 
    ```
@@ -349,8 +349,9 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 5. **Stub note fallback** (if markitdown unavailable or failed):
    Create a minimal note with the appropriate message:
    - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
-   - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the spreadsheet is empty. File left in inbox for retry."
-   - Legacy `.xls`: "⚠ Legacy .xls format may not be supported. Convert to .xlsx and re-import."
+   - Failed / empty:
+     - If `.xls` file: "⚠ Content could not be extracted — legacy .xls format may not be fully supported. Convert to .xlsx and re-import, or open the file manually."
+     - Otherwise: "⚠ Content could not be extracted — markitdown returned an error or the spreadsheet is empty. File left in inbox for retry."
    - `## Summary` section left blank for manual entry.
    **Do NOT delete the inbox file when a stub note is created.**
 
