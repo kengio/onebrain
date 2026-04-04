@@ -313,21 +313,52 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach flag not supported for this type)
 
-> Excel binary formats cannot be reliably extracted without specialized tools. This handler creates a stub note with a link to the original file.
+> Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Record: filename, file size (via `ls -lh "[filepath]"` — if the command fails, record size as "unknown"), file extension.
+1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
 
-2. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
+2. Extract tables:
+   ```bash
+   markitdown "[filepath]"
+   ```
+   - If exit non-zero OR output is empty/whitespace: skip to step 5 (stub note, reason: "markitdown failed or spreadsheet is empty").
+   - Otherwise capture the markdown output. markitdown converts each sheet to a markdown table.
+
+3. Generate AI summary:
+   From the extracted markdown, write 2-3 sentences describing:
+   - What kind of data this spreadsheet contains
+   - How many sheets (if multiple)
+   - Notable values, patterns, or structure
+
+4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
    - `file_type`: `xlsx`
-   - Include the `> **Original file:** [Open](file:///[filepath])` link in the note body
-   - Summary: "⚠ Excel content was not extracted automatically. Open the file to review its contents and fill in this section."
-   - Key Points / Contents section header: `## Data Overview` (left blank for user to fill)
+   - Build the note body as follows (replace the standard Summary / Key Points structure):
 
-3. `--attach` is NOT supported for Excel files.
+   ```
+   ## Summary
 
-4. Cleanup — the Excel stub note IS a successful import (content extraction is intentionally skipped for binary Excel files, not a failure). Delete the inbox file after the Write tool confirms the stub note was created. If delete fails, report as partial success.
+   [AI-generated description from step 3]
 
-5. Return: note path.
+   ## [Sheet Name]
+
+   [markdown table from markitdown output for this sheet]
+
+   ## [Sheet 2 Name]   ← repeat for each additional sheet
+   ```
+
+5. **Stub note fallback** (if markitdown unavailable or failed):
+   Create a minimal note with the appropriate message:
+   - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
+   - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the spreadsheet is empty. File left in inbox for retry."
+   - Legacy `.xls`: "⚠ Legacy .xls format may not be supported. Convert to .xlsx and re-import."
+   - `## Data Overview` section left blank for manual entry.
+   **Do NOT delete the inbox file when a stub note is created.**
+
+6. `--attach` is NOT supported for Excel files.
+
+7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file. If delete fails, report as partial success.
+
+8. Return: note path, or error with reason.
 
 ---
 
