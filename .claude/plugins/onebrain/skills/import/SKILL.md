@@ -184,13 +184,14 @@ Non-zero or command not found → run OS detection below before attempting insta
 ### 2. OS Detection
 
 Run `uname`:
-- `Darwin` or `Linux` where `uname -r` does NOT contain `microsoft` or `WSL` → proceed to Python check
-- WSL: `uname -r` contains `microsoft` or `WSL` → treat as Linux, proceed to Python check
+- `Darwin` → proceed to Python check
+- `Linux` AND `uname -r` contains `microsoft` or `WSL` (WSL) → treat as Linux, proceed to Python check
+- `Linux` AND `uname -r` does NOT contain `microsoft` or `WSL` (native Linux) → proceed to Python check
 - Windows non-WSL: `$OS` equals `Windows_NT` AND uname fails or returns `MINGW`/`CYGWIN` →
   create stub note:
   > ⚠ Windows detected (non-WSL). /import requires WSL. Run this in a WSL terminal and retry.
   Stop. Do NOT delete the inbox file.
-- `uname` not found (other): proceed to Python check (assume POSIX-compatible environment).
+- `uname` not found: proceed to Python check (assume POSIX-compatible environment).
 
 ### 3. Python Check
 
