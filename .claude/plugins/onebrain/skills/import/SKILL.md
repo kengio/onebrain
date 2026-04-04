@@ -351,7 +351,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
    - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
    - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the spreadsheet is empty. File left in inbox for retry."
    - Legacy `.xls`: "⚠ Legacy .xls format may not be supported. Convert to .xlsx and re-import."
-   - `## Data Overview` section left blank for manual entry.
+   - `## Summary` section left blank for manual entry.
    **Do NOT delete the inbox file when a stub note is created.**
 
 6. `--attach` is NOT supported for Excel files.
@@ -567,7 +567,8 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 **Type-specific section additions (after Key Points):**
 - **Scripts**: `## Code` — full file content in a fenced code block
 - **PowerPoint**: `## Slide Outline` — slide titles as headings + key points per slide
-- **Excel**: `## Data Overview` — left blank for user to fill in
+- **Excel (full extraction)**: `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
+- **Excel (stub)**: `## Summary` — left blank for manual entry
 
 **Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found — add links manually._`
 
