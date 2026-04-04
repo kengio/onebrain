@@ -569,7 +569,7 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 **Type-specific section additions (after Key Points):**
 - **Scripts**: `## Code` — full file content in a fenced code block
 - **PowerPoint**: `## Slide Outline` — slide titles as headings + key points per slide
-- **Excel (full extraction)**: `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
+- **Excel (full extraction)**: replaces `## Key Points / Contents` — use `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
 - **Excel (stub)**: `## Summary` — left blank for manual entry
 
 **Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found — add links manually._`
