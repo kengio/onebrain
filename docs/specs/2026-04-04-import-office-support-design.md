@@ -43,9 +43,11 @@ All Office handlers (Word, PowerPoint, Excel) reference this section instead of 
 
 ### Detection
 ```bash
-which markitdown   # macOS/Linux/WSL
-where markitdown   # Windows
+markitdown --version   # cross-platform; exit 0 = installed
 ```
+
+If exit 0 → markitdown is available, proceed with handler.
+If non-zero or command not found → run OS detection before attempting install.
 
 ### OS Detection (before attempting install)
 1. Run `uname` to detect OS:
