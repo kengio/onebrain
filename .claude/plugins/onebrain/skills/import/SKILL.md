@@ -111,7 +111,7 @@ Import complete — 4 notes created:
 If any subagent failed:
 ```
 ⚠ 1 file failed:
-  deck.pptx — pandoc not installed. File left in inbox. Install with: brew install pandoc
+  deck.pptx — markitdown not installed. File left in inbox. Install with: pipx install markitdown
 ```
 
 If any files were skipped due to unsupported type:
@@ -152,10 +152,10 @@ These rules apply to **all** handlers. No exceptions.
 Delete an inbox file ONLY after the Write tool confirms the note was created. If note creation fails for any reason: return an error, leave the inbox file untouched, stop.
 
 **2. Stub notes do NOT trigger cleanup.**
-When a stub note is created (pandoc unavailable, pandoc failed, empty document): do NOT delete the inbox file. The user needs it to retry after fixing the issue.
+When a stub note is created (extraction tool unavailable, extraction failed, empty document): do NOT delete the inbox file. The user needs it to retry after fixing the issue.
 
 **3. Read/extraction failures stop processing.**
-If the Read tool, pandoc, or any extraction step returns an error or empty output: do NOT create a note. Return an error. Do NOT delete the inbox file.
+If the Read tool, markitdown, or any extraction step returns an error or empty output: do NOT create a note. Return an error. Do NOT delete the inbox file.
 
 **4. File validation before processing.**
 Check file size with `ls -la "[filepath]"`. If 0 bytes: create a stub note ("File is empty — no content to extract."), do NOT delete inbox file, return.
@@ -165,6 +165,68 @@ Before every `cp`, run `mkdir -p` for the target directory. If `cp` fails: skip 
 
 **6. Filename collision.**
 Before writing a note, check if the target path already exists. If it does: append ` (Imported YYYY-MM-DD)` to the filename and note the rename in the summary.
+
+---
+
+## markitdown Dependency
+
+Used by the Word, PowerPoint, and Excel handlers. Each handler references this section for detection, OS check, Python check, and install — instead of duplicating the logic.
+
+### 1. Detection
+
+```bash
+command -v markitdown
+```
+
+Exit 0 → markitdown is installed. Proceed with the handler.
+Non-zero or command not found → run OS detection below before attempting install.
+
+### 2. OS Detection
+
+Run `uname`:
+- `Darwin` → proceed to Python check
+- `Linux` AND `uname -r` contains `microsoft` or `WSL` (WSL) → treat as Linux, proceed to Python check
+- `Linux` AND `uname -r` does NOT contain `microsoft` or `WSL` (native Linux) → proceed to Python check
+- Windows non-WSL: `$OS` equals `Windows_NT` AND uname fails or returns `MINGW`/`CYGWIN` →
+  create stub note:
+  > ⚠ Windows detected (non-WSL). /import requires WSL. Run this in a WSL terminal and retry.
+  Stop. Do NOT delete the inbox file.
+- `uname` not found: proceed to Python check (assume POSIX-compatible environment).
+
+### 3. Python Check
+
+```bash
+python3 --version
+```
+
+Not found → create stub note:
+> ⚠ Python 3 is not installed. Install Python first:
+> - macOS: `brew install python3`
+> - Linux/WSL: `sudo apt install python3`
+>
+> Then run: `pipx install markitdown` and re-import this file.
+
+Stop. Do NOT delete the inbox file.
+
+### 4. Install
+
+Try in order:
+```bash
+pipx install markitdown   # preferred (isolated environment)
+```
+If `pipx` is not found:
+```bash
+pip3 install markitdown   # macOS/Linux/WSL
+pip install markitdown    # fallback if pip3 not in PATH
+```
+
+Install succeeded → retry the handler from the beginning (markitdown is now available).
+
+Install failed → create stub note:
+> ⚠ markitdown could not be installed automatically.
+> Install manually: `pipx install markitdown`, then re-import this file.
+
+Stop. Do NOT delete the inbox file.
 
 ---
 
@@ -212,24 +274,20 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox flag.
 
-> Requires `pandoc` (`brew install pandoc` on macOS). Falls back to stub note if unavailable.
+> Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Check if pandoc is available:
+1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
+
+2. Extract markdown:
    ```bash
-   which pandoc
+   markitdown "[filepath]"
    ```
-   If not found: skip to step 5 (stub note).
+   - If exit non-zero OR output is empty/whitespace: skip to step 5 (stub note, reason: "markitdown failed or document is empty").
+   - Otherwise capture the output as markdown text.
 
-2. Extract text:
-   ```bash
-   pandoc "[filepath]" -t plain
-   ```
-   - If pandoc exits non-zero OR output is empty/whitespace: skip to step 5 (stub note, reason: "pandoc failed or document is empty").
-   - Otherwise capture the output as plain text.
-
-3. From the extracted text, identify:
-   - **Title**: first heading or document title, or derive from filename
-   - **Headings and key sections**: structure of the document
+3. From the extracted markdown, identify:
+   - **Title**: first `#` heading, or derive from filename
+   - **Headings and key sections**: structure is already preserved in the markdown output
    - **Core content**: main points, arguments, or information
 
 4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
@@ -237,16 +295,16 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Summary: 2-3 sentence distillation
    - Key Points: bullet list of main points
 
-5. **Stub note fallback** (if pandoc unavailable or failed):
+5. **Stub note fallback** (if markitdown unavailable or failed):
    Create a minimal note with the appropriate message:
-   - Not installed: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
-   - Failed / empty: "⚠ Content could not be extracted — pandoc returned an error or the document is empty. File left in inbox for retry."
+   - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
+   - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the document is empty. File left in inbox for retry."
    - Key Points: "_Open the file to review its contents and fill in this section._"
    **Do NOT delete the inbox file when a stub note is created.**
 
 6. `--attach` is NOT supported for Word files (no Obsidian preview value).
 
-7. Cleanup — only if a full note was created (pandoc succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
+7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
 
 8. Return: note path, or error with reason.
 
@@ -256,21 +314,53 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach flag not supported for this type)
 
-> Excel binary formats cannot be reliably extracted without specialized tools. This handler creates a stub note with a link to the original file.
+> Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Record: filename, file size (via `ls -lh "[filepath]"` — if the command fails, record size as "unknown"), file extension.
+1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
 
-2. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
-   - `file_type`: `xlsx`
-   - Include the `> **Original file:** [Open](file:///[filepath])` link in the note body
-   - Summary: "⚠ Excel content was not extracted automatically. Open the file to review its contents and fill in this section."
-   - Key Points / Contents section header: `## Data Overview` (left blank for user to fill)
+2. Extract tables:
+   ```bash
+   markitdown "[filepath]"
+   ```
+   - If exit non-zero OR output is empty/whitespace: skip to step 5 (stub note, reason: "markitdown failed or spreadsheet is empty").
+   - Otherwise capture the markdown output. markitdown converts each sheet to a markdown table.
 
-3. `--attach` is NOT supported for Excel files.
+3. Generate AI summary:
+   From the extracted markdown, write 2-3 sentences describing:
+   - What kind of data this spreadsheet contains
+   - How many sheets (if multiple)
+   - Notable values, patterns, or structure
 
-4. Cleanup — the Excel stub note IS a successful import (content extraction is intentionally skipped for binary Excel files, not a failure). Delete the inbox file after the Write tool confirms the stub note was created. If delete fails, report as partial success.
+4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
+   - `file_type`: `xlsx` (use for both .xlsx and .xls files)
+   - Build the note body as follows (replace the standard Summary / Key Points structure):
 
-5. Return: note path.
+   ```
+   ## Summary
+
+   [AI-generated description from step 3]
+
+   ## [Sheet Name]
+
+   [markdown table from markitdown output for this sheet]
+
+   ## [Sheet 2 Name]   ← repeat for each additional sheet
+   ```
+
+5. **Stub note fallback** (if markitdown unavailable or failed):
+   Create a minimal note with the appropriate message:
+   - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
+   - Failed / empty:
+     - If `.xls` file: "⚠ Content could not be extracted — legacy .xls format may not be fully supported. Convert to .xlsx and re-import, or open the file manually."
+     - Otherwise: "⚠ Content could not be extracted — markitdown returned an error or the spreadsheet is empty. File left in inbox for retry."
+   - `## Summary` section left blank for manual entry.
+   **Do NOT delete the inbox file when a stub note is created.**
+
+6. `--attach` is NOT supported for Excel files.
+
+7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file. If delete fails, report as partial success.
+
+8. Return: note path, or error with reason.
 
 ---
 
@@ -278,40 +368,36 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 
 Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach flag not supported for this type)
 
-> Requires `pandoc` (`brew install pandoc` on macOS). Falls back to stub note if unavailable.
+> Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Check if pandoc is available:
+1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
+
+2. Extract markdown:
    ```bash
-   which pandoc
+   markitdown "[filepath]"
    ```
-   If not found: skip to step 4 (stub note).
+   - If exit non-zero OR output is empty/whitespace: skip to step 5 (stub note, reason: "markitdown failed or presentation is empty").
+   - Otherwise capture the output as markdown text.
 
-2. Extract text:
-   ```bash
-   pandoc "[filepath]" -t plain
-   ```
-   - If pandoc exits non-zero OR output is empty/whitespace: skip to step 4 (stub note, reason: "pandoc failed or presentation is empty").
-   - Otherwise capture the output as plain text.
+3. From the extracted markdown, create a slide outline:
+   - markitdown maps slide titles to `##` headings — use these as the slide structure
+   - The `## Slide Outline` section is populated from these headings and their content
 
-3. From the extracted text, create a slide outline:
-   - Identify slide titles and main text per slide
-   - Note section: `## Slide Outline` with numbered slides
-
-   Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
+4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
    - `file_type`: `pptx`
    - Summary: 2-3 sentences describing the presentation's purpose and audience
-   - Key section: `## Slide Outline` (numbered list of slide titles + key points)
+   - Key section: `## Slide Outline` (slide titles as headings + key points per slide)
 
-4. **Stub note fallback** (if pandoc unavailable or failed):
-   - Not installed: "⚠ Content could not be extracted — `pandoc` is not installed. Install with: `brew install pandoc`, then re-import this file."
-   - Failed / empty: "⚠ Content could not be extracted — pandoc returned an error or the presentation is empty. File left in inbox for retry."
+5. **Stub note fallback** (if markitdown unavailable or failed):
+   - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
+   - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the presentation is empty. File left in inbox for retry."
    **Do NOT delete the inbox file when a stub note is created.**
 
-5. `--attach` is NOT supported for PowerPoint files.
+6. `--attach` is NOT supported for PowerPoint files.
 
-6. Cleanup — only if a full note was created (pandoc succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
+7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
 
-7. Return: note path, or error with reason.
+8. Return: note path, or error with reason.
 
 ---
 
@@ -482,8 +568,9 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 
 **Type-specific section additions (after Key Points):**
 - **Scripts**: `## Code` — full file content in a fenced code block
-- **PowerPoint**: `## Slide Outline` — numbered slide titles and key points
-- **Excel**: `## Data Overview` — left blank for user to fill in
+- **PowerPoint**: `## Slide Outline` — slide titles as headings + key points per slide
+- **Excel (full extraction)**: replaces `## Key Points / Contents` — use `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
+- **Excel (stub)**: `## Summary` — left blank for manual entry
 
 **Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found — add links manually._`
 
