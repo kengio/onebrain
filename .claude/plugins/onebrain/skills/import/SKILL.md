@@ -175,7 +175,7 @@ Used by the Word, PowerPoint, and Excel handlers. Each handler references this s
 ### 1. Detection
 
 ```bash
-markitdown --version
+command -v markitdown
 ```
 
 Exit 0 → markitdown is installed. Proceed with the handler.
@@ -369,34 +369,34 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 
 > Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 4 (stub note).
+1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
 
 2. Extract markdown:
    ```bash
    markitdown "[filepath]"
    ```
-   - If exit non-zero OR output is empty/whitespace: skip to step 4 (stub note, reason: "markitdown failed or presentation is empty").
+   - If exit non-zero OR output is empty/whitespace: skip to step 5 (stub note, reason: "markitdown failed or presentation is empty").
    - Otherwise capture the output as markdown text.
 
 3. From the extracted markdown, create a slide outline:
    - markitdown maps slide titles to `##` headings — use these as the slide structure
-   - Note section: `## Slide Outline` populated from the markdown headings and content
+   - The `## Slide Outline` section is populated from these headings and their content
 
-   Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
+4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
    - `file_type`: `pptx`
    - Summary: 2-3 sentences describing the presentation's purpose and audience
    - Key section: `## Slide Outline` (slide titles as headings + key points per slide)
 
-4. **Stub note fallback** (if markitdown unavailable or failed):
+5. **Stub note fallback** (if markitdown unavailable or failed):
    - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
    - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the presentation is empty. File left in inbox for retry."
    **Do NOT delete the inbox file when a stub note is created.**
 
-5. `--attach` is NOT supported for PowerPoint files.
+6. `--attach` is NOT supported for PowerPoint files.
 
-6. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
+7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
 
-7. Return: note path, or error with reason.
+8. Return: note path, or error with reason.
 
 ---
 
