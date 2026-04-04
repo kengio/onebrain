@@ -168,6 +168,66 @@ Before writing a note, check if the target path already exists. If it does: appe
 
 ---
 
+## markitdown Dependency
+
+Used by the Word, PowerPoint, and Excel handlers. Each handler references this section for detection, OS check, Python check, and install — instead of duplicating the logic.
+
+### 1. Detection
+
+```bash
+markitdown --version
+```
+
+Exit 0 → markitdown is installed. Proceed with the handler.
+Non-zero or command not found → run OS detection below before attempting install.
+
+### 2. OS Detection
+
+Run `uname`:
+- `Darwin` or `Linux` where `uname -r` does NOT contain `microsoft` or `WSL` → proceed to Python check
+- WSL: `uname -r` contains `microsoft` or `WSL` → treat as Linux, proceed to Python check
+- Windows non-WSL: `$OS` equals `Windows_NT` AND uname fails or returns `MINGW`/`CYGWIN` →
+  create stub note:
+  > ⚠ Windows detected (non-WSL). /import requires WSL. Run this in a WSL terminal and retry.
+  Stop. Do NOT delete the inbox file.
+
+### 3. Python Check
+
+```bash
+python3 --version
+```
+
+Not found → create stub note:
+> ⚠ Python 3 is not installed. Install Python first:
+> - macOS: `brew install python3`
+> - Linux/WSL: `sudo apt install python3`
+>
+> Then run: `pipx install markitdown` and re-import this file.
+
+Stop. Do NOT delete the inbox file.
+
+### 4. Install
+
+Try in order:
+```bash
+pipx install markitdown   # preferred (isolated environment)
+```
+If `pipx` is not found:
+```bash
+pip3 install markitdown   # macOS/Linux/WSL
+pip install markitdown    # WSL/Windows fallback
+```
+
+Install succeeded → retry the handler from the beginning (markitdown is now available).
+
+Install failed → create stub note:
+> ⚠ markitdown could not be installed automatically.
+> Install manually: `pipx install markitdown`, then re-import this file.
+
+Stop. Do NOT delete the inbox file.
+
+---
+
 ## PDF Handler
 
 Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox flag.
