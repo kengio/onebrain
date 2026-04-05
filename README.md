@@ -40,7 +40,7 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 
 ## Features
 
-| | | |
+| | Feature | Description |
 |---|---|---|
 | 🧠 | **Persistent Memory** | Remembers your name, goals, preferences, and decisions across every session |
 | 🖥️ | **Personal AI OS** | Full local stack: Claude Code + Obsidian + tmux + Telegram — no cloud infra needed |
@@ -73,9 +73,9 @@ Run OneBrain as your personal AI operating system — a complete AI environment 
 **Setting up the full stack:**
 
 1. Install OneBrain and open your vault in Obsidian ([Get Started](#get-started))
-2. Start Claude Code in your vault directory: `claude`
-3. Run `/telegram:configure` to connect Claude Code's built-in Telegram channel — no custom bot or external infra needed
-4. Start a tmux session and launch Claude Code inside it so your agent survives disconnects
+2. Start a tmux session: `tmux new -s onebrain`
+3. Start Claude Code in your vault directory: `claude`
+4. Run `/telegram:configure` to connect Claude Code's built-in Telegram channel — no custom bot or external infra needed
 5. From any device, open Telegram and send instructions directly to your OneBrain agent
 
 Your agent, your vault, your data — forever.
@@ -165,7 +165,7 @@ Then run `/onboarding`.
 <a id="commands"></a>
 
 <details>
-<summary><strong>📋 All 22 Commands</strong></summary>
+<summary><strong>📋 22+ Commands</strong></summary>
 <br>
 
 | Command | What it does |
