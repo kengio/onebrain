@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" alt="OneBrain — Where human and AI thinking become one" width="100%" />
+  <img src="assets/banner.png" alt="OneBrain — Your personal AI OS" width="100%" />
 </p>
 
 <p align="center">
@@ -11,35 +11,109 @@
 
 <h1 align="center">OneBrain</h1>
 
-<h3 align="center">Turn Claude Code, Gemini CLI, or any AI agent into a thinking partner that remembers everything — right inside your Obsidian vault.</h3>
+<p align="center">
+  <em>Your AI forgets everything when the session ends.<br>
+  Your notes, your AI, and your tools live in separate silos.<br>
+  OneBrain fixes both — giving you a thinking partner that remembers everything.</em>
+</p>
+
+<p align="center">
+  <strong>Your personal AI OS</strong> — persistent memory, 22+ skills, and a full local stack<br>
+  (Claude Code + Obsidian + tmux + Telegram), entirely on your own machine.
+</p>
+
+<p align="center">
+  <a href="#get-started">Get Started →</a> &nbsp;·&nbsp; <a href="#commands">View Commands →</a>
+</p>
+
+---
+
+## What is OneBrain?
+
+OneBrain is an AI operating system layer built on top of Obsidian. It gives your AI agent persistent memory, a structured knowledge vault, and 22+ pre-built skills — so every session picks up exactly where the last one left off.
+
+Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forever. No cloud sync required. No proprietary format. Just your agent, your vault, your data.
+
+**Works with:** Claude Code · Gemini CLI · any agent that reads Markdown
 
 ---
 
 ## Features
 
-**🧠 Memory across sessions** — Your AI remembers your name, goals, preferences, and past conversations. Every session picks up where the last one left off.
-
-**⚡ 22 slash commands and counting** — Braindump, capture, research, consolidate, connect, bookmark, import files, and more. More skills coming soon — capture an idea or deep-research a topic in seconds.
-
-**📂 Vault-native Markdown** — Every note is plain Markdown. No lock-in, no proprietary format. Your data stays in your vault, forever.
-
-**🤖 Multi-agent** — Works with Claude Code, Gemini CLI, or any AI that reads Markdown instructions. Switch agents without losing context.
-
-**🔌 Zero config** — Clone the repo, open in Obsidian, run `/onboarding`. Your vault and AI are ready in under 2 minutes.
-
-**📓 Session logs** — Every conversation is auto-saved with summaries, decisions, and action items. Nothing gets lost between sessions.
-
-**🔗 Knowledge synthesis** — `/consolidate` processes your inbox into permanent, connected knowledge — turning raw notes into insights you can actually find.
-
-**🎓 Teach your AI** — `/learn` lets you permanently shape how your agent thinks and responds. Teach it your stack, your team, your preferences.
+| | Feature | Description |
+|---|---|---|
+| 🧠 | **Persistent Memory** | Remembers your name, goals, preferences, and decisions across every session |
+| 🖥️ | **Personal AI OS** | Full local stack: Claude Code + Obsidian + tmux + Telegram — no cloud infra needed |
+| ⚡ | **22+ Skills** | Braindump, research, consolidate, bookmark, import files, daily briefing, and more |
+| 📂 | **Vault-native Markdown** | Plain Markdown, no lock-in. Your data stays yours forever |
+| 🤖 | **Multi-agent** | Works with Claude Code, Gemini CLI, or any agent that reads Markdown |
+| 🔌 | **Zero Config** | Clone, open in Obsidian, run `/onboarding`. Ready in under 2 minutes |
+| 📓 | **Auto Session Logs** | Every conversation saved with summaries, decisions, and action items |
+| 🔗 | **Knowledge Synthesis** | `/consolidate` turns inbox captures into permanent connected knowledge |
+| 🎓 | **Teachable AI** | `/learn` permanently shapes how your agent thinks and responds |
+| 📱 | **Mobile Access** | Send instructions and receive briefings from anywhere via Telegram |
 
 ---
 
-## Installation
+## Use Cases
+
+### 🖥️ Personal AI OS
+
+Run OneBrain as your personal AI operating system — a complete AI environment that runs locally with no cloud infrastructure required.
+
+**Recommended stack:**
+
+| Tool | Role |
+|------|------|
+| [Claude Code](https://claude.ai/code) | Your AI agent, running in the terminal |
+| [Obsidian](https://obsidian.md) | Your vault — single source of truth for memory and knowledge |
+| [tmux](https://github.com/tmux/tmux) | Persistent sessions that survive disconnects and reboots |
+| [Telegram](https://telegram.org) | Mobile access: send instructions, receive briefings from anywhere |
+
+**Setting up the full stack:**
+
+1. Install OneBrain and open your vault in Obsidian ([Get Started](#get-started))
+2. Start a tmux session: `tmux new -s onebrain`
+3. Start Claude Code in your vault directory: `claude`
+4. Run `/telegram:configure` to connect Claude Code's built-in Telegram channel — no custom bot or external infra needed
+5. From any device, open Telegram and send instructions directly to your OneBrain agent
+
+Your agent, your vault, your data — forever.
+
+### 🧠 Thinking Partner
+
+Use OneBrain as a daily thinking partner. Capture ideas with `/braindump`, research topics with `/research`, synthesize knowledge with `/consolidate`, and surface connections you'd never find manually with `/connect`.
+
+### 📚 Knowledge Base Builder
+
+Turn your AI into a knowledge curator: research, summarize, import files, and build a connected Markdown knowledge base that grows smarter over time.
+
+---
+
+## How It Works
+
+After `/onboarding`, your AI agent:
+
+1. **Loads your identity** — name, role, goals, communication style, active projects
+2. **Greets you with context** — inbox status, overdue tasks, patterns from recent sessions
+3. **Remembers everything** — decisions, preferences, and insights accumulate over time
+4. **Suggests next actions** — based on what's in your vault, not what it can infer from scratch
+
+### Memory System
+
+OneBrain uses a three-layer memory system:
+
+| Layer | Location | What it stores |
+|-------|----------|---------------|
+| **Identity** | `05-agent/MEMORY.md` | Name, goals, style, active projects — loaded every session |
+| **Knowledge** | `05-agent/context/` + `memory/` | Domain facts, stack, team, behavioral patterns |
+| **History** | `07-logs/YYYY/MM/` | Session summaries, decisions, action items — searchable |
+
+---
+
+## Get Started
 
 ### Option 1 — Fresh vault (recommended)
-
-For users who want a dedicated OneBrain vault from scratch.
 
 **macOS / Linux:**
 
@@ -63,8 +137,6 @@ irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
 
 ### Option 2 — Add to existing vault
 
-For users who already have an Obsidian vault and want OneBrain skills inside it.
-
 Run from within your existing vault in Claude Code:
 
 ```
@@ -72,19 +144,11 @@ Run from within your existing vault in Claude Code:
 /plugin install onebrain@onebrain
 ```
 
-Then run `/onboarding` — this bundles OneBrain into your vault, creates your folders, and sets up your AI identity. After onboarding, use `/update` to keep OneBrain current, same as a fresh vault install.
+Then run `/onboarding`.
 
 ---
 
-### After running `/update`
-
-`/update` clears the plugin cache and writes new files to disk. To pick up changes in your **current session** without restarting:
-
-```
-/reload-plugins
-```
-
-Or simply start a new Claude Code session — changes are picked up automatically.
+> **After `/update`:** Run `/reload-plugins` to pick up changes in your current session, or simply start a new session.
 
 ---
 
@@ -98,20 +162,10 @@ Or simply start a new Claude Code session — changes are picked up automaticall
 
 ---
 
-## How It Works
-
-After `/onboarding`, your AI agent:
-- Addresses you by your preferred name and matches your communication style
-- Greets you each session with inbox status and context from the last session
-- Remembers your goals, projects, and preferences indefinitely
-- Suggests next actions based on what's in your vault
-
-Under the hood, OneBrain uses a **three-layer memory system**: your identity (always loaded), domain knowledge and behavioral patterns (loaded when relevant), and a searchable session history. See details below.
-
----
+<a id="commands"></a>
 
 <details>
-<summary><strong>📋 All 22 Commands</strong></summary>
+<summary><strong>📋 22+ Commands</strong></summary>
 <br>
 
 | Command | What it does |
@@ -159,7 +213,7 @@ onebrain/
 │   ├── MEMORY.md      Your identity — loaded every session
 │   ├── context/       Domain facts the AI reads when relevant
 │   └── memory/        Behavioral patterns the AI has learned
-├── 06-archive/        Completed projects and archived areas
+├── 06-archive/        Completed projects and retired areas
 ├── 07-logs/           Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
 ├── attachments/       Copied files from /import --attach
 │   ├── pdf/
