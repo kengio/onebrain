@@ -174,7 +174,7 @@ After greeting the user, silently check for orphaned checkpoints from previous s
      - Content synthesized from checkpoint files: What We Worked On, Key Decisions, Action Items, Open Questions
      - Mark each checkpoint `merged: true`
    - **more than 5 files**: surface to user after greeting:
-     > "มี orphaned checkpoints {N} ไฟล์จาก {X} sessions — รัน /wrapup เพื่อ synthesize ไหมครับ?"
+     > "{N} orphaned checkpoints from {X} sessions found — run /wrapup to synthesize them?"
 
 Do not show any output about this cleanup to the user unless the count exceeds 5 files.
 
