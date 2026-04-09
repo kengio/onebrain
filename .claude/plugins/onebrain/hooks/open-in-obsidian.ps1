@@ -1,5 +1,6 @@
 # OneBrain — Set Dirty Flag for Deferred Obsidian Open (Windows)
-# PostToolUse hook (Write|Edit). Writes the last-edited file path to a dirty flag.
+# PostToolUse hook (Write|Edit). Appends each edited file path to a dirty flag.
+# obsidian-deferred.ps1 (Stop hook) reads all paths and opens each in Obsidian once.
 
 $ParentPid = (Get-CimInstance Win32_Process -Filter "ProcessId=$PID").ParentProcessId
 $DirtyFlag = "$env:TEMP\onebrain-dirty-$ParentPid"
@@ -12,4 +13,5 @@ try {
 
 if (-not $filePath) { exit 0 }
 
-Set-Content -Path $DirtyFlag -Value $filePath
+# Append path — Stop hook collects all files written this response
+Add-Content -Path $DirtyFlag -Value $filePath

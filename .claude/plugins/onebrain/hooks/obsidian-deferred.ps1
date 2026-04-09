@@ -1,15 +1,24 @@
 # OneBrain — Deferred Obsidian Open (Stop Hook, Windows)
-# Reads dirty flag written by open-in-obsidian.ps1, opens Obsidian once, clears flag.
+# Reads all paths appended by open-in-obsidian.ps1, opens each in Obsidian, clears flag.
 
 $ParentPid = (Get-CimInstance Win32_Process -Filter "ProcessId=$PID").ParentProcessId
 $DirtyFlag = "$env:TEMP\onebrain-dirty-$ParentPid"
 
 if (-not (Test-Path $DirtyFlag)) { exit 0 }
 
-$filePath = (Get-Content $DirtyFlag -Raw).Trim()
+# Read all paths then immediately clear the flag
+$paths = Get-Content $DirtyFlag
 Remove-Item $DirtyFlag -Force
 
-if (-not $filePath) { exit 0 }
+if (-not $paths) { exit 0 }
 
-$encoded = [Uri]::EscapeUriString($filePath.Replace('\', '/'))
-Start-Process "obsidian://open?path=$encoded"
+$seen = @{}
+foreach ($filePath in $paths) {
+    $filePath = $filePath.Trim()
+    if (-not $filePath) { continue }
+    if ($seen[$filePath]) { continue }
+    $seen[$filePath] = $true
+
+    $encoded = [Uri]::EscapeUriString($filePath.Replace('\', '/'))
+    Start-Process "obsidian://open?path=$encoded"
+}
