@@ -290,6 +290,10 @@ folders:
   agent: 05-agent
   archive: 06-archive
   logs: 07-logs
+
+checkpoint:
+  messages: 15    # auto-checkpoint every N message exchanges
+  minutes: 30     # auto-checkpoint every N minutes (whichever comes first)
 ```
 
 

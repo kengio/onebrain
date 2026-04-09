@@ -22,7 +22,7 @@ Use these variables for all file paths in the steps below.
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
-2. Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md`
+2. Glob `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md`
 3. Filter: keep only files where frontmatter field `merged` is absent or not `true`
 4. If any found: read each file — use their content as **additional context** when reviewing the session in Step 3. Unmerged checkpoints capture activity that may have been compressed out of current context.
 5. Store the list of found checkpoint paths for use in Step 5.
@@ -34,9 +34,9 @@ If none found: continue normally.
 ## Step 2: Determine Session File Name
 
 1. Get today's date: `YYYY-MM-DD`. Extract `YYYY` and `MM` (zero-padded month).
-2. List files in `[logs_folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md`
+2. List files in `[logs folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md`
 3. The next session number = count of matches + 1 (zero-padded to 2 digits: 01, 02, etc.)
-4. File name: `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
+4. File name: `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
 
 ---
 
@@ -55,7 +55,7 @@ Reflect on the conversation that just occurred. Identify:
 
 ## Step 4: Write the Session Log
 
-Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`:
+Create `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`:
 
 ```markdown
 ---
@@ -145,7 +145,7 @@ If a genuinely useful long-term insight emerged this session — a clear behavio
 ## Step 8: Confirm
 
 Say:
-> Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
+> Session saved to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
 >
 > [If action items]: I logged N action items — they'll appear in your Tasks view.
 > [If MEMORY.md updated]: I also added a learning to `[agent_folder]/MEMORY.md`.

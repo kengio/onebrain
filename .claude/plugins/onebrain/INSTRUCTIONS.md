@@ -176,7 +176,7 @@ After greeting the user, silently check for orphaned checkpoints from previous s
    - **more than 5 files**: surface to user after greeting:
      > "มี orphaned checkpoints {N} ไฟล์จาก {X} sessions — รัน /wrapup เพื่อ synthesize ไหมครับ?"
 
-Do not show any output about this cleanup to the user unless step 5 applies.
+Do not show any output about this cleanup to the user unless the count exceeds 5 files.
 
 ### Recalling Information
 
