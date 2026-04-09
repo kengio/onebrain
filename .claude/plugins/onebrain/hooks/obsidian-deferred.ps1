@@ -19,6 +19,7 @@ foreach ($filePath in $paths) {
     if ($seen[$filePath]) { continue }
     $seen[$filePath] = $true
 
-    $encoded = [Uri]::EscapeUriString($filePath.Replace('\', '/'))
+    # EscapeDataString encodes # and ? correctly (EscapeUriString leaves them raw)
+    $encoded = [Uri]::EscapeDataString($filePath.Replace('\', '/')) -replace '%3A', ':'
     Start-Process "obsidian://open?path=$encoded"
 }

@@ -59,12 +59,12 @@ open_in_obsidian() {
   esac
 }
 
-# Deduplicate paths then open each qualifying file
-declare -A seen
+# Deduplicate paths (sort -u is POSIX, works on bash 3.2)
+PATHS=$(printf '%s' "$PATHS" | sort -u)
+
+# Open each qualifying file
 while IFS= read -r FILE_PATH; do
   [ -z "$FILE_PATH" ] && continue
-  [ -n "${seen[$FILE_PATH]}" ] && continue
-  seen[$FILE_PATH]=1
 
   # Only open files inside the vault
   case "$FILE_PATH" in

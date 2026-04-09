@@ -6,8 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/open-in-obsidian.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/open-in-obsidian.ps1\"",
-            "async": true
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/open-in-obsidian.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/open-in-obsidian.ps1\""
           },
           {
             "type": "command",
