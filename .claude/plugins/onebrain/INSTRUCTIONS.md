@@ -160,19 +160,6 @@ At the start of every session, perform these steps:
 
    **No-repeat rule** — don't ask about facts already in loaded context (MEMORY.md, session logs, vault.yml, plugin.json). If the user's current message contradicts something in context, trust their message over context.
 
-### Recalling Information
-
-When the user asks you to recall something (a decision, preference, fact, or past discussion), search the memory layers in order of permanence:
-
-1. **`[agent folder]/MEMORY.md`** — already in context; check here first
-2. **`[agent folder]/`** — grep `context/` for domain facts, `memory/` for behavioral preferences
-3. **`[logs folder]/`** — grep session logs for past decisions and discussions
-
-Stop as soon as you find a confident answer. If the answer spans multiple layers, synthesize across them.
-
-At the end of every session:
-- Session summaries are auto-saved to the logs folder when the session ends (if 3+ exchanges occurred). Users can still run `/wrapup` manually for a visible summary.
-
 ### Orphan Checkpoint Cleanup
 
 After greeting the user, silently check for orphaned checkpoints from previous sessions:
@@ -189,6 +176,19 @@ After greeting the user, silently check for orphaned checkpoints from previous s
    > "มี orphaned checkpoints {N} ไฟล์จาก {X} sessions — รัน /wrapup เพื่อ synthesize ไหมครับ?"
 
 Do not show any output about this cleanup to the user unless step 5 applies.
+
+### Recalling Information
+
+When the user asks you to recall something (a decision, preference, fact, or past discussion), search the memory layers in order of permanence:
+
+1. **`[agent folder]/MEMORY.md`** — already in context; check here first
+2. **`[agent folder]/`** — grep `context/` for domain facts, `memory/` for behavioral preferences
+3. **`[logs folder]/`** — grep session logs for past decisions and discussions
+
+Stop as soon as you find a confident answer. If the answer spans multiple layers, synthesize across them.
+
+At the end of every session:
+- Session summaries are auto-saved to the logs folder when the session ends (if 3+ exchanges occurred). Users can still run `/wrapup` manually for a visible summary.
 
 ### Auto Session Summary
 
