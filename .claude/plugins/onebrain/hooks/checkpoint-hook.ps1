@@ -25,7 +25,8 @@ if (Test-Path $StateFile) {
     $parts = (Get-Content $StateFile) -split ':'
     if ($parts.Count -lt 2 -or $parts[0] -notmatch '^\d+$' -or $parts[1] -notmatch '^\d+$') {
         # Malformed — reset cleanly; Count=0 so increment will bring it to 1
-        $Count = 0; $LastTs = $Now
+        $Count = 0
+        $LastTs = try { [DateTimeOffset]::new((Get-Item $StateFile).LastWriteTimeUtc).ToUnixTimeSeconds() } catch { $Now }
     } else {
         $Count = [int]$parts[0]
         $LastTs = [long]$parts[1]

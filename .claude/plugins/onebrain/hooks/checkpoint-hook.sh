@@ -23,7 +23,7 @@ if [ -f "$STATE_FILE" ]; then
   IFS=':' read -r COUNT LAST_TS < "$STATE_FILE"
   if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || ! [[ "$LAST_TS" =~ ^[0-9]+$ ]]; then
     # Malformed — reset cleanly; COUNT=0 so increment will bring it to 1
-    COUNT=1
+    COUNT=0
     LAST_TS=$(stat -f %m "$STATE_FILE" 2>/dev/null || stat -c %Y "$STATE_FILE" 2>/dev/null || echo "$NOW")
   elif [ "$COUNT" -eq 0 ] && [ $(( NOW - LAST_TS )) -lt $SKIP_WINDOW ]; then
     exit 0  # another checkpoint just fired — skip
