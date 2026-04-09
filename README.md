@@ -224,7 +224,7 @@ onebrain/
 ├── CLAUDE.md          Instructions for Claude Code
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions
-├── vault.yml          Your vault configuration (created during onboarding; includes checkpoint schedule)
+├── vault.yml          Your vault configuration (created during onboarding)
 └── .claude/plugins/   AI skills and hooks
 ```
 
