@@ -19,7 +19,19 @@ Use these variables for all file paths in the steps below.
 
 ---
 
-## Step 1: Determine Session File Name
+## Step 1: Gather Checkpoint Context
+
+1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
+2. Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md`
+3. Filter: keep only files where frontmatter field `merged` is absent or not `true`
+4. If any found: read each file — use their content as **additional context** when reviewing the session in Step 3. Unmerged checkpoints capture activity that may have been compressed out of current context.
+5. Store the list of found checkpoint paths for use in Step 5.
+
+If none found: continue normally.
+
+---
+
+## Step 2: Determine Session File Name
 
 1. Get today's date: `YYYY-MM-DD`. Extract `YYYY` and `MM` (zero-padded month).
 2. List files in `[logs_folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md`
@@ -28,7 +40,7 @@ Use these variables for all file paths in the steps below.
 
 ---
 
-## Step 2: Review the Session
+## Step 3: Review the Session
 
 Reflect on the conversation that just occurred. Identify:
 
@@ -41,7 +53,7 @@ Reflect on the conversation that just occurred. Identify:
 
 ---
 
-## Step 3: Write the Session Log
+## Step 4: Write the Session Log
 
 Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`:
 
@@ -91,7 +103,20 @@ _Omit this section if the session had no notable friction or technique worth log
 
 ---
 
-## Step 4: Update MEMORY.md (If Warranted)
+## Step 5: Mark Checkpoints as Merged
+
+If checkpoints were found in Step 1:
+
+For each checkpoint file path stored in Step 1:
+1. Read the file's frontmatter
+2. Replace `merged: false` with `merged: true` (add the line if absent)
+3. Write the updated file
+
+This prevents /wrapup from re-reading the same checkpoints in future sessions.
+
+---
+
+## Step 6: Update MEMORY.md (If Warranted)
 
 If this session produced an insight or pattern that should persist across all future sessions, add it to the "Key Learnings & Patterns" section of `[agent_folder]/MEMORY.md`. Also update the `updated:` field in the frontmatter to today's date.
 
@@ -105,7 +130,7 @@ Only add learnings that are genuinely useful long-term (not every session warran
 
 ---
 
-## Step 5: Overflow to Agent Memory (Optional)
+## Step 7: Overflow to Agent Memory (Optional)
 
 If a genuinely useful long-term insight emerged this session — a clear behavioral pattern, a strong user preference, or a non-obvious observation about how to work with this user — and it is too detailed for MEMORY.md, write it to `[agent_folder]/memory/YYYY-MM-DD-slug.md`:
 
@@ -113,11 +138,11 @@ If a genuinely useful long-term insight emerged this session — a clear behavio
 - File naming: first note of day: `YYYY-MM-DD-slug.md`; if one already exists today: `YYYY-MM-DD-02-slug.md`, etc.
 - Keep it to 1-3 sentences
 - Only do this if the insight is genuinely useful long-term — do not overflow routine session details
-- Use this step only when the insight was too detailed to include in `[agent_folder]/MEMORY.md` (Step 4). Do not write the same insight to both `[agent_folder]/MEMORY.md` and agent memory.
+- Use this step only when the insight was too detailed to include in `[agent_folder]/MEMORY.md` (Step 6). Do not write the same insight to both `[agent_folder]/MEMORY.md` and agent memory.
 
 ---
 
-## Step 6: Confirm
+## Step 8: Confirm
 
 Say:
 > Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
