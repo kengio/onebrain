@@ -11,5 +11,5 @@ Remove-Item $DirtyFlag -Force
 
 if (-not $filePath) { exit 0 }
 
-$encoded = [Uri]::EscapeDataString($filePath)
+$encoded = [Uri]::EscapeDataString($filePath) -replace '%5C','/' -replace '%2F','/'
 Start-Process "obsidian://open?path=$encoded"

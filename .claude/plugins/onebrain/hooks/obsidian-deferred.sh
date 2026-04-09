@@ -12,5 +12,33 @@ rm -f "$DIRTY_FLAG"
 
 if [ -z "$FILE_PATH" ]; then exit 0; fi
 
-ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$FILE_PATH")
-open "obsidian://open?path=${ENCODED}"
+# Only open files inside the vault
+VAULT_ROOT="$(cd "${CLAUDE_PLUGIN_ROOT}/../../.." && pwd)"
+case "$FILE_PATH" in
+  "$VAULT_ROOT"/*) ;;  # inside vault — proceed
+  *) exit 0 ;;         # outside vault — skip silently
+esac
+
+# Only open content files (skip plugin internals, logs, agent files)
+RELATIVE="${FILE_PATH#$VAULT_ROOT/}"
+case "$RELATIVE" in
+  .claude/*|05-agent/*|07-logs/*|attachments/*) exit 0 ;;
+esac
+
+ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1], safe='/:@'))" "$FILE_PATH")
+case "$OSTYPE" in
+  darwin*)
+    open "obsidian://open?path=${ENCODED}"
+    ;;
+  linux-gnu*|linux*)
+    if grep -qi microsoft /proc/version 2>/dev/null; then
+      # WSL — delegate to Windows
+      cmd.exe /c start "" "obsidian://open?path=${ENCODED}" 2>/dev/null
+    else
+      xdg-open "obsidian://open?path=${ENCODED}" 2>/dev/null
+    fi
+    ;;
+  msys*|cygwin*)
+    cmd.exe /c start "" "obsidian://open?path=${ENCODED}" 2>/dev/null
+    ;;
+esac

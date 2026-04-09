@@ -4,7 +4,7 @@
 # obsidian-deferred.sh (Stop hook) reads this and opens Obsidian once per response.
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | python3 -c "
+FILE_PATH=$(printf '%s' "$INPUT" | python3 -c "
 import json, sys
 try:
     d = json.load(sys.stdin)
