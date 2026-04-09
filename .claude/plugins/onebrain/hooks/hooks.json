@@ -6,10 +6,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/open-in-obsidian.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/open-in-obsidian.ps1\""
-          },
-          {
-            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.ps1\"",
             "async": true
           }
@@ -23,11 +19,6 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-checkpoint.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-checkpoint.ps1\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/obsidian-deferred.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/obsidian-deferred.ps1\"",
-            "async": true
           }
         ]
       }
