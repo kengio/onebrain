@@ -207,10 +207,10 @@ If conditions are met:
 
 ## Opening Files in Obsidian
 
-After creating or editing a content note (any file outside `.claude/`, `[agent folder]/`, `[logs folder]/`, and `attachments/`), include a markdown link at the end of your response so the user can open it in Obsidian on demand. Show the filename and its vault-relative path as the link text:
+After creating or editing a content note (any file outside `.claude/`, `[agent folder]/`, `[logs folder]/`, and `attachments/`), include a markdown link at the end of your response so the user can open it in Obsidian on demand. Use the absolute path as the link text:
 
 ```
-[filename.md — 01-projects/subfolder/filename.md](obsidian://open?path=/absolute/path/to/filename.md)
+[/absolute/path/to/filename.md](obsidian://open?path=/absolute/path/to/filename.md)
 ```
 
 If multiple content files were written, include one link per file. Skip this for automated/silent operations (auto-wrapup, checkpoints, orphan cleanup).
