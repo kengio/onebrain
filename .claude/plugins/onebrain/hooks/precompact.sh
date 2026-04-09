@@ -9,8 +9,11 @@ SKIP_WINDOW=60  # seconds — if auto-checkpoint fired within this window, skip
 if [ -f "$STATE_FILE" ]; then
   IFS=':' read -r COUNT LAST_TS < "$STATE_FILE"
   NOW=$(date +%s)
+  # Guard against malformed state file
+  if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || ! [[ "$LAST_TS" =~ ^[0-9]+$ ]]; then
+    COUNT=1  # treat as not-fresh, fall through to write + emit
   # COUNT=0 + fresh timestamp = auto-checkpoint just reset the counter
-  if [ "$COUNT" -eq 0 ] && [ $(( NOW - LAST_TS )) -lt $SKIP_WINDOW ]; then
+  elif [ "$COUNT" -eq 0 ] && [ $(( NOW - LAST_TS )) -lt $SKIP_WINDOW ]; then
     exit 0  # auto-checkpoint already captured this moment — skip
   fi
   echo "0:${NOW}" > "$STATE_FILE"

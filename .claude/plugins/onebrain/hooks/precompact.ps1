@@ -8,9 +8,15 @@ $SkipWindow = 60  # seconds
 
 if (Test-Path $StateFile) {
     $parts = (Get-Content $StateFile) -split ':'
-    $Count = [int]$parts[0]
-    $LastTs = [long]$parts[1]
     $Now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    # Guard against malformed state file
+    if ($parts.Count -lt 2 -or $parts[0] -notmatch '^\d+$' -or $parts[1] -notmatch '^\d+$') {
+        $Count = 1  # treat as not-fresh, fall through to write + emit
+        $LastTs = 0
+    } else {
+        $Count = [int]$parts[0]
+        $LastTs = [long]$parts[1]
+    }
     # COUNT=0 + fresh timestamp = auto-checkpoint just reset the counter
     if ($Count -eq 0 -and ($Now - $LastTs) -lt $SkipWindow) {
         exit 0  # auto-checkpoint already captured this moment — skip
