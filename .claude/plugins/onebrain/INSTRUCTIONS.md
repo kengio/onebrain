@@ -205,16 +205,6 @@ If conditions are met:
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `[agent folder]/MEMORY.md` and update the `updated:` frontmatter date to today
 - Do NOT show any output about the auto-save to the user
 
-## Opening Files in Obsidian
-
-After creating or editing a content note (any file outside `.claude/`, `[agent folder]/`, `[logs folder]/`, and `attachments/`), include a markdown link at the end of your response so the user can open it in Obsidian on demand. Use the absolute path as the link text:
-
-```
-[/absolute/path/to/filename.md](obsidian://open?path=/absolute/path/to/filename.md)
-```
-
-If multiple content files were written, include one link per file. Skip this for automated/silent operations (auto-wrapup, checkpoints, orphan cleanup).
-
 ## File Naming Conventions
 
 - Knowledge notes: `03-knowledge/[subfolder]/Topic Name.md` (title case, subfolder in kebab-case)
