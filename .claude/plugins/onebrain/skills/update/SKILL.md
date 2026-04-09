@@ -191,6 +191,25 @@ The @import line: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
 
 ---
 
+## Step 4f: Add Checkpoint Config to vault.yml (If Missing)
+
+Read `vault.yml`. If a `checkpoint:` top-level key is **absent**, append this block:
+
+````yaml
+
+checkpoint:
+  messages: 15    # auto-checkpoint every N message exchanges
+  minutes: 30     # auto-checkpoint every N minutes (whichever comes first)
+````
+
+Rules:
+- **Never overwrite existing values** — only add the section if entirely absent
+- If `vault.yml` does not exist: skip silently
+- Report: "Added `checkpoint:` config to `vault.yml` (defaults: 15 messages, 30 min)."
+- If already present: skip silently (no output)
+
+---
+
 ## Step 5: Report
 
 Show a final summary of everything updated and migrated. Then suggest:
