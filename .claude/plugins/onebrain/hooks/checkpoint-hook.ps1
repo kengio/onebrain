@@ -2,10 +2,12 @@
 # Usage: checkpoint-hook.ps1 [-Mode stop|precompact]
 #
 # stop       — fires after every response; checkpoints on message/time threshold
-# precompact — fires before context compression; always checkpoints unless skip window
+# precompact — fires before context compression; checkpoints unless skip window or no activity
 #
 # Both modes share %TEMP%\onebrain-{ParentPid}.state (COUNT:LAST_TS).
 # 60s skip window prevents double-checkpoints when both fire close together.
+# MIN_ACTIVITY guard: if fewer than 2 messages since last checkpoint, reset and skip —
+# no file is created for sessions with no meaningful activity.
 
 param(
     [string]$Mode = "stop"
@@ -14,7 +16,8 @@ param(
 $ParentPid = (Get-CimInstance Win32_Process -Filter "ProcessId=$PID" -ErrorAction SilentlyContinue).ParentProcessId
 if (-not $ParentPid) { exit 0 }
 $StateFile = "$env:TEMP\onebrain-$ParentPid.state"
-$SkipWindow = 60  # seconds
+$SkipWindow = 60    # seconds
+$MinActivity = 2    # minimum messages since last checkpoint to warrant a new one
 $Now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 
 # --- Read or initialize state ---
@@ -35,8 +38,13 @@ if (Test-Path $StateFile) {
     $Count = 0; $LastTs = $Now
 }
 
-# --- PreCompact mode: always checkpoint (counter reset handled here) ---
+# --- PreCompact mode: checkpoint unless no activity since last one ---
 if ($Mode -eq "precompact") {
+    if ($Count -lt $MinActivity) {
+        # Not enough activity since last checkpoint — reset counter, skip creating file
+        Set-Content -Path $StateFile -Value "0:$Now" -ErrorAction SilentlyContinue
+        exit 0
+    }
     try {
         Set-Content -Path $StateFile -Value "0:$Now" -ErrorAction Stop
     } catch {
@@ -78,6 +86,11 @@ $Count++
 $Elapsed = $Now - $LastTs
 
 if ($Count -ge $MsgThreshold -or $Elapsed -ge $TimeThreshold) {
+    if ($Count -lt $MinActivity) {
+        # Threshold fired on time but not enough activity — reset and wait next round
+        Set-Content -Path $StateFile -Value "0:$Now" -ErrorAction SilentlyContinue
+        exit 0
+    }
     $TriggerLabel = if ($Count -ge $MsgThreshold) { "auto ($Count messages)" } else { "auto ($([math]::Floor($Elapsed / 60))m elapsed)" }
     try {
         Set-Content -Path $StateFile -Value "0:$Now" -ErrorAction Stop

@@ -3,16 +3,19 @@
 # Usage: checkpoint-hook.sh stop|precompact
 #
 # stop       — fires after every response; checkpoints on message/time threshold
-# precompact — fires before context compression; always checkpoints unless skip window
+# precompact — fires before context compression; checkpoints unless skip window or no activity
 #
 # Both modes share /tmp/onebrain-{PPID}.state (COUNT:LAST_TS).
 # 60s skip window prevents double-checkpoints when both fire close together.
 # COUNT=0 with fresh timestamp in an *existing* state file signals post-checkpoint reset;
 # absence of state file = first run.
+# MIN_ACTIVITY guard: if fewer than 2 messages since last checkpoint, reset and skip —
+# no file is created for sessions with no meaningful activity.
 
 MODE="${1:-stop}"
 STATE_FILE="/tmp/onebrain-${PPID}.state"
 SKIP_WINDOW=60
+MIN_ACTIVITY=2  # minimum messages since last checkpoint to warrant a new one
 NOW=$(date +%s)
 
 # --- Read or initialize state ---
@@ -29,8 +32,13 @@ else
   COUNT=0; LAST_TS=$NOW
 fi
 
-# --- PreCompact mode: always checkpoint (counter reset handled here) ---
+# --- PreCompact mode: checkpoint unless no activity since last one ---
 if [ "$MODE" = "precompact" ]; then
+  if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
+    # Not enough activity since last checkpoint — reset counter, skip creating file
+    echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null
+    exit 0
+  fi
   if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
     exit 1
   fi
@@ -70,6 +78,11 @@ COUNT=$(( COUNT + 1 ))
 ELAPSED=$(( NOW - LAST_TS ))
 
 if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; then
+  if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
+    # Threshold fired on time but not enough activity — reset and wait next round
+    echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null
+    exit 0
+  fi
   if [ "$COUNT" -ge "$MSG_THRESHOLD" ]; then
     TRIGGER_LABEL="auto (${COUNT} messages)"
   else
