@@ -13,18 +13,36 @@ VAULT_YML="${VAULT_ROOT}/vault.yml"
 
 get_checkpoint_value() {
   local key="$1" default="$2"
-  local value
-  value=$(grep -A10 '^checkpoint:' "$VAULT_YML" 2>/dev/null | grep "  ${key}:" | head -1 | awk '{print $2}' | tr -d ' \r')
+  [ -f "$VAULT_YML" ] || { echo "$default"; return; }
+  local in_block=0 value=""
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^checkpoint: ]]; then
+      in_block=1
+      continue
+    fi
+    if [[ $in_block -eq 1 ]]; then
+      if [[ "$line" =~ ^[[:space:]]+${key}:[[:space:]]*([0-9]+) ]]; then
+        value="${BASH_REMATCH[1]}"
+        break
+      fi
+      # Stop at next top-level key
+      if [[ "$line" =~ ^[^[:space:]] ]]; then
+        break
+      fi
+    fi
+  done < "$VAULT_YML"
   echo "${value:-$default}"
 }
 
 MSG_THRESHOLD=$(get_checkpoint_value "messages" 15)
 TIME_THRESHOLD=$(( $(get_checkpoint_value "minutes" 30) * 60 ))
 
+# Compute current timestamp
+NOW=$(date +%s)
+
 # Read or initialise state
 if [ -f "$STATE_FILE" ]; then
   IFS=':' read -r COUNT LAST_TS < "$STATE_FILE"
-  NOW=$(date +%s)
   # Guard against malformed state file
   if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || ! [[ "$LAST_TS" =~ ^[0-9]+$ ]]; then
     COUNT=1  # treat as not-fresh, fall through
@@ -35,9 +53,7 @@ if [ -f "$STATE_FILE" ]; then
 else
   # First run — initialise state (COUNT=0 here is not a hook reset)
   COUNT=0
-  LAST_TS=$(date +%s)
-  echo "${COUNT}:${LAST_TS}" > "$STATE_FILE"
-  NOW=$LAST_TS
+  LAST_TS=$NOW
 fi
 
 COUNT=$(( COUNT + 1 ))

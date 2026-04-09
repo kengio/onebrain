@@ -24,6 +24,8 @@ function Get-CheckpointValue($Key, $Default) {
 $MsgThreshold = Get-CheckpointValue "messages" 15
 $TimeThreshold = (Get-CheckpointValue "minutes" 30) * 60
 
+$Now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+
 if (Test-Path $StateFile) {
     $parts = (Get-Content $StateFile) -split ':'
     # Guard against malformed state file
@@ -34,7 +36,6 @@ if (Test-Path $StateFile) {
         $Count = [int]$parts[0]
         $LastTs = [long]$parts[1]
     }
-    $Now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     # COUNT=0 in existing file = a hook explicitly reset after a checkpoint — skip if fresh
     if ($Count -eq 0 -and ($Now - $LastTs) -lt $SkipWindow) {
         exit 0  # another checkpoint hook just fired — skip
@@ -42,9 +43,7 @@ if (Test-Path $StateFile) {
 } else {
     # First run — initialise state (COUNT=0 here is not a hook reset)
     $Count = 0
-    $Now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $LastTs = $Now
-    Set-Content -Path $StateFile -Value "${Count}:${LastTs}"
 }
 
 $Count++
