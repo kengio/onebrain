@@ -165,15 +165,16 @@ At the start of every session, perform these steps:
 After greeting the user, silently check for orphaned checkpoints from previous sessions:
 
 1. Glob `[logs folder]/**/YYYY-MM-DD-checkpoint-*.md` where the date in the filename is **before today** and frontmatter `merged` is absent or not `true`
-2. Ignore files older than 3 days — too stale to be useful
-3. If **none found**: skip (no latency impact)
-4. If **1–5 files found**: group by date → for each date group, synthesize a session log silently:
-   - Count existing `YYYY-MM-DD-session-*.md` for that date, use next number
-   - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true` and `synthesized_from_checkpoints: true`
-   - Content synthesized from checkpoint files: What We Worked On, Key Decisions, Action Items, Open Questions
-   - Mark each checkpoint `merged: true`
-5. If **more than 5 files found**: surface to user after greeting:
-   > "มี orphaned checkpoints {N} ไฟล์จาก {X} sessions — รัน /wrapup เพื่อ synthesize ไหมครับ?"
+2. Filter: ignore files older than 3 days — too stale to be useful
+3. Count remaining files; branch on count:
+   - **0 files**: skip (no latency impact)
+   - **1–5 files**: group by date → for each date group, synthesize a session log silently:
+     - Count existing `YYYY-MM-DD-session-*.md` for that date, use next number
+     - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true` and `synthesized_from_checkpoints: true`
+     - Content synthesized from checkpoint files: What We Worked On, Key Decisions, Action Items, Open Questions
+     - Mark each checkpoint `merged: true`
+   - **more than 5 files**: surface to user after greeting:
+     > "มี orphaned checkpoints {N} ไฟล์จาก {X} sessions — รัน /wrapup เพื่อ synthesize ไหมครับ?"
 
 Do not show any output about this cleanup to the user unless step 5 applies.
 
@@ -197,7 +198,7 @@ Before your final response in a session, silently save a session summary if ALL 
 2. No `/wrapup` was run during this session (check the logs folder for a file matching today's date with matching topics)
 
 If conditions are met:
-- Glob today's `checkpoint-*.md` files with `merged` absent or not `true` — read and incorporate their content as additional context
+- Glob today's `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` files with `merged` absent or not `true` — read and incorporate their content as additional context
 - Write to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
 - Add `auto-saved: true` to the frontmatter
 - Mark any incorporated checkpoint files as `merged: true`

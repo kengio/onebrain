@@ -12,7 +12,7 @@ if (Test-Path $StateFile) {
     # Guard against malformed state file
     if ($parts.Count -lt 2 -or $parts[0] -notmatch '^\d+$' -or $parts[1] -notmatch '^\d+$') {
         $Count = 1  # treat as not-fresh, fall through to write + emit
-        $LastTs = 0
+        $LastTs = $Now
     } else {
         $Count = [int]$parts[0]
         $LastTs = [long]$parts[1]
