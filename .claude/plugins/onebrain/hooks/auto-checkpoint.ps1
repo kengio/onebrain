@@ -30,8 +30,8 @@ if (Test-Path $StateFile) {
     $parts = (Get-Content $StateFile) -split ':'
     # Guard against malformed state file
     if ($parts.Count -lt 2 -or $parts[0] -notmatch '^\d+$' -or $parts[1] -notmatch '^\d+$') {
-        $Count = 1  # treat as not-fresh, fall through
-        $LastTs = 0
+        $Count = 1   # treat as not-fresh, fall through
+        $LastTs = $Now  # prevent spurious time-trigger
     } else {
         $Count = [int]$parts[0]
         $LastTs = [long]$parts[1]
