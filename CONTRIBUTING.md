@@ -113,6 +113,8 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 
 Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
 
+**Example — checkpoint system:** OneBrain's built-in `checkpoint-hook.sh` uses both `Stop` and `PreCompact` hooks to auto-save session snapshots. The Stop hook fires after every response and tracks message count + elapsed time; the PreCompact hook fires before context compression. Both share a `/tmp/onebrain-{PPID}.state` file to coordinate and avoid duplicate checkpoints. This is the reference implementation for hooks that need to share state across event types.
+
 **To add a hook:**
 
 1. Add an entry to [hooks.json](.claude/plugins/onebrain/hooks/hooks.json):
@@ -138,7 +140,9 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 2. Create the corresponding script in `.claude/plugins/onebrain/hooks/`. Use `${CLAUDE_PLUGIN_ROOT}` to reference other files in the plugin directory. For cross-platform support, provide both `.sh` (macOS/Linux) and `.ps1` (Windows) variants and chain them with `||`.
 
-3. Make scripts defensive — they run on every matching tool call, so they should exit silently if there's nothing to do.
+3. Make scripts defensive — they run on every matching event, so they should exit silently if there's nothing to do.
+
+4. **Stop and PreCompact hooks must NOT use `"async": true`** — these hooks can inject prompts by writing to stdout, but only if they complete synchronously before Claude's next response. Async execution fires too late for prompt injection.
 
 ## Install Scripts
 
