@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-checkpoint.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-checkpoint.ps1\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint-hook.sh\" stop || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint-hook.ps1\" -Mode stop"
           }
         ]
       }
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/precompact.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/precompact.ps1\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint-hook.sh\" precompact || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint-hook.ps1\" -Mode precompact"
           }
         ]
       }
