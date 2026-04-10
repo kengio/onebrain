@@ -128,12 +128,13 @@ foreach ($Dir in $AllowDirs) {
     }
 }
 
-# Clear stale plugin cache entries (apply mode only)
-# Removes all cached versions except the current one to prevent stale hooks/skills from loading.
-# Note: deleting a version loaded by the current session causes PostToolUse hook errors until
-# the session is restarted — this is expected and resolves on next session start.
+# Clear plugin cache on apply — removes all cached versions so Claude Code re-reads from vault
+# on the next session start, guaranteeing the latest plugin version is always loaded.
+# Confirmed safe: Claude Code re-loads from source (directory) when cache is absent.
+# Note: PostToolUse hook errors may appear for the remainder of the current session —
+# this is expected and resolves on next session start.
 $CacheNote = ""
-if ($Apply -and $LocalVer) {
+if ($Apply) {
     # Claude Code on Windows stores cache under %USERPROFILE%\.claude\ (mirrors Unix ~/.claude/)
     $ClearedSet = [System.Collections.Generic.HashSet[string]]::new()
     @(
@@ -141,7 +142,7 @@ if ($Apply -and $LocalVer) {
         "$env:USERPROFILE\.claude\plugins\cache\onebrain-local\onebrain"
     ) | ForEach-Object {
         if (Test-Path $_) {
-            Get-ChildItem -Path $_ -Directory | Where-Object { $_.Name -ne $LocalVer } | ForEach-Object {
+            Get-ChildItem -Path $_ -Directory | ForEach-Object {
                 Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
                 $null = $ClearedSet.Add($_.Name)
             }
@@ -149,7 +150,7 @@ if ($Apply -and $LocalVer) {
     }
     if ($ClearedSet.Count -gt 0) {
         $ClearedList = ($ClearedSet | Sort-Object) -join ', '
-        $CacheNote = "  cache: cleared stale versions ($ClearedList), kept v$LocalVer — start a new Claude Code session to reload the plugin"
+        $CacheNote = "  cache: cleared all cached versions ($ClearedList) — start a new Claude Code session to reload the plugin"
     }
 }
 

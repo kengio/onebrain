@@ -128,13 +128,13 @@ for dir in "${ALLOW_DIRS[@]}"; do
   fi
 done
 
-# Clear stale plugin cache entries (apply mode only)
-# Removes all cached versions except the current one to prevent stale hooks/skills from loading.
-# LOCAL_VER was snapshotted before the apply loop to avoid reading the already-overwritten file.
-# Note: deleting a version loaded by the current session causes PostToolUse hook errors until
-# the session is restarted — this is expected and resolves on next session start.
+# Clear plugin cache on apply — removes all cached versions so Claude Code re-reads from vault
+# on the next session start, guaranteeing the latest plugin version is always loaded.
+# Confirmed safe: Claude Code re-loads from source (directory) when cache is absent.
+# Note: PostToolUse hook errors may appear for the remainder of the current session —
+# this is expected and resolves on next session start.
 CACHE_NOTE=""
-if [[ "${APPLY}" == true && -n "${LOCAL_VER}" ]]; then
+if [[ "${APPLY}" == true ]]; then
   CLEARED_RAW=""
   shopt -q nullglob && _nullglob_was_set=1 || _nullglob_was_set=0
   shopt -s nullglob
@@ -145,17 +145,15 @@ if [[ "${APPLY}" == true && -n "${LOCAL_VER}" ]]; then
     if [[ -d "${cache_dir}" ]]; then
       for ver_dir in "${cache_dir}"/*/; do
         ver=$(basename "${ver_dir}")
-        if [[ "${ver}" != "${LOCAL_VER}" ]]; then
-          rm -rf "${ver_dir}" 2>/dev/null || true
-          CLEARED_RAW="${CLEARED_RAW}${ver}"$'\n'
-        fi
+        rm -rf "${ver_dir}" 2>/dev/null || true
+        CLEARED_RAW="${CLEARED_RAW}${ver}"$'\n'
       done
     fi
   done
   [[ ${_nullglob_was_set} -eq 0 ]] && shopt -u nullglob
   if [[ -n "${CLEARED_RAW}" ]]; then
     CLEARED_LIST=$(printf '%s' "${CLEARED_RAW}" | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')
-    CACHE_NOTE="  cache: cleared stale versions (${CLEARED_LIST}), kept v${LOCAL_VER} — start a new Claude Code session to reload the plugin"
+    CACHE_NOTE="  cache: cleared all cached versions (${CLEARED_LIST}) — start a new Claude Code session to reload the plugin"
   fi
 fi
 
