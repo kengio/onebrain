@@ -5,8 +5,13 @@
 # Usage:
 #   bash .claude/plugins/onebrain/skills/update/update.sh           # dry-run (compare only)
 #   bash .claude/plugins/onebrain/skills/update/update.sh --apply   # apply updates
+#
+# Note: wrapped in main() so bash reads the entire script before execution — prevents
+# misaligned reads if this file is replaced by its own --apply run.
 
 set -uo pipefail
+
+main() {
 
 APPLY=false
 [[ "${1:-}" == "--apply" ]] && APPLY=true
@@ -126,7 +131,8 @@ done
 CACHE_NOTE=""
 if [[ "${APPLY}" == true ]]; then
   CLEARED_RAW=""
-  shopt -q nullglob && _nullglob_was_set=1 || _nullglob_was_set=0
+  local _nullglob_was_set=0
+  shopt -q nullglob && _nullglob_was_set=1 || true
   shopt -s nullglob
   for cache_dir in \
     "${HOME}/.claude/plugins/cache/onebrain/onebrain" \
@@ -168,3 +174,6 @@ if [[ ${#FAILED[@]} -gt 0 ]]; then
   exit 1
 fi
 echo "status: ok"
+
+} # end main
+main "$@"
