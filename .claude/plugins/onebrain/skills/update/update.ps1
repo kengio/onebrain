@@ -24,13 +24,6 @@ if (-not (Test-Path $PluginDir)) {
     exit 1
 }
 
-# Snapshot local version before any files are overwritten (used for cache logic later)
-$LocalVer = ""
-$PluginJsonPath = Join-Path $PluginDir ".claude-plugin/plugin.json"
-if (Test-Path $PluginJsonPath) {
-    try { $LocalVer = (Get-Content $PluginJsonPath -Raw | ConvertFrom-Json).version } catch {}
-}
-
 # Fetch upstream file tree
 try {
     $TreeJson = Invoke-RestMethod -Uri $ApiTree
@@ -128,27 +121,29 @@ foreach ($Dir in $AllowDirs) {
     }
 }
 
-# Clear plugin cache when version is unchanged (apply mode only)
+# Clear plugin cache on apply — removes all cached versions so Claude Code re-reads from vault
+# on the next session start, guaranteeing the latest plugin version is always loaded.
+# Confirmed safe: Claude Code re-loads from source (directory) when cache is absent.
+# Note: PostToolUse hook errors may appear for the remainder of the current session —
+# this is expected and resolves on next session start.
 $CacheNote = ""
 if ($Apply) {
-    # Use Invoke-WebRequest + ConvertFrom-Json because raw GitHub content returns text/plain,
-    # which Invoke-RestMethod returns as a string rather than a parsed object.
-    $UpstreamVer = ""
-    try {
-        $UpstreamVer = (Invoke-WebRequest -Uri "$RawBase/.claude/plugins/onebrain/.claude-plugin/plugin.json" -UseBasicParsing -ErrorAction Stop).Content |
-            ConvertFrom-Json |
-            Select-Object -ExpandProperty version
-    } catch {}
-
-    if ($LocalVer -and $LocalVer -eq $UpstreamVer) {
-        # Claude Code on Windows stores cache under %USERPROFILE%\.claude\ (mirrors Unix ~/.claude/)
-        @(
-            "$env:USERPROFILE\.claude\plugins\cache\onebrain\onebrain\$LocalVer",
-            "$env:USERPROFILE\.claude\plugins\cache\onebrain-local\onebrain\$LocalVer"
-        ) | ForEach-Object {
-            if (Test-Path $_) { Remove-Item $_ -Recurse -Force -ErrorAction SilentlyContinue }
+    # Claude Code on Windows stores cache under %USERPROFILE%\.claude\ (mirrors Unix ~/.claude/)
+    $ClearedSet = [System.Collections.Generic.HashSet[string]]::new()
+    @(
+        "$env:USERPROFILE\.claude\plugins\cache\onebrain\onebrain",
+        "$env:USERPROFILE\.claude\plugins\cache\onebrain-local\onebrain"
+    ) | ForEach-Object {
+        if (Test-Path $_) {
+            Get-ChildItem -Path $_ -Directory | ForEach-Object {
+                Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                $null = $ClearedSet.Add($_.Name)
+            }
         }
-        $CacheNote = "  cache: cleared plugin cache for v$LocalVer"
+    }
+    if ($ClearedSet.Count -gt 0) {
+        $ClearedList = ($ClearedSet | Sort-Object) -join ', '
+        $CacheNote = "  cache: cleared all cached versions ($ClearedList) — start a new Claude Code session to reload the plugin"
     }
 }
 

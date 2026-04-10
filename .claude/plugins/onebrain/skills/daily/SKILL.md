@@ -74,10 +74,10 @@ Wait for the user's response before proceeding to Phase 2.
 Check whether `[inbox_folder]/YYYY-MM-DD-daily.md` already exists.
 
 **If it does NOT exist (first run today):**
-Create the file with the full template below, then open in Obsidian.
+Create the file with the full template below.
 
 **If it already exists (run more than once today):**
-Overwrite the `## Today's Focus` section only — preserve everything else. Do NOT open in Obsidian again.
+Overwrite the `## Today's Focus` section only — preserve everything else.
 
 ### Daily Note Template (new file only)
 
@@ -105,20 +105,7 @@ created: YYYY-MM-DD
 
 If a section has no content — including when `## Action Items` is absent from the session log or all its items are already checked — write the heading with a single line: `(none)`
 
-### Open in Obsidian (new file only)
-
-**Only run this section if the daily note was newly created above. If you updated an existing file, skip to Confirm.**
-
-Build the `obsidian://` URI:
-1. Take the absolute path of the daily note file
-2. URL-encode it — keep `/`, `:`, `@` as literal characters:
-   - Python3 (preferred): `python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1], safe='/:@'))" "/absolute/path/to/file.md"`
-   - Node.js fallback: `node -e "const p=process.argv[1]; console.log(encodeURIComponent(p).replace(/%2F/gi,'/').replace(/%3A/gi,':').replace(/%40/gi,'@'))" "/absolute/path/to/file.md"`
-3. Run: `open "obsidian://open?path=[encoded_path]"`
-4. If the open command returns non-zero, show the URI for manual use:
-   > Could not open Obsidian automatically. Open manually: `obsidian://open?path=[encoded_path]`
-
 ### Confirm
 
-- New file created: `Daily note saved and opened → [inbox_folder]/YYYY-MM-DD-daily.md`
+- New file created: `Daily note saved → [inbox_folder]/YYYY-MM-DD-daily.md`
 - Existing file updated: `Daily note updated → [inbox_folder]/YYYY-MM-DD-daily.md`
