@@ -234,7 +234,7 @@ Stop and PreCompact hooks must be registered in the vault's `.claude/settings.js
    }
    ```
 8. Write the updated JSON back to `.claude/settings.json`
-9. Report: "Registered Stop + PreCompact checkpoint hooks in `.claude/settings.json`."
+9. Report: "Registered Stop + PreCompact checkpoint hooks in `.claude/settings.json`. Note: paths are absolute — re-run `/update` if you move this vault."
 10. If both were already present: skip silently (no output)
 
 ---

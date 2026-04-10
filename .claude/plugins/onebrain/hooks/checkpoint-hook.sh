@@ -3,7 +3,9 @@
 # Usage: checkpoint-hook.sh stop|precompact
 #
 # stop       — fires after every response; checkpoints on message/time threshold
+#              Uses JSON {"decision":"block","reason":"..."} to inject prompt back to Claude.
 # precompact — fires before context compression; checkpoints unless skip window or no activity
+#              Uses JSON {"systemMessage":"..."} — PreCompact does not support decision:block.
 #
 # Both modes share /tmp/onebrain-{PPID}.state (COUNT:LAST_TS).
 # 60s skip window prevents double-checkpoints when both fire close together.
@@ -33,27 +35,36 @@ else
 fi
 
 # --- PreCompact mode: checkpoint unless no activity since last one ---
+# PreCompact does not support decision:block — uses systemMessage instead.
 if [ "$MODE" = "precompact" ]; then
   if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
     # Not enough activity since last checkpoint — reset counter, skip creating file
     echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null
     exit 0
   fi
-  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+  # Build JSON first — restore state on python3 failure so future triggers still work
+  PROMPT="Context compression is imminent. Before compacting, silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing checkpoint-*.md files in [logs folder]/YYYY/MM/ to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: precompact, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
+  JSON=$(python3 -c "import json,sys; print(json.dumps({'systemMessage':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
+  if [ -z "$JSON" ]; then
+    # python3 unavailable or failed — leave state unchanged so future triggers still work
     exit 1
   fi
-  python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" \
-    "Context compression is imminent. Before compacting, silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing checkpoint-*.md files in [logs folder]/YYYY/MM/ to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: precompact, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
+  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+    exit 2
+  fi
+  printf '%s\n' "$JSON"
   exit 0
 fi
 
 # --- Stop mode: check thresholds against vault.yml config ---
+# CLAUDE_PLUGIN_ROOT is set when called from plugin hooks.json; absent from settings.json.
+# hooks/ is one level deeper than plugin root, so fallback goes up 4 levels from script dir.
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
-  VAULT_ROOT="$(cd "${CLAUDE_PLUGIN_ROOT}/../../.." 2>/dev/null && pwd)" || VAULT_ROOT=""
+  VAULT_ROOT=$(cd "${CLAUDE_PLUGIN_ROOT}/../../.." 2>/dev/null && pwd)
 else
   # Fallback: derive from script path (used when called from settings.json)
-  SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
-  VAULT_ROOT="$(cd "${SCRIPT_DIR}/../../../.." 2>/dev/null && pwd)" || VAULT_ROOT=""
+  SCRIPT_DIR=$(cd "$(dirname "$0")" 2>/dev/null && pwd)
+  VAULT_ROOT=$(cd "${SCRIPT_DIR}/../../../.." 2>/dev/null && pwd)
 fi
 VAULT_YML="${VAULT_ROOT:+${VAULT_ROOT}/vault.yml}"
 
@@ -91,11 +102,17 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   else
     TRIGGER_LABEL="auto ($(( ELAPSED / 60 ))m elapsed)"
   fi
-  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+  # Build JSON first — restore state on python3 failure so future triggers still work
+  PROMPT="Auto-checkpoint triggered by ${TRIGGER_LABEL}. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing checkpoint-*.md files in [logs folder]/YYYY/MM/ to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
+  JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
+  if [ -z "$JSON" ]; then
+    # python3 unavailable or failed — leave state unchanged so future triggers still work
     exit 1
   fi
-  python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" \
-    "Auto-checkpoint triggered by ${TRIGGER_LABEL}. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing checkpoint-*.md files in [logs folder]/YYYY/MM/ to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
+  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+    exit 2
+  fi
+  printf '%s\n' "$JSON"
 else
   echo "${COUNT}:${LAST_TS}" > "$STATE_FILE"
 fi
