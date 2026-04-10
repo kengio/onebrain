@@ -169,6 +169,7 @@ Run before responding to any user message:
    agent_folder: [from vault.yml folders.agent]
    logs_folder: [from vault.yml folders.logs]
    inbox_folder: [from vault.yml folders.inbox]
+   knowledge_folder: [from vault.yml folders.knowledge]
    today: YYYY-MM-DD
    active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
    is_weekend: true|false
@@ -211,7 +212,6 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    ```
    inbox_count: N
    insight: "text" | ""
-   insight_type: task_due | pattern | connection | stale_project | none
    orphan_action: none | merged:{N} | prompt_wrapup:{N}
    ```
 
@@ -219,13 +219,20 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 After the sub-agent completes, the main agent sends one follow-up message:
 
-| Condition | Message |
+First, choose the base message from insight rows:
+
+| Insight condition | Base message |
 |---|---|
 | insight present | `{insight} · inbox {inbox_count}` |
 | no insight, inbox 0 | `inbox empty` |
 | no insight, inbox > 0 | `inbox {inbox_count} items` |
-| orphan_action = merged:{N} | (silent, no extra output) |
-| orphan_action = prompt_wrapup:{N} | append ` · {N} orphaned checkpoints — run /wrapup?` |
+
+Then, apply orphan modifier (these compose on top of the base message, they do not replace it):
+
+| orphan_action | Modifier |
+|---|---|
+| `none` or `merged:{N}` | (no change — silent) |
+| `prompt_wrapup:{N}` | append ` · {N} orphaned checkpoints — run /wrapup?` |
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
 
