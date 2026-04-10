@@ -75,9 +75,9 @@ if ($env:CLAUDE_PLUGIN_ROOT) {
     }
 } else {
     # Fallback: derive from script path (used when called from settings.json)
+    # $PSScriptRoot is the reliable automatic variable for this — always set when running a .ps1 file
     try {
-        $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-        $VaultRoot = (Resolve-Path (Join-Path $ScriptDir "../../../..") -ErrorAction Stop).Path
+        $VaultRoot = (Resolve-Path (Join-Path $PSScriptRoot "../../../..") -ErrorAction Stop).Path
         $VaultYml = Join-Path $VaultRoot "vault.yml"
     } catch {
         $VaultRoot = $null
@@ -122,3 +122,4 @@ if ($Count -ge $MsgThreshold -or $Elapsed -ge $TimeThreshold) {
 } else {
     Set-Content -Path $StateFile -Value "${Count}:${LastTs}"
 }
+exit 0
