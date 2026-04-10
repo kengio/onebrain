@@ -123,60 +123,118 @@ If qmd tools are not available, or if `qmd_collection` is not present in `vault.
 
 ## Session Behavior
 
-At the start of every session, perform these steps:
+Session startup runs in two phases. Phase 1 greets the user immediately. Phase 2 runs in a background sub-agent so the main agent stays free to respond.
 
-1. Read vault.yml for folder names and configuration — sets `[agent folder]` from `folders.agent` (default: `05-agent`) and `[logs folder]` from `folders.logs` (default: `07-logs`). Also read `.claude/plugins/onebrain/.claude-plugin/plugin.json` and note the `version` field — include it in your greeting (e.g. "OneBrain v1.5.6"). If the file doesn't exist, skip the version.
-2. Read `[agent folder]/MEMORY.md` to load identity, personality, and active projects
-   > **Agent context (lazy load):** If the session involves a domain-specific topic (e.g., research, writing, technical work), grep `[agent folder]/context/` for notes relevant to that topic and use them as background context. Do not load all context files every session — only when relevant.
+### Phase 1 — Immediate
+
+Run before responding to any user message:
+
+1. Read `vault.yml`, `.claude/plugins/onebrain/.claude-plugin/plugin.json`, and `[agent folder]/MEMORY.md` **in parallel**.
+   - `vault.yml`: get `folders`, `timezone` (default: `Asia/Bangkok` if absent)
+   - `plugin.json`: get `version` for greeting; if file absent, skip version
+   - `MEMORY.md`: load identity, personality, active projects and their task dates
+
+   > **Agent context (lazy load):** If the session involves a domain-specific topic, grep `[agent folder]/context/` for relevant notes. Do not load all context files every session.
    >
-   > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched during a session when the user's request seems to relate to a past pattern or preference. It is never loaded at startup.
-3. Check inbox count
-4. Read the most recent session log entries — up to 3, or fewer if not enough exist (used for pattern detection in step 5)
-5. Greet the user by name with time-aware tone and one proactive insight
+   > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched only when the user's request relates to a past pattern. Never loaded at startup.
 
-   **Time of day** — default timezone: `Asia/Bangkok`. Use current local time:
+2. Get current local time: run `TZ=[timezone] date '+%H:%M'` (single bash call, can run in parallel with step 1).
 
-   | Time | Label | Tone |
-   |------|-------|------|
-   | before 9:00 | morning | brief, energizing |
-   | 9:00–12:00 | mid-morning | normal |
-   | 12:00–17:00 | afternoon | normal |
-   | 17:00–21:00 | evening | winding down, reflective |
-   | after 21:00 | late night | quiet, concise |
+3. Send greeting immediately in this format:
 
-   **Proactive insight** — surface exactly ONE item, in priority order:
-   1. A task that is overdue or due within 2 days on weekdays, or due within 1 day on weekends — sourced from task dates listed in active projects in MEMORY.md
-   2. A pattern or recurring theme — only if at least 2 of the logs loaded in step 4 mention the same topic or project; do not surface if only 1 log was available
-   3. A connection between a recent inbox capture (since the last session log timestamp) and an existing knowledge note — attempt only if priorities 1 and 2 yield nothing; find via Glob `00-inbox/*.md` sorted by date
-   4. A project listed as active in MEMORY.md with no mention in any of the logs loaded in step 4 and no session log from the past 7 days
+   ```
+   **OneBrain vX.X.X**
+   [greeting] [name] [emoji]
+   ```
 
-   Keep the insight to 1–2 sentences. Don't ask a question — just surface it.
+   Time-of-day mapping (adapt greeting words to user's language at runtime):
 
-   **Skip the insight** if: MEMORY.md active projects list no tasks AND no session log exists from the past 7 days. Also skip if the user's opening message already addresses the highest-priority qualifying item.
+   | Local time | Concept | Emoji |
+   |---|---|---|
+   | before 09:00 | morning | ☀️ |
+   | 09:00–17:00 | (omit time word and emoji) | — |
+   | 17:00–21:00 | evening | 🌆 |
+   | after 21:00 | late night | 🌙 |
 
-   On weekends (Saturday/Sunday): use a lighter, less task-focused tone.
+   On weekends: use lighter, less task-focused tone.
 
-   **Command Response Profiles take precedence** — time-of-day tone applies only to greetings and free responses, not to skill outputs (those follow their own profile).
+   **Command Response Profiles take precedence** — time-of-day tone applies only to greetings and free responses, not skill outputs.
 
-   **No-repeat rule** — don't ask about facts already in loaded context (MEMORY.md, session logs, vault.yml, plugin.json). If the user's current message contradicts something in context, trust their message over context.
+   **No-repeat rule** — do not ask about facts already in loaded context. If the user's message contradicts context, trust their message.
 
-### Orphan Checkpoint Cleanup
+4. Dispatch a **background sub-agent** (`run_in_background: true`) with this prompt payload:
 
-After greeting the user, silently check for orphaned checkpoints from previous sessions:
+   ```
+   vault_root: [absolute vault root path]
+   agent_folder: [from vault.yml folders.agent]
+   logs_folder: [from vault.yml folders.logs]
+   inbox_folder: [from vault.yml folders.inbox]
+   knowledge_folder: [from vault.yml folders.knowledge]
+   today: YYYY-MM-DD
+   active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
+   is_weekend: true|false
+   ```
 
-1. Glob `[logs folder]/**/*-checkpoint-*.md` where the date in the filename is **before today** and frontmatter `merged` is absent or not `true`
-2. Filter: ignore files older than 3 days — too stale to be useful
-3. Count remaining files; branch on count:
-   - **0 files**: skip (no latency impact)
-   - **1–5 files**: group by date → for each date group, synthesize a session log silently:
-     - Count existing `YYYY-MM-DD-session-*.md` for that date, use next number
-     - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true` and `synthesized_from_checkpoints: true`
-     - Content synthesized from checkpoint files: What We Worked On, Key Decisions, Action Items, Open Questions
-     - Mark each checkpoint `merged: true`
-   - **more than 5 files**: surface to user after greeting:
-     > "{N} orphaned checkpoints from {X} sessions found — run /wrapup to synthesize them?"
+Main agent is now ready to respond to the user.
 
-Do not show any output about this cleanup to the user unless the count exceeds 5 files.
+### Phase 2 — Background Sub-agent
+
+The sub-agent receives the payload from Phase 1 and performs all work that requires multiple file reads. It does NOT read MEMORY.md — `active_tasks` are passed in the prompt.
+
+**Sub-agent steps:**
+
+1. **Session logs** — Glob `[logs folder]/**/*.md`, exclude `*-checkpoint-*.md`, sort by name descending. Read up to 3 most recent files.
+
+2. **Inbox count** — Glob `[inbox folder]/*.md`, count files.
+
+3. **Orphan checkpoints** — Glob `[logs folder]/**/*-checkpoint-*.md`:
+   - Keep only files where the date in the filename is **before today**
+   - Discard files older than 3 days
+   - Count remaining:
+     - **0 files**: skip
+     - **1–5 files**: for each date group, synthesize a session log silently:
+       - Count existing `YYYY-MM-DD-session-*.md` for that date → next NN (zero-padded)
+       - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true`, `synthesized_from_checkpoints: true`
+       - Sections: What We Worked On, Key Decisions, Action Items, Open Questions
+       - Set `merged: true` on each source checkpoint file
+       - Set `orphan_action: merged:{N}`
+     - **>5 files**: set `orphan_action: prompt_wrapup:{N}`
+
+4. **Proactive insight** — surface exactly ONE item, in priority order:
+   1. Task in `active_tasks` that is overdue or due within 2 days (weekday) / 1 day (weekend)
+   2. Recurring topic — same topic/project mentioned in ≥2 of the 3 session logs
+   3. Inbox file newer than latest session log timestamp whose content contains a `[[wikilink]]` that matches an existing file in `[knowledge folder]` — scan the inbox file's text for wikilink syntax, then verify at least one target exists by Globbing `[knowledge folder]/**/*.md`
+   4. Project in `active_tasks` with no session log in the past 7 days
+
+   Skip insight if: `active_tasks` contains no dated tasks AND no session log exists from the past 7 days. Also skip if the user's first message already addresses the top qualifying item.
+
+5. **Return** to main agent:
+   ```
+   inbox_count: N
+   insight: "text" | ""
+   orphan_action: none | merged:{N} | prompt_wrapup:{N}
+   ```
+
+### Follow-up Message
+
+When the background sub-agent returns its payload, the main agent reads `inbox_count`, `insight`, and `orphan_action` and sends exactly one follow-up message using the tables below:
+
+First, choose the base message from insight rows:
+
+| Insight condition | Base message |
+|---|---|
+| insight present | `{insight} · inbox {inbox_count}` |
+| no insight, inbox 0 | `inbox empty` |
+| no insight, inbox > 0 | `inbox {inbox_count} items` |
+
+Then, apply orphan modifier (these compose on top of the base message, they do not replace it):
+
+| orphan_action | Modifier |
+|---|---|
+| `none` or `merged:*` (any count) | (no change — silent) |
+| `prompt_wrapup:{N}` | append ` · {N} orphaned checkpoints — run /wrapup?` |
+
+**Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
 
 ### Recalling Information
 
