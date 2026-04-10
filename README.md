@@ -48,7 +48,7 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 | 📂 | **Vault-native Markdown** | Plain Markdown, no lock-in. Your data stays yours forever |
 | 🤖 | **Multi-agent** | Works with Claude Code, Gemini CLI, or any agent that reads Markdown |
 | 🔌 | **Zero Config** | Clone, open in Obsidian, run `/onboarding`. Ready in under 2 minutes |
-| 📓 | **Session Logs & Checkpoints** | Every conversation saved with summaries and action items. Auto-checkpoints fire every 15 messages or 30 min so nothing is lost mid-session |
+| 📓 | **Session Logs & Checkpoints** | Every conversation saved with summaries and action items. Auto-checkpoints fire every 15 messages or 30 min so nothing is lost mid-session *(auto-checkpoint requires Claude Code)* |
 | 🔗 | **Knowledge Synthesis** | `/consolidate` turns inbox captures into permanent connected knowledge |
 | 🎓 | **Teachable AI** | `/learn` permanently shapes how your agent thinks and responds |
 | 📱 | **Mobile Access** | Send instructions and receive briefings from anywhere via Telegram |
