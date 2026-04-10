@@ -182,18 +182,18 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 **Sub-agent steps:**
 
-1. **Session logs** — Glob `[logs_folder]/**/*.md`, exclude `*-checkpoint-*.md`, sort by name descending. Read up to 3 most recent files.
+1. **Session logs** — Glob `[logs folder]/**/*.md`, exclude `*-checkpoint-*.md`, sort by name descending. Read up to 3 most recent files.
 
-2. **Inbox count** — Glob `[inbox_folder]/*.md`, count files.
+2. **Inbox count** — Glob `[inbox folder]/*.md`, count files.
 
-3. **Orphan checkpoints** — Glob `[logs_folder]/**/*-checkpoint-*.md`:
+3. **Orphan checkpoints** — Glob `[logs folder]/**/*-checkpoint-*.md`:
    - Keep only files where the date in the filename is **before today**
    - Discard files older than 3 days
    - Count remaining:
      - **0 files**: skip
      - **1–5 files**: for each date group, synthesize a session log silently:
        - Count existing `YYYY-MM-DD-session-*.md` for that date → next NN (zero-padded)
-       - Write `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true`, `synthesized_from_checkpoints: true`
+       - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true`, `synthesized_from_checkpoints: true`
        - Sections: What We Worked On, Key Decisions, Action Items, Open Questions
        - Set `merged: true` on each source checkpoint file
        - Set `orphan_action: merged:{N}`
@@ -202,7 +202,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 4. **Proactive insight** — surface exactly ONE item, in priority order:
    1. Task in `active_tasks` that is overdue or due within 2 days (weekday) / 1 day (weekend)
    2. Recurring topic — same topic/project mentioned in ≥2 of the 3 session logs
-   3. Inbox file newer than latest session log timestamp that links to an existing knowledge note
+   3. Inbox file newer than latest session log timestamp that links to an existing knowledge note — check by Globbing `[knowledge_folder]/**/*.md` and scanning for a wikilink match
    4. Project in `active_tasks` with no session log in the past 7 days
 
    Skip insight if: `active_tasks` contains no dated tasks AND no session log exists from the past 7 days. Also skip if the user's first message already addresses the top qualifying item.
@@ -224,6 +224,7 @@ After the sub-agent completes, the main agent sends one follow-up message:
 | insight present | `{insight} · inbox {inbox_count}` |
 | no insight, inbox 0 | `inbox empty` |
 | no insight, inbox > 0 | `inbox {inbox_count} items` |
+| orphan_action = merged:{N} | (silent, no extra output) |
 | orphan_action = prompt_wrapup:{N} | append ` · {N} orphaned checkpoints — run /wrapup?` |
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
