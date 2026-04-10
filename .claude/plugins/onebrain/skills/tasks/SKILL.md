@@ -122,43 +122,6 @@ Do not proceed to Steps 3 or 4 if the write failed.
 
 ---
 
-## Step 3: Open in Obsidian
+## Step 3: Print confirmation
 
-Build the `obsidian://` URI using path-based addressing:
-
-1. Take the absolute path to `TASKS.md`
-2. URL-encode it, keeping `/`, `:`, and `@` as literal characters:
-   - Priority order: Python3 first, then Node.js
-   - Python3: `urllib.parse.quote(path, safe='/:@')`
-   - Node.js: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':').replace(/%40/gi, '@')`
-   - If neither runtime is available: go to Step 4 encoding-failure branch
-3. `uri = "obsidian://open?path=" + encoded_path`
-
-Open via Bash based on platform (detect from `$OSTYPE`). Capture the exit code:
-- macOS: `open "<uri>"`
-- Linux (non-WSL): `xdg-open "<uri>"`
-- Linux (WSL): `cmd.exe /c start "" "<uri>"`
-- Windows (msys/cygwin): `cmd.exe /c start "" "<uri>"`
-
-**If exit code 0:** proceed to Step 4 success branch.
-**If non-zero exit code:** proceed to Step 4 open-failure branch.
-
----
-
-## Step 4: Print confirmation
-
-**Success:** `TASKS.md opened in Obsidian.`
-
-**Open-failure (open command returned non-zero, encoding succeeded):**
-
-> "TASKS.md was updated but could not be opened automatically in Obsidian.
->
-> Open it manually:
-> - In Obsidian: navigate to `TASKS.md` in your vault
-> - Via URI: `obsidian://open?path=[encoded_path]`
->
-> If Obsidian is not installed, visit https://obsidian.md"
-
-**Encoding-failure (no Python3 or Node.js available):**
-
-> "TASKS.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open it manually in Obsidian by navigating to `[tasks_path]`."
+`TASKS.md updated.`

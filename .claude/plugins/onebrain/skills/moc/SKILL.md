@@ -196,38 +196,6 @@ PINNED_CONTENT
 
 ---
 
-## Step 5: Open in Obsidian
+## Step 5: Confirm
 
-Build the `obsidian://` URI using path-based addressing:
-
-1. Take the absolute path to `MOC.md`
-2. URL-encode it, keeping `/`, `:`, and `@` as literal characters:
-   - Python3 first: `urllib.parse.quote(path, safe='/:@')`
-   - Node.js fallback: `encodeURIComponent(path).replace(/%2F/gi, '/').replace(/%3A/gi, ':').replace(/%40/gi, '@')`
-   - If neither available: go to encoding-failure branch
-3. Build: `uri = "obsidian://open?path=" + encoded_path`
-
-Open via Bash based on platform (detect from `$OSTYPE`). Capture exit code:
-- macOS (`darwin`): `open "<uri>"`
-- Linux (non-WSL): `xdg-open "<uri>"`
-- Linux (WSL): `cmd.exe /c start "" "<uri>"`
-- Windows (msys/cygwin): `cmd.exe /c start "" "<uri>"`
-- Unrecognized platform: skip the open attempt and go to the encoding-failure branch, replacing the reason with "platform not recognized".
-
----
-
-## Step 6: Confirm
-
-**Exit code 0 (success):** `MOC.md opened in Obsidian.`
-
-**Non-zero exit code (open failed):**
-> "MOC.md was updated but could not be opened automatically in Obsidian.
->
-> Open it manually:
-> - In Obsidian: navigate to `MOC.md` in your vault
-> - Via URI: `obsidian://open?path=[encoded_path]`
->
-> If Obsidian is not installed, visit https://obsidian.md"
-
-**Encoding-failure (no Python3 or Node.js):**
-> "MOC.md was updated but could not be opened automatically — URL encoding is unavailable (Python3 and Node.js both missing). Open it manually in Obsidian by navigating to `MOC.md`."
+`MOC.md updated.`
