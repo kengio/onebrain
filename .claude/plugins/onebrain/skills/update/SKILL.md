@@ -252,7 +252,7 @@ Rules:
 - **Never overwrite existing value** — only add if absent
 - Insert immediately after the line containing `method:`. If `method:` is absent, append as a top-level key before the `folders:` block.
 - If `vault.yml` does not exist: skip silently
-- Report: "Added `timezone: Asia/Bangkok` to `vault.yml`. Update this value if your local timezone is different."
+- Report: "Added `timezone: Asia/Bangkok` to `vault.yml`. Edit the `timezone:` key in `vault.yml` if your local timezone is different."
 - If already present: skip silently (no output)
 
 ---

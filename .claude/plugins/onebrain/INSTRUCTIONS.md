@@ -152,7 +152,7 @@ Run before responding to any user message:
    | Local time | Concept | Emoji |
    |---|---|---|
    | before 09:00 | morning | ☀️ |
-   | 09:00–17:00 | (none) | — |
+   | 09:00–17:00 | (omit time word and emoji) | — |
    | 17:00–21:00 | evening | 🌆 |
    | after 21:00 | late night | 🌙 |
 
@@ -203,7 +203,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 4. **Proactive insight** — surface exactly ONE item, in priority order:
    1. Task in `active_tasks` that is overdue or due within 2 days (weekday) / 1 day (weekend)
    2. Recurring topic — same topic/project mentioned in ≥2 of the 3 session logs
-   3. Inbox file newer than latest session log timestamp that links to an existing knowledge note — check by Globbing `[knowledge_folder]/**/*.md` and scanning for a wikilink match
+   3. Inbox file newer than latest session log timestamp whose content contains a `[[wikilink]]` that matches an existing file in `[knowledge folder]` — scan the inbox file's text for wikilink syntax, then verify at least one target exists by Globbing `[knowledge folder]/**/*.md`
    4. Project in `active_tasks` with no session log in the past 7 days
 
    Skip insight if: `active_tasks` contains no dated tasks AND no session log exists from the past 7 days. Also skip if the user's first message already addresses the top qualifying item.
@@ -217,7 +217,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 ### Follow-up Message
 
-After the sub-agent completes, the main agent sends one follow-up message:
+When the background sub-agent returns its payload, the main agent reads `inbox_count`, `insight`, and `orphan_action` and sends exactly one follow-up message using the tables below:
 
 First, choose the base message from insight rows:
 
@@ -231,7 +231,7 @@ Then, apply orphan modifier (these compose on top of the base message, they do n
 
 | orphan_action | Modifier |
 |---|---|
-| `none` or `merged:{N}` | (no change — silent) |
+| `none` or `merged:*` (any count) | (no change — silent) |
 | `prompt_wrapup:{N}` | append ` · {N} orphaned checkpoints — run /wrapup?` |
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
