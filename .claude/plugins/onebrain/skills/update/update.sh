@@ -45,16 +45,6 @@ for item in json.load(sys.stdin).get('tree', []):
 ALLOW_FILES=(".gitignore")
 ALLOW_DIRS=(".claude/plugins/onebrain" ".claude-plugin")
 
-# Snapshot local version before any files are overwritten (used for cache logic later)
-LOCAL_VER=$(python3 -c "
-import json
-try:
-    v = json.load(open('${PLUGIN_DIR}/.claude-plugin/plugin.json')).get('version') or ''
-    print(v if isinstance(v, str) and v else '')
-except:
-    print('')
-" 2>/dev/null || echo "")
-
 # Tracking arrays
 MODIFIED=() ADDED=() UNCHANGED=() FAILED=() DELETED=()
 
@@ -152,7 +142,7 @@ if [[ "${APPLY}" == true ]]; then
   done
   [[ ${_nullglob_was_set} -eq 0 ]] && shopt -u nullglob
   if [[ -n "${CLEARED_RAW}" ]]; then
-    CLEARED_LIST=$(printf '%s' "${CLEARED_RAW}" | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+    CLEARED_LIST=$(printf '%s' "${CLEARED_RAW}" | sort -u | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
     CACHE_NOTE="  cache: cleared all cached versions (${CLEARED_LIST}) — start a new Claude Code session to reload the plugin"
   fi
 fi

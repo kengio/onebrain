@@ -74,10 +74,10 @@ Wait for the user's response before proceeding to Phase 2.
 Check whether `[inbox_folder]/YYYY-MM-DD-daily.md` already exists.
 
 **If it does NOT exist (first run today):**
-Create the file with the full template below, then open in Obsidian.
+Create the file with the full template below.
 
 **If it already exists (run more than once today):**
-Overwrite the `## Today's Focus` section only — preserve everything else. Do NOT open in Obsidian again.
+Overwrite the `## Today's Focus` section only — preserve everything else.
 
 ### Daily Note Template (new file only)
 
@@ -107,5 +107,5 @@ If a section has no content — including when `## Action Items` is absent from 
 
 ### Confirm
 
-- New file created: `Daily note saved and opened → [inbox_folder]/YYYY-MM-DD-daily.md`
+- New file created: `Daily note saved → [inbox_folder]/YYYY-MM-DD-daily.md`
 - Existing file updated: `Daily note updated → [inbox_folder]/YYYY-MM-DD-daily.md`

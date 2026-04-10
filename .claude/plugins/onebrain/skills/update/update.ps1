@@ -24,13 +24,6 @@ if (-not (Test-Path $PluginDir)) {
     exit 1
 }
 
-# Snapshot local version before any files are overwritten (used for cache logic later)
-$LocalVer = ""
-$PluginJsonPath = Join-Path $PluginDir ".claude-plugin/plugin.json"
-if (Test-Path $PluginJsonPath) {
-    try { $LocalVer = (Get-Content $PluginJsonPath -Raw | ConvertFrom-Json).version } catch {}
-}
-
 # Fetch upstream file tree
 try {
     $TreeJson = Invoke-RestMethod -Uri $ApiTree

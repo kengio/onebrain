@@ -1,11 +1,11 @@
 ---
 name: tasks
-description: Create or update the live task dashboard (TASKS.md) in Obsidian and open it.
+description: Create or update the live task dashboard (TASKS.md) in Obsidian.
 ---
 
 # Task Dashboard
 
-Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks, then opens it in Obsidian. The file is always current — no vault scanning needed. Mark tasks complete directly in Obsidian by clicking the checkboxes.
+Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks. The file is always current — no vault scanning needed. Mark tasks complete directly in Obsidian by clicking the checkboxes.
 
 Usage:
 - `/tasks` — open the full dashboard
@@ -102,7 +102,7 @@ If the write fails, stop immediately and tell the user:
 
 > "Could not create TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
-Do not proceed to Steps 3 or 4 if the write failed.
+Do not proceed to Step 3 if the write failed.
 
 **If TASKS.md already exists:**
 
@@ -118,7 +118,7 @@ If the write fails, stop immediately and tell the user:
 
 > "Could not update TASKS.md at [tasks_path]. Error: [error]. Check that the vault path is correct and that you have write permission. Vault root used: [vault_root]"
 
-Do not proceed to Steps 3 or 4 if the write failed.
+Do not proceed to Step 3 if the write failed.
 
 ---
 
