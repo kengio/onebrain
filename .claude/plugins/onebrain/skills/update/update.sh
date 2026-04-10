@@ -49,7 +49,8 @@ ALLOW_DIRS=(".claude/plugins/onebrain" ".claude-plugin")
 LOCAL_VER=$(python3 -c "
 import json
 try:
-    print(json.load(open('${PLUGIN_DIR}/.claude-plugin/plugin.json'))['version'])
+    v = json.load(open('${PLUGIN_DIR}/.claude-plugin/plugin.json')).get('version') or ''
+    print(v if isinstance(v, str) and v else '')
 except:
     print('')
 " 2>/dev/null || echo "")
@@ -127,17 +128,34 @@ for dir in "${ALLOW_DIRS[@]}"; do
   fi
 done
 
-# Clear plugin cache when version is unchanged (apply mode only)
+# Clear stale plugin cache entries (apply mode only)
+# Removes all cached versions except the current one to prevent stale hooks/skills from loading.
 # LOCAL_VER was snapshotted before the apply loop to avoid reading the already-overwritten file.
+# Note: deleting a version loaded by the current session causes PostToolUse hook errors until
+# the session is restarted — this is expected and resolves on next session start.
 CACHE_NOTE=""
-if [[ "${APPLY}" == true ]]; then
-  UPSTREAM_VER=$(curl -sf "${RAW_BASE}/.claude/plugins/onebrain/.claude-plugin/plugin.json" 2>/dev/null | \
-    python3 -c "import json,sys; print(json.load(sys.stdin)['version'])" 2>/dev/null || echo "")
-
-  if [[ -n "${LOCAL_VER}" && "${LOCAL_VER}" == "${UPSTREAM_VER}" ]]; then
-    rm -rf "${HOME}/.claude/plugins/cache/onebrain/onebrain/${LOCAL_VER}" 2>/dev/null || true
-    rm -rf "${HOME}/.claude/plugins/cache/onebrain-local/onebrain/${LOCAL_VER}" 2>/dev/null || true
-    CACHE_NOTE="  cache: cleared plugin cache for v${LOCAL_VER}"
+if [[ "${APPLY}" == true && -n "${LOCAL_VER}" ]]; then
+  CLEARED_RAW=""
+  shopt -q nullglob && _nullglob_was_set=1 || _nullglob_was_set=0
+  shopt -s nullglob
+  for cache_dir in \
+    "${HOME}/.claude/plugins/cache/onebrain/onebrain" \
+    "${HOME}/.claude/plugins/cache/onebrain-local/onebrain"
+  do
+    if [[ -d "${cache_dir}" ]]; then
+      for ver_dir in "${cache_dir}"/*/; do
+        ver=$(basename "${ver_dir}")
+        if [[ "${ver}" != "${LOCAL_VER}" ]]; then
+          rm -rf "${ver_dir}" 2>/dev/null || true
+          CLEARED_RAW="${CLEARED_RAW}${ver}"$'\n'
+        fi
+      done
+    fi
+  done
+  [[ ${_nullglob_was_set} -eq 0 ]] && shopt -u nullglob
+  if [[ -n "${CLEARED_RAW}" ]]; then
+    CLEARED_LIST=$(printf '%s' "${CLEARED_RAW}" | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+    CACHE_NOTE="  cache: cleared stale versions (${CLEARED_LIST}), kept v${LOCAL_VER} — start a new Claude Code session to reload the plugin"
   fi
 fi
 

@@ -128,27 +128,28 @@ foreach ($Dir in $AllowDirs) {
     }
 }
 
-# Clear plugin cache when version is unchanged (apply mode only)
+# Clear stale plugin cache entries (apply mode only)
+# Removes all cached versions except the current one to prevent stale hooks/skills from loading.
+# Note: deleting a version loaded by the current session causes PostToolUse hook errors until
+# the session is restarted — this is expected and resolves on next session start.
 $CacheNote = ""
-if ($Apply) {
-    # Use Invoke-WebRequest + ConvertFrom-Json because raw GitHub content returns text/plain,
-    # which Invoke-RestMethod returns as a string rather than a parsed object.
-    $UpstreamVer = ""
-    try {
-        $UpstreamVer = (Invoke-WebRequest -Uri "$RawBase/.claude/plugins/onebrain/.claude-plugin/plugin.json" -UseBasicParsing -ErrorAction Stop).Content |
-            ConvertFrom-Json |
-            Select-Object -ExpandProperty version
-    } catch {}
-
-    if ($LocalVer -and $LocalVer -eq $UpstreamVer) {
-        # Claude Code on Windows stores cache under %USERPROFILE%\.claude\ (mirrors Unix ~/.claude/)
-        @(
-            "$env:USERPROFILE\.claude\plugins\cache\onebrain\onebrain\$LocalVer",
-            "$env:USERPROFILE\.claude\plugins\cache\onebrain-local\onebrain\$LocalVer"
-        ) | ForEach-Object {
-            if (Test-Path $_) { Remove-Item $_ -Recurse -Force -ErrorAction SilentlyContinue }
+if ($Apply -and $LocalVer) {
+    # Claude Code on Windows stores cache under %USERPROFILE%\.claude\ (mirrors Unix ~/.claude/)
+    $ClearedSet = [System.Collections.Generic.HashSet[string]]::new()
+    @(
+        "$env:USERPROFILE\.claude\plugins\cache\onebrain\onebrain",
+        "$env:USERPROFILE\.claude\plugins\cache\onebrain-local\onebrain"
+    ) | ForEach-Object {
+        if (Test-Path $_) {
+            Get-ChildItem -Path $_ -Directory | Where-Object { $_.Name -ne $LocalVer } | ForEach-Object {
+                Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                $null = $ClearedSet.Add($_.Name)
+            }
         }
-        $CacheNote = "  cache: cleared plugin cache for v$LocalVer"
+    }
+    if ($ClearedSet.Count -gt 0) {
+        $ClearedList = ($ClearedSet | Sort-Object) -join ', '
+        $CacheNote = "  cache: cleared stale versions ($ClearedList), kept v$LocalVer — start a new Claude Code session to reload the plugin"
     }
 }
 
