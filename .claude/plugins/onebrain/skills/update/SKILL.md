@@ -239,6 +239,23 @@ Stop and PreCompact hooks must be registered in the vault's `.claude/settings.js
 
 ---
 
+## Step 4h: Ensure timezone in vault.yml (If Missing)
+
+Read `vault.yml`. If a `timezone:` top-level key is **absent**, insert it immediately after the `method:` line:
+
+```yaml
+method: onebrain
+timezone: Asia/Bangkok
+```
+
+Rules:
+- **Never overwrite existing value** — only add if absent
+- If `vault.yml` does not exist: skip silently
+- Report: "Added `timezone: Asia/Bangkok` to `vault.yml`. Update this value if your local timezone is different."
+- If already present: skip silently (no output)
+
+---
+
 ## Step 5: Report
 
 Show a final summary of everything updated and migrated. Then suggest:
