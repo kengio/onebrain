@@ -70,32 +70,32 @@ Until onboarding is complete, use a helpful, concise, and professional tone.
 
 These workflows are documented in `.claude/plugins/onebrain/skills/`:
 
-| Command | Skill File | Purpose |
-|---------|-----------|---------|
-| `/onboarding` | `onboarding/SKILL.md` | First-run setup |
-| `/braindump` | `braindump/SKILL.md` | Capture raw thoughts |
-| `/capture` | `capture/SKILL.md` | Quick note with links |
-| `/bookmark` | `bookmark/SKILL.md` | Save a URL to Bookmarks.md with AI-generated name, description, and category |
-| `/consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base |
-| `/connect` | `connect/SKILL.md` | Find note connections |
-| `/research` | `research/SKILL.md` | Web research → vault |
-| `/summarize` | `summarize/SKILL.md` | URL → deep summary note (checks Bookmarks.md for cleanup) |
-| `/import` | `import/SKILL.md` | Import local files (PDF, docs, images, scripts) → vault notes |
-| `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes |
-| `/weekly` | `weekly/SKILL.md` | Weekly reflection |
-| `/daily` | `daily/SKILL.md` | Daily briefing + intention setter → saves daily note to inbox |
-| `/recap` | `recap/SKILL.md` | Cross-session synthesis → update MEMORY.md Key Learnings |
-| `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian |
-| `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian |
-| `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log |
-| `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences |
-| `/clone` | `clone/SKILL.md` | Package agent context for vault transfer |
-| `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) |
-| `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index |
-| `/update` | `update/SKILL.md` | Update system files from GitHub |
-| `/help` | `help/SKILL.md` | List available commands with use cases |
+| Command | Skill File | Purpose | Auto-invoke when |
+|---------|-----------|---------|-----------------|
+| `/onboarding` | `onboarding/SKILL.md` | First-run setup | — (manual only) |
+| `/braindump` | `braindump/SKILL.md` | Capture raw thoughts | user wants to dump multiple ideas at once |
+| `/capture` | `capture/SKILL.md` | Quick note with links | user wants to save a single quick idea or note |
+| `/bookmark` | `bookmark/SKILL.md` | Save a URL to Bookmarks.md with AI-generated name, description, and category | user shares a URL without asking for a summary |
+| `/consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base | user asks to process or organize the inbox |
+| `/connect` | `connect/SKILL.md` | Find note connections | user asks to find connections between notes |
+| `/research` | `research/SKILL.md` | Web research → vault | user asks to find information or research a topic |
+| `/summarize` | `summarize/SKILL.md` | URL → deep summary note (checks Bookmarks.md for cleanup) | user shares a URL and asks to summarize or read it |
+| `/import` | `import/SKILL.md` | Import local files (PDF, docs, images, scripts) → vault notes | user mentions a local file path to bring into the vault |
+| `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes | user mentions a book or article they just read |
+| `/weekly` | `weekly/SKILL.md` | Weekly reflection | user asks for a weekly review |
+| `/daily` | `daily/SKILL.md` | Daily briefing + intention setter → saves daily note to inbox | user asks for a morning briefing |
+| `/recap` | `recap/SKILL.md` | Cross-session synthesis → update MEMORY.md Key Learnings | user asks to recap or synthesize recent sessions |
+| `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view or update tasks |
+| `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
+| `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | user says bye or signals end of session |
+| `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences | user tells the agent to remember or learn something |
+| `/clone` | `clone/SKILL.md` | Package agent context for vault transfer | — (manual only) |
+| `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | — (manual only, high impact) |
+| `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | — (manual only) |
+| `/update` | `update/SKILL.md` | Update system files from GitHub | — (manual only) |
+| `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands are available |
 
-When a user invokes a command, read the corresponding SKILL.md and follow it.
+**Skill Routing:** When a user message clearly maps to a skill above, invoke it directly — no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. Skills marked "manual only" require explicit `/command` always.
 
 ## Search Strategy
 
