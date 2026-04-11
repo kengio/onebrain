@@ -14,7 +14,7 @@ You are invoked by the `/connect` skill when the user wants to find connections 
 
 ## Process
 
-1. **Scan the vault**: List all `.md` files in `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` (recursive : notes may be in subfolders)
+1. **Scan the vault**: List all `.md` files in `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` (recursive - notes may be in subfolders)
 2. **Build a mental map**: Read each file's title, tags, and first paragraph
 3. **Identify connections**: Look for:
    - Shared topics or concepts

@@ -183,7 +183,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 **Sub-agent steps:**
 
-1. **Daily briefing** : Gather data for the session-start briefing, using the same logic as `/daily` Phase 1 (always Normal mode : Phase 2 runs after the session has started).
+1. **Daily briefing** — Gather data for the session-start briefing, using the same logic as `/daily` Phase 1 (always Normal mode; Phase 2 runs after the session has started).
 
    **Tasks due today or overdue:**
    - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for task lines matching `- [ ] .*📅 \d{4}-\d{2}-\d{2}`
@@ -201,7 +201,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
    **Tasks due today:**
    - [ ] Task description 📅 YYYY-MM-DD (from [[Note Name]])
-   - [ ] Overdue task 📅 YYYY-MM-DD (overdue : from [[Note Name]])
+   - [ ] Overdue task 📅 YYYY-MM-DD (overdue - from [[Note Name]])
 
    **Open from last session:**
    - [ ] Action item text
@@ -214,7 +214,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - Glob `[logs_folder]/**/*-checkpoint-*.md`
    - Keep only files where the **date in the filename is before today**
    - Discard files older than 3 days (too stale to synthesize meaningfully)
-   - Read frontmatter of each remaining file : **exclude any file where `merged: true`** (already processed)
+   - Read frontmatter of each remaining file — **exclude any file where `merged: true`** (already processed)
    - What remains are true orphans
 
    **Act on the count:**
