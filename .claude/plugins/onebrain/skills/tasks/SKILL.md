@@ -49,6 +49,10 @@ updated: YYYY-MM-DD
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
+path does not include 03-knowledge
+path does not include 04-resources
+path does not include 05-agent
+path does not include .claude
 due before today
 sort by priority
 sort by due
@@ -60,6 +64,10 @@ sort by due
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
+path does not include 03-knowledge
+path does not include 04-resources
+path does not include 05-agent
+path does not include .claude
 due after yesterday
 due before in 8 days
 sort by priority
@@ -72,6 +80,10 @@ sort by due
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
+path does not include 03-knowledge
+path does not include 04-resources
+path does not include 05-agent
+path does not include .claude
 no due date
 sort by priority
 ```
@@ -82,6 +94,10 @@ sort by priority
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
+path does not include 03-knowledge
+path does not include 04-resources
+path does not include 05-agent
+path does not include .claude
 due after in 7 days
 sort by due
 sort by priority
@@ -93,6 +109,10 @@ sort by priority
 done
 path does not include [logs_folder]
 path does not include [archive_folder]
+path does not include 03-knowledge
+path does not include 04-resources
+path does not include 05-agent
+path does not include .claude
 sort by done date
 limit 20
 ```
