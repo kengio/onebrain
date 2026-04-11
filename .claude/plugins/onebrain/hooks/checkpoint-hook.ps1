@@ -37,7 +37,7 @@ if (Test-Path $StateFile) {
     } else {
         $Count = [int]$parts[0]
         $LastTs = [long]$parts[1]
-        # Skip-window check INSIDE valid-state branch (mirrors bash elif)
+        # Skip-window check: only applies when state file exists and content is valid
         if ($Count -eq 0 -and ($Now - $LastTs) -lt $SkipWindow) {
             exit 0  # another checkpoint just fired — skip
         }
@@ -93,7 +93,7 @@ if ($Count -ge $MsgThreshold -or $Elapsed -ge $TimeThreshold) {
         exit 0
     }
     $TriggerLabel = if ($Count -ge $MsgThreshold) { "auto ($Count messages)" } else { "auto ($([math]::Floor($Elapsed / 60))m elapsed)" }
-    $Prompt = "Auto-checkpoint triggered by $TriggerLabel. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing checkpoint-*.md files in [logs folder]/YYYY/MM/ to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
+    $Prompt = "Auto-checkpoint triggered by $TriggerLabel. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing YYYY-MM-DD-checkpoint-*.md files in [logs folder]/YYYY/MM/ (using today's actual date in the filename pattern) to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
     # Build JSON before writing state — leave state unchanged on failure
     $Json = try { ConvertTo-Json @{decision = 'block'; reason = $Prompt} -Compress } catch { $null }
     if (-not $Json) { exit 1 }
