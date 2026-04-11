@@ -107,7 +107,7 @@ _Omit this section if the session had no notable friction or technique worth log
 
 ## Step 5: Mark Checkpoints as Merged
 
-If checkpoints were found in Step 1:
+If the Step 1 checkpoint list is non-empty (i.e., at least one file was read and incorporated):
 
 For each checkpoint file path stored in Step 1:
 1. Read the file's frontmatter
