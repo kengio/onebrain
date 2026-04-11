@@ -30,6 +30,8 @@ Extract the following folder paths from `vault.yml`, storing each as a variable 
 | `folders.resources` | `[resources_folder]` | `04-resources` |
 | `folders.agent` | `[agent_folder]` | `05-agent` |
 
+`.claude` is always excluded as a hardcoded literal (not in vault.yml) — it is the plugin host directory and is not user-configurable.
+
 ---
 
 ## Step 2: Ensure TASKS.md exists and frontmatter is current
@@ -137,7 +139,7 @@ Read the file. Extract `created:` from the frontmatter — if absent, use today'
 Overwrite the entire file using the same template as above, substituting:
 - `created:` with the extracted (or today's) date
 - `updated:` with today's date
-- All `[variables]` with actual values extracted from `vault.yml` in Step 1
+- All five bracket-notation variables from the Step 1 table (`[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]`) with actual values extracted from `vault.yml`
 
 If the write fails, stop immediately and tell the user:
 
