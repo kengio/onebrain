@@ -45,7 +45,7 @@ tags: [inbox, braindump]
 created: YYYY-MM-DD
 ---
 
-# Braindump — [Month DD, YYYY]
+# Braindump · [Month DD, YYYY]
 
 ## Raw Thoughts
 

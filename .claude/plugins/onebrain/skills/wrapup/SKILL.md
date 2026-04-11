@@ -66,7 +66,7 @@ date: YYYY-MM-DD
 session: NN
 ---
 
-# Session Summary — [Month DD, YYYY] (Session N)
+# Session Summary · [Month DD, YYYY] (Session N)
 
 ## What We Worked On
 

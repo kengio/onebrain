@@ -49,7 +49,7 @@ Read each session log. Extract:
 Present the synthesis to the user before writing anything:
 
 ```
-## Recap — DD Mon – DD Mon (N sessions)
+## Recap · DD Mon – DD Mon (N sessions)
 
 **Patterns noticed:**
 - [recurring theme across sessions, e.g. "5 of 7 sessions touched OneBrain infrastructure"]

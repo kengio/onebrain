@@ -89,7 +89,7 @@ Append to the existing project file:
 
 ```markdown
 
-## [Date] — [Brief heading]
+## [Date] · [Brief heading]
 
 [Content]
 
