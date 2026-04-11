@@ -210,32 +210,26 @@ Rules:
 
 ---
 
-## Step 4g: Register Checkpoint Hooks in Project settings.json (If Missing)
+## Step 4g: Register Stop Checkpoint Hook in Project settings.json (If Missing)
 
-Stop and PreCompact hooks must be registered in the vault's `.claude/settings.json` — they are not picked up from plugin `hooks.json` automatically. This step ensures they are present.
+The Stop hook must be registered in the vault's `.claude/settings.json` — it is not picked up from plugin `hooks.json` automatically. This step ensures it is present.
 
 1. Derive the vault root (directory containing `vault.yml`)
 2. Set hook path: `[vault_root]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh`
 3. Read `.claude/settings.json`. If it cannot be parsed as JSON: report error and skip.
-4. Check if `hooks.Stop` already contains a command referencing `checkpoint-hook.sh stop`
-5. If **absent**: add the Stop hook entry under `hooks.Stop` (create `hooks` key if missing):
+4. Check if `hooks.Stop` already contains a command referencing `checkpoint-hook.sh stop`. Set `stop_added = false` if already present, `stop_added = true` if added.
+5. If **absent**: add the Stop hook entry under `hooks.Stop` (create `hooks` key if missing), set `stop_added = true`:
    ```json
    {
      "matcher": "",
      "hooks": [{ "type": "command", "command": "bash \"[hook_path]\" stop" }]
    }
    ```
-6. Check if `hooks.PreCompact` already contains a command referencing `checkpoint-hook.sh precompact`
-7. If **absent**: add the PreCompact hook entry under `hooks.PreCompact`:
-   ```json
-   {
-     "matcher": "",
-     "hooks": [{ "type": "command", "command": "bash \"[hook_path]\" precompact" }]
-   }
-   ```
-8. Write the updated JSON back to `.claude/settings.json`
-9. Report: "Registered Stop + PreCompact checkpoint hooks in `.claude/settings.json`. Note: paths are absolute — re-run `/update` if you move this vault."
-10. If both were already present: skip silently (no output)
+6. If `hooks.PreCompact` contains an entry referencing `checkpoint-hook.sh precompact`: remove that entry; if the `PreCompact` array is now empty, remove the `PreCompact` key entirely. Set `precompact_removed = true`.
+7. If `stop_added` OR `precompact_removed`: write the updated JSON back to `.claude/settings.json`, then report:
+   - If `stop_added`: "Registered Stop checkpoint hook in `.claude/settings.json`. Note: paths are absolute — re-run `/update` if you move this vault."
+   - If only `precompact_removed` (Stop was already present): "Removed legacy PreCompact checkpoint hook from `.claude/settings.json`."
+8. If neither `stop_added` nor `precompact_removed`: skip silently (no output)
 
 ---
 
