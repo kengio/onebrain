@@ -113,7 +113,7 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 
 Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
 
-**Example — checkpoint system:** OneBrain's built-in `checkpoint-hook.sh` uses both `Stop` and `PreCompact` hooks to auto-save session snapshots. The Stop hook fires after every response and tracks message count + elapsed time; the PreCompact hook fires before context compression. Both share a `/tmp/onebrain-{PPID}.state` file to coordinate and avoid duplicate checkpoints. This is the reference implementation for hooks that need to share state across event types.
+**Example — checkpoint system:** OneBrain's built-in `checkpoint-hook.sh` uses the `Stop` hook to auto-save session snapshots. It fires after every response, tracks message count + elapsed time against configurable thresholds, and writes a checkpoint file when either threshold is reached. State is kept in `/tmp/onebrain-{PPID}.state` (format: `COUNT:LAST_TS`) so the hook can accumulate counts across responses without forking a long-running process.
 
 **To add a hook:**
 
@@ -142,7 +142,7 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 3. Make scripts defensive — they run on every matching event, so they should exit silently if there's nothing to do.
 
-4. **Stop and PreCompact hooks must NOT use `"async": true`** — these hooks can inject prompts by writing to stdout, but only if they complete synchronously before Claude's next response. Async execution fires too late for prompt injection.
+4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection. PreCompact hooks do not support `decision:block` and cannot inject prompts.
 
 ## Install Scripts
 
