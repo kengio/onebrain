@@ -73,19 +73,19 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | Command | Skill File | Purpose | Auto-invoke when |
 |---------|-----------|---------|-----------------|
 | `/onboarding` | `onboarding/SKILL.md` | First-run setup | — (manual only) |
-| `/braindump` | `braindump/SKILL.md` | Capture raw thoughts | user wants to dump multiple ideas at once |
-| `/capture` | `capture/SKILL.md` | Quick note with links | user wants to save a single quick idea or note |
-| `/bookmark` | `bookmark/SKILL.md` | Save a URL to Bookmarks.md with AI-generated name, description, and category | user shares a URL without asking for a summary |
+| `/braindump` | `braindump/SKILL.md` | Capture raw thoughts | user signals a free-form, stream-of-consciousness dump (unstructured, multiple threads) |
+| `/capture` | `capture/SKILL.md` | Quick note with links | user wants to create a single, titled, linkable note from a specific idea |
+| `/bookmark` | `bookmark/SKILL.md` | Save a URL to Bookmarks.md with AI-generated name, description, and category | user shares a URL with intent to save it (no summarization request); bare URL with no context defaults to this |
 | `/consolidate` | `consolidate/SKILL.md` | Merge inbox into knowledge base | user asks to process or organize the inbox |
 | `/connect` | `connect/SKILL.md` | Find note connections | user asks to find connections between notes |
-| `/research` | `research/SKILL.md` | Web research → vault | user asks to find information or research a topic |
-| `/summarize` | `summarize/SKILL.md` | URL → deep summary note (checks Bookmarks.md for cleanup) | user shares a URL and asks to summarize or read it |
+| `/research` | `research/SKILL.md` | Web research → vault | user explicitly asks to research a topic and save the findings to the vault (web research + note creation) |
+| `/summarize` | `summarize/SKILL.md` | URL → deep summary note (checks Bookmarks.md for cleanup) | user shares a URL and explicitly asks for a summary, deep read, or notes on it |
 | `/import` | `import/SKILL.md` | Import local files (PDF, docs, images, scripts) → vault notes | user mentions a local file path to bring into the vault |
-| `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes | user mentions a book or article they just read |
+| `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes | user mentions a book or article they just read and wants to capture notes or a summary |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection | user asks for a weekly review |
-| `/daily` | `daily/SKILL.md` | Daily briefing + intention setter → saves daily note to inbox | user asks for a morning briefing |
+| `/daily` | `daily/SKILL.md` | Daily briefing + intention setter → saves daily note to inbox | user asks for a daily briefing, daily check-in, or what's on for today |
 | `/recap` | `recap/SKILL.md` | Cross-session synthesis → update MEMORY.md Key Learnings | user asks to recap or synthesize recent sessions |
-| `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view or update tasks |
+| `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view the task dashboard, regenerate TASKS.md, or open it in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | user says bye or signals end of session |
 | `/learn` | `learn/SKILL.md` | Teach the agent — facts or behavioral preferences | user tells the agent to remember or learn something |
@@ -93,9 +93,9 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | — (manual only, high impact) |
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | — (manual only) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub | — (manual only) |
-| `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands are available |
+| `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands or skills are available, or what the agent can do |
 
-**Skill Routing:** When a user message clearly maps to a skill above, invoke it directly — no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. Skills marked "manual only" require explicit `/command` always.
+**Skill Routing:** When a user message clearly maps to a skill above, invoke it directly — no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. When trigger conditions overlap, prefer the lighter-weight skill (e.g. `/capture` over `/braindump`, `/bookmark` over `/summarize`). Skills marked "manual only" require explicit `/command` always.
 
 ## Search Strategy
 
