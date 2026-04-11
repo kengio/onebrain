@@ -183,31 +183,44 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 **Sub-agent steps:**
 
-1. **Session logs** — Glob `[logs folder]/**/*.md`, exclude `*-checkpoint-*.md`, sort by name descending. Read up to 3 most recent files.
+1. **Session logs** — Read recent history so step 4 can surface a proactive insight.
+   - Glob `[logs folder]/**/*.md`, exclude `*-checkpoint-*.md`, sort by name descending
+   - Read up to 3 most recent files
 
-2. **Inbox count** — Glob `[inbox folder]/*.md`, count files.
+2. **Inbox count** — Count how many unprocessed notes are waiting in the inbox.
+   - Glob `[inbox folder]/*.md` (top-level only, no subdirectories)
+   - Store the count as `inbox_count`
 
-3. **Orphan checkpoints** — Glob `[logs folder]/**/*-checkpoint-*.md`:
-   - Keep only files where the date in the filename is **before today**
-   - Discard files older than 3 days
-   - **Read frontmatter of each remaining file** — exclude any file where `merged: true`
-   - Count remaining:
-     - **0 files**: skip
-     - **1–5 files**: for each date group, synthesize a session log silently:
-       - **Read every checkpoint file in the group** and extract its full content
-       - Count existing `YYYY-MM-DD-session-*.md` for that date → next NN (zero-padded)
-       - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true`, `synthesized_from_checkpoints: true` — **all Key Decisions, Action Items, and Open Questions from every checkpoint must appear explicitly in the log before writing**
-       - Set `merged: true` only on checkpoint files whose content was read and incorporated above
-       - Set `orphan_action: merged:{N}`
-     - **>5 files**: set `orphan_action: prompt_wrapup:{N}`
+3. **Orphan checkpoints** — Find checkpoint files from past sessions that were never turned into a session log. These need to be either auto-synthesized (if few) or flagged to the user (if many).
 
-4. **Proactive insight** — surface exactly ONE item, in priority order:
-   1. Task in `active_tasks` that is overdue or due within 2 days (weekday) / 1 day (weekend)
-   2. Recurring topic — same topic/project mentioned in ≥2 of the 3 session logs
-   3. Inbox file newer than latest session log timestamp whose content contains a `[[wikilink]]` that matches an existing file in `[knowledge folder]` — scan the inbox file's text for wikilink syntax, then verify at least one target exists by Globbing `[knowledge folder]/**/*.md`
-   4. Project in `active_tasks` with no session log in the past 7 days
+   **Filter down to true orphans:**
+   - Glob `[logs folder]/**/*-checkpoint-*.md`
+   - Keep only files where the **date in the filename is before today**
+   - Discard files older than 3 days (too stale to synthesize meaningfully)
+   - Read frontmatter of each remaining file — **exclude any file where `merged: true`** (already processed)
+   - What remains are true orphans
 
-   Skip insight if: `active_tasks` contains no dated tasks AND no session log exists from the past 7 days. Also skip if the user's first message already addresses the top qualifying item.
+   **Act on the count:**
+   - **0 files** — nothing to do; set `orphan_action: none`
+   - **1–5 files** — auto-synthesize silently, per date group:
+     1. Read every checkpoint file in the group and extract its full content
+     2. Count existing session logs for that date (`YYYY-MM-DD-session-*.md`) → next NN (zero-padded)
+     3. Write a session log to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter fields `auto-saved: true` and `synthesized_from_checkpoints: true`
+        - **Every Key Decision, Action Item, and Open Question from every checkpoint must appear explicitly in the log** — do not write the file until all checkpoint content is reflected
+     4. For each checkpoint file whose content was read and incorporated: set `merged: true` in its frontmatter
+     5. Set `orphan_action: merged:{N}` (where N = total number of checkpoints merged)
+   - **>5 files** — too many to synthesize safely; set `orphan_action: prompt_wrapup:{N}` and let the user decide
+
+4. **Proactive insight** — Surface exactly ONE item to the user, choosing the highest-priority from this list:
+
+   1. A task in `active_tasks` that is **overdue or due within 2 days** (weekdays) / 1 day (weekends)
+   2. A topic or project mentioned in **≥2 of the 3 session logs** read in step 1 (recurring theme)
+   3. An inbox file that is **newer than the latest session log** AND contains a `[[wikilink]]` pointing to an existing knowledge note:
+      - Scan the inbox file's text for wikilink syntax (`[[...]]`)
+      - Glob `[knowledge folder]/**/*.md` and verify at least one wikilink target exists
+   4. A project in `active_tasks` with **no session log in the past 7 days** (stalled)
+
+   **Skip the insight entirely** if `active_tasks` has no dated tasks AND no session log exists from the past 7 days. Also skip if the user's first message already addresses the top qualifying item.
 
 5. **Return** to main agent:
    ```
