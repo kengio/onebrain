@@ -46,7 +46,7 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log w
 ### Display the Briefing
 
 ```
-## Daily Briefing · Ddd DD Mon YYYY [morning / afternoon / evening] · inbox [inbox_count]
+## Daily Briefing · Ddd DD Mon YYYY [morning / afternoon / evening] · inbox N
 
 **Last session (DD Mon):** [1–2 sentence recap of topics + open items]
 (morning mode only — skip if no prior session found)
@@ -60,7 +60,7 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log w
 ```
 
 - `Ddd` is the abbreviated day of week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
-- `inbox [inbox_count]` shows the number of files in the inbox folder; omit if count is 0
+- Omit `· inbox N` if inbox count is 0
 
 If both task sources are empty:
 > No tasks or open items for today.
