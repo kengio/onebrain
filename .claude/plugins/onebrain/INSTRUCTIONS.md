@@ -240,7 +240,7 @@ When the background sub-agent returns, the main agent sends exactly one follow-u
 
 1. Display the `briefing` text
 2. If `orphan_action` is `prompt_wrapup:{N}`: append `📋 {N} checkpoints — /wrapup?`
-3. Always append a hint (adapt language to the user's): `Run /daily again anytime to set your focus for today.`
+3. Always append a hint on a new line, in italics (adapt language to the user's): `_รัน /daily อีกครั้งเพื่อดูสถานะได้ครับ_`
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
 
