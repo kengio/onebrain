@@ -24,7 +24,7 @@ Use these variables for all file paths in the steps below.
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
 2. Glob `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` (also check yesterday's folder if session started before midnight — i.e., `[logs folder]/YYYY/MM_PREV/YYYY-MM-DD_PREV-checkpoint-*.md` for the prior calendar day)
 3. Filter: keep only files where frontmatter field `merged` is absent or not `true`
-4. If any found: **read every file in the filtered list** and extract its content. Every checkpoint must be fully incorporated into the session summary in Step 4 — not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
+4. If any found: **read every file in the filtered list** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 — not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
 5. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
 
 If none found: continue normally.

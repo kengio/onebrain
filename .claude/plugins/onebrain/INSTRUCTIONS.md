@@ -193,10 +193,10 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - Count remaining:
      - **0 files**: skip
      - **1–5 files**: for each date group, synthesize a session log silently:
+       - **Read every checkpoint file in the group** and extract its full content
        - Count existing `YYYY-MM-DD-session-*.md` for that date → next NN (zero-padded)
-       - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true`, `synthesized_from_checkpoints: true`
-       - Sections: What We Worked On, Key Decisions, Action Items, Open Questions
-       - Set `merged: true` on each source checkpoint file
+       - Write `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter `auto-saved: true`, `synthesized_from_checkpoints: true` — **all Key Decisions, Action Items, and Open Questions from every checkpoint must appear explicitly in the log before writing**
+       - Set `merged: true` only on checkpoint files whose content was read and incorporated above
        - Set `orphan_action: merged:{N}`
      - **>5 files**: set `orphan_action: prompt_wrapup:{N}`
 
