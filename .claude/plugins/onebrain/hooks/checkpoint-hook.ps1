@@ -37,13 +37,14 @@ if (Test-Path $StateFile) {
     } else {
         $Count = [int]$parts[0]
         $LastTs = [long]$parts[1]
-        # Skip-window check INSIDE valid-state branch (mirrors bash elif)
-        if ($Count -eq 0 -and ($Now - $LastTs) -lt $SkipWindow) {
-            exit 0  # another checkpoint just fired — skip
-        }
     }
 } else {
     $Count = 0; $LastTs = $Now
+}
+
+# Skip-window check OUTSIDE valid-state branch (to match bash elif behavior)
+if ($Count -eq 0 -and ($Now - $LastTs) -lt $SkipWindow) {
+    exit 0  # another checkpoint just fired — skip
 }
 
 # --- Stop mode: check thresholds against vault.yml config ---
