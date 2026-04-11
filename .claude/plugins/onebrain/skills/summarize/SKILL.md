@@ -24,13 +24,13 @@ If not, ask:
 
 Resolve the resources folder: read `vault.yml` for `folders.resources`, defaulting to `04-resources`.
 
-Grep `[resources]/Bookmarks.md` for the URL. If found, note it silently — you will offer to remove it after the summary note is saved (Step 7).
+Grep `[resources]/Bookmarks.md` for the URL. If found, note it silently · you will offer to remove it after the summary note is saved (Step 7).
 
 ---
 
 ## Step 3: Ask for Context
 
-Optional but helpful — ask:
+Optional but helpful · ask:
 > Why are you saving this? (e.g., research for a project, reference for later, interesting read)
 
 This context shapes how the summary is framed.
@@ -100,7 +100,7 @@ published: [Publication date if known]
 ## Notable Quotes
 
 > "[Quote]"
-> — [Author/Source]
+> · [Author/Source]
 
 ## My Takeaways
 
@@ -120,8 +120,8 @@ published: [Publication date if known]
 > Summary saved to `[resources]/[subfolder]/[Title].md`.
 >
 > This looks related to:
-> - [[Related Note 1]] — [why]
-> - [[Related Note 2]] — [why]
+> - [[Related Note 1]] · [why]
+> - [[Related Note 2]] · [why]
 >
 > Want me to add links?
 
@@ -130,13 +130,13 @@ published: [Publication date if known]
 Find the line in `Bookmarks.md` containing the URL and append ` → [[Article Title]]` to it:
 
 ```markdown
-- **[Name](URL)** — Description. → [[Article Title]]
+- **[Name](URL)** · Description. → [[Article Title]]
 ```
 
-Refresh `updated` in the Bookmarks.md frontmatter. Do this silently — no confirmation needed.
+Refresh `updated` in the Bookmarks.md frontmatter. Do this silently · no confirmation needed.
 
 **Clean up bookmark:** After adding the wikilink, ask:
 
-> This URL was in your Bookmarks.md — I've linked it to [[Article Title]]. Want me to remove the bookmark entry now that you have a full summary note?
+> This URL was in your Bookmarks.md · I've linked it to [[Article Title]]. Want me to remove the bookmark entry now that you have a full summary note?
 
 If the user confirms, remove the bookmark entry from `Bookmarks.md` and refresh `updated` in its frontmatter.

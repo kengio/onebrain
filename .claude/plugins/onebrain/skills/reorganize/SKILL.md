@@ -1,6 +1,6 @@
 ---
 name: reorganize
-description: Migrate vault structure — either full 5-folder → 8-folder migration, or subfolder organization for flat notes
+description: Migrate vault structure · either full 5-folder → 8-folder migration, or subfolder organization for flat notes
 ---
 
 # Reorganize Vault
@@ -14,9 +14,9 @@ This skill handles two scenarios:
 
 ## Before You Begin
 
-**Check vault version:** Read `vault.yml`. If the `folders.areas` key is absent, this vault uses the old structure and needs full migration — run the Full Migration section first. If `folders.areas` is present, skip to the Subfolder Migration section.
+**Check vault version:** Read `vault.yml`. If the `folders.areas` key is absent, this vault uses the old structure and needs full migration · run the Full Migration section first. If `folders.areas` is present, skip to the Subfolder Migration section.
 
-**Important:** Obsidian wikilinks (`[[Note Name]]`) resolve by filename regardless of path — moving files does NOT break any existing links in your vault.
+**Important:** Obsidian wikilinks (`[[Note Name]]`) resolve by filename regardless of path · moving files does NOT break any existing links in your vault.
 
 ---
 
@@ -58,11 +58,11 @@ Move existing flat notes into category-based subfolders (kebab-case, max 2 level
 
 Find notes that are directly in a top-level folder (not already in a subfolder):
 
-- `01-projects/*.md` — glob top-level only (not `01-projects/**/*.md`)
-- `02-areas/*.md` — glob top-level only
-- `03-knowledge/*.md` — glob top-level only
-- `04-resources/*.md` — glob top-level only
-- `07-logs/*.md` — flat session log files not yet in a `YYYY/MM/` subfolder
+- `01-projects/*.md` · glob top-level only (not `01-projects/**/*.md`)
+- `02-areas/*.md` · glob top-level only
+- `03-knowledge/*.md` · glob top-level only
+- `04-resources/*.md` · glob top-level only
+- `07-logs/*.md` · flat session log files not yet in a `YYYY/MM/` subfolder
 
 Also check `06-archive/*.md` for any flat archive files.
 
@@ -78,7 +78,7 @@ Report:
 > - `06-archive/`: N archive files
 
 If nothing is found, say:
-> Your vault is already organized into subfolders — nothing to do!
+> Your vault is already organized into subfolders · nothing to do!
 
 ---
 
@@ -133,10 +133,10 @@ Present the full migration plan as a table:
 
 Say:
 > Does this look right? You can:
-> - **Approve all** — move everything as proposed
-> - **Adjust a note** — tell me the note name and where to put it instead
-> - **Skip a note** — tell me which ones to leave in place
-> - **Cancel** — do nothing
+> - **Approve all** · move everything as proposed
+> - **Adjust a note** · tell me the note name and where to put it instead
+> - **Skip a note** · tell me which ones to leave in place
+> - **Cancel** · do nothing
 
 Wait for response. Apply any requested adjustments before proceeding.
 
@@ -167,6 +167,6 @@ Report:
 > - Moved N files in `06-archive/` into YYYY/MM folders
 > - Skipped N notes (left in place)
 >
-> All existing wikilinks (`[[Note Name]]`) still work — Obsidian resolves links by filename, not path.
+> All existing wikilinks (`[[Note Name]]`) still work · Obsidian resolves links by filename, not path.
 >
 > Want to run `/connect` to find new connections between your organized notes?

@@ -3,7 +3,7 @@ name: qmd
 description: Set up and manage qmd search index for faster vault search. Subcommands: setup, embed, status, reindex, uninstall.
 ---
 
-# /qmd — qmd Search Integration
+# /qmd · qmd Search Integration
 
 qmd is an optional local search engine that indexes your vault for fast keyword and semantic search. When active, the agent uses it automatically for vault-wide searches.
 
@@ -51,7 +51,7 @@ Ask using AskUserQuestion:
 - options:
   - label: "Yes, install with npm", description: "Run: npm install -g @tobilu/qmd"
   - label: "Yes, install with bun", description: "Run: bun install -g @tobilu/qmd"
-  - label: "Cancel", description: "Skip for now — install manually later"
+  - label: "Cancel", description: "Skip for now · install manually later"
 
 If Cancel: tell user "You can install qmd manually with `npm install -g @tobilu/qmd`, then run `/qmd setup` again." Stop.
 
@@ -85,7 +85,7 @@ If the command fails, show the error and stop.
 
 Run:
 ```
-qmd context add "qmd://<collection-name>" "Personal Obsidian knowledge vault — notes, projects, areas, resources, and session logs"
+qmd context add "qmd://<collection-name>" "Personal Obsidian knowledge vault · notes, projects, areas, resources, and session logs"
 ```
 
 If this command fails, report the error but continue (context is optional metadata).
@@ -112,7 +112,7 @@ Run:
 qmd update -c <collection-name>
 ```
 
-Report progress. If it fails, show the error — the collection is created but not indexed. User can run `/qmd reindex` to retry.
+Report progress. If it fails, show the error · the collection is created but not indexed. User can run `/qmd reindex` to retry.
 
 ### Step 10: Confirm completion
 
@@ -146,11 +146,11 @@ Stop.
 ### Step 2: Warn about time
 
 Ask using AskUserQuestion:
-- question: "Generating embeddings for the first time may take several minutes depending on vault size. This runs locally — no data leaves your machine. Continue?"
+- question: "Generating embeddings for the first time may take several minutes depending on vault size. This runs locally · no data leaves your machine. Continue?"
 - header: "Generate Embeddings"
 - multiSelect: false
 - options:
-  - label: "Yes, generate embeddings", description: "Run qmd embed — may take a few minutes for large vaults"
+  - label: "Yes, generate embeddings", description: "Run qmd embed · may take a few minutes for large vaults"
   - label: "Cancel", description: "Skip for now"
 
 If Cancel, stop.
@@ -169,7 +169,7 @@ Report completion or any errors.
 ### Step 4: Confirm
 
 Say:
-> Embeddings generated. Semantic search is now active — use natural language queries like "find notes about project planning" and qmd will find conceptually related notes.
+> Embeddings generated. Semantic search is now active · use natural language queries like "find notes about project planning" and qmd will find conceptually related notes.
 
 ---
 

@@ -5,7 +5,7 @@ description: Quick note capture with automatic wikilink suggestions to related e
 
 # Capture
 
-Quickly capture a note, idea, reference, or piece of information — with automatic linking to related notes.
+Quickly capture a note, idea, reference, or piece of information · with automatic linking to related notes.
 
 ---
 
@@ -20,7 +20,7 @@ If they provided content after `/capture [content]`, use that directly.
 
 ## Step 2: Determine Note Type and Location
 
-Classify the content — do not ask, infer from context:
+Classify the content · do not ask, infer from context:
 
 | Type | Destination |
 |------|-------------|
@@ -30,13 +30,13 @@ Classify the content — do not ask, infer from context:
 | Ongoing responsibility | `02-areas/[best-subfolder]/[Topic Name].md` |
 | Project update | append to `01-projects/[subfolder]/[Project Name].md` |
 
-**For subfolders:** glob existing subfolders in the target folder and pick the best fit. If none match, create a new kebab-case name (1–2 words). Do not ask — decide and proceed.
+**For subfolders:** glob existing subfolders in the target folder and pick the best fit. If none match, create a new kebab-case name (1–2 words). Do not ask · decide and proceed.
 
 ---
 
 ## Step 3: Find and Link Related Notes
 
-Scan `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` for related notes. Exclude the destination file itself. Include the top 1–3 most relevant as wikilinks in the note. Do not ask — add them automatically. If no related notes are found, omit the `## Related` section entirely.
+Scan `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` for related notes. Exclude the destination file itself. Include the top 1–3 most relevant as wikilinks in the note. Do not ask · add them automatically. If no related notes are found, omit the `## Related` section entirely.
 
 ---
 

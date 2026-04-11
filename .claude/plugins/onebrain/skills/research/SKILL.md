@@ -20,9 +20,9 @@ Then ask:
 > What are you trying to figure out? (This helps me focus the research.)
 
 Optional: ask depth preference:
-- **Overview** — broad understanding, key points
-- **Deep dive** — comprehensive, with sources and nuance
-- **Practical** — focused on how-to and actionable takeaways
+- **Overview** · broad understanding, key points
+- **Deep dive** · comprehensive, with sources and nuance
+- **Practical** · focused on how-to and actionable takeaways
 
 ---
 
@@ -60,7 +60,7 @@ Before writing the note, synthesize what you found:
 
 File: `04-resources/[subfolder]/[Topic Name].md` (subfolder confirmed in Step 4)
 
-If a note on this topic already exists (search recursively in `04-resources/**/*.md`), ask whether to create a new one or append a "Research — [Date]" section.
+If a note on this topic already exists (search recursively in `04-resources/**/*.md`), ask whether to create a new one or append a "Research · [Date]" section.
 
 ```markdown
 ---
@@ -98,8 +98,8 @@ sources: [list of key sources]
 
 ## Sources
 
-- [Source 1 — title and context]
-- [Source 2 — title and context]
+- [Source 1 · title and context]
+- [Source 2 · title and context]
 
 ## Related
 

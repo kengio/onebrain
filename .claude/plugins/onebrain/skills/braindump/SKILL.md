@@ -1,18 +1,18 @@
 ---
 name: braindump
-description: Capture a stream of raw thoughts — classify them and file to inbox with action items extracted
+description: Capture a stream of raw thoughts · classify them and file to inbox with action items extracted
 ---
 
 # Braindump
 
-Capture everything on your mind right now. Don't filter — just say it.
+Capture everything on your mind right now. Don't filter · just say it.
 
 ---
 
 ## Step 1: Invite the Dump
 
 Say:
-> Go for it — what's on your mind? Dump everything. I'll sort it out.
+> Go for it · what's on your mind? Dump everything. I'll sort it out.
 
 Wait for the user to share their thoughts. Don't interrupt.
 
@@ -35,7 +35,7 @@ Silently analyze and classify each item:
 
 ## Step 3: Create Inbox File
 
-File immediately — do not ask for confirmation first.
+File immediately · do not ask for confirmation first.
 
 Create `00-inbox/YYYY-MM-DD-braindump.md` (append `-2`, `-3` if file exists):
 
