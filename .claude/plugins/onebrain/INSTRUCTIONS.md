@@ -218,17 +218,24 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 ### Follow-up Message
 
-When the background sub-agent returns its payload, the main agent reads `inbox_count`, `insight`, and `orphan_action` and sends exactly one follow-up message as a bullet list, ordered by priority. Include only non-empty items:
+When the background sub-agent returns its payload, the main agent reads `inbox_count`, `insight`, and `orphan_action` and sends exactly one follow-up message as a bullet list, ordered by priority. Include only applicable items:
 
 - `- {insight}` — include only if insight is non-empty
 - `- inbox {inbox_count}` — always include (use `inbox empty` when count is 0)
-- `- {N} checkpoints — /wrapup?` — include only if `orphan_action` is `prompt_wrapup:{N}`
+- `- {N} checkpoints — /wrapup?` — include only if `orphan_action` is `prompt_wrapup:{N}`; omit when `none` or `merged:{N}` (silent)
 
-**Example** (insight + inbox 0 + orphans):
+**Examples:**
+
+Full case (insight + inbox 0 + orphans):
 ```
 - OneBrain v2.0.0 Plan 1 due tomorrow — start now?
 - inbox empty
 - 7 checkpoints — /wrapup?
+```
+
+Simple case (no insight, no orphans):
+```
+- inbox 3
 ```
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
