@@ -38,7 +38,7 @@ Pull from two sources:
 Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for task lines matching `- [ ] .*📅 \d{4}-\d{2}-\d{2}`. Filter to dates ≤ today. Group: overdue first, then due today. Include the source note name.
 
 **Source 2 : Open action items from last session:**
-If morning mode: already loaded from recap step above : extract unchecked `- [ ]` items from the `## Action Items` section.
+If morning mode: already loaded from recap step above; extract unchecked `- [ ]` items from the `## Action Items` section.
 If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log whose `date` frontmatter is before today. Read that log and extract unchecked `- [ ]` items from the `## Action Items` section.
 
 ### Display the Briefing
@@ -51,7 +51,7 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log w
 
 **Tasks due today:**
 - [ ] Task description 📅 YYYY-MM-DD (from [[Note Name]])
-- [ ] Overdue task 📅 YYYY-MM-DD (overdue : from [[Note Name]])
+- [ ] Overdue task 📅 YYYY-MM-DD (overdue - from [[Note Name]])
 
 **Open from last session:**
 - [ ] Action item text
