@@ -21,9 +21,9 @@ Ask:
 
 Then ask:
 > Are you:
-> a) Sharing notes/highlights you've already taken — I'll organize them
-> b) Describing the book from memory — I'll structure what you share
-> c) Pasting raw text or quotes — I'll extract and synthesize
+> a) Sharing notes/highlights you've already taken : I'll organize them
+> b) Describing the book from memory : I'll structure what you share
+> c) Pasting raw text or quotes : I'll extract and synthesize
 
 ---
 
@@ -63,7 +63,7 @@ From the raw input, extract:
 
 ## Step 5: Create the Note
 
-File: `04-resources/[subfolder]/[Book Title] — Notes.md` (subfolder confirmed in Step 4)
+File: `04-resources/[subfolder]/[Book Title] : Notes.md` (subfolder confirmed in Step 4)
 
 ```markdown
 ---
@@ -81,7 +81,7 @@ rating: [1-5 if they want to rate it]
 
 ## Core Thesis
 
-[One paragraph — what is this fundamentally about?]
+[One paragraph : what is this fundamentally about?]
 
 ## Key Ideas
 
@@ -99,7 +99,7 @@ rating: [1-5 if they want to rate it]
 ## Memorable Quotes
 
 > "[Quote 1]"
-> — [Author], p. [page if known]
+> : [Author], p. [page if known]
 
 > "[Quote 2]"
 
@@ -128,7 +128,7 @@ rating: [1-5 if they want to rate it]
 
 ## Step 6: Follow Up
 
-> Notes saved to `04-resources/[subfolder]/[Title] — Notes.md`.
+> Notes saved to `04-resources/[subfolder]/[Title] : Notes.md`.
 >
 > Want to:
 > - Add this to your reading list in a project note?

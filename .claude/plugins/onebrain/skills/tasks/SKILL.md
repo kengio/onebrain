@@ -5,10 +5,10 @@ description: Create or update the live task dashboard (TASKS.md) in Obsidian.
 
 # Task Dashboard
 
-Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks. The file is always current — no vault scanning needed. Mark tasks complete directly in Obsidian by clicking the checkboxes.
+Creates or updates a permanent `TASKS.md` at the vault root using Obsidian Tasks plugin live query blocks. The file is always current : no vault scanning needed. Mark tasks complete directly in Obsidian by clicking the checkboxes.
 
 Usage:
-- `/tasks` — open the full dashboard
+- `/tasks` : open the full dashboard
 
 ---
 
@@ -16,7 +16,7 @@ Usage:
 
 Read `vault.yml` from the current working directory. The directory containing `vault.yml` is the vault root. If `vault.yml` does not exist, warn the user:
 
-> "vault.yml not found — using current working directory as vault root: [path]. Run `/onboarding` to set up your vault configuration."
+> "vault.yml not found : using current working directory as vault root: [path]. Run `/onboarding` to set up your vault configuration."
 
 Then proceed with cwd as vault root.
 
@@ -30,7 +30,7 @@ Extract the following folder paths from `vault.yml`, storing each as a variable 
 | `folders.resources` | `[resources_folder]` | `04-resources` |
 | `folders.agent` | `[agent_folder]` | `05-agent` |
 
-`.claude` is always excluded as a hardcoded literal (not in vault.yml) — it is the plugin host directory and is not user-configurable.
+`.claude` is always excluded as a hardcoded literal (not in vault.yml) : it is the plugin host directory and is not user-configurable.
 
 ---
 
@@ -40,7 +40,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 **If TASKS.md does not exist:**
 
-Create it with this exact content (replace `YYYY-MM-DD` with today's date and substitute all five bracket-notation variables — `[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]` — with actual values extracted in Step 1; `.claude` is a hardcoded literal and requires no substitution):
+Create it with this exact content (replace `YYYY-MM-DD` with today's date and substitute all five bracket-notation variables : `[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]` : with actual values extracted in Step 1; `.claude` is a hardcoded literal and requires no substitution):
 
 `````markdown
 ---
@@ -134,7 +134,7 @@ Do not proceed to Step 3 if the write failed.
 
 **If TASKS.md already exists:**
 
-Read the file. Extract `created:` from the frontmatter — if absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter — set to today's date. Edit it manually if you know the original date."
+Read the file. Extract `created:` from the frontmatter : if absent, use today's date and tell the user: "`created:` was missing from TASKS.md frontmatter : set to today's date. Edit it manually if you know the original date."
 
 Overwrite the entire file using the same template as above, substituting:
 - `created:` with the extracted (or today's) date

@@ -3,7 +3,7 @@ name: help
 description: List all available OneBrain commands with descriptions and use cases. Invoke when user asks what you can do, wants to see commands, or seems confused about capabilities.
 ---
 
-# /help — Available Commands
+# /help : Available Commands
 
 When this skill is invoked, present all available OneBrain commands to the user.
 
@@ -26,7 +26,7 @@ Display a formatted table with all available commands:
 
 | Command | What it does | When to use it |
 |---------|-------------|----------------|
-| `/onboarding` | First-run setup — personalizes your agent, vault structure, and preferences | Use once when setting up a new vault |
+| `/onboarding` | First-run setup : personalizes your agent, vault structure, and preferences | Use once when setting up a new vault |
 | `/braindump` | Capture a stream of raw thoughts, ideas, and tasks | When your head is full and you need to offload everything |
 | `/capture` | Quick note capture with automatic wikilink suggestions | When you want to save a single idea, reference, or thought |
 | `/bookmark` | Save a URL with AI-generated name, description, and category to Bookmarks.md | When you want to quickly park a link for later without full processing |
@@ -36,15 +36,15 @@ Display a formatted table with all available commands:
 | `/summarize` | Fetch a URL and create a structured summary note | When you want to deeply process an article or page into a permanent vault note |
 | `/import` | Import local files (PDF, Word, Excel, images, video, scripts) into vault notes | When you have files on disk you want distilled into your knowledge base |
 | `/reading-notes` | Book or article → structured progressive summary | When finishing a book or long article and want to capture it |
-| `/tasks` | Open live task dashboard in Obsidian — creates/updates `TASKS.md` with live query sections | When you want an overview of what needs doing |
-| `/moc` | Create or refresh vault portal (MOC.md) — a Map of Content with live queries, AI summary, and your pinned links | When you want a bird's-eye view of your entire vault |
-| `/weekly` | Weekly reflection — review sessions, patterns, intentions | At the end of each week for review and planning |
-| `/daily` | Two-phase daily briefing — surfaces tasks and last session context, then saves your stated focus as a daily note | Every morning (or any time you want to reset your focus for the day) |
-| `/recap` | Cross-session synthesis — reads 7 days of logs, surfaces patterns, updates MEMORY.md Key Learnings | Periodically, when you want to distill recent sessions into long-term memory |
+| `/tasks` | Open live task dashboard in Obsidian : creates/updates `TASKS.md` with live query sections | When you want an overview of what needs doing |
+| `/moc` | Create or refresh vault portal (MOC.md) : a Map of Content with live queries, AI summary, and your pinned links | When you want a bird's-eye view of your entire vault |
+| `/weekly` | Weekly reflection : review sessions, patterns, intentions | At the end of each week for review and planning |
+| `/daily` | Two-phase daily briefing : surfaces tasks and last session context, then saves your stated focus as a daily note | Every morning (or any time you want to reset your focus for the day) |
+| `/recap` | Cross-session synthesis : reads 7 days of logs, surfaces patterns, updates MEMORY.md Key Learnings | Periodically, when you want to distill recent sessions into long-term memory |
 | `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
-| `/learn` | Teach the agent something — facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
+| `/learn` | Teach the agent something : facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
 | `/clone` | Package your agent context (agent folder including MEMORY.md) for vault transfer | When moving to a new vault and want to preserve your agent's memory |
-| `/reorganize` | Migrate existing flat notes into subfolders — one-time migration | After upgrading to a version with subfolder organization |
+| `/reorganize` | Migrate existing flat notes into subfolders : one-time migration | After upgrading to a version with subfolder organization |
 | `/qmd` | Set up and manage qmd search index (setup, embed, status, reindex, uninstall) | When you want faster vault search or need to manage the search index |
 | `/update` | Update OneBrain system files from GitHub | When a new version is available |
 | `/help` | List all available commands | You're already here! |
@@ -56,6 +56,6 @@ After the table, add:
 ---
 
 **Tips:**
-- Commands use the `/` prefix — for example, `/braindump`, `/tasks`, `/research`
+- Commands use the `/` prefix : for example, `/braindump`, `/tasks`, `/research`
 - You can also describe what you want in plain language: "I want to dump some thoughts" or "show me my tasks"
 - New to OneBrain? Start with `/onboarding` to set up your vault and personalize your AI assistant

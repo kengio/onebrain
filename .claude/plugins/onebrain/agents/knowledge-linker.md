@@ -14,7 +14,7 @@ You are invoked by the `/connect` skill when the user wants to find connections 
 
 ## Process
 
-1. **Scan the vault**: List all `.md` files in `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` (recursive — notes may be in subfolders)
+1. **Scan the vault**: List all `.md` files in `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, and `01-projects/**/*.md` (recursive - notes may be in subfolders)
 2. **Build a mental map**: Read each file's title, tags, and first paragraph
 3. **Identify connections**: Look for:
    - Shared topics or concepts
@@ -33,17 +33,17 @@ You are invoked by the `/connect` skill when the user wants to find connections 
 ## Connection Suggestions
 
 ### [[Note A]]
-- Add link to [[Note B]] — both discuss [shared topic]
+- Add link to [[Note B]] : both discuss [shared topic]
   > "...insert near this text..." → "...near `[[Note B]]`..."
 
 ### [[Note C]]
-- Add link to [[Note D]] — Note D provides background for this concept
+- Add link to [[Note D]] : Note D provides background for this concept
 ```
 
 ## Guidelines
 
 - Prioritize meaningful connections over superficial keyword matches
-- Don't suggest linking every note to every other note — be selective
+- Don't suggest linking every note to every other note : be selective
 - Focus on links that would genuinely help the user navigate their knowledge
 - Maximum 10 suggestions per run to avoid overwhelming the user
-- Ask before making any changes — present suggestions first
+- Ask before making any changes : present suggestions first

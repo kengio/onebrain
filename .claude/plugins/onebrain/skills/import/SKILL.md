@@ -8,10 +8,10 @@ description: Import local files (PDF, Word, PowerPoint, Excel, images, video, sc
 Process local files into permanent vault notes in `[resources]/` (resolved from vault.yml; default: `04-resources/`).
 
 Usage:
-- `/import` — scan default import staging inbox (`[inbox]/imports/`, resolved from vault.yml)
-- `/import /path/to/file` — import a single explicit file
-- `/import --attach` — scan inbox and copy supported files into vault for inline Obsidian preview
-- `/import /path/to/file --attach` — single file with attach
+- `/import` : scan default import staging inbox (`[inbox]/imports/`, resolved from vault.yml)
+- `/import /path/to/file` : import a single explicit file
+- `/import --attach` : scan inbox and copy supported files into vault for inline Obsidian preview
+- `/import /path/to/file --attach` : single file with attach
 
 ---
 
@@ -21,7 +21,7 @@ Usage:
 
 Resolve folders from `vault.yml` (read the file if it exists at the vault root):
 - If `vault.yml` does not exist: use all defaults below.
-- If `vault.yml` exists but cannot be parsed: report the error and stop — do not proceed with unknown folder paths.
+- If `vault.yml` exists but cannot be parsed: report the error and stop : do not proceed with unknown folder paths.
 - `folders.inbox` → default: `00-inbox` (vault inbox; used to derive import staging path)
 - `folders.import_inbox` → default: `[inbox]/imports` (import staging folder; substituting the resolved `[inbox]` value)
 - `folders.resources` → default: `04-resources` (output folder for notes)
@@ -40,7 +40,7 @@ Parse arguments:
 3. If unsupported type, report:
    > `[filename]` is not a supported file type. Supported: PDF, Word, Excel, PowerPoint, images, video, Python/Shell/SQL scripts.
    Then stop.
-4. Note whether the file is inside the inbox folder (used in cleanup — files outside inbox are never deleted).
+4. Note whether the file is inside the inbox folder (used in cleanup : files outside inbox are never deleted).
 5. Skip Steps 2 and 3 below. Go directly to Step 4 with this single file.
 
 **Batch mode:**
@@ -65,7 +65,7 @@ Found N files to import:
   hero-image.png      Image
   cleanup.sh          Shell script
   deck.pptx           PowerPoint
-  unknown.xyz         ⚠ Unsupported — will be skipped
+  unknown.xyz         ⚠ Unsupported : will be skipped
 
 Proceed with all? Or type filenames to skip (comma-separated, or "all"):
 (Inbox files will be removed after successful import)
@@ -98,7 +98,7 @@ Each subagent runs the appropriate handler section from this skill (see below).
 After all subagents complete, show a summary:
 
 ```
-Import complete — 4 notes created:
+Import complete : 4 notes created:
 
   [resources]/research/report.md         (from report.pdf)
   [resources]/finance/budget-summary.md  (from budget.xlsx)
@@ -111,12 +111,12 @@ Import complete — 4 notes created:
 If any subagent failed:
 ```
 ⚠ 1 file failed:
-  deck.pptx — markitdown not installed. File left in inbox. Install with: pipx install markitdown
+  deck.pptx : markitdown not installed. File left in inbox. Install with: pipx install markitdown
 ```
 
 If any files were skipped due to unsupported type:
 ```
-⏭ 2 files skipped (unsupported — left in inbox):
+⏭ 2 files skipped (unsupported : left in inbox):
   unknown.xyz
   notes.txt
 ```
@@ -124,7 +124,7 @@ If any files were skipped due to unsupported type:
 If a note was created but the inbox delete failed (partial success):
 ```
 ⚠ 1 partial success:
-  report.pdf — note created at [resources]/research/report.md, but inbox file could not be deleted. Delete manually.
+  report.pdf : note created at [resources]/research/report.md, but inbox file could not be deleted. Delete manually.
 ```
 
 ### Supported File Types
@@ -158,7 +158,7 @@ When a stub note is created (extraction tool unavailable, extraction failed, emp
 If the Read tool, markitdown, or any extraction step returns an error or empty output: do NOT create a note. Return an error. Do NOT delete the inbox file.
 
 **4. File validation before processing.**
-Check file size with `ls -la "[filepath]"`. If 0 bytes: create a stub note ("File is empty — no content to extract."), do NOT delete inbox file, return.
+Check file size with `ls -la "[filepath]"`. If 0 bytes: create a stub note ("File is empty : no content to extract."), do NOT delete inbox file, return.
 
 **5. `--attach` directory creation.**
 Before every `cp`, run `mkdir -p` for the target directory. If `cp` fails: skip the embed, report the failure, do NOT delete inbox file, stop.
@@ -170,7 +170,7 @@ Before writing a note, check if the target path already exists. If it does: appe
 
 ## markitdown Dependency
 
-Used by the Word, PowerPoint, and Excel handlers. Each handler references this section for detection, OS check, Python check, and install — instead of duplicating the logic.
+Used by the Word, PowerPoint, and Excel handlers. Each handler references this section for detection, OS check, Python check, and install : instead of duplicating the logic.
 
 ### 1. Detection
 
@@ -261,7 +261,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed to the note body (above the Summary section)
 
-6. Cleanup — only if step 4 (note creation) succeeded:
+6. Cleanup : only if step 4 (note creation) succeeded:
    - If the file was inside the inbox folder: `rm "[filepath]"`
    - If the file was an explicit path outside the inbox: do NOT delete it
    - If delete fails: report as partial success (note created, manual delete needed)
@@ -276,7 +276,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 > Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
+1. Check markitdown is available : follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
 
 2. Extract markdown:
    ```bash
@@ -290,21 +290,21 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - **Headings and key sections**: structure is already preserved in the markdown output
    - **Core content**: main points, arguments, or information
 
-4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
+4. Choose output subfolder (same rule as PDF Handler : including single-file confirmation). Create note using Note Template:
    - `file_type`: `docx`
    - Summary: 2-3 sentence distillation
    - Key Points: bullet list of main points
 
 5. **Stub note fallback** (if markitdown unavailable or failed):
    Create a minimal note with the appropriate message:
-   - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
-   - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the document is empty. File left in inbox for retry."
+   - Not installed / install failed: "⚠ Content could not be extracted : `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
+   - Failed / empty: "⚠ Content could not be extracted : markitdown returned an error or the document is empty. File left in inbox for retry."
    - Key Points: "_Open the file to review its contents and fill in this section._"
    **Do NOT delete the inbox file when a stub note is created.**
 
 6. `--attach` is NOT supported for Word files (no Obsidian preview value).
 
-7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
+7. Cleanup : only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
 
 8. Return: note path, or error with reason.
 
@@ -316,7 +316,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 
 > Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
+1. Check markitdown is available : follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
 
 2. Extract tables:
    ```bash
@@ -331,7 +331,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
    - How many sheets (if multiple)
    - Notable values, patterns, or structure
 
-4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
+4. Choose output subfolder (same rule as PDF Handler : including single-file confirmation). Create note using Note Template:
    - `file_type`: `xlsx` (use for both .xlsx and .xls files)
    - Build the note body as follows (replace the standard Summary / Key Points structure):
 
@@ -349,16 +349,16 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 
 5. **Stub note fallback** (if markitdown unavailable or failed):
    Create a minimal note with the appropriate message:
-   - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
+   - Not installed / install failed: "⚠ Content could not be extracted : `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
    - Failed / empty:
-     - If `.xls` file: "⚠ Content could not be extracted — legacy .xls format may not be fully supported. Convert to .xlsx and re-import, or open the file manually."
-     - Otherwise: "⚠ Content could not be extracted — markitdown returned an error or the spreadsheet is empty. File left in inbox for retry."
+     - If `.xls` file: "⚠ Content could not be extracted : legacy .xls format may not be fully supported. Convert to .xlsx and re-import, or open the file manually."
+     - Otherwise: "⚠ Content could not be extracted : markitdown returned an error or the spreadsheet is empty. File left in inbox for retry."
    - `## Summary` section left blank for manual entry.
    **Do NOT delete the inbox file when a stub note is created.**
 
 6. `--attach` is NOT supported for Excel files.
 
-7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file. If delete fails, report as partial success.
+7. Cleanup : only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file. If delete fails, report as partial success.
 
 8. Return: note path, or error with reason.
 
@@ -370,7 +370,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
 
 > Requires `markitdown` (install: `pipx install markitdown`). Falls back to stub note if unavailable.
 
-1. Check markitdown is available — follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
+1. Check markitdown is available : follow the **markitdown Dependency** section above. If the dependency flow could not install markitdown, skip to step 5 (stub note).
 
 2. Extract markdown:
    ```bash
@@ -380,22 +380,22 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag. (--attach fla
    - Otherwise capture the output as markdown text.
 
 3. From the extracted markdown, create a slide outline:
-   - markitdown maps slide titles to `##` headings — use these as the slide structure
+   - markitdown maps slide titles to `##` headings : use these as the slide structure
    - The `## Slide Outline` section is populated from these headings and their content
 
-4. Choose output subfolder (same rule as PDF Handler — including single-file confirmation). Create note using Note Template:
+4. Choose output subfolder (same rule as PDF Handler : including single-file confirmation). Create note using Note Template:
    - `file_type`: `pptx`
    - Summary: 2-3 sentences describing the presentation's purpose and audience
    - Key section: `## Slide Outline` (slide titles as headings + key points per slide)
 
 5. **Stub note fallback** (if markitdown unavailable or failed):
-   - Not installed / install failed: "⚠ Content could not be extracted — `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
-   - Failed / empty: "⚠ Content could not be extracted — markitdown returned an error or the presentation is empty. File left in inbox for retry."
+   - Not installed / install failed: "⚠ Content could not be extracted : `markitdown` is not installed or could not be installed automatically. Install with: `pipx install markitdown`, then re-import this file."
+   - Failed / empty: "⚠ Content could not be extracted : markitdown returned an error or the presentation is empty. File left in inbox for retry."
    **Do NOT delete the inbox file when a stub note is created.**
 
 6. `--attach` is NOT supported for PowerPoint files.
 
-7. Cleanup — only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
+7. Cleanup : only if a full note was created (markitdown succeeded in step 2). If a stub note was created, do NOT delete the inbox file.
 
 8. Return: note path, or error with reason.
 
@@ -419,7 +419,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Summary: the visual description from step 2
    - Key Points: notable elements, any visible text, inferred purpose
 
-**For SVG (vector graphics — treated as structured XML, not visual):**
+**For SVG (vector graphics : treated as structured XML, not visual):**
 
 1. Read the SVG file as text using the Read tool.
 
@@ -428,7 +428,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Key structural elements (paths, shapes, text, groups)
    - Likely use case
 
-3. Create note same as above (same subfolder selection rule — confirm in single-file mode, auto-select in batch mode), but with `file_type`: `svg`.
+3. Create note same as above (same subfolder selection rule : confirm in single-file mode, auto-select in batch mode), but with `file_type`: `svg`.
 
 **--attach behavior (PNG, JPG, JPEG, GIF, WebP, SVG):**
 - Run: `mkdir -p "[vault-root]/[attachments]/images/"`
@@ -436,7 +436,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
 - Add `![[filename]]` embed above the Summary section in the note
 
-**Cleanup** — only after note creation succeeded AND (if `--attach` was set) `cp` succeeded. If `cp` failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
+**Cleanup** : only after note creation succeeded AND (if `--attach` was set) `cp` succeeded. If `cp` failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
 
 **Return:** Note path, or error with reason.
 
@@ -448,13 +448,13 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 
 1. Collect metadata:
    - Filename (without extension) → use as note title
-   - File size: `ls -lh "[filepath]"` via Bash — if the command fails, record size as "unknown"
+   - File size: `ls -lh "[filepath]"` via Bash : if the command fails, record size as "unknown"
    - File extension (format type: MP4, MOV, WebM, MKV)
 
 2. Choose output subfolder (suggest `media` or `video`; confirm with user in single-file mode, auto-select in batch mode). Create note using Note Template:
    - `file_type`: `video`
    - Summary: "Video file: [filename]. Format: [extension]. Size: [size]."
-   - Key Points: left blank — add context about this video manually
+   - Key Points: left blank : add context about this video manually
 
 3. `--attach` behavior:
    - Run: `mkdir -p "[vault-root]/[attachments]/video/"`
@@ -462,7 +462,7 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed above the Summary section
 
-4. Cleanup — only after note creation succeeded AND (if `--attach` was set) `cp` succeeded. If `cp` failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
+4. Cleanup : only after note creation succeeded AND (if `--attach` was set) `cp` succeeded. If `cp` failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
 
 5. Return: note path.
 
@@ -475,7 +475,7 @@ Executed by a subagent. Inputs: file path, vault root, inbox flag.
 Handles: `.py`, `.sh`, `.bash`, `.zsh`, `.sql`
 
 1. Read the file content verbatim using the Read tool.
-   - If Read returns an error or empty output: return an error ("Could not read [filename] — file may be empty or unreadable. File left in inbox."). Do NOT create a note. Do NOT delete inbox file. Stop.
+   - If Read returns an error or empty output: return an error ("Could not read [filename] : file may be empty or unreadable. File left in inbox."). Do NOT create a note. Do NOT delete inbox file. Stop.
 
 2. Analyze the script:
    - **Purpose**: what does this script do? (1-2 sentences)
@@ -494,7 +494,7 @@ Handles: `.py`, `.sh`, `.bash`, `.zsh`, `.sql`
 
 4. `--attach` is NOT supported for scripts (content is already in the note as a code block).
 
-5. Cleanup — only if step 1 (Read) succeeded and the note was created. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
+5. Cleanup : only if step 1 (Read) succeeded and the note was created. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
 
 6. Return: note path.
 
@@ -506,7 +506,7 @@ All handlers use this base template. Type-specific sections are added by each ha
 
 The note structure:
 
-**If file came from an explicit path (not inbox) — file is kept in place:**
+**If file came from an explicit path (not inbox) : file is kept in place:**
 
 ```markdown
 ---
@@ -530,14 +530,14 @@ file_path: /absolute/path/to/original
 
 ## Key Points / Contents
 
-[Extracted structure — key sections, data highlights, slide outline, script analysis, etc.]
+[Extracted structure : key sections, data highlights, slide outline, script analysis, etc.]
 
 ## Related
 
 [[linked vault notes]]
 ```
 
-**If file came from the inbox — file is deleted after import:**
+**If file came from the inbox : file is deleted after import:**
 
 ```markdown
 ---
@@ -549,7 +549,7 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 
 # [Filename or derived title]
 
-> **Imported from inbox:** YYYY-MM-DD — staging copy removed after import
+> **Imported from inbox:** YYYY-MM-DD : staging copy removed after import
 
 [If --attach flag was used and file type supports it, add: ![[filename]] ]
 
@@ -559,7 +559,7 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 
 ## Key Points / Contents
 
-[Extracted structure — key sections, data highlights, slide outline, script analysis, etc.]
+[Extracted structure : key sections, data highlights, slide outline, script analysis, etc.]
 
 ## Related
 
@@ -567,11 +567,11 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 ```
 
 **Type-specific section additions (after Key Points):**
-- **Scripts**: `## Code` — full file content in a fenced code block
-- **PowerPoint**: `## Slide Outline` — slide titles as headings + key points per slide
-- **Excel (full extraction)**: replaces `## Key Points / Contents` — use `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
-- **Excel (stub)**: `## Summary` — left blank for manual entry
+- **Scripts**: `## Code` : full file content in a fenced code block
+- **PowerPoint**: `## Slide Outline` : slide titles as headings + key points per slide
+- **Excel (full extraction)**: replaces `## Key Points / Contents` : use `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
+- **Excel (stub)**: `## Summary` : left blank for manual entry
 
-**Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found — add links manually._`
+**Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found : add links manually._`
 
-> **Note on `file_path`:** `file_path` is only included for files imported from an explicit path (kept in place after import). For inbox-staged files, `file_path` is omitted — the staging copy is deleted and the note is the permanent artifact.
+> **Note on `file_path`:** `file_path` is only included for files imported from an explicit path (kept in place after import). For inbox-staged files, `file_path` is omitted : the staging copy is deleted and the note is the permanent artifact.
