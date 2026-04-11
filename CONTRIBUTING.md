@@ -142,7 +142,7 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 3. Make scripts defensive — they run on every matching event, so they should exit silently if there's nothing to do.
 
-4. **Stop and PreCompact hooks must NOT use `"async": true`** — these hooks can inject prompts by writing to stdout, but only if they complete synchronously before Claude's next response. Async execution fires too late for prompt injection.
+4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection. PreCompact hooks do not support `decision:block` and cannot inject prompts.
 
 ## Install Scripts
 

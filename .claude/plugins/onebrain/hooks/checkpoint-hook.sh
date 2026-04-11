@@ -8,6 +8,7 @@
 # State file: /tmp/onebrain-{PPID}.state (COUNT:LAST_TS)
 # COUNT=0 with fresh timestamp in an *existing* state file signals post-checkpoint reset;
 # absence of state file = first run.
+# SKIP_WINDOW=60: prevents re-trigger immediately after a checkpoint resets COUNT to 0.
 # MIN_ACTIVITY guard: if fewer than 2 messages since last checkpoint, reset and skip —
 # no file is created for sessions with no meaningful activity.
 

@@ -216,7 +216,9 @@ The Stop hook must be registered in the vault's `.claude/settings.json` — it i
 
 1. Derive the vault root (directory containing `vault.yml`)
 2. Set hook path: `[vault_root]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh`
-3. Read `.claude/settings.json`. If it cannot be parsed as JSON: report error and skip.
+3. Read `.claude/settings.json`:
+   - If the file does not exist: treat it as `{}` (the write in step 7 will create it)
+   - If the file exists but cannot be parsed as JSON: report error and skip
 4. Check if `hooks.Stop` already contains a command referencing `checkpoint-hook.sh stop`. Set `stop_added = false` if already present, `stop_added = true` if added.
 5. If **absent**: add the Stop hook entry under `hooks.Stop` (create `hooks` key if missing), set `stop_added = true`:
    ```json
@@ -225,10 +227,13 @@ The Stop hook must be registered in the vault's `.claude/settings.json` — it i
      "hooks": [{ "type": "command", "command": "bash \"[hook_path]\" stop" }]
    }
    ```
-6. If `hooks.PreCompact` contains an entry referencing `checkpoint-hook.sh precompact`: remove that entry; if the `PreCompact` array is now empty, remove the `PreCompact` key entirely. Set `precompact_removed = true`.
+6. Check `hooks.PreCompact`:
+   - If it contains an entry referencing `checkpoint-hook.sh precompact`: remove that entry; set `precompact_removed = true`
+   - If the `PreCompact` array is now empty (or was already empty): remove the `PreCompact` key entirely
 7. If `stop_added` OR `precompact_removed`: write the updated JSON back to `.claude/settings.json`, then report:
-   - If `stop_added`: "Registered Stop checkpoint hook in `.claude/settings.json`. Note: paths are absolute — re-run `/update` if you move this vault."
-   - If only `precompact_removed` (Stop was already present): "Removed legacy PreCompact checkpoint hook from `.claude/settings.json`."
+   - If `stop_added` AND `precompact_removed`: "Registered Stop checkpoint hook and removed legacy PreCompact entry in `.claude/settings.json`. Note: paths are absolute — re-run `/update` if you move this vault."
+   - If `stop_added` only: "Registered Stop checkpoint hook in `.claude/settings.json`. Note: paths are absolute — re-run `/update` if you move this vault."
+   - If `precompact_removed` only (Stop was already present): "Removed legacy PreCompact checkpoint hook from `.claude/settings.json`."
 8. If neither `stop_added` nor `precompact_removed`: skip silently (no output)
 
 ---
