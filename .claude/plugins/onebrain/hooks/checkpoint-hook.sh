@@ -5,7 +5,7 @@
 # stop       — fires after every response; checkpoints on message/time threshold
 #              Uses JSON {"decision":"block","reason":"..."} to inject prompt back to Claude.
 # precompact — fires before context compression; checkpoints unless skip window or no activity
-#              Uses JSON {"systemMessage":"..."} — PreCompact does not support decision:block.
+#              Uses JSON {"decision":"block","reason":"..."} — Claude saves, then compaction proceeds.
 #
 # Both modes share /tmp/onebrain-{PPID}.state (COUNT:LAST_TS).
 # 60s skip window prevents double-checkpoints when both fire close together.
@@ -34,8 +34,8 @@ else
   COUNT=0; LAST_TS=$NOW
 fi
 
-# --- PreCompact mode: checkpoint unless no activity since last one ---
-# PreCompact does not support decision:block — uses systemMessage instead.
+# --- PreCompact mode: checkpoint before context compression ---
+# Uses decision:block — Claude saves checkpoint, then compaction proceeds.
 if [ "$MODE" = "precompact" ]; then
   if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
     # Not enough activity since last checkpoint — reset counter, skip creating file
@@ -44,7 +44,7 @@ if [ "$MODE" = "precompact" ]; then
   fi
   # Build JSON first — restore state on python3 failure so future triggers still work
   PROMPT="Context compression is imminent. Before compacting, silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing checkpoint-*.md files in [logs folder]/YYYY/MM/ to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: precompact, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
-  JSON=$(python3 -c "import json,sys; print(json.dumps({'systemMessage':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
+  JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
   if [ -z "$JSON" ]; then
     # python3 unavailable or failed — leave state unchanged so future triggers still work
     exit 1
