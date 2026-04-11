@@ -24,8 +24,8 @@ Use these variables for all file paths in the steps below.
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
 2. Glob `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` (also check yesterday's folder if session started before midnight — i.e., `[logs folder]/YYYY/MM_PREV/YYYY-MM-DD_PREV-checkpoint-*.md` for the prior calendar day)
 3. Filter: keep only files where frontmatter field `merged` is absent or not `true`
-4. If any found: read each file — use their content as **additional context** when reviewing the session in Step 3. Unmerged checkpoints capture activity that may have been compressed out of current context.
-5. Store the list of found checkpoint paths for use in Step 5.
+4. If any found: **read every file in the filtered list** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 — not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
+5. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
 
 If none found: continue normally.
 
@@ -54,6 +54,8 @@ Reflect on the conversation that just occurred. Identify:
 ---
 
 ## Step 4: Write the Session Log
+
+> **If checkpoints were found in Step 1:** do not write the session log until the content of every checkpoint file read in Step 1 is reflected in the sections below. All Key Decisions, Action Items, and Open Questions from checkpoints must appear explicitly — not summarized into a single line.
 
 Create `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`:
 
@@ -105,7 +107,7 @@ _Omit this section if the session had no notable friction or technique worth log
 
 ## Step 5: Mark Checkpoints as Merged
 
-If checkpoints were found in Step 1:
+If the Step 1 checkpoint list is non-empty (i.e., at least one file was read and incorporated):
 
 For each checkpoint file path stored in Step 1:
 1. Read the file's frontmatter
