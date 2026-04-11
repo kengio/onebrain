@@ -190,6 +190,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 3. **Orphan checkpoints** — Glob `[logs folder]/**/*-checkpoint-*.md`:
    - Keep only files where the date in the filename is **before today**
    - Discard files older than 3 days
+   - **Read frontmatter of each remaining file** — exclude any file where `merged: true`
    - Count remaining:
      - **0 files**: skip
      - **1–5 files**: for each date group, synthesize a session log silently:
@@ -217,22 +218,18 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 ### Follow-up Message
 
-When the background sub-agent returns its payload, the main agent reads `inbox_count`, `insight`, and `orphan_action` and sends exactly one follow-up message using the tables below:
+When the background sub-agent returns its payload, the main agent reads `inbox_count`, `insight`, and `orphan_action` and sends exactly one follow-up message as a bullet list, ordered by priority. Include only non-empty items:
 
-First, choose the base message from insight rows:
+- `- {insight}` — include only if insight is non-empty
+- `- inbox {inbox_count}` — always include (use `inbox empty` when count is 0)
+- `- {N} checkpoints — /wrapup?` — include only if `orphan_action` is `prompt_wrapup:{N}`
 
-| Insight condition | Base message |
-|---|---|
-| insight present | `{insight} · inbox {inbox_count}` |
-| no insight, inbox 0 | `inbox empty` |
-| no insight, inbox > 0 | `inbox {inbox_count} items` |
-
-Then, apply orphan modifier (these compose on top of the base message, they do not replace it):
-
-| orphan_action | Modifier |
-|---|---|
-| `none` or `merged:*` (any count) | (no change — silent) |
-| `prompt_wrapup:{N}` | append ` · {N} orphaned checkpoints — run /wrapup?` |
+**Example** (insight + inbox 0 + orphans):
+```
+- OneBrain v2.0.0 Plan 1 due tomorrow — start now?
+- inbox empty
+- 7 checkpoints — /wrapup?
+```
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
 
