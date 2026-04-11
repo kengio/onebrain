@@ -44,7 +44,7 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log w
 ### Display the Briefing
 
 ```
-## Daily Briefing — DD Mon YYYY [morning / afternoon / evening]
+## Daily Briefing · DD Mon YYYY [morning / afternoon / evening]
 
 **Last session (DD Mon):** [1–2 sentence recap of topics + open items]
 (morning mode only — skip if no prior session found)
