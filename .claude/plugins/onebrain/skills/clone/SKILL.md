@@ -7,7 +7,7 @@ description: Clone your agent's portable context (agent folder including MEMORY.
 
 Package your agent's full context for transfer to a new vault.
 
-**What gets cloned:** Everything in the agent folder · `MEMORY.md`, `context/`, `memory/`, and `CLONE.md` once generated.
+**What gets cloned:** Everything in the agent folder : `MEMORY.md`, `context/`, `memory/`, and `CLONE.md` once generated.
 **What does NOT get cloned:** your notes, projects, areas, knowledge, resources, archive, and logs.
 
 Usage: `/clone`
@@ -39,10 +39,10 @@ updated: YYYY-MM-DD
 - Last updated: [TODAY'S DATE]
 
 ## Context Notes
-[For each .md file in agent_folder/context/ (skip .gitkeep and non-.md files), list: - filename · first line of file body (after frontmatter). If no .md files exist, write: (none yet)]
+[For each .md file in agent_folder/context/ (skip .gitkeep and non-.md files), list: - filename : first line of file body (after frontmatter). If no .md files exist, write: (none yet)]
 
 ## Memory Notes
-[For each .md file in agent_folder/memory/ (skip .gitkeep and non-.md files), list: - filename · first line of file body (after frontmatter). If no .md files exist, write: (none yet)]
+[For each .md file in agent_folder/memory/ (skip .gitkeep and non-.md files), list: - filename : first line of file body (after frontmatter). If no .md files exist, write: (none yet)]
 ```
 
 ---
@@ -51,10 +51,10 @@ updated: YYYY-MM-DD
 
 Show the user what will be cloned:
 > **Ready to clone:**
-> - `[agent_folder]/MEMORY.md` · identity and personality
-> - `[agent_folder]/CLONE.md` · this manifest
-> - `[agent_folder]/context/` · N files
-> - `[agent_folder]/memory/` · N files
+> - `[agent_folder]/MEMORY.md` : identity and personality
+> - `[agent_folder]/CLONE.md` : this manifest
+> - `[agent_folder]/context/` : N files
+> - `[agent_folder]/memory/` : N files
 >
 > **Not cloned:** your notes, projects, areas, knowledge, resources, archive, logs.
 
@@ -64,8 +64,8 @@ Show the user what will be cloned:
 
 Ask:
 > How would you like to clone?
-> 1. **Folder copy** · I'll create `agent-clone-YYYY-MM-DD/` in your vault root with all files ready to copy
-> 2. **Display paths** · I'll list the file paths so you can copy them manually
+> 1. **Folder copy** : I'll create `agent-clone-YYYY-MM-DD/` in your vault root with all files ready to copy
+> 2. **Display paths** : I'll list the file paths so you can copy them manually
 
 ---
 
@@ -81,7 +81,7 @@ If the user chose option 1:
    > Your agent context is ready at `[output_folder]/`.
    > Copy `[agent_folder]/` to your new vault root to restore context.
    > **Prerequisite:** Your new vault must have OneBrain installed before importing.
-   > To import: place `[agent_folder]/` at the vault root · MEMORY.md is inside.
+   > To import: place `[agent_folder]/` at the vault root : MEMORY.md is inside.
 
 ---
 

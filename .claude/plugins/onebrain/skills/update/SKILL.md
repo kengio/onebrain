@@ -1,6 +1,6 @@
 ---
 name: update
-description: Update OneBrain skills, config, and plugins from GitHub · never touches your notes or data
+description: Update OneBrain skills, config, and plugins from GitHub : never touches your notes or data
 ---
 
 ## Install Path Detection
@@ -9,7 +9,7 @@ Check if `.claude/plugins/onebrain/` exists in the current vault directory.
 
 **If it does NOT exist:**
 > OneBrain is installed as a global plugin but hasn't been adopted into this vault yet.
-> Run `/onboarding` first to bundle OneBrain into your vault · after that, `/update` will work normally.
+> Run `/onboarding` first to bundle OneBrain into your vault : after that, `/update` will work normally.
 
 Do not proceed further.
 
@@ -28,18 +28,18 @@ Tell the user what will and won't be updated:
 
 **WILL update (system files only):**
 - `.gitignore`
-- `.claude/plugins/onebrain/` · all plugin files (skills, hooks, agents, INSTRUCTIONS.md)
-- `.claude-plugin/` · local plugin marketplace registry
+- `.claude/plugins/onebrain/` : all plugin files (skills, hooks, agents, INSTRUCTIONS.md)
+- `.claude-plugin/` : local plugin marketplace registry
 
 **WILL NOT touch (your data and preferences):**
-- All your note folders (00-inbox through 07-logs) · all your notes
-- `[agent_folder]/MEMORY.md` · your identity and session context
-- `vault.yml` · your vault configuration
-- `.obsidian/` · all Obsidian settings
-- `.claude/settings.local.json` · your local Claude settings
-- `.claude/onebrain.local.md` · your local plugin config
-- `install.sh`, `install.ps1` · fresh-install only, not part of the vault
-- `README.md`, `CONTRIBUTING.md`, `LICENSE`, `assets/` · repo-only files
+- All your note folders (00-inbox through 07-logs) : all your notes
+- `[agent_folder]/MEMORY.md` : your identity and session context
+- `vault.yml` : your vault configuration
+- `.obsidian/` : all Obsidian settings
+- `.claude/settings.local.json` : your local Claude settings
+- `.claude/onebrain.local.md` : your local plugin config
+- `install.sh`, `install.ps1` : fresh-install only, not part of the vault
+- `README.md`, `CONTRIBUTING.md`, `LICENSE`, `assets/` : repo-only files
 
 Ask: **"Proceed with update?"** and wait for confirmation before continuing.
 
@@ -60,7 +60,7 @@ Use the platform reported in your session context (e.g. `Platform: darwin` or `P
   powershell -File .claude/plugins/onebrain/skills/update/update.ps1
   ```
 
-> **Note:** The dry-run and apply passes each fetch files independently from GitHub. This is intentional · scripts are stateless and require no temp storage between runs. The window between passes is small enough that mid-run upstream changes are not a practical concern for a personal tool.
+> **Note:** The dry-run and apply passes each fetch files independently from GitHub. This is intentional : scripts are stateless and require no temp storage between runs. The window between passes is small enough that mid-run upstream changes are not a practical concern for a personal tool.
 
 Parse the output and present a summary to the user:
 
@@ -102,19 +102,19 @@ After applying updates, check for the old MEMORY.md location:
 2. Check if `MEMORY.md` exists at the vault root
 3. Check if `[agent_folder]/MEMORY.md` exists
 
-**Case A · Root MEMORY.md exists, agent folder MEMORY.md does not:**
+**Case A : Root MEMORY.md exists, agent folder MEMORY.md does not:**
 - If `[agent_folder]/` does not exist, create it along with `context/` and `memory/` subfolders (each with a `.gitkeep`)
 - Copy the content of `MEMORY.md` to `[agent_folder]/MEMORY.md`
-- If copy fails: report the error and stop · do not offer to delete the root copy
+- If copy fails: report the error and stop : do not offer to delete the root copy
 - If copy succeeds: verify the new file is non-empty, then ask: "Copied MEMORY.md to `[agent_folder]/MEMORY.md`. Can I delete the root copy?"
 - Delete root `MEMORY.md` only after confirmation
 
-**Case B · Both exist:**
+**Case B : Both exist:**
 > Found `MEMORY.md` at the vault root AND at `[agent_folder]/MEMORY.md`. The agent will use `[agent_folder]/MEMORY.md`. Please review and delete the root copy manually: `MEMORY.md`.
 
-**Case C · Only agent folder MEMORY.md exists:** No action.
+**Case C : Only agent folder MEMORY.md exists:** No action.
 
-**Case D · Neither exists:** No action. User will need to run `/onboarding`.
+**Case D : Neither exists:** No action. User will need to run `/onboarding`.
 
 ---
 
@@ -140,7 +140,7 @@ updated: YYYY-MM-DD
 
 ## Step 4c: Create Missing Vault Folders
 
-Resolve `[inbox]` from `vault.yml` `folders.inbox` (default: `00-inbox`) and `[attachments]` from `vault.yml` `folders.attachments` (default: `attachments`) · both were already read in Step 4b.
+Resolve `[inbox]` from `vault.yml` `folders.inbox` (default: `00-inbox`) and `[attachments]` from `vault.yml` `folders.attachments` (default: `attachments`) : both were already read in Step 4b.
 
 Ensure these folders exist (create with `.gitkeep` if missing, report only new ones):
 
@@ -203,7 +203,7 @@ checkpoint:
 ````
 
 Rules:
-- **Never overwrite existing values** · only add the section if entirely absent
+- **Never overwrite existing values** : only add the section if entirely absent
 - If `vault.yml` does not exist: skip silently
 - Report: "Added `checkpoint:` config to `vault.yml` (defaults: 15 messages, 30 min)."
 - If already present: skip silently (no output)
@@ -212,7 +212,7 @@ Rules:
 
 ## Step 4g: Register Stop Checkpoint Hook in Project settings.json (If Missing)
 
-The Stop hook must be registered in the vault's `.claude/settings.json` · it is not picked up from plugin `hooks.json` automatically. This step ensures it is present.
+The Stop hook must be registered in the vault's `.claude/settings.json` : it is not picked up from plugin `hooks.json` automatically. This step ensures it is present.
 
 1. Derive the vault root (directory containing `vault.yml`)
 2. Set hook path: `[vault_root]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh`
@@ -231,8 +231,8 @@ The Stop hook must be registered in the vault's `.claude/settings.json` · it is
    - If it contains an entry referencing `checkpoint-hook.sh precompact`: remove that entry; set `precompact_removed = true`
    - If the `PreCompact` array is now empty (or was already empty): remove the `PreCompact` key entirely
 7. If `stop_added` OR `precompact_removed`: write the updated JSON back to `.claude/settings.json`, then report:
-   - If `stop_added` AND `precompact_removed`: "Registered Stop checkpoint hook and removed legacy PreCompact entry in `.claude/settings.json`. Note: paths are absolute · re-run `/update` if you move this vault."
-   - If `stop_added` only: "Registered Stop checkpoint hook in `.claude/settings.json`. Note: paths are absolute · re-run `/update` if you move this vault."
+   - If `stop_added` AND `precompact_removed`: "Registered Stop checkpoint hook and removed legacy PreCompact entry in `.claude/settings.json`. Note: paths are absolute : re-run `/update` if you move this vault."
+   - If `stop_added` only: "Registered Stop checkpoint hook in `.claude/settings.json`. Note: paths are absolute : re-run `/update` if you move this vault."
    - If `precompact_removed` only (Stop was already present): "Removed legacy PreCompact checkpoint hook from `.claude/settings.json`."
 8. If neither `stop_added` nor `precompact_removed`: skip silently (no output)
 
@@ -248,7 +248,7 @@ timezone: Asia/Bangkok
 ```
 
 Rules:
-- **Never overwrite existing value** · only add if absent
+- **Never overwrite existing value** : only add if absent
 - Insert immediately after the line containing `method:`. If `method:` is absent, append as a top-level key before the `folders:` block.
 - If `vault.yml` does not exist: skip silently
 - Report: "Added `timezone: Asia/Bangkok` to `vault.yml`. Edit the `timezone:` key in `vault.yml` if your local timezone is different."
@@ -264,4 +264,4 @@ Show a final summary of everything updated and migrated. Then suggest:
 >
 > Next steps:
 > - Run `/reload-plugins` to apply changes immediately in this session
-> - Or start a new Claude Code session · changes are picked up automatically
+> - Or start a new Claude Code session : changes are picked up automatically

@@ -17,8 +17,8 @@ List all files in `00-inbox/` (excluding .gitkeep). For each file:
 
 Report:
 > You have N items in your inbox:
-> 1. `2026-03-20-braindump.md` · ideas about [topic], 2 tasks
-> 2. `2026-03-19-capture.md` · note about [topic]
+> 1. `2026-03-20-braindump.md` : ideas about [topic], 2 tasks
+> 2. `2026-03-19-capture.md` : note about [topic]
 > ...
 
 ---
@@ -48,7 +48,7 @@ Read the file fully. Identify:
 
 ### 3b. Decide Destination
 
-**Primary signal (check first):** If the inbox item has a `source:` frontmatter field matching `/research`, `/summarize`, or `/reading-notes`, route it directly to `04-resources/` · no judgment needed.
+**Primary signal (check first):** If the inbox item has a `source:` frontmatter field matching `/research`, `/summarize`, or `/reading-notes`, route it directly to `04-resources/` : no judgment needed.
 
 **Secondary signal (for all other notes):** Apply the content-type rule below.
 
@@ -56,13 +56,13 @@ Classify the item and route it to the appropriate folder:
 - **Your own synthesis, insight, or conclusion** → `03-knowledge/[subfolder]/`
 - **Reference material, external info, or source notes** → `04-resources/[subfolder]/`
 - **Project-specific work** → `01-projects/[subfolder]/`
-- **Ongoing responsibility (something you maintain over time, not a one-time insight)** → `02-areas/` · examples: health tracking, finances, career development, relationships
+- **Ongoing responsibility (something you maintain over time, not a one-time insight)** → `02-areas/` : examples: health tracking, finances, career development, relationships
 
-Confirm routing with the user for the first 3 items. After that, proceed autonomously · or if the user says 'stop and confirm', return to confirmation mode for the next item.
-> `[filename]`: This looks like [classification] · I'd route it to `[destination-folder]/`. Does that work, or would you prefer a different folder?
+Confirm routing with the user for the first 3 items. After that, proceed autonomously : or if the user says 'stop and confirm', return to confirmation mode for the next item.
+> `[filename]`: This looks like [classification] : I'd route it to `[destination-folder]/`. Does that work, or would you prefer a different folder?
 
 Also show merge options if relevant:
-> I'd merge this into [[Existing Note]] · it adds context about [topic].
+> I'd merge this into [[Existing Note]] : it adds context about [topic].
 > Or I could create a new note: `[[New Note Name]]`.
 > What do you prefer?
 

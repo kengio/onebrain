@@ -1,11 +1,11 @@
 ---
 name: bookmark
-description: Quick URL bookmark capture · paste a link, AI generates name and description, suggests category, saves to Bookmarks.md in awesome-list format. Invoke when user wants to save a link, bookmark a URL, or add to their reading list.
+description: Quick URL bookmark capture : paste a link, AI generates name and description, suggests category, saves to Bookmarks.md in awesome-list format. Invoke when user wants to save a link, bookmark a URL, or add to their reading list.
 ---
 
 # Bookmark
 
-Save a URL to your `Bookmarks.md` file in one step. Paste the link · the AI fills in the name and description, picks a category, and saves immediately.
+Save a URL to your `Bookmarks.md` file in one step. Paste the link : the AI fills in the name and description, picks a category, and saves immediately.
 
 Usage: `/bookmark [url]`
 
@@ -46,10 +46,10 @@ Use the user's answers and continue normally.
 
 ## Step 4: Pick Category
 
-Infer the best category and optional subcategory from the content · do not ask. Use the structure:
+Infer the best category and optional subcategory from the content : do not ask. Use the structure:
 
-- **Level 1 (`##`)**: broad domain · `AI Tools`, `Design`, `Dev Utilities`, `Productivity`, `Reading`, `Learning`, `Finance`, `Health`, `Reference`
-- **Level 2 (`###`)**: optional refinement · only when it adds meaningful grouping
+- **Level 1 (`##`)**: broad domain : `AI Tools`, `Design`, `Dev Utilities`, `Productivity`, `Reading`, `Learning`, `Finance`, `Health`, `Reference`
+- **Level 2 (`###`)**: optional refinement : only when it adds meaningful grouping
 
 Create new categories freely when none fit.
 
@@ -60,7 +60,7 @@ Create new categories freely when none fit.
 Build the entry:
 
 ```markdown
-- **[Name](URL)** · Description. → [[Summary Note Title]]
+- **[Name](URL)** : Description. → [[Summary Note Title]]
 ```
 
 (Omit the wikilink if no summary note was found in Step 3.)

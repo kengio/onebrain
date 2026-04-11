@@ -1,6 +1,6 @@
 ---
 name: weekly
-description: Weekly reflection · review the past week's sessions, surface patterns, and plan ahead
+description: Weekly reflection : review the past week's sessions, surface patterns, and plan ahead
 ---
 
 # Weekly Reflection
@@ -27,9 +27,9 @@ List all files in `[logs_folder]/**/*.md` from this week. If there are none, che
 
 Report:
 > I found N sessions this week:
-> - Mon (3/18): session-01 · [topic]
-> - Wed (3/20): session-01, session-02 · [topics]
-> - Fri (3/22): session-01 · [topic]
+> - Mon (3/18): session-01 : [topic]
+> - Wed (3/20): session-01, session-02 : [topics]
+> - Fri (3/22): session-01 : [topic]
 
 ---
 
@@ -63,14 +63,14 @@ Look for:
 
 Say:
 
-> ## Week of [Mon date] · [Sun date]
+> ## Week of [Mon date] : [Sun date]
 >
 > **Sessions:** N total
 > **Main focus:** [primary topic]
 >
 > **What you worked on:**
-> - [Project/topic 1] · [brief status]
-> - [Project/topic 2] · [brief status]
+> - [Project/topic 1] : [brief status]
+> - [Project/topic 2] : [brief status]
 >
 > **Wins this week:**
 > - [Something completed or progressed]
@@ -88,7 +88,7 @@ Say:
 
 Ask (pick 2-3 based on context):
 
-> Before we plan ahead · a few reflection questions:
+> Before we plan ahead : a few reflection questions:
 >
 > 1. What went well this week that you want to keep doing?
 > 2. What felt stuck or draining?
@@ -118,7 +118,7 @@ If the weekly review reveals a persistent pattern or learning, add it to `[agent
 
 ```
 ## Key Learnings & Patterns
-- YYYY-MM-DD · [Weekly pattern observation]
+- YYYY-MM-DD : [Weekly pattern observation]
 ```
 
 ---

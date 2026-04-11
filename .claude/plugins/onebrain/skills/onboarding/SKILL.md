@@ -1,6 +1,6 @@
 ---
 name: onboarding
-description: First-run setup for OneBrain · personalize identity, communication style, and vault configuration
+description: First-run setup for OneBrain : personalize identity, communication style, and vault configuration
 ---
 
 ## Install Path Detection
@@ -10,12 +10,12 @@ At the very start, before any user interaction, detect which install path was us
 Check if `.claude/plugins/onebrain/` exists locally in this vault directory.
 
 **Re-run check:** If `.claude/plugins/onebrain/` exists AND `vault.yml` exists, this is a re-run on an already-configured vault. Tell the user:
-> OneBrain is already set up in this vault. Running onboarding again will update your identity and preferences · your notes and vault structure will not change. Continue?
+> OneBrain is already set up in this vault. Running onboarding again will update your identity and preferences : your notes and vault structure will not change. Continue?
 
 Wait for confirmation. If they confirm, proceed with Path A flow (existing steps). If they decline, stop.
 
 **Path B detected:** If `.claude/plugins/onebrain/` does NOT exist locally:
-- If `vault.yml` also exists · warn the user before continuing: `OneBrain vault config (vault.yml) found but plugin files are missing. Proceeding to re-adopt the plugin. Your existing vault.yml will be preserved. If MEMORY.md exists, you'll be asked whether to keep or replace it.`
+- If `vault.yml` also exists : warn the user before continuing: `OneBrain vault config (vault.yml) found but plugin files are missing. Proceeding to re-adopt the plugin. Your existing vault.yml will be preserved. If MEMORY.md exists, you'll be asked whether to keep or replace it.`
 - Skip to the **Path B** section at the bottom of this skill.
 
 **Path A detected:** If `.claude/plugins/onebrain/` exists locally (and it is a first run or confirmed re-run), continue with the steps below (existing onboarding flow).
@@ -34,11 +34,11 @@ Welcome to OneBrain! This skill personalizes your vault and sets up your AI chie
 
 For steps that present a fixed set of choices (personality archetype, communication style), use the `AskUserQuestion` tool if available. If not available, present the options as a numbered list and wait for a text response. Free-text prompts (name, role, goals, context) should always be asked as plain conversational text.
 
-**Detecting availability:** Attempt `AskUserQuestion` on the first choice-based question (personality archetype, Step 5). If it fails or is unavailable, switch to plain-text numbered lists for all remaining choice questions in this skill · do not retry `AskUserQuestion` after a failure.
+**Detecting availability:** Attempt `AskUserQuestion` on the first choice-based question (personality archetype, Step 5). If it fails or is unavailable, switch to plain-text numbered lists for all remaining choice questions in this skill : do not retry `AskUserQuestion` after a failure.
 
 **Label normalization:** `AskUserQuestion` option labels may include suffixes like "(Recommended)". When mapping a selected label to a stored value, always strip any parenthetical suffix and lowercase the result (e.g., "Friendly (Recommended)" → `friendly`, "Professional (Recommended)" → `professional`).
 
-**`AskUserQuestion` return value** (`multiSelect: false` only · this skill does not use multi-select)**:**
+**`AskUserQuestion` return value** (`multiSelect: false` only : this skill does not use multi-select)**:**
 - Returns the selected option's label as a string
 
 ---
@@ -47,7 +47,7 @@ For steps that present a fixed set of choices (personality archetype, communicat
 
 Say:
 
-> Welcome to OneBrain · where human and AI thinking become one.
+> Welcome to OneBrain : where human and AI thinking become one.
 >
 > I'm going to ask you a few quick questions to personalize your vault. This takes about 2 minutes, and you can always update your settings later by editing `05-agent/MEMORY.md` directly.
 >
@@ -78,7 +78,7 @@ Wait for response. Store: `role`.
 ## Step 4: Ask Agent Name
 
 Ask:
-> What would you like to call me? Pick a name for your AI assistant · for example, Nova, Atlas, Sage, Kai, or anything you like.
+> What would you like to call me? Pick a name for your AI assistant : for example, Nova, Atlas, Sage, Kai, or anything you like.
 
 Wait for response. Store: `agent_name`.
 
@@ -98,7 +98,7 @@ Use `AskUserQuestion` with:
 Fallback (if AskUserQuestion unavailable): present as a numbered list and wait for response. Default to Friendly if no clear answer.
 
 Store: `agent_personality` as one of `professional`, `friendly`, `playful` (lowercase, no suffix).
-Store: `agent_personality_description` from the canonical descriptions below · not from the AskUserQuestion option text.
+Store: `agent_personality_description` from the canonical descriptions below : not from the AskUserQuestion option text.
 
 **Canonical personality descriptions (authoritative source for `agent_personality_description`):**
 - **professional**: formal language, structured responses, minimal small talk. Uses phrases like "I recommend" and "Consider".
@@ -111,7 +111,7 @@ Store: `agent_personality_description` from the canonical descriptions below · 
 
 Ask two questions back-to-back.
 
-**Question A · Detail level:**
+**Question A : Detail level:**
 
 Use `AskUserQuestion` with:
 - question: "How much detail do you prefer in my responses?"
@@ -125,7 +125,7 @@ Fallback (if AskUserQuestion unavailable): ask as plain text. Default to Concise
 
 Store: `detail_level` as `concise` or `detailed`.
 
-**Question B · Tone:**
+**Question B : Tone:**
 
 Use `AskUserQuestion` with:
 - question: "What tone do you prefer?"
@@ -157,7 +157,7 @@ Wait for response. Store: `goals` as a list.
 Ask:
 > Anything else I should always keep in mind? For example: your tech stack, key tools you use, recurring commitments, or anything that gives me context.
 
-This is optional · they can say "skip" or "nothing".
+This is optional : they can say "skip" or "nothing".
 
 Wait for response. Store: `recurring_contexts`.
 
@@ -166,11 +166,11 @@ Wait for response. Store: `recurring_contexts`.
 ## Step 8b: Verify CLAUDE.md pointer
 
 Check the state of root `CLAUDE.md`:
-- **File exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment · not prefixed with `>`, `<!--`, or `#`) → skip silently (already set by install.sh)
+- **File exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment : not prefixed with `>`, `<!--`, or `#`) → skip silently (already set by install.sh)
 - **File exists but does not have that exact line** → append `@.claude/plugins/onebrain/INSTRUCTIONS.md` on a new line at the end
 - **File does not exist** → create `CLAUDE.md` with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
 
-If the write or append fails, tell the user: "Could not update CLAUDE.md. Please manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a line in your CLAUDE.md · OneBrain will not load without it." Then continue to Step 9.
+If the write or append fails, tell the user: "Could not update CLAUDE.md. Please manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a line in your CLAUDE.md : OneBrain will not load without it." Then continue to Step 9.
 
 ---
 
@@ -178,7 +178,7 @@ If the write or append fails, tell the user: "Could not update CLAUDE.md. Please
 
 Write `05-agent/MEMORY.md` with personalized content. If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure `05-agent/` is writable and try again." Do not proceed to Step 10.
 
-> **Note:** vault.yml is not written until Step 11, so this step hardcodes `05-agent` as the agent folder. Do not change this to use vault.yml · the file doesn't exist yet at this point.
+> **Note:** vault.yml is not written until Step 11, so this step hardcodes `05-agent` as the agent folder. Do not change this to use vault.yml : the file doesn't exist yet at this point.
 
 ```markdown
 ---
@@ -214,7 +214,7 @@ updated: [TODAY'S DATE]
 
 ## Values & Working Principles
 
-- Capture everything · if it's not in the vault, it didn't happen
+- Capture everything : if it's not in the vault, it didn't happen
 - Bias toward action
 
 ## AI Personality Instructions
@@ -224,11 +224,11 @@ Your personality is [agent_personality]: [agent_personality_description].
 
 - Introduce yourself as [agent_name] when appropriate
 - Address them as [preferred_name]
-- Tone: [tone] · [detail_level]
+- Tone: [tone] : [detail_level]
 - Role context: [preferred_name] is a [role]
 - Always prioritize their top goal: [goals[0]]
 - Be proactive: surface relevant connections, flag stale items, suggest next steps
-- Keep responses grounded in their vault · reference actual notes when relevant
+- Keep responses grounded in their vault : reference actual notes when relevant
 
 ## Active Projects
 
@@ -237,14 +237,14 @@ Your personality is [agent_personality]: [agent_personality_description].
 ## Key Learnings & Patterns
 
 <!-- Added by /wrapup over time -->
-<!-- Format: YYYY-MM-DD · [observation] -->
+<!-- Format: YYYY-MM-DD : [observation] -->
 
 ## Recurring Contexts
 
 [If recurring_contexts provided:]
 [Each item as a bullet]
 [If not provided, leave section empty with the comment]
-<!-- Add recurring context here · e.g., "Tuesday = deep work day" or "Main stack: TypeScript, Next.js" -->
+<!-- Add recurring context here : e.g., "Tuesday = deep work day" or "Main stack: TypeScript, Next.js" -->
 ```
 
 ---
@@ -306,10 +306,10 @@ Ask the user using AskUserQuestion:
 - header: "qmd Search"
 - multiSelect: false
 - options:
-  - label: "Yes, set up qmd", description: "Recommended · enables faster search, especially as your vault grows"
+  - label: "Yes, set up qmd", description: "Recommended : enables faster search, especially as your vault grows"
   - label: "Skip for now", description: "You can always run /qmd setup later"
 
-If user selects "Yes, set up qmd": run the `/qmd setup` flow from `skills/qmd/SKILL.md` (skip the initial confirmation question · they already confirmed). If qmd setup fails for any reason, report the error and continue to Step 12 without stopping onboarding.
+If user selects "Yes, set up qmd": run the `/qmd setup` flow from `skills/qmd/SKILL.md` (skip the initial confirmation question : they already confirmed). If qmd setup fails for any reason, report the error and continue to Step 12 without stopping onboarding.
 
 If user selects "Skip for now": continue to Step 12.
 
@@ -323,23 +323,23 @@ Say:
 >
 > - Your identity and personality are saved in `05-agent/MEMORY.md`
 > - Your vault is set up with these folders:
->   - `00-inbox/` · raw captures (process regularly); `imports/` subfolder for `/import` staging
->   - `01-projects/` · active projects with tasks
->   - `02-areas/` · ongoing responsibilities (health, finances, career...)
->   - `03-knowledge/` · your own synthesized thinking
->   - `04-resources/` · external info, research output, reference
->   - `05-agent/` · AI context and memory
->   - `06-archive/` · completed and archived items
->   - `07-logs/` · session logs
+>   - `00-inbox/` : raw captures (process regularly); `imports/` subfolder for `/import` staging
+>   - `01-projects/` : active projects with tasks
+>   - `02-areas/` : ongoing responsibilities (health, finances, career...)
+>   - `03-knowledge/` : your own synthesized thinking
+>   - `04-resources/` : external info, research output, reference
+>   - `05-agent/` : AI context and memory
+>   - `06-archive/` : completed and archived items
+>   - `07-logs/` : session logs
 >
-> [If qmd was set up in Step 11b:] qmd search index active (collection: `<name>`) · the agent will use qmd automatically
+> [If qmd was set up in Step 11b:] qmd search index active (collection: `<name>`) : the agent will use qmd automatically
 >
 > **First things to try:**
-> - `/braindump` · dump anything on your mind right now
-> - `/capture` · add a quick note or idea
-> - `/research [topic]` · research something and save it to your vault
+> - `/braindump` : dump anything on your mind right now
+> - `/capture` : add a quick note or idea
+> - `/research [topic]` : research something and save it to your vault
 >
-> **How notes are organized:** Project and area notes go into kebab-case subfolders (e.g. `01-projects/work/Website Redesign.md`). I'll suggest a subfolder whenever you create a note · just confirm or adjust. Research and summary output goes to `04-resources/` · use `/consolidate` to turn it into your own thinking in `03-knowledge/`. Use `/learn` to teach me things about your world (domain, tools, terminology) and I'll save them to `05-agent/`. Session logs go into `07-logs/YYYY/MM/` and archive items go into `06-archive/YYYY/MM/`.
+> **How notes are organized:** Project and area notes go into kebab-case subfolders (e.g. `01-projects/work/Website Redesign.md`). I'll suggest a subfolder whenever you create a note : just confirm or adjust. Research and summary output goes to `04-resources/` : use `/consolidate` to turn it into your own thinking in `03-knowledge/`. Use `/learn` to teach me things about your world (domain, tools, terminology) and I'll save them to `05-agent/`. Session logs go into `07-logs/YYYY/MM/` and archive items go into `06-archive/YYYY/MM/`.
 >
 > When you're done working, run `/wrapup` to save a session summary.
 >
@@ -347,21 +347,21 @@ Say:
 
 ---
 
-# Path B · Existing Vault Onboarding
+# Path B : Existing Vault Onboarding
 
 This section runs when `.claude/plugins/onebrain/` does NOT exist locally (user installed via `/plugin install`).
 
 ---
 
-## Path B · Step 0: Adopt plugin into vault
+## Path B : Step 0: Adopt plugin into vault
 
 Before any user interaction, copy plugin files from the global cache into the vault.
 
 **1. Locate the cache directory:**
 
-Check both paths · both may exist depending on when the plugin was installed:
-- `~/.claude/plugins/cache/onebrain/onebrain/` · installs after marketplace rename
-- `~/.claude/plugins/cache/onebrain-local/onebrain/` · legacy installs before rename
+Check both paths : both may exist depending on when the plugin was installed:
+- `~/.claude/plugins/cache/onebrain/onebrain/` : installs after marketplace rename
+- `~/.claude/plugins/cache/onebrain-local/onebrain/` : legacy installs before rename
 
 Collect all version subdirectories from both paths into a single combined list. If neither path exists or neither contains any version subdirectories, tell the user:
 > OneBrain plugin cache not found. Run `/plugin install onebrain@onebrain` to install it, then try `/onboarding` again.
@@ -370,13 +370,13 @@ Stop here.
 
 **2. Select the latest version:**
 
-From the combined list of all version directories across both cache paths, sort them numerically by each dot-separated component (major, minor, patch) in descending order · do NOT use string sort, as it would rank `1.9.0` above `1.10.0`. Proceed to Step 3 with the highest version.
+From the combined list of all version directories across both cache paths, sort them numerically by each dot-separated component (major, minor, patch) in descending order : do NOT use string sort, as it would rank `1.9.0` above `1.10.0`. Proceed to Step 3 with the highest version.
 
 **3. Validate the source:**
 
 Confirm the selected version subdirectory contains at minimum:
-- `.claude-plugin/plugin.json` · plugin manifest
-- `skills/onboarding/SKILL.md` · required for onboarding to function
+- `.claude-plugin/plugin.json` : plugin manifest
+- `skills/onboarding/SKILL.md` : required for onboarding to function
 
 If either is missing, the cache entry is corrupt. Try the next-highest version from the combined list. If all versions across both cache paths fail validation, tell the user:
 > Cache exists but all version entries are corrupt or incomplete. Run `/plugin install onebrain@onebrain` to reinstall.
@@ -408,7 +408,7 @@ From this point, the project-level copy takes priority over the global cache.
 
 ---
 
-## Path B · Step 1: Welcome
+## Path B : Step 1: Welcome
 
 Say:
 > Welcome to OneBrain! I'm going to set up OneBrain inside your existing vault. This will:
@@ -422,20 +422,20 @@ Say:
 
 ---
 
-## Path B · Steps 2–8: Personalization
+## Path B : Steps 2–8: Personalization
 
-Run Steps 2–8 from the standard onboarding flow above (ask name, role, agent name, personality archetype, detail level, tone, goals, recurring context). Identical behavior. **Do not run Step 8b here** · CLAUDE.md patching is handled in Path B Step 9 below.
+Run Steps 2–8 from the standard onboarding flow above (ask name, role, agent name, personality archetype, detail level, tone, goals, recurring context). Identical behavior. **Do not run Step 8b here** : CLAUDE.md patching is handled in Path B Step 9 below.
 
 ---
 
-## Path B · Step 9: Patch CLAUDE.md
+## Path B : Step 9: Patch CLAUDE.md
 
 Now that plugin files are local (copied in Step 0), the @import path resolves to the project-level file.
 
 Check if `CLAUDE.md` exists in the vault root:
 
-**If it exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment · not prefixed with `>`, `<!--`, or `#`):
-Skip silently · already patched.
+**If it exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment : not prefixed with `>`, `<!--`, or `#`):
+Skip silently : already patched.
 
 **If it exists but does not have that exact live line:**
 Append on a new line at the end (after a blank line):
@@ -452,11 +452,11 @@ Create `CLAUDE.md` with content:
 ```
 Tell the user: `Created CLAUDE.md with OneBrain instructions.`
 
-If any write or append fails, tell the user: "Could not update CLAUDE.md. Please manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a line in your CLAUDE.md · OneBrain will not load without it." Then continue to Step 9b.
+If any write or append fails, tell the user: "Could not update CLAUDE.md. Please manually add `@.claude/plugins/onebrain/INSTRUCTIONS.md` as a line in your CLAUDE.md : OneBrain will not load without it." Then continue to Step 9b.
 
 ---
 
-## Path B · Step 9b: Patch GEMINI.md and AGENTS.md (if present)
+## Path B : Step 9b: Patch GEMINI.md and AGENTS.md (if present)
 
 For each of `GEMINI.md` and `AGENTS.md`:
 - **If it exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (not in a comment): skip silently
@@ -465,9 +465,9 @@ For each of `GEMINI.md` and `AGENTS.md`:
 
 ---
 
-## Path B · Step 10: Write MEMORY.md
+## Path B : Step 10: Write MEMORY.md
 
-> **Note:** If `vault.yml` already exists (the edge case where plugin dir was missing), read its `agent` key under the `folders` mapping (i.e., `folders.agent` in dot-notation) to determine the agent folder. If `vault.yml` does not exist, is unreadable, or lacks the `folders.agent` key, default to `05-agent`. If `vault.yml` does not exist yet (normal first-time Path B), use `05-agent` · vault.yml is not written until Step 12.
+> **Note:** If `vault.yml` already exists (the edge case where plugin dir was missing), read its `agent` key under the `folders` mapping (i.e., `folders.agent` in dot-notation) to determine the agent folder. If `vault.yml` does not exist, is unreadable, or lacks the `folders.agent` key, default to `05-agent`. If `vault.yml` does not exist yet (normal first-time Path B), use `05-agent` : vault.yml is not written until Step 12.
 
 Check if `[agent_folder]/MEMORY.md` already exists:
 
@@ -479,7 +479,7 @@ Check if `[agent_folder]/MEMORY.md` already exists:
   - label: "Keep existing", description: "Keep your current identity settings unchanged"
   - label: "Overwrite", description: "Replace with the new settings from this onboarding"
 
-Fallback (if AskUserQuestion unavailable): ask as plain text "Found existing MEMORY.md · type 1 to keep it or 2 to overwrite." Default to Keep (1) if no clear answer.
+Fallback (if AskUserQuestion unavailable): ask as plain text "Found existing MEMORY.md : type 1 to keep it or 2 to overwrite." Default to Keep (1) if no clear answer.
 
 If they choose Keep, skip this step. If they choose Overwrite, proceed.
 
@@ -489,30 +489,30 @@ Write `[agent_folder]/MEMORY.md` using the same template and personalization dat
 
 ---
 
-## Path B · Step 11: Create vault folders
+## Path B : Step 11: Create vault folders
 
 Identical to Step 10 in the standard flow, with one difference: only create folders that don't already exist. Skip silently for any folder that is present. Do not report unchanged folders.
 
 ---
 
-## Path B · Step 12: Write vault.yml
+## Path B : Step 12: Write vault.yml
 
 Check if `vault.yml` already exists in the vault root:
 
-**If it exists:** Skip · preserve the existing vault configuration. Tell the user: `Keeping your existing vault.yml.`
+**If it exists:** Skip : preserve the existing vault configuration. Tell the user: `Keeping your existing vault.yml.`
 
 **If it does not exist:** Write `vault.yml` using the same template as Step 11 in the standard Path A flow.
 
 
 ---
 
-## Path B · Step 12b: qmd Setup (Optional)
+## Path B : Step 12b: qmd Setup (Optional)
 
 Identical to Step 11b in Path A. Ask the user whether to set up qmd, and if yes, run the `/qmd setup` flow (skipping its initial confirmation question). Continue to Step 13 regardless of outcome.
 
 ---
 
-## Path B · Step 13: Completion message
+## Path B : Step 13: Completion message
 
 Say:
 > You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help.
@@ -523,7 +523,7 @@ Say:
 > - [If Step 10 wrote: "Your identity saved in `[agent_folder]/MEMORY.md`"] [If Step 10 kept: "Existing identity in `[agent_folder]/MEMORY.md` preserved"]
 > - Vault folders created (existing folders untouched)
 >
-> Use `/update` to keep OneBrain current · it works the same as a fresh vault install.
+> Use `/update` to keep OneBrain current : it works the same as a fresh vault install.
 >
 > The global plugin install is no longer needed for this vault. You can remove it with `/plugin uninstall onebrain@onebrain` if you like, but it's safe to leave as-is.
 >

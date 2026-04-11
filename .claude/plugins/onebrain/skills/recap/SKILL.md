@@ -1,9 +1,9 @@
 ---
 name: recap
-description: Cross-session synthesis · reads session logs from the past 7 days, surfaces patterns and insights, and updates MEMORY.md Key Learnings. Run periodically to keep long-term memory current.
+description: Cross-session synthesis : reads session logs from the past 7 days, surfaces patterns and insights, and updates MEMORY.md Key Learnings. Run periodically to keep long-term memory current.
 ---
 
-# /recap · Cross-Session Synthesis
+# /recap : Cross-Session Synthesis
 
 Reads session logs from the past 7 days, surfaces patterns, decisions, and insights across sessions, then updates `MEMORY.md` Key Learnings with new, deduplicated entries.
 
@@ -29,7 +29,7 @@ Report to the user:
 If no sessions found:
 > No sessions found in the past 7 days. Nothing to recap.
 
-Exit gracefully · do not proceed.
+Exit gracefully : do not proceed.
 
 ---
 
@@ -37,10 +37,10 @@ Exit gracefully · do not proceed.
 
 Read each session log. Extract:
 
-- **Key Decisions** · choices, directions, conclusions reached
-- **Insights & Learnings** · new understanding, patterns discovered
-- **Recurring topics** · project names or themes that appear in ≥ 2 sessions
-- **Open Questions** · questions listed in logs that have no follow-up answer in any later log
+- **Key Decisions** : choices, directions, conclusions reached
+- **Insights & Learnings** : new understanding, patterns discovered
+- **Recurring topics** : project names or themes that appear in ≥ 2 sessions
+- **Open Questions** : questions listed in logs that have no follow-up answer in any later log
 
 ---
 
@@ -49,7 +49,7 @@ Read each session log. Extract:
 Present the synthesis to the user before writing anything:
 
 ```
-## Recap · DD Mon – DD Mon (N sessions)
+## Recap : DD Mon – DD Mon (N sessions)
 
 **Patterns noticed:**
 - [recurring theme across sessions, e.g. "5 of 7 sessions touched OneBrain infrastructure"]
@@ -74,16 +74,16 @@ Compare every entry in "Insights worth keeping" against the existing `## Key Lea
 
 | Case | Action |
 |------|--------|
-| Insight is identical or a subset of an existing entry | Drop · do not append |
+| Insight is identical or a subset of an existing entry | Drop : do not append |
 | Insight extends or refines an existing entry | Merge into the existing entry |
 | Insight is genuinely new | Keep for append |
 
 To merge: rewrite the existing bullet in-place to incorporate the new detail, keeping the original date.
 
 After dedup, if no new insights remain:
-> All insights are already captured in MEMORY.md · nothing new to add.
+> All insights are already captured in MEMORY.md : nothing new to add.
 
-Exit · do not write.
+Exit : do not write.
 
 ---
 
@@ -92,7 +92,7 @@ Exit · do not write.
 Append each new post-dedup insight to the `## Key Learnings & Patterns` section of `[agent_folder]/MEMORY.md`:
 
 ```
-- YYYY-MM-DD · [observation]
+- YYYY-MM-DD : [observation]
 ```
 
 Also update the `updated:` field in the frontmatter to today's date.
@@ -105,22 +105,22 @@ Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
 > MEMORY.md is now N lines (recommended limit: 180). Consider running `/learn` to distill and condense older entries.
 
-Do not modify `[agent_folder]/memory/` or `[agent_folder]/context/` · these are managed by `/learn` only.
+Do not modify `[agent_folder]/memory/` or `[agent_folder]/context/` : these are managed by `/learn` only.
 
 ---
 
 ## Step 7: Confirm
 
 ```
-Recap complete. Added N new insights to MEMORY.md (M already captured · skipped).
+Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).
 ```
 
 If overflow warning was triggered, append:
 ```
-MEMORY.md is now N lines · consider /learn to trim.
+MEMORY.md is now N lines : consider /learn to trim.
 ```
 
 If nothing was written (all deduped):
 ```
-Recap complete. No new insights to add · all N insights already captured in MEMORY.md.
+Recap complete. No new insights to add : all N insights already captured in MEMORY.md.
 ```

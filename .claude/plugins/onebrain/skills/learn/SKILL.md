@@ -1,6 +1,6 @@
 ---
 name: learn
-description: Teach the AI something and save it to the agent folder for future recall · context about your world or behavioral patterns
+description: Teach the AI something and save it to the agent folder for future recall : context about your world or behavioral patterns
 ---
 
 # Learn
@@ -51,7 +51,7 @@ Apply this rule to determine the destination:
 | "I prefer async communication and document decisions in notes" | memory/ |
 | "I get frustrated when responses are too long" | memory/ |
 
-**Tiebreaker for domain-preference hybrids:** If the input is a preference about how to work within a domain (e.g., "always use Go idioms, not Java-style abstractions" or "keep SQL queries readable, not optimized"), classify it as **`memory/`** · it governs AI behavior, even though it references a technical domain. When in doubt: if you would change how you respond based on this input, it's `memory/`.
+**Tiebreaker for domain-preference hybrids:** If the input is a preference about how to work within a domain (e.g., "always use Go idioms, not Java-style abstractions" or "keep SQL queries readable, not optimized"), classify it as **`memory/`** : it governs AI behavior, even though it references a technical domain. When in doubt: if you would change how you respond based on this input, it's `memory/`.
 
 If classification is unclear, ask: "Is this about your world (context) or how you want me to behave (preference)?"
 
