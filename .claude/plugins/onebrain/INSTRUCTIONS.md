@@ -256,11 +256,11 @@ Before your final response in a session, silently save a session summary if ALL 
 2. No `/wrapup` was run during this session (check the logs folder for a file matching today's date with matching topics)
 
 If conditions are met:
-- Glob today's `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` files with `merged` absent or not `true` — read and incorporate their content as additional context
+- Glob today's `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` files with `merged` absent or not `true` — **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
 - Determine NN: count existing `[logs folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …)
-- Write to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format)
+- Write to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format). **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** — every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
 - Add `auto-saved: true` to the frontmatter
-- Mark any incorporated checkpoint files as `merged: true`
+- Mark as `merged: true` only the checkpoint files that were read and incorporated above
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `[agent folder]/MEMORY.md` and update the `updated:` frontmatter date to today
 - Do NOT show any output about the auto-save to the user
 
