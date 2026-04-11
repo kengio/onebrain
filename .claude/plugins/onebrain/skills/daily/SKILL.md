@@ -1,11 +1,11 @@
 ---
 name: daily
-description: Two-phase daily briefing and intention-setting : surfaces tasks and session context, then saves today's focus as a daily note
+description: Daily briefing: surfaces tasks due today and open items from the last session
 ---
 
-# /daily : Daily Briefing & Intention
+# /daily : Daily Briefing
 
-Surfaces what needs attention today, then saves your stated focus as a daily note in the inbox.
+Surfaces tasks due today and open items from the last session.
 
 ---
 
