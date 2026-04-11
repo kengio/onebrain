@@ -16,6 +16,8 @@ Read `vault.yml` and extract:
 - `folders.inbox` as `[inbox_folder]` (default: `00-inbox`)
 - `folders.projects` as `[projects_folder]` (default: `01-projects`)
 
+Count inbox items: Glob `[inbox_folder]/*.md` and store the count as `[inbox_count]`.
+
 Determine today's date (`YYYY-MM-DD`) and current local time in Asia/Bangkok:
 - **Morning mode**: before 10:00
 - **Normal mode**: 10:00 and later
@@ -44,10 +46,10 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log w
 ### Display the Briefing
 
 ```
-## Daily Briefing : DD Mon YYYY [morning / afternoon / evening]
+## Daily Briefing · Ddd DD Mon YYYY [morning / afternoon / evening] · inbox [inbox_count]
 
 **Last session (DD Mon):** [1–2 sentence recap of topics + open items]
-(morning mode only : skip if no prior session found)
+(morning mode only — skip if no prior session found)
 
 **Tasks due today:**
 - [ ] Task description 📅 YYYY-MM-DD (from [[Note Name]])
@@ -57,5 +59,8 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log w
 - [ ] Action item text
 ```
 
-If both sources are empty:
+- `Ddd` is the abbreviated day of week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
+- `inbox [inbox_count]` shows the number of files in the inbox folder; omit if count is 0
+
+If both task sources are empty:
 > No tasks or open items for today.

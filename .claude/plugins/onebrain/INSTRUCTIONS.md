@@ -183,7 +183,10 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
 **Sub-agent steps:**
 
-1. **Daily briefing** — Gather data for the session-start briefing, using the same logic as `/daily` Phase 1 (always Normal mode; Phase 2 runs after the session has started).
+1. **Daily briefing** — Gather data for the session-start briefing, using the same logic as `/daily` (always Normal mode; Phase 2 runs after the session has started).
+
+   **Inbox count:**
+   - Glob `[inbox_folder]/*.md` and count the files; store as `inbox_count`
 
    **Tasks due today or overdue:**
    - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for task lines matching `- [ ] .*📅 \d{4}-\d{2}-\d{2}`
@@ -197,7 +200,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
    Assemble into this format (adapt language to match the user's):
    ```
-   ## Daily Briefing : DD Mon YYYY
+   ## Daily Briefing · Ddd DD Mon YYYY · inbox N
 
    **Tasks due today:**
    - [ ] Task description 📅 YYYY-MM-DD (from [[Note Name]])
@@ -206,7 +209,9 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    **Open from last session:**
    - [ ] Action item text
    ```
-   If both sources are empty, use a single line: `No tasks or open items for today.`
+   - `Ddd` is the abbreviated day of week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
+   - Omit `· inbox N` if `inbox_count` is 0
+   - If both task sources are empty, use a single line: `No tasks or open items for today.`
 
 2. **Orphan checkpoints** : Find checkpoint files from past sessions that were never turned into a session log. These need to be either auto-synthesized (if few) or flagged to the user (if many).
 
