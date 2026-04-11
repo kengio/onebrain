@@ -20,9 +20,15 @@ Read `vault.yml` from the current working directory. The directory containing `v
 
 Then proceed with cwd as vault root.
 
-Also extract `folders.logs` from `vault.yml` and store as `[logs_folder]`. If the key is absent (or vault.yml was not found), use `07-logs` as the default and proceed without warning. This value is used in Step 2 to exclude session log tasks from dashboard queries.
+Extract the following folder paths from `vault.yml`, storing each as a variable for use in Step 2. If a key is absent, use the default shown:
 
-Also extract `folders.archive` from `vault.yml` and store as `[archive_folder]`. If the key is absent, use `06-archive` as the default and proceed without warning. This value is used in Step 2 to exclude archived notes from dashboard queries.
+| vault.yml key | Variable | Default |
+|---|---|---|
+| `folders.logs` | `[logs_folder]` | `07-logs` |
+| `folders.archive` | `[archive_folder]` | `06-archive` |
+| `folders.knowledge` | `[knowledge_folder]` | `03-knowledge` |
+| `folders.resources` | `[resources_folder]` | `04-resources` |
+| `folders.agent` | `[agent_folder]` | `05-agent` |
 
 ---
 
@@ -32,7 +38,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 **If TASKS.md does not exist:**
 
-Create it with this exact content (replace `YYYY-MM-DD` with today's date, `[logs_folder]` with the actual logs folder path extracted in Step 1, e.g., `07-logs`, and `[archive_folder]` with the actual archive folder path extracted in Step 1, e.g., `06-archive`):
+Create it with this exact content (replace `YYYY-MM-DD` with today's date and all `[variables]` with actual values extracted in Step 1):
 
 `````markdown
 ---
@@ -49,9 +55,9 @@ updated: YYYY-MM-DD
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
-path does not include 03-knowledge
-path does not include 04-resources
-path does not include 05-agent
+path does not include [knowledge_folder]
+path does not include [resources_folder]
+path does not include [agent_folder]
 path does not include .claude
 due before today
 sort by priority
@@ -64,9 +70,9 @@ sort by due
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
-path does not include 03-knowledge
-path does not include 04-resources
-path does not include 05-agent
+path does not include [knowledge_folder]
+path does not include [resources_folder]
+path does not include [agent_folder]
 path does not include .claude
 due after yesterday
 due before in 8 days
@@ -80,9 +86,9 @@ sort by due
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
-path does not include 03-knowledge
-path does not include 04-resources
-path does not include 05-agent
+path does not include [knowledge_folder]
+path does not include [resources_folder]
+path does not include [agent_folder]
 path does not include .claude
 no due date
 sort by priority
@@ -94,9 +100,9 @@ sort by priority
 not done
 path does not include [logs_folder]
 path does not include [archive_folder]
-path does not include 03-knowledge
-path does not include 04-resources
-path does not include 05-agent
+path does not include [knowledge_folder]
+path does not include [resources_folder]
+path does not include [agent_folder]
 path does not include .claude
 due after in 7 days
 sort by due
@@ -109,9 +115,9 @@ sort by priority
 done
 path does not include [logs_folder]
 path does not include [archive_folder]
-path does not include 03-knowledge
-path does not include 04-resources
-path does not include 05-agent
+path does not include [knowledge_folder]
+path does not include [resources_folder]
+path does not include [agent_folder]
 path does not include .claude
 sort by done date
 limit 20
@@ -131,8 +137,7 @@ Read the file. Extract `created:` from the frontmatter — if absent, use today'
 Overwrite the entire file using the same template as above, substituting:
 - `created:` with the extracted (or today's) date
 - `updated:` with today's date
-- `[logs_folder]` with the actual logs folder path extracted in Step 1
-- `[archive_folder]` with the actual archive folder path extracted in Step 1
+- All `[variables]` with actual values extracted from `vault.yml` in Step 1
 
 If the write fails, stop immediately and tell the user:
 
