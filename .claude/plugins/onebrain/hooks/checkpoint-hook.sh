@@ -37,8 +37,11 @@ else
 fi
 
 # --- Stop mode: check thresholds against vault.yml config ---
-# CLAUDE_PLUGIN_ROOT is set when called from plugin hooks.json; absent from settings.json.
-# hooks/ is one level deeper than plugin root, so fallback goes up 4 levels from script dir.
+# Stop hooks cannot be registered in plugin hooks.json — Claude Code does not fire them there.
+# This script must be registered in the user's ~/.claude/settings.json directly.
+# CLAUDE_PLUGIN_ROOT is set by Claude Code when the plugin is active; absent = called from
+# settings.json with a hardcoded path. hooks/ is one level below plugin root, so the fallback
+# walks up 4 levels from the script's own directory to reach the vault root.
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   VAULT_ROOT=$(cd "${CLAUDE_PLUGIN_ROOT}/../../.." 2>/dev/null && pwd)
 else
@@ -82,11 +85,21 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   else
     TRIGGER_LABEL="auto ($(( ELAPSED / 60 ))m elapsed)"
   fi
-  # Build JSON first — restore state on python3 failure so future triggers still work
+  # Build JSON first — restore state on json builder failure so future triggers still work
   PROMPT="Auto-checkpoint triggered by ${TRIGGER_LABEL}. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing YYYY-MM-DD-checkpoint-*.md files in [logs folder]/YYYY/MM/ (using today's actual date in the filename pattern) to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
-  JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
+  # Try python3, python, node in order — Windows may only have 'python' or 'node'
+  if command -v python3 &>/dev/null; then
+    JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
+  elif command -v python &>/dev/null; then
+    JSON=$(python -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
+  elif command -v node &>/dev/null; then
+    JSON=$(node -e "process.stdout.write(JSON.stringify({decision:'block',reason:process.argv[1]})+'\n')" "$PROMPT" 2>/dev/null)
+  else
+    ESCAPED=$(printf '%s' "$PROMPT" | tr -d '\r' | sed 's/\\/\\\\/g; s/"/\\"/g')
+    JSON="{\"decision\":\"block\",\"reason\":\"${ESCAPED}\"}"
+  fi
   if [ -z "$JSON" ]; then
-    # python3 unavailable or failed — leave state unchanged so future triggers still work
+    # all builders failed — leave state unchanged so future triggers still work
     exit 1
   fi
   if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
