@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.sh\" || powershell.exe -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.ps1\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.sh\"",
             "async": true
           }
         ]

@@ -311,6 +311,10 @@ Tasks live inline in your notes — the Tasks plugin surfaces them across the va
 
 Verify with `git --version` before running the installer.
 
+**Recommended for auto-checkpoints:** [Python](https://www.python.org/downloads/) or [Node.js](https://nodejs.org) — used by the checkpoint hook to build JSON. The hook falls back to a pure-bash implementation if neither is found, but having one in your PATH is more reliable. On Windows, install Python from python.org and ensure "Add to PATH" is checked during setup.
+
+**Windows:** Git for Windows (above) includes Git Bash, which provides the `bash` environment required to run all hooks.
+
 ### Community Plugins
 
 These three plugins are pre-configured in vault settings — install them via **Settings → Community plugins → Browse**, then click **Trust author and enable plugins** when prompted:

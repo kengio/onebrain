@@ -60,7 +60,7 @@ else
   qmd update -c "$collection" &>/dev/null &
 fi
 pid=$!
-disown "$pid"
+disown "$pid" 2>/dev/null || true  # disown is best-effort; may be a no-op in some Windows environments
 log "qmd update dispatched (pid ${pid})"
 
 exit 0
