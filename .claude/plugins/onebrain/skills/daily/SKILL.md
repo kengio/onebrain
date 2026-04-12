@@ -52,8 +52,8 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log w
 (morning mode only — skip if no prior session found)
 
 **Tasks due today:**
-- [ ] Task description 📅 YYYY-MM-DD (from [[Note Name]])
-- [ ] Overdue task 📅 YYYY-MM-DD (overdue - from [[Note Name]])
+- [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
+- [ ] Overdue task 📅 YYYY-MM-DD (overdue - from "Note Name")
 
 **Open from last session:**
 - [ ] Action item text

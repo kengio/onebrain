@@ -62,8 +62,8 @@ Confirm routing with the user for the first 3 items. After that, proceed autonom
 > `[filename]`: This looks like [classification] : I'd route it to `[destination-folder]/`. Does that work, or would you prefer a different folder?
 
 Also show merge options if relevant:
-> I'd merge this into [[Existing Note]] : it adds context about [topic].
-> Or I could create a new note: `[[New Note Name]]`.
+> I'd merge this into "Existing Note" : it adds context about [topic].
+> Or I could create a new note: "New Note Name".
 > What do you prefer?
 
 **Mixed-content notes:** If a single inbox item contains content that belongs in multiple folders (e.g., a braindump with both personal insights and project tasks), offer to split it: create separate notes for each content type, each routed to its correct folder. Ask the user to confirm before splitting.
@@ -108,7 +108,7 @@ Ask preference once: "After processing, should I archive originals or delete the
 Report:
 > Inbox processed:
 > - Merged N items into existing notes
-> - Created N new knowledge notes: [[Note A]], [[Note B]]
+> - Created N new knowledge notes: "Note A", "Note B"
 > - Archived N originals
 > - N tasks remain open across your vault
 >

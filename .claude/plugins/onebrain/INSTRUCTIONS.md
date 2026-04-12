@@ -210,8 +210,8 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    ## Daily Briefing · Ddd DD Mon YYYY · inbox N
 
    **Tasks due today:**
-   - [ ] Task description 📅 YYYY-MM-DD (from [[Note Name]])
-   - [ ] Overdue task 📅 YYYY-MM-DD (overdue - from [[Note Name]])
+   - [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
+   - [ ] Overdue task 📅 YYYY-MM-DD (overdue - from "Note Name")
 
    **Open from last session:**
    - [ ] Action item text
