@@ -34,7 +34,7 @@ Compare the local plugin version against the remote before prompting the user.
 3. Compare:
    - **Same version:** Report `OneBrain is already up to date (vX.Y.Z).` and stop — do not proceed to Step 1.
    - **Remote fetch fails:** Skip this check silently and proceed to Step 1 as normal.
-   - **Different version:** Proceed to Step 1, and include the version delta in the prompt: `Update available: vX.Y.Z → vA.B.C. Proceed?`
+   - **Different version:** Proceed to Step 1, and include the version delta in the prompt: `Update available: vX.Y.Z →  vA.B.C. Proceed?`
 
 ---
 
