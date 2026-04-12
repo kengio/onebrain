@@ -138,13 +138,13 @@ Run before responding to any user message:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched only when the user's request relates to a past pattern. Never loaded at startup.
 
-2. Get current local time (single call, can run in parallel with step 1). Replace **both** occurrences of `[timezone]` with the value from `vault.yml` (e.g. `Asia/Bangkok`). Python is tried first — it works on macOS, Linux, and Windows. `TZ=... date` is the last-resort fallback for Unix systems without Python:
+2. Get current local time (single call, can run in parallel with step 1). Replace **both** occurrences of `[timezone]` with the value from `vault.yml` (e.g. `Asia/Bangkok`). Python is tried first — it works on macOS, Linux, and Windows (via Git Bash). `TZ=... date` is the last-resort fallback for Unix systems without Python:
    ```bash
-   python3 -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))" 2>/dev/null || python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))" 2>/dev/null || TZ=[timezone] date '+%H:%M'
+   python3 -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))" 2>/dev/null || TZ=[timezone] date '+%H:%M'
    ```
    Notes:
    - `zoneinfo` requires Python 3.9+. On older Pythons, that arm fails silently and falls through.
-   - `||` works in bash, CMD, and PowerShell — no backslash continuation needed.
+   - `||` works in bash and Git Bash. On Windows, run this via Git Bash — CMD and PowerShell 5.1 (the Windows default) do not support `||` as a conditional operator.
    - If all arms fail, skip the time-of-day greeting modifier and treat as the 09:00–17:00 bucket (no emoji).
 
 3. Send greeting immediately in this format:
