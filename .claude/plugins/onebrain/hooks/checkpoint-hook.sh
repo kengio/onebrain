@@ -37,8 +37,11 @@ else
 fi
 
 # --- Stop mode: check thresholds against vault.yml config ---
-# CLAUDE_PLUGIN_ROOT is set when called from plugin hooks.json; absent from settings.json.
-# hooks/ is one level deeper than plugin root, so fallback goes up 4 levels from script dir.
+# Stop hooks cannot be registered in plugin hooks.json — Claude Code does not fire them there.
+# This script must be registered in the user's ~/.claude/settings.json directly.
+# CLAUDE_PLUGIN_ROOT is set by Claude Code when the plugin is active; absent = called from
+# settings.json with a hardcoded path. hooks/ is one level below plugin root, so the fallback
+# walks up 4 levels from the script's own directory to reach the vault root.
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   VAULT_ROOT=$(cd "${CLAUDE_PLUGIN_ROOT}/../../.." 2>/dev/null && pwd)
 else
