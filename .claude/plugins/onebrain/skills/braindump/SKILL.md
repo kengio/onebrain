@@ -85,4 +85,4 @@ If any item is a direct update, task, or decision for an active project in MEMOR
 ## Step 5: Confirm
 
 Say in one line:
-> Filed to `00-inbox/YYYY-MM-DD-braindump.md`. [If tasks: Extracted N tasks.] [If project link: Added note to [[Project]].]
+> Filed to `00-inbox/YYYY-MM-DD-braindump.md`. [If tasks: Extracted N tasks.] [If project link: Added note to "Project".]

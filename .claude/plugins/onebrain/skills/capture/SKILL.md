@@ -101,4 +101,4 @@ Related: [[Link 1]]
 ## Step 5: Confirm
 
 Say in one line:
-> Captured to `[file path]`. [If links added: Linked to [[Note A]], [[Note B]].]
+> Captured to `[file path]`. [If links added: Linked to "Note A", "Note B".]
