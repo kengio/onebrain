@@ -138,7 +138,13 @@ Run before responding to any user message:
    >
    > **Agent memory (on-demand only):** `[agent folder]/memory/` is searched only when the user's request relates to a past pattern. Never loaded at startup.
 
-2. Get current local time: run `TZ=[timezone] date '+%H:%M'` (single bash call, can run in parallel with step 1).
+2. Get current local time (single bash call, can run in parallel with step 1):
+   ```bash
+   TZ=[timezone] date '+%H:%M' 2>/dev/null || \
+   python3 -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))" 2>/dev/null || \
+   python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))"
+   ```
+   The first form works on macOS/Linux. The Python fallback handles Windows where `TZ=value command` syntax and `date '+%H:%M'` are not supported. Replace `[timezone]` with the value from `vault.yml` (e.g. `Asia/Bangkok`).
 
 3. Send greeting immediately in this format:
 
