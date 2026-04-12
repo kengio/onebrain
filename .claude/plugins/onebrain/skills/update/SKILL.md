@@ -22,6 +22,22 @@ Your notes, memory, and personal settings are never touched.
 
 ---
 
+## Step 0: Version Check
+
+Compare the local plugin version against the remote before prompting the user.
+
+1. Read local version from `.claude/plugins/onebrain/.claude-plugin/plugin.json`
+2. Fetch remote version:
+   ```bash
+   curl -sf "https://raw.githubusercontent.com/kengio/onebrain/main/.claude/plugins/onebrain/.claude-plugin/plugin.json"
+   ```
+3. Compare:
+   - **Same version:** Report `OneBrain is already up to date (vX.Y.Z).` and stop — do not proceed to Step 1.
+   - **Remote fetch fails:** Skip this check silently and proceed to Step 1 as normal.
+   - **Different version:** Proceed to Step 1, and include the version delta in the prompt: `Update available: vX.Y.Z → vA.B.C. Proceed?`
+
+---
+
 ## Step 1: Explain & Confirm
 
 Tell the user what will and won't be updated:
