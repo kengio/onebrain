@@ -74,6 +74,8 @@ created: YYYY-MM-DD
 (Omit this section if no related notes are found)
 ```
 
+**Finding related notes — search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, query it with the key concepts from the braindump before writing the file — use results to populate `## Related Notes`. Fall back to Glob + Read if qmd is unavailable. Omit the section if nothing relevant is found.
+
 ---
 
 ## Step 4: Check for Project Links

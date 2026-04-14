@@ -126,6 +126,12 @@ rating: [1-5 if they want to rate it]
 
 ---
 
+## Step 5b: Find Related Vault Notes
+
+Before writing, search for existing vault notes related to the book's topic. **Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, query it with the book's title, author, and key ideas. Fall back to Glob `04-resources/**/*.md`, `03-knowledge/**/*.md` + Read if qmd is unavailable. Add the top 1–3 most relevant as wikilinks in the `## Related` section.
+
+---
+
 ## Step 6: Follow Up
 
 > Notes saved to `04-resources/[subfolder]/[Title] : Notes.md`.

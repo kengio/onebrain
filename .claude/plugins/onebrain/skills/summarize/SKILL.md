@@ -115,7 +115,7 @@ published: [Publication date if known]
 
 ## Step 7: Suggest Links and Clean Up Bookmark
 
-**Suggest links:** Scan `[resources]/**/*.md` and `03-knowledge/**/*.md` for notes related to the article's topic.
+**Suggest links:** **Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, query it with the article's title and key concepts — faster and more accurate than a full scan. Fall back to Glob `[resources]/**/*.md` and `03-knowledge/**/*.md` + Read if qmd is unavailable or returns no confident results.
 
 > Summary saved to `[resources]/[subfolder]/[Title].md`.
 >
