@@ -43,7 +43,7 @@ Use qmd if available for content searches; Grep/Glob as fallback.
 3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries
 4. **Project/knowledge notes**: Search `[projects_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, and `[resources_folder]/**/*.md` — filter by note title or first 100 words
 
-Report to user:
+Report to user (N = total matches across all sources; Q = project/knowledge/resource notes combined):
 > Found N sources: M session logs, P inbox notes, Q knowledge notes
 
 **If N = 0:** Stop and inform the user:

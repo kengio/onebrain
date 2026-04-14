@@ -83,6 +83,8 @@ List them if yes, let user decide what to do.
 
 ## Step 7: Offer Typed Relationship Frontmatter
 
+Skip this step if no wikilinks were approved or implemented in Step 5.
+
 After implementing approved wikilinks, use AskUserQuestion to offer typed relationship frontmatter:
 
 > Want me to also add typed relationship properties to the frontmatter of connected notes? This makes connections machine-readable and shows relationship types in Obsidian Graph View. (yes / no)

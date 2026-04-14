@@ -54,7 +54,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - **Skip** lines that begin with `~~` (already superseded — do not flag as stale)
 - Flag entries where `[verified:YYYY-MM-DD]` is older than 90 days
 - Flag entries with no `[verified:...]` tag at all
-- Flag entries with `[conf:low]` not updated in 30+ days
+- Flag entries with `[conf:low]` where `[verified:YYYY-MM-DD]` is older than 30 days (or has no `[verified:...]` tag)
 
 **MEMORY.md size:**
 - Count lines in `[agent_folder]/MEMORY.md`
