@@ -270,6 +270,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - Keep only files where the **date in the filename is before today**
    - Discard files older than 3 days (too stale to synthesize meaningfully)
    - Read frontmatter of each remaining file — **exclude any file where `merged: true`** (already processed)
+   - **Also check**: if a `/wrapup` session log already exists for that date (any `YYYY-MM-DD-session-*.md` file for the same date without `auto-saved: true`), skip that date's checkpoints entirely — /wrapup already handled them
    - What remains are true orphans
 
    **Act on the count:**
@@ -320,7 +321,7 @@ Before your final response in a session, silently save a session summary if ALL 
 
 If conditions are met:
 - Glob today's `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` files with `merged` absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
-- Determine NN: count existing `[logs folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …)
+- Determine NN: count existing `[logs folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …). **Verify** `YYYY-MM-DD-session-NN.md` does not already exist before writing (the Phase 2 sub-agent may have written one concurrently); if it does, increment NN until a free slot is found.
 - Write to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format). **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** : every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
 - Add `auto-saved: true` to the frontmatter
 - Mark as `merged: true` only the checkpoint files that were read and incorporated above

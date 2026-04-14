@@ -75,7 +75,7 @@ Compare every entry in "Insights worth keeping" against the existing `## Key Lea
 | Case | Action |
 |------|--------|
 | Insight is identical or a subset of an existing entry | Drop : do not append |
-| Insight extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them |
+| Insight extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them; append `_(updated YYYY-MM-DD)_` at the end of the line |
 | Insight contradicts an existing entry | Mark old as `~~old entry~~ _(superseded YYYY-MM-DD)_`, keep new for append |
 | Insight is genuinely new | Keep for append |
 

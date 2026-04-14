@@ -32,9 +32,10 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **Broken wikilinks:**
 - Grep all `.md` files in `01-projects/`, `02-areas/`, `03-knowledge/`, `04-resources/`, `05-agent/` for `\[\[.*?\]\]`
-- For each wikilink, extract the note name (strip any `|display text` suffix)
+- **Skip** wikilinks found inside fenced code blocks (between ` ``` ` fences) or blockquote lines (lines beginning with `>`)
+- For each wikilink, extract the note name: strip any `|display text` suffix **and** any `#anchor` fragment (e.g. `[[Note#section|label]]` → match name is `Note`; preserve full original text for display)
 - Check if a `.md` file with that exact name exists anywhere in the vault (case-insensitive)
-- Flag any that don't resolve; store as: `{ broken_link, source_file, source_line }`
+- Flag any that don't resolve; store as: `{ broken_link, display_text, anchor, source_file, source_line }` (preserving all parts for accurate replacement later)
 
 **Orphan notes:**
 - Find notes in `03-knowledge/` and `04-resources/` that have no inbound wikilinks from any other note
@@ -43,6 +44,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **Stale MEMORY.md entries:**
 - Read `[agent_folder]/MEMORY.md` Key Learnings
+- **Skip** lines that begin with `~~` (already superseded — do not flag as stale)
 - Flag entries where `[verified:YYYY-MM-DD]` is older than 90 days
 - Flag entries with no `[verified:...]` tag at all
 - Flag entries with `[conf:low]` not updated in 30+ days
@@ -126,29 +128,46 @@ Otherwise, confirm with AskUserQuestion:
 
 ### Pass B: Broken wikilink fuzzy-fix
 
-For each broken wikilink found in Step 2:
+**Group by broken link name** first: if the same broken link name appears in multiple source files, treat them as one group (one confirmation covers all occurrences).
 
-1. **Fuzzy-match candidates:** Search all `.md` filenames in the vault for names that are similar to the broken link name. Similarity heuristics (apply in order, stop at first confident match):
-   - Case-insensitive exact match
-   - One is a substring of the other (e.g. `[[OneBrain v2]]` → `OneBrain v2.0.0 Product Architecture Design.md`)
-   - Edit distance ≤ 3 characters (handles typos, minor renames)
+For each unique broken link name:
 
-2. **If a confident match is found**, show it to the user using AskUserQuestion:
+1. **Fuzzy-match candidates:** Search all `.md` filenames in the vault for names similar to the broken link name (use the bare name without `#anchor`). Similarity heuristics (apply in order):
+   - Case-insensitive exact match → confident match (stop)
+   - One is a substring of the other (e.g. `[[OneBrain v2]]` → `OneBrain v2.0.0 Product Architecture Design.md`) → confident match (stop)
+   - Edit distance ≤ 3 characters (handles typos, minor renames) → confident match (stop)
+   - Multiple candidates at any tier → present all of them (numbered list)
+
+2. **Present to user** using AskUserQuestion:
+
+   _Single confident match:_
    ```
-   Broken link: [[Broken Note Name]] in "Source Note"
+   Broken link: [[Broken Note Name]] (found in N files: "Source A", "Source B")
    Best match:  [[Actual Note Title]]
-   Replace? (yes / no / skip all)
+   Replace all occurrences? (yes / skip this one / stop)
    ```
-   - If **yes**: update the source file, replacing `[[Broken Note Name]]` with `[[Actual Note Title]]`
-   - If **no**: leave as-is, note as unresolved
-   - If **skip all**: stop fuzzy-fix pass entirely
 
-3. **If no confident match is found**: flag as unresolvable — user must fix manually.
+   _Multiple candidates:_
+   ```
+   Broken link: [[Broken Note Name]] (found in N files: "Source A", "Source B")
+   Possible matches:
+     1. [[Candidate One]]
+     2. [[Candidate Two]]
+     3. [[Candidate Three]]
+   Enter number to replace all, or (skip this one / stop):
+   ```
 
-4. **Never auto-replace without user confirmation.** Every substitution requires an explicit yes.
+   - If **yes** or a number: update all source files that contain this broken link, replacing only the note name portion of each wikilink while **preserving** any `#anchor` and `|display text` (e.g. `[[Broken Name#sec|label]]` → `[[Actual Title#sec|label]]`)
+   - If **skip this one**: leave as-is, note as unresolved, continue to next broken link
+   - If **stop**: end Pass B immediately
+
+3. **If no candidates found**: flag as unresolvable — user must fix manually.
+
+4. **Never auto-replace without user confirmation.** Every substitution requires an explicit yes or number.
 
 After Pass B, report:
-> Fixed N broken links. M links could not be matched automatically — fix manually.
+> Fixed N broken links across M files. P links could not be matched automatically — fix manually.
+> Modified files: [list of file paths that were changed]
 
 ### Final step
 

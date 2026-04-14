@@ -93,7 +93,7 @@ How do you want to handle this?
 3. Cancel — don't save anything
 ```
 
-- If **Supersede**: open the old file, find the contradicting sentence or passage (it may span multiple lines). Strike through the specific contradicted claim — if it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. Then proceed to write the new entry.
+- If **Supersede**: open the old file, find the contradicting sentence or passage (it may span multiple lines). Strike through the specific contradicted claim — if it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. **Do not apply strikethrough inside fenced code blocks (``` ... ```) or to lines beginning with `#` (headings).** Then proceed to write the new entry.
 - If **Save both**: proceed to write the new entry without modifying the old one.
 - If **Cancel**: stop and confirm cancellation to the user.
 

@@ -46,6 +46,13 @@ Report to user:
 
 Exit — do not proceed to Step 4.
 
+**If N > 20:** Too many results — the keywords may be too broad. Use AskUserQuestion:
+> Found N sources for '[topic]' — that's a lot. Do you want to:
+> 1. Narrow the scope (give me more specific keywords or a date range)
+> 2. Continue with all N sources
+
+If user narrows scope, re-run the grep with refined keywords. If user confirms, proceed.
+
 ---
 
 ## Step 4: Synthesize
@@ -68,6 +75,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
 - Infer topic category (e.g. "OneBrain memory architecture" → `[knowledge_folder]/ai-systems/`)
 - Present to user using AskUserQuestion: "I'd file this under `[knowledge_folder]/[suggested-path]/`. OK, or would you like a different path?"
 - If user declines, ask for the preferred path or subfolder name before proceeding.
+- If user cancels entirely, stop — do not write the digest note.
 - Use the confirmed path for file creation.
 
 ---
@@ -82,6 +90,10 @@ Suggest a subfolder in `[knowledge_folder]/`:
   > 1. Overwrite — replace with a fresh synthesis
   > 2. Append — add a `## Update — YYYY-MM-DD` section with new findings
   > 3. Cancel
+
+  If **Append** is chosen: before writing new content, read the existing digest note and surface any `[conf:low]` lessons already there:
+  > This note has M low-confidence lessons. Want to re-evaluate any before appending? (list them)
+  User may promote or leave them as-is.
 
 Create or update `[knowledge_folder]/[subfolder]/[Topic].md`:
 
@@ -137,7 +149,7 @@ Apply the same dedup logic as /recap Step 4:
 | Case | Action |
 |------|--------|
 | Lesson is identical or a subset of an existing entry | Drop — do not append |
-| Lesson extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them |
+| Lesson extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them; append `_(updated YYYY-MM-DD)_` at the end of the line |
 | Lesson contradicts an existing entry | Mark old as `~~old entry~~ _(superseded YYYY-MM-DD)_`, append new |
 | Lesson is genuinely new | Append in format: `- YYYY-MM-DD — [observation] \`[conf:X]\` \`[verified:YYYY-MM-DD]\`` |
 
