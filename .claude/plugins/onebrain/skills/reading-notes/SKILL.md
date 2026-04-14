@@ -11,6 +11,12 @@ Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
 
 ---
 
+## Before You Begin
+
+Read `vault.yml` and extract `folders.resources` as `[resources]` (default: `[resources]`).
+
+---
+
 ## Step 1: Get the Book/Article Info
 
 Ask:
@@ -54,16 +60,16 @@ From the raw input, extract:
 
 ## Step 4: Choose Subfolder
 
-1. Glob existing subfolders in `04-resources/*/`
+1. Glob existing subfolders in `[resources]/*/`
 2. Suggest a kebab-case subfolder based on the book/article's topic (max 2 levels, e.g. `books/productivity` or `science/neuroscience`)
-3. Present to user: "I'd file this under `04-resources/[suggested-path]/`. OK?"
+3. Present to user: "I'd file this under `[resources]/[suggested-path]/`. OK?"
 4. Use confirmed path for file creation.
 
 ---
 
 ## Step 5: Create the Note
 
-File: `04-resources/[subfolder]/[Book Title] : Notes.md` (subfolder confirmed in Step 4)
+File: `[resources]/[subfolder]/[Book Title] : Notes.md` (subfolder confirmed in Step 4)
 
 ```markdown
 ---
@@ -124,13 +130,13 @@ rating: [1-5 if they want to rate it]
 [[Related Note 2]]
 ```
 
-Populate `## Related` by searching for vault notes related to the book's topic (use qmd if available, otherwise Glob `04-resources/**/*.md`, `03-knowledge/**/*.md`).
+Populate `## Related` by searching for vault notes related to the book's topic (use qmd if available, otherwise Glob `[resources]/**/*.md`, `03-knowledge/**/*.md`).
 
 ---
 
 ## Step 6: Follow Up
 
-> Notes saved to `04-resources/[subfolder]/[Title] : Notes.md`.
+> Notes saved to `[resources]/[subfolder]/[Title] : Notes.md`.
 >
 > Want to:
 > - Add this to your reading list in a project note?

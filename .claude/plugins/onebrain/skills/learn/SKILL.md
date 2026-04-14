@@ -65,7 +65,7 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 **For `memory/` notes:**
 - File name: `YYYY-MM-DD-slug.md` where slug is a short kebab-case description (first note of the day)
-- If memory notes already exist today: glob `[agent_folder]/memory/YYYY-MM-DD-*.md`, extract all numeric counters present (e.g. `02`, `03`), use `max(counters) + 1`. If no counter exists yet, the next is `02`.
+- If memory notes already exist today: glob `[agent_folder]/memory/YYYY-MM-DD-*.md`, extract all numeric counters present in filenames (e.g. `02` from `2026-03-23-02-slug.md`). If any counters exist, use `max(counters) + 1`. If files exist but none have a numeric counter (only the first, un-numbered file exists), next is `02`.
 - Example (first note of day): `2026-03-23-prefers-async-comms.md`
 - Example (second note of day): `2026-03-23-02-no-long-responses.md`
 - Example (third note of day): `2026-03-23-03-another-pref.md`
@@ -83,18 +83,20 @@ Before writing, search for potential conflicts with existing knowledge:
 
 > **Note:** False positives are common. Only flag when entries clearly contradict each other, not merely when they cover related topics.
 
-**If a contradiction is found**, present the conflict using AskUserQuestion:
+**If a contradiction is found**, present all conflicts in a single AskUserQuestion:
 ```
-Found a possible conflict with an existing entry:
-> "[existing claim excerpt]" — [filename]
+Found N possible conflict(s) with existing entries:
+> "[existing claim excerpt 1]" — [filename1]
+> "[existing claim excerpt 2]" — [filename2]  (omit if only 1 conflict)
 
 How do you want to handle this?
-1. Supersede — mark the old entry as outdated and save the new one
-2. Save both — they may both be valid in different contexts
-3. Cancel — don't save anything
+1. Supersede all — mark all conflicting entries as outdated and save the new one
+2. Supersede some — ask me about each conflict individually
+3. Save both — keep all entries (may be valid in different contexts)
+4. Cancel — don't save anything
 ```
 
-- If **Supersede**: grep both `context/` and `memory/` may have returned multiple matching files. Handle each conflicting file separately — for each one, apply the strikethrough to the specific contradicted claim. If it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. **Do not apply strikethrough inside fenced code blocks (``` ... ``` or 4-space-indented blocks) or to lines beginning with `#` (headings).** Then proceed to write the new entry.
+- If **Supersede all** or **Supersede some**: For each conflicting file, apply the strikethrough to the specific contradicted claim. If it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. **Do not apply strikethrough inside fenced code blocks (``` ... ``` or 4-space-indented blocks) or to lines beginning with `#` (headings).** For "Supersede some", use a separate AskUserQuestion per file: "Supersede `[filename]`? (yes / no)". Then proceed to write the new entry.
 - If **Save both**: proceed to write the new entry without modifying the old one.
 - If **Cancel**: stop and confirm cancellation to the user.
 

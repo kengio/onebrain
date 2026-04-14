@@ -135,7 +135,7 @@ Use `conf:medium` as the default for wrapup-time insights (single session observ
 
 Only add learnings that are genuinely useful long-term (not every session warrants this).
 
-**Dedup guard:** Before appending, scan the existing `## Key Learnings & Patterns` entries. If an identical or near-identical entry already exists, skip — do not write a duplicate. A `/recap` run will handle merging if needed.
+**Dedup guard:** Before appending, scan the existing `## Key Learnings & Patterns` entries. If an identical or near-identical entry already exists, skip — do not write a duplicate. "Near-identical" means: same behavioral topic, same recommendation, and same conclusion — even if phrased differently. A `/recap` run will handle merging if needed.
 
 ---
 
@@ -144,7 +144,7 @@ Only add learnings that are genuinely useful long-term (not every session warran
 If a genuinely useful long-term insight emerged this session : a clear behavioral pattern, a strong user preference, or a non-obvious observation about how to work with this user : and it is too detailed for MEMORY.md, write it to `[agent folder]/memory/YYYY-MM-DD-slug.md`:
 
 - Frontmatter: `tags: [agent-memory]`, `created: YYYY-MM-DD`, `source: /wrapup`
-- File naming: first note of day: `YYYY-MM-DD-slug.md`; if one already exists today: `YYYY-MM-DD-02-slug.md`, etc.
+- File naming: first note of day: `YYYY-MM-DD-slug.md`; if notes already exist today: glob `[agent_folder]/memory/YYYY-MM-DD-*.md`, extract all numeric counters present in filenames (e.g. `02` from `2026-03-23-02-slug.md`). If any counters exist, use `max(counters) + 1`. If files exist but none have a numeric counter (only the first, un-numbered file exists), next is `02`.
 - Keep it to 1-3 sentences
 - Only do this if the insight is genuinely useful long-term : do not overflow routine session details
 - Use this step only when the insight was too detailed to include in `[agent folder]/MEMORY.md` (Step 6). Do not write the same insight to both `[agent folder]/MEMORY.md` and agent memory.

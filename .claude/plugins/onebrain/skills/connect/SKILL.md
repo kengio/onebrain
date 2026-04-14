@@ -21,7 +21,7 @@ Ask (or infer from context):
 
 ## Step 2: Scan Notes
 
-Use qmd if available for semantic search across notes; Glob + Read as fallback. For each note, extract:
+Use qmd if available for semantic search across notes; fallback: Glob `01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`. For each note, extract:
 - Title
 - Tags (from frontmatter)
 - Key concepts mentioned (first 200 words)

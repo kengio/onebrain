@@ -74,7 +74,7 @@ created: YYYY-MM-DD
 (Omit this section if no related notes are found)
 ```
 
-Find related notes via qmd if available (otherwise Glob + Read) to populate `## Related Notes`. Omit section if nothing relevant found.
+Find related notes via qmd if available; fallback: Glob `01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`. Omit `## Related Notes` if nothing relevant found.
 
 ---
 

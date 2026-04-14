@@ -125,6 +125,7 @@ Otherwise, confirm with AskUserQuestion:
 > - Add missing [conf:medium] baseline to untagged entries
 > - Downgrade stale confidence scores
 > - Add missing [verified:...] dates from entry date prefixes
+> - Flag maximally stale entries (no [verified:] tag AND no date prefix) for manual review — these will NOT be auto-fixed
 
 ### Pass B: Broken wikilink fuzzy-fix
 
@@ -159,7 +160,7 @@ For each unique broken link name:
    Enter number to replace all, or (skip this one / stop):
    ```
 
-   Show `Variants:` line only when the same broken link name appears with different `#anchor` or `|display text` combinations across files — this lets the user verify each replacement is safe.
+   Show `Variants:` line only when the same broken link name appears with different `#anchor` or `|display text` combinations across occurrences. Omit it entirely when all occurrences are identical (e.g. all are bare `[[Broken Note Name]]` with no anchor or display text).
 
    - If **yes** or a number: update all source files that contain this broken link, replacing only the note name portion of each wikilink while **preserving** any `#anchor` and `|display text` (e.g. `[[Broken Name#sec|label]]` → `[[Actual Title#sec|label]]`)
    - If **skip this one**: leave as-is, note as unresolved, continue to next broken link

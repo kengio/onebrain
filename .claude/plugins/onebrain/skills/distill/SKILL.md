@@ -53,10 +53,10 @@ Exit — do not proceed to Step 4.
 > 1. Narrow the scope (I'll ask for more specific keywords or a date range)
 > 2. Continue with all N sources
 
-If user picks option 1, immediately follow with a second AskUserQuestion:
+If user picks option 1, call AskUserQuestion immediately (do not wait or proceed):
 > Please provide more specific keywords or a date range (e.g. "focus on MCP setup decisions from March 2026"):
 
-Re-run the search with the refined criteria. If user confirms all N, proceed.
+Use the user's answer as refined search criteria and re-run the search from the top of Step 3. If user picks option 2 (continue with all N), proceed.
 
 ---
 
@@ -100,7 +100,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
   > This note has M low-confidence lessons. Want to re-evaluate any before appending? (list them)
   User may promote or leave them as-is. If none exist, skip this silently and proceed to append.
 
-  If **Overwrite** is chosen: preserve the original `created:` date from the existing file (it marks when the topic was first distilled). Update `sources_span` to span from the original start date to today's date.
+  If **Overwrite** is chosen: read the existing file first to extract its `created:` date — this marks when the topic was first distilled and must be preserved. Update `sources_span` to span from the original start date to today's date.
 
 Create or update `[knowledge_folder]/[subfolder]/[Topic].md`:
 

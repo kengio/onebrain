@@ -16,6 +16,7 @@ Reads session logs, and any recently-created files in `context/` and `memory/`, 
 Read `vault.yml` and extract:
 - `folders.logs` as `[logs_folder]` (default: `07-logs`)
 - `folders.agent` as `[agent_folder]` (default: `05-agent`)
+- `folders.archive` as `[archive_folder]` (default: `06-archive`)
 
 ---
 
@@ -129,7 +130,7 @@ Also update the `updated:` field in the frontmatter to today's date.
 > - `memory/YYYY-MM-DD-slug.md` — [one-line summary]
 > Archive them? (yes / no)
 
-If **yes**: move each file to `[06-archive]/YYYY/MM/[filename]`.
+If **yes**: move each file to `[archive_folder]/YYYY/MM/[filename]`.
 If **no**: leave in place — the file remains as the detailed version.
 
 **Never archive `context/` files** — they contain detailed domain facts that are not fully captured by a single MEMORY.md entry.
@@ -148,11 +149,6 @@ Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
 ```
 Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).
-```
-
-If overflow warning was triggered, append:
-```
-MEMORY.md is now N lines : consider /distill to compress older entries.
 ```
 
 If nothing was written (all deduped):
