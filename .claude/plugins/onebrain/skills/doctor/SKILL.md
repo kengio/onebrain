@@ -49,7 +49,8 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Report only — no auto-fix (linking requires semantic judgment; use /connect instead)
 
 **Stale MEMORY.md entries:**
-- Read `[agent_folder]/MEMORY.md` Key Learnings
+- Read `[agent_folder]/MEMORY.md`. If the file does not exist, skip all MEMORY.md checks (stale entries, size) and report: `🟡 MEMORY.md: not found at [agent_folder]/MEMORY.md — run /onboarding`
+- Read Key Learnings
 - **Skip** lines that begin with `~~` (already superseded — do not flag as stale)
 - Flag entries where `[verified:YYYY-MM-DD]` is older than 90 days
 - Flag entries with no `[verified:...]` tag at all
@@ -144,6 +145,8 @@ After applying auto-fixes, if any maximally stale entries were found, list each 
 > > `- [entry text]`
 
 ### Pass B: Broken wikilink fuzzy-fix
+
+If no broken links were found in Step 2: note "No broken links to fix." and skip this pass.
 
 **Group by broken link name** first: if the same broken link name appears in multiple source files, treat them as one group (one confirmation covers all occurrences).
 
