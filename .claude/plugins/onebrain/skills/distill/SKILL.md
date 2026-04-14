@@ -25,6 +25,9 @@ Extract:
 - `folders.logs` → `[logs_folder]` (default: `07-logs`)
 - `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
 - `folders.agent` → `[agent_folder]` (default: `05-agent`)
+- `folders.inbox` → `[inbox_folder]` (default: `00-inbox`)
+- `folders.projects` → `[projects_folder]` (default: `01-projects`)
+- `folders.resources` → `[resources_folder]` (default: `04-resources`)
 - `qmd_collection` → for index update after writing
 
 ---
@@ -36,9 +39,9 @@ Search across the vault for notes related to the topic. Use 2–3 specific keywo
 Use qmd if available for content searches; Grep/Glob as fallback.
 
 1. **Session logs**: Search `[logs_folder]/**/*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections
-2. **Inbox**: Search `00-inbox/*.md` for related content
+2. **Inbox**: Search `[inbox_folder]/*.md` for related content
 3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries
-4. **Project/knowledge notes**: Search `01-projects/**/*.md`, `03-knowledge/**/*.md`, and `04-resources/**/*.md` — filter by note title or first 100 words
+4. **Project/knowledge notes**: Search `[projects_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, and `[resources_folder]/**/*.md` — filter by note title or first 100 words
 
 Report to user:
 > Found N sources: M session logs, P inbox notes, Q knowledge notes
@@ -100,7 +103,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
   > This note has M low-confidence lessons. Want to re-evaluate any before appending? (list them)
   User may promote or leave them as-is. If none exist, skip this silently and proceed to append.
 
-  If **Overwrite** is chosen: read the existing file first to extract its `created:` date — this marks when the topic was first distilled and must be preserved. Update `sources_span` to span from the original start date to today's date.
+  If **Overwrite** is chosen: read the existing file first to extract its `created:` date — this marks when the topic was first distilled and must be preserved. If no `created:` field exists in the file, use the file's filesystem modification date as a best-effort fallback; if that is also unavailable, use today's date and note the uncertainty in `sources_span`. Update `sources_span` to span from the original start date to today's date.
 
 Create or update `[knowledge_folder]/[subfolder]/[Topic].md`:
 

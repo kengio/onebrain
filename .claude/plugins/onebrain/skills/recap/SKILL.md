@@ -32,7 +32,7 @@ Glob `[logs_folder]/**/*.md`. Filter to files whose `date` frontmatter value is 
 Report to the user:
 > Found N sessions (DD Mon – DD Mon) · M new /learn files
 
-If no sessions AND no /learn files found:
+If no sessions AND no new_memory_files AND no new_context_files found:
 > No sessions and no new /learn entries in the past 7 days. Nothing to recap.
 
 Exit gracefully : do not proceed.
@@ -125,7 +125,7 @@ Set `[verified:YYYY-MM-DD]` to today's date when first written. For merged entri
 Also update the `updated:` field in the frontmatter to today's date.
 
 **Archive eligible `memory/` files:**
-"Successfully promoted" includes both: (a) entries appended as new, and (b) entries merged into an existing entry ("extends or refines" case) — both counts as promoted. For each file in `new_memory_files` that was promoted by either path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
+"Successfully promoted" includes: (a) entries appended as new, (b) entries merged into an existing entry ("extends or refines"), and (c) entries used to supersede an existing entry ("contradicts" case) — all three count as promoted. For each file in `new_memory_files` that was promoted by either path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
 > Promoted N patterns from `memory/` to MEMORY.md. These files can now be archived:
 > - `memory/YYYY-MM-DD-slug.md` — [one-line summary]
 > Archive them? (yes / no)

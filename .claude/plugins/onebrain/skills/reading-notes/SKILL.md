@@ -13,7 +13,9 @@ Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
 
 ## Before You Begin
 
-Read `vault.yml` and extract `folders.resources` as `[resources]` (default: `04-resources`).
+Read `vault.yml` and extract:
+- `folders.resources` as `[resources]` (default: `04-resources`)
+- `folders.knowledge` as `[knowledge]` (default: `03-knowledge`)
 
 ---
 
@@ -130,7 +132,7 @@ rating: [1-5 if they want to rate it]
 [[Related Note 2]]
 ```
 
-Populate `## Related` by searching for vault notes related to the book's topic (use qmd if available, otherwise Glob `[resources]/**/*.md`, `03-knowledge/**/*.md`).
+Populate `## Related` by searching for vault notes related to the book's topic (use qmd if available, otherwise Glob `[resources]/**/*.md`, `[knowledge]/**/*.md`).
 
 ---
 

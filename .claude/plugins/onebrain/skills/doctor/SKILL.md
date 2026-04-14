@@ -19,7 +19,13 @@ Usage:
 
 ## Step 1: Read vault.yml
 
-Extract all folder paths and `qmd_collection`. If vault.yml is missing, flag immediately:
+Extract folder paths and assign these variables for all steps below:
+- `[agent_folder]` = `folders.agent` (default: `05-agent`)
+- `[logs_folder]` = `folders.logs` (default: `07-logs`)
+- `[inbox_folder]` = `folders.inbox` (default: `00-inbox`)
+- `[qmd_collection]` = `qmd_collection`
+
+If vault.yml is missing, flag immediately:
 > ⛔ vault.yml not found — OneBrain may not be configured correctly.
 
 ---
@@ -54,7 +60,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Warn if count > 180: suggest running /distill to compress older entries into a knowledge note
 
 **Inbox backlog:**
-- Count files in `00-inbox/*.md`
+- Count files in `[inbox_folder]/*.md`
 - Warn if count > 10: suggest running /consolidate
 
 **Old unmerged checkpoints:**
@@ -90,6 +96,8 @@ Use this format:
 🔴 Broken links (N): [[Missing Note]] in "Source Note"
 🟡 Orphan notes (N): 03-knowledge/topic/Note.md
 🟡 Stale MEMORY.md entries (N): not verified in 90+ days
+🟡 MEMORY.md size: N lines — consider /distill to compress
+🟢 MEMORY.md size: OK (N lines)
 🟡 Inbox backlog: N files — consider /consolidate
 🟢 Checkpoints: all merged
 
@@ -130,6 +138,10 @@ Otherwise, confirm with AskUserQuestion:
 > - Downgrade stale confidence scores
 > - Add missing [verified:...] dates from entry date prefixes
 > - Flag maximally stale entries (no [verified:] tag AND no date prefix) for manual review — these will NOT be auto-fixed
+
+After applying auto-fixes, if any maximally stale entries were found, list each one verbatim as a blockquote so the user can review and update manually:
+> ⚠️ Maximally stale — needs manual review:
+> > `- [entry text]`
 
 ### Pass B: Broken wikilink fuzzy-fix
 

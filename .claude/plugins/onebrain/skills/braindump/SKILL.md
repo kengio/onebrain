@@ -37,7 +37,7 @@ Silently analyze and classify each item:
 
 File immediately : do not ask for confirmation first.
 
-Create `00-inbox/YYYY-MM-DD-braindump.md` (append `-2`, `-3` if file exists):
+Create `00-inbox/YYYY-MM-DD-braindump.md`. If a file with that name already exists: glob `00-inbox/YYYY-MM-DD-braindump*.md`, count matches N, use suffix `-{N+1}` (e.g. `-2`, `-3`):
 
 ```markdown
 ---
