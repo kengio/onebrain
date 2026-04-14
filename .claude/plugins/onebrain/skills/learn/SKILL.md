@@ -22,7 +22,7 @@ If not, ask:
 ## Step 2: Read vault.yml
 
 If vault.yml exists, read it and extract `folders.agent` and `qmd_collection`. Default to `05-agent` if the file does not exist or the key is absent.
-Set `agent_folder` for all paths below.
+Set `[agent_folder]` for all paths below.
 
 ---
 

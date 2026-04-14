@@ -83,7 +83,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
 - Infer topic category (e.g. "OneBrain memory architecture" → `[knowledge_folder]/ai-systems/`)
 - Present to user using AskUserQuestion: "I'd file this under `[knowledge_folder]/[suggested-path]/`. OK, or would you like a different path?"
 - If user declines, ask for the preferred path or subfolder name before proceeding.
-- If user cancels entirely, offer one more option via AskUserQuestion: "Save a draft to `00-inbox/YYYY-MM-DD-[topic]-draft.md` instead?" If yes, save the Step 4 synthesis there. If no, discard.
+- If user cancels entirely, offer one more option via AskUserQuestion: "Save a draft to `[inbox_folder]/YYYY-MM-DD-[topic]-draft.md` instead?" If yes, save the Step 4 synthesis there. If no, discard.
 - Use the confirmed path for file creation.
 
 ---

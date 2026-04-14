@@ -223,6 +223,7 @@ Run before responding to any user message:
    logs_folder: [from vault.yml folders.logs]
    inbox_folder: [from vault.yml folders.inbox]
    knowledge_folder: [from vault.yml folders.knowledge]
+   projects_folder: [from vault.yml folders.projects, default 01-projects]
    today: YYYY-MM-DD
    active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
    is_weekend: true|false

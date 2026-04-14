@@ -36,7 +36,8 @@ If none found: continue normally.
 1. Using the date from Step 1, extract `YYYY` and `MM` (zero-padded month).
 2. List files in `[logs_folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md`
 3. The next session number = count of matches + 1 (zero-padded to 2 digits: 01, 02, etc.)
-4. File name: `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
+4. Verify `YYYY-MM-DD-session-NN.md` does not already exist before writing; if it does, increment NN until a free slot is found.
+5. File name: `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
 
 ---
 

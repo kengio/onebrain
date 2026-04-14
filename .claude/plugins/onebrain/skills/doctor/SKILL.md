@@ -57,7 +57,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **MEMORY.md size:**
 - Count lines in `[agent_folder]/MEMORY.md`
-- Warn if count > 180: suggest running /distill to compress older entries into a knowledge note
+- Warn if count > 180: suggest running /distill to synthesize older entries into a knowledge note, then trim the condensed entries from MEMORY.md
 
 **Inbox backlog:**
 - Count files in `[inbox_folder]/*.md`
