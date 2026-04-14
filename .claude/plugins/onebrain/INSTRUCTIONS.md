@@ -355,9 +355,9 @@ Different commands have different verbosity expectations. Match output to the pr
 
 | Profile | Commands | Behavior |
 |---------|----------|----------|
-| **Capture** | `/capture`, `/braindump`, `/bookmark` | Write the note, confirm done in 1 line. No elaboration. |
+| **Capture** | `/capture`, `/braindump`, `/bookmark`, `/learn` | Write the note, confirm done in 1 line. No elaboration. |
 | **Automated** | cron jobs, auto wrapup, `/wrapup` | Structured output only (bullets/sections). No commentary. Under 300 words. |
-| **Interactive** | `/research`, `/connect`, `/consolidate`, `/reading-notes`, `/weekly`, `/distill` | Normal verbosity : depth matches task complexity. |
+| **Interactive** | `/research`, `/connect`, `/consolidate`, `/reading-notes`, `/weekly`, `/distill`, `/recap` | Normal verbosity : depth matches task complexity. |
 | **Diagnostic** | `/doctor` | Structured report output. No meta-commentary. Lead with findings. |
 | **Config/Setup** | `/onboarding`, `/tasks`, `/moc`, `/qmd` | Confirm actions taken. No verbose explanation unless asked. |
 
