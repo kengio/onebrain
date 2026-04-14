@@ -76,6 +76,7 @@ Compare every entry in "Insights worth keeping" against the existing `## Key Lea
 |------|--------|
 | Insight is identical or a subset of an existing entry | Drop : do not append |
 | Insight extends or refines an existing entry | Merge into the existing entry |
+| Insight contradicts an existing entry | Mark old as `~~old entry~~ _(superseded YYYY-MM-DD)_`, keep new for append |
 | Insight is genuinely new | Keep for append |
 
 To merge: rewrite the existing bullet in-place to incorporate the new detail, keeping the original date.
@@ -92,8 +93,18 @@ Exit : do not write.
 Append each new post-dedup insight to the `## Key Learnings & Patterns` section of `[agent_folder]/MEMORY.md`:
 
 ```
-- YYYY-MM-DD : [observation]
+- YYYY-MM-DD — [observation] `[conf:X]` `[verified:YYYY-MM-DD]`
 ```
+
+**Confidence scoring** (assess at write time):
+
+| Score | When to use |
+|---|---|
+| `conf:high` | Empirically tested in this session, or confirmed across ≥ 2 sessions |
+| `conf:medium` | Observed once, plausible but not directly tested |
+| `conf:low` | Inferred, assumed, or from a single indirect source |
+
+Set `[verified:YYYY-MM-DD]` to today's date when first written.
 
 Also update the `updated:` field in the frontmatter to today's date.
 

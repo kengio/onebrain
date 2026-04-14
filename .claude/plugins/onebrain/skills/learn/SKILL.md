@@ -71,7 +71,37 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 ---
 
-## Step 5: Write the Note
+## Step 5: Contradiction Check
+
+Before writing, search for potential conflicts with existing knowledge:
+
+1. Extract 2–3 keywords from the new content
+2. Grep `[agent_folder]/context/` and `[agent_folder]/memory/` for those keywords
+3. Read any matching files
+4. Determine if any existing entry **directly contradicts** the new fact — same topic, opposite claim
+
+> **Note:** False positives are common. Only flag when entries clearly contradict each other, not merely when they cover related topics.
+
+**If a contradiction is found**, present the conflict using AskUserQuestion:
+```
+Found a possible conflict with an existing entry:
+> "[existing claim excerpt]" — [filename]
+
+How do you want to handle this?
+1. Supersede — mark the old entry as outdated and save the new one
+2. Save both — they may both be valid in different contexts
+3. Cancel — don't save anything
+```
+
+- If **Supersede**: open the old file, find the contradicting line, rewrite it as `~~[old line]~~ _(superseded YYYY-MM-DD)_`. Then proceed to write the new entry.
+- If **Save both**: proceed to write the new entry without modifying the old one.
+- If **Cancel**: stop and confirm cancellation to the user.
+
+**If no contradiction is found**, proceed directly to Step 6 — no user interaction needed.
+
+---
+
+## Step 6: Write the Note
 
 **For `context/` notes:**
 
@@ -105,7 +135,7 @@ source: /learn
 
 ---
 
-## Step 6: Confirm
+## Step 7: Confirm
 
 Report what was saved:
 > Learned: "[short summary]"
