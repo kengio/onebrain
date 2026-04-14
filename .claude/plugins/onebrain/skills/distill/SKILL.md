@@ -140,30 +140,15 @@ sources_span: YYYY-MM-DD to YYYY-MM-DD
 
 ---
 
-## Step 7: Promote Lessons to MEMORY.md
-
-For each lesson marked `[conf:high]` or `[conf:medium]`:
-
-Apply the same dedup logic as /recap Step 4:
-
-| Case | Action |
-|------|--------|
-| Lesson is identical or a subset of an existing entry | Drop — do not append |
-| Lesson extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them; append `_(updated YYYY-MM-DD)_` at the end of the line |
-| Lesson contradicts an existing entry | Mark old as `~~old entry~~ _(superseded YYYY-MM-DD)_`, append new |
-| Lesson is genuinely new | Append in format: `- YYYY-MM-DD — [observation] \`[conf:X]\` \`[verified:YYYY-MM-DD]\`` |
-
-Update `updated:` frontmatter in MEMORY.md.
-
-If any lessons were `[conf:low]`, report:
-> Skipped M low-confidence lessons (`conf:low`) — they remain in the digest note. Re-run /distill to promote when confirmed.
-
 Report:
-> Distilled into `[path]`. Added N lessons to MEMORY.md.
+> Distilled into `[path]`.
+
+If you want any lesson to persist in long-term memory, promote it manually:
+> To promote a lesson: `/learn [lesson text]`
 
 ---
 
-## Step 8: Update qmd Index
+## Step 7: Update qmd Index
 
 If `qmd_collection` is set in vault.yml, run:
 ```bash

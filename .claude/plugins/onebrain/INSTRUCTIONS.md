@@ -85,7 +85,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection | user asks for a weekly review |
 | `/daily` | `daily/SKILL.md` | Daily briefing: surfaces tasks due and open items from last session | user asks for a daily briefing, daily check-in, or what's on for today |
 | `/recap` | `recap/SKILL.md` | Cross-session synthesis → update MEMORY.md Key Learnings | user asks to recap or synthesize recent sessions |
-| `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in knowledge base | user asks to distill, synthesize, or crystallize a completed research thread or topic |
+| `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in `03-knowledge/` (does NOT touch MEMORY.md — use `/learn` to promote lessons manually) | user asks to distill, synthesize, or crystallize a completed research thread or topic |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view the task dashboard, regenerate TASKS.md, or open it in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | user says bye or signals end of session |
@@ -131,13 +131,14 @@ OneBrain organizes knowledge across four tiers, each more compressed and longer-
 |---|---|---|---|
 | **Working memory** | `00-inbox/` + current session | Hours | /wrapup, /consolidate |
 | **Episodic memory** | `07-logs/` session logs | Days–weeks | /recap |
-| **Semantic memory** | `05-agent/MEMORY.md` Key Learnings | Months | /recap (≥2 sessions pattern) |
+| **Semantic memory** | `05-agent/MEMORY.md` Key Learnings | Months | /recap, /wrapup (1 insight), /learn |
 | **Procedural memory** | `.claude/plugins/onebrain/skills/` | Permanent | Manual (/learn signals workflow pattern) |
 
 **Promotion criteria:**
 - `inbox → session log`: auto via /wrapup at session end
-- `session log → MEMORY.md`: /recap detects pattern appearing in ≥2 sessions; or /distill promotes lessons from a completed topic synthesis
-- `session logs + notes → knowledge note`: /distill (topic-focused, spans multiple sessions)
+- `session log → MEMORY.md`: /recap (bulk, periodic); /wrapup (1 insight per session, optional); /learn (manual, explicit)
+- `session logs + notes → knowledge note`: /distill (topic-focused, spans multiple sessions — does NOT touch MEMORY.md)
+- `knowledge note lesson → MEMORY.md`: /learn (manual promotion after /distill)
 - `MEMORY.md → skill`: when a workflow pattern repeats across many sessions, suggest creating a skill manually
 
 **Confidence metadata** (used in MEMORY.md Key Learnings):
