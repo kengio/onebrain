@@ -85,6 +85,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection | user asks for a weekly review |
 | `/daily` | `daily/SKILL.md` | Daily briefing: surfaces tasks due and open items from last session | user asks for a daily briefing, daily check-in, or what's on for today |
 | `/recap` | `recap/SKILL.md` | Cross-session synthesis → update MEMORY.md Key Learnings | user asks to recap or synthesize recent sessions |
+| `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in knowledge base | user asks to distill, synthesize, or crystallize a completed research thread or topic |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view the task dashboard, regenerate TASKS.md, or open it in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | user says bye or signals end of session |
@@ -92,10 +93,9 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer | (manual only) |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | : (manual only, high impact) |
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | (manual only) |
+| `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 | `/update` | `update/SKILL.md` | Update system files from GitHub | (manual only) |
 | `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands or skills are available, or what the agent can do |
-| `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in knowledge base | user asks to distill, synthesize, or crystallize a completed research thread or topic |
-| `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 
 **Skill Routing:** When a user message clearly maps to a skill above, invoke it directly : no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. When trigger conditions overlap, prefer the lighter-weight skill (e.g. `/capture` over `/braindump`, `/bookmark` over `/summarize`). Skills marked "manual only" require explicit `/command` always.
 
@@ -136,8 +136,9 @@ OneBrain organizes knowledge across four tiers, each more compressed and longer-
 
 **Promotion criteria:**
 - `inbox → session log`: auto via /wrapup at session end
-- `session log → MEMORY.md`: /recap detects pattern appearing in ≥2 sessions
-- `MEMORY.md → skill`: /recap surfaces a workflow repeated ≥3 sessions → suggest creating a skill
+- `session log → MEMORY.md`: /recap detects pattern appearing in ≥2 sessions; or /distill promotes lessons from a completed topic synthesis
+- `session logs + notes → knowledge note`: /distill (topic-focused, spans multiple sessions)
+- `MEMORY.md → skill`: when a workflow pattern repeats across many sessions, suggest creating a skill manually
 
 **Confidence metadata** (used in MEMORY.md Key Learnings):
 - `[conf:high]` — empirically tested or confirmed across ≥2 sessions
@@ -351,7 +352,8 @@ Different commands have different verbosity expectations. Match output to the pr
 |---------|----------|----------|
 | **Capture** | `/capture`, `/braindump`, `/bookmark` | Write the note, confirm done in 1 line. No elaboration. |
 | **Automated** | cron jobs, auto wrapup, `/wrapup` | Structured output only (bullets/sections). No commentary. Under 300 words. |
-| **Interactive** | `/research`, `/connect`, `/consolidate`, `/reading-notes`, `/weekly` | Normal verbosity : depth matches task complexity. |
+| **Interactive** | `/research`, `/connect`, `/consolidate`, `/reading-notes`, `/weekly`, `/distill` | Normal verbosity : depth matches task complexity. |
+| **Diagnostic** | `/doctor` | Structured report output. No meta-commentary. Lead with findings. |
 | **Config/Setup** | `/onboarding`, `/tasks`, `/moc`, `/qmd` | Confirm actions taken. No verbose explanation unless asked. |
 
 For cron/automated agents specifically: output is read by the user async (often via Telegram) : lead with the content, skip all meta-commentary about what you're doing.

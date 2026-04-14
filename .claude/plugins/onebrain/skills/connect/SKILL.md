@@ -83,27 +83,15 @@ List them if yes, let user decide what to do.
 
 ## Step 7: Offer Typed Relationship Frontmatter
 
-After suggesting and implementing wikilinks, offer to write typed relationships to frontmatter:
+After implementing approved wikilinks, use AskUserQuestion to offer typed relationship frontmatter:
 
-```
-Want me to also add typed relationship properties to the frontmatter of connected notes?
-
-This lets Obsidian Graph View show relationship types, and makes connections machine-readable.
-
-Example:
----
-uses:
-  - "[[Note B]]"
-depends_on:
-  - "[[Note C]]"
----
-```
+> Want me to also add typed relationship properties to the frontmatter of connected notes? This makes connections machine-readable and shows relationship types in Obsidian Graph View. (yes / no)
 
 If user agrees:
 - For each connection found, determine the best relationship type: `uses`, `depends_on`, `contradicts`, `supersedes`, `caused_by`
 - Read the source note's frontmatter
 - Add or append to the appropriate property list
-- Do not duplicate existing entries
+- Do not duplicate existing entries (check current frontmatter before writing)
 
 ---
 
@@ -114,6 +102,7 @@ If the user asks to retro-tag existing notes (e.g. "update all notes in 01-proje
 - For each note: read content + existing frontmatter
 - Suggest typed relationships based on existing wikilinks and content
 - Present suggestions in batches of 5, ask for approval before writing
+- Before writing, check existing frontmatter properties and skip any relationship already present to avoid duplicates
 - Write approved typed relationships to frontmatter
 
 ---

@@ -128,8 +128,10 @@ If this session produced an insight or pattern that should persist across all fu
 ```markdown
 ## Key Learnings & Patterns
 
-- YYYY-MM-DD : [observation about the user's work patterns, preferences, or recurring themes]
+- YYYY-MM-DD — [observation about the user's work patterns, preferences, or recurring themes] `[conf:medium]` `[verified:YYYY-MM-DD]`
 ```
+
+Use `conf:medium` as the default for wrapup-time insights (single session observation). Use `conf:high` only if the insight was empirically tested or confirmed multiple times during this session. Set `[verified:YYYY-MM-DD]` to today's date.
 
 Only add learnings that are genuinely useful long-term (not every session warrants this).
 

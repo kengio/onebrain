@@ -75,7 +75,7 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 Before writing, search for potential conflicts with existing knowledge:
 
-1. Extract 2–3 keywords from the new content
+1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases (e.g. "CronList persistence") over generic single words (e.g. "API", "note", "tool"). If only generic keywords are available, skip the grep and proceed to Step 6 directly.
 2. Grep `[agent_folder]/context/` and `[agent_folder]/memory/` for those keywords
 3. Read any matching files
 4. Determine if any existing entry **directly contradicts** the new fact — same topic, opposite claim
@@ -93,7 +93,7 @@ How do you want to handle this?
 3. Cancel — don't save anything
 ```
 
-- If **Supersede**: open the old file, find the contradicting line, rewrite it as `~~[old line]~~ _(superseded YYYY-MM-DD)_`. Then proceed to write the new entry.
+- If **Supersede**: open the old file, find the contradicting sentence or passage (it may span multiple lines). Strike through the specific contradicted claim — if it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. Then proceed to write the new entry.
 - If **Save both**: proceed to write the new entry without modifying the old one.
 - If **Cancel**: stop and confirm cancellation to the user.
 

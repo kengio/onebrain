@@ -75,7 +75,7 @@ Compare every entry in "Insights worth keeping" against the existing `## Key Lea
 | Case | Action |
 |------|--------|
 | Insight is identical or a subset of an existing entry | Drop : do not append |
-| Insight extends or refines an existing entry | Merge into the existing entry |
+| Insight extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them |
 | Insight contradicts an existing entry | Mark old as `~~old entry~~ _(superseded YYYY-MM-DD)_`, keep new for append |
 | Insight is genuinely new | Keep for append |
 
@@ -114,7 +114,7 @@ Also update the `updated:` field in the frontmatter to today's date.
 
 Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
-> MEMORY.md is now N lines (recommended limit: 180). Consider running `/learn` to distill and condense older entries.
+> MEMORY.md is now N lines (recommended limit: 180). Consider running `/distill` to synthesize older entries into a knowledge note, then trim the condensed entries from MEMORY.md.
 
 Do not modify `[agent_folder]/memory/` or `[agent_folder]/context/` : these are managed by `/learn` only.
 

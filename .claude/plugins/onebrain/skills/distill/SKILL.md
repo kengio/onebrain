@@ -31,15 +31,20 @@ Extract:
 
 ## Step 3: Gather Source Material
 
-Search across the vault for notes related to the topic:
+Search across the vault for notes related to the topic. Use 2–3 specific keywords or phrases from the topic (prefer proper nouns and multi-word phrases over generic single words):
 
 1. **Session logs**: Grep `[logs_folder]/**/*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections
 2. **Inbox**: Grep `00-inbox/*.md` for related content
 3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries
-4. **Project/knowledge notes**: Glob relevant folders, read notes that match
+4. **Project/knowledge notes**: Glob `01-projects/**/*.md`, `03-knowledge/**/*.md`, and `04-resources/**/*.md` — filter by checking if the note title or first 100 words contain any topic keyword
 
 Report to user:
 > Found N sources: M session logs, P inbox notes, Q knowledge notes
+
+**If N = 0:** Stop and inform the user:
+> No notes found matching '[topic]'. Try a broader keyword or check the topic name.
+
+Exit — do not proceed to Step 4.
 
 ---
 
@@ -61,14 +66,24 @@ Present a brief synthesis preview to the user before writing.
 
 Suggest a subfolder in `[knowledge_folder]/`:
 - Infer topic category (e.g. "OneBrain memory architecture" → `[knowledge_folder]/ai-systems/`)
-- Present to user: "I'd file this under `[knowledge_folder]/[suggested-path]/`. OK?"
-- Use confirmed path for file creation.
+- Present to user using AskUserQuestion: "I'd file this under `[knowledge_folder]/[suggested-path]/`. OK, or would you like a different path?"
+- If user declines, ask for the preferred path or subfolder name before proceeding.
+- Use the confirmed path for file creation.
 
 ---
 
 ## Step 6: Write the Digest Note
 
-Create `[knowledge_folder]/[subfolder]/[Topic].md`:
+**Before writing:** Check if `[knowledge_folder]/[subfolder]/[Topic].md` already exists.
+
+- If the file **does not exist**: create it.
+- If the file **already exists**: use AskUserQuestion to ask:
+  > A distilled note for "[Topic]" already exists. How do you want to handle this?
+  > 1. Overwrite — replace with a fresh synthesis
+  > 2. Append — add a `## Update — YYYY-MM-DD` section with new findings
+  > 3. Cancel
+
+Create or update `[knowledge_folder]/[subfolder]/[Topic].md`:
 
 ```markdown
 ---
@@ -100,6 +115,7 @@ sources_span: YYYY-MM-DD to YYYY-MM-DD
 [Generalizable insights — candidates for MEMORY.md]
 - [Lesson 1] `[conf:high]`
 - [Lesson 2] `[conf:medium]`
+- [Lesson 3] `[conf:low]`
 
 ## Open Questions
 
@@ -115,9 +131,20 @@ sources_span: YYYY-MM-DD to YYYY-MM-DD
 ## Step 7: Promote Lessons to MEMORY.md
 
 For each lesson marked `[conf:high]` or `[conf:medium]`:
-- Check if it already exists in `[agent_folder]/MEMORY.md` Key Learnings (dedup)
-- If genuinely new, append in format: `- YYYY-MM-DD — [observation] \`[conf:X]\` \`[verified:YYYY-MM-DD]\``
-- Update `updated:` frontmatter in MEMORY.md
+
+Apply the same dedup logic as /recap Step 4:
+
+| Case | Action |
+|------|--------|
+| Lesson is identical or a subset of an existing entry | Drop — do not append |
+| Lesson extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them |
+| Lesson contradicts an existing entry | Mark old as `~~old entry~~ _(superseded YYYY-MM-DD)_`, append new |
+| Lesson is genuinely new | Append in format: `- YYYY-MM-DD — [observation] \`[conf:X]\` \`[verified:YYYY-MM-DD]\`` |
+
+Update `updated:` frontmatter in MEMORY.md.
+
+If any lessons were `[conf:low]`, report:
+> Skipped M low-confidence lessons (`conf:low`) — they remain in the digest note. Re-run /distill to promote when confirmed.
 
 Report:
 > Distilled into `[path]`. Added N lessons to MEMORY.md.
