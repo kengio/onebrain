@@ -1,11 +1,11 @@
 ---
 name: recap
-description: Cross-session synthesis : reads session logs from the past 7 days, surfaces patterns and insights, and updates MEMORY.md Key Learnings. Run periodically to keep long-term memory current.
+description: Cross-session synthesis : reads session logs, context/, and memory/ from the past 7 days, surfaces patterns and insights, and updates MEMORY.md Key Learnings. Run periodically to keep long-term memory current.
 ---
 
 # /recap : Cross-Session Synthesis
 
-Reads session logs from the past 7 days, surfaces patterns, decisions, and insights across sessions, then updates `MEMORY.md` Key Learnings with new, deduplicated entries.
+Reads session logs, and any recently-created files in `context/` and `memory/`, from the past 7 days. Surfaces patterns, decisions, and insights, then updates `MEMORY.md` Key Learnings with new, deduplicated entries.
 
 **Distinct from `/wrapup`:** `/wrapup` summarizes the current session just ended. `/recap` looks back across multiple sessions to surface long-term patterns.
 
@@ -19,28 +19,36 @@ Read `vault.yml` and extract:
 
 ---
 
-## Step 1: Find sessions from the past 7 days
+## Step 1: Find sources from the past 7 days
 
+**Session logs:**
 Glob `[logs_folder]/**/*.md`. Filter to files whose `date` frontmatter value is within the past 7 days (today inclusive).
 
-Report to the user:
-> Found N sessions (DD Mon – DD Mon)
+**Recent /learn files:**
+- Glob `[agent_folder]/memory/*.md`. Keep files whose `created:` frontmatter is within the past 7 days. Store as `new_memory_files`.
+- Glob `[agent_folder]/context/*.md`. Keep files whose `created:` frontmatter is within the past 7 days. Store as `new_context_files`.
 
-If no sessions found:
-> No sessions found in the past 7 days. Nothing to recap.
+Report to the user:
+> Found N sessions (DD Mon – DD Mon) · M new /learn files
+
+If no sessions AND no /learn files found:
+> No sessions or new /learn entries in the past 7 days. Nothing to recap.
 
 Exit gracefully : do not proceed.
 
 ---
 
-## Step 2: Read and extract from each log
+## Step 2: Read and extract from all sources
 
-Read each session log. Extract:
-
+**From session logs:** Read each log and extract:
 - **Key Decisions** : choices, directions, conclusions reached
 - **Insights & Learnings** : new understanding, patterns discovered
 - **Recurring topics** : project names or themes that appear in ≥ 2 sessions
 - **Open Questions** : questions listed in logs that have no follow-up answer in any later log
+
+**From new `memory/` files:** Read each file in `new_memory_files`. Extract the behavioral pattern or preference described. These are direct candidates for MEMORY.md Key Learnings.
+
+**From new `context/` files:** Read each file in `new_context_files`. Extract any **pattern-like observations** (e.g., "We always deploy on Fridays" or "Thai users expect shorter responses"). Skip raw domain facts that are reference-only (e.g., "Stack: Go + Postgres") — those belong in context/ and do not need to be in MEMORY.md.
 
 ---
 
@@ -59,6 +67,9 @@ Present the synthesis to the user before writing anything:
 
 **Insights worth keeping:**
 - [insight not already present in MEMORY.md Key Learnings]
+
+**From /learn (past 7 days):**
+- [behavioral pattern or observation from memory/ files, if any]
 
 **Open threads:**
 - [question that appeared in logs but was never answered]
@@ -108,6 +119,17 @@ Set `[verified:YYYY-MM-DD]` to today's date when first written.
 
 Also update the `updated:` field in the frontmatter to today's date.
 
+**Archive eligible `memory/` files:**
+For each file in `new_memory_files` whose content was successfully promoted to MEMORY.md (not dropped by dedup), offer to archive it using AskUserQuestion:
+> Promoted N patterns from `memory/` to MEMORY.md. These files can now be archived:
+> - `memory/YYYY-MM-DD-slug.md` — [one-line summary]
+> Archive them? (yes / no)
+
+If **yes**: move each file to `[06-archive]/YYYY/MM/[filename]`.
+If **no**: leave in place — the file remains as the detailed version.
+
+**Never archive `context/` files** — they contain detailed domain facts that are not fully captured by a single MEMORY.md entry.
+
 ---
 
 ## Step 6: Overflow check
@@ -115,8 +137,6 @@ Also update the `updated:` field in the frontmatter to today's date.
 Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
 > MEMORY.md is now N lines (recommended limit: 180). Consider running `/distill` to synthesize older entries into a knowledge note, then trim the condensed entries from MEMORY.md.
-
-Do not modify `[agent_folder]/memory/` or `[agent_folder]/context/` : these are managed by `/learn` only.
 
 ---
 
