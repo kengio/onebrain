@@ -84,7 +84,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes | user mentions a book or article they just read and wants to capture notes or a summary |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection | user asks for a weekly review |
 | `/daily` | `daily/SKILL.md` | Daily briefing: surfaces tasks due and open items from last session | user asks for a daily briefing, daily check-in, or what's on for today |
-| `/recap` | `recap/SKILL.md` | Cross-session synthesis → update MEMORY.md Key Learnings | user asks to recap or synthesize recent sessions |
+| `/recap` | `recap/SKILL.md` | Cross-session synthesis: reads 7 days of session logs + newly /learned context/ and memory/ files → update MEMORY.md Key Learnings | user asks to recap or synthesize recent sessions |
 | `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in `03-knowledge/` (does NOT touch MEMORY.md — use `/learn` to promote lessons manually) | user asks to distill, synthesize, or crystallize a completed research thread or topic |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view the task dashboard, regenerate TASKS.md, or open it in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
@@ -146,6 +146,7 @@ OneBrain organizes knowledge across four tiers, each more compressed and longer-
 - `[conf:medium]` — observed once, plausible
 - `[conf:low]` — inferred or from indirect source
 - `[verified:YYYY-MM-DD]` — date last confirmed; entries not verified in >90 days should be re-checked
+- Run `/doctor --fix` to audit all entries and repair missing or stale confidence scores in bulk
 
 **Supersession**: When a new fact contradicts an existing MEMORY.md entry, mark the old one as `~~old entry~~ _(superseded YYYY-MM-DD)_` rather than deleting it.
 
@@ -271,7 +272,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - Keep only files where the **date in the filename is before today**
    - Discard files older than 3 days (too stale to synthesize meaningfully)
    - Read frontmatter of each remaining file — **exclude any file where `merged: true`** (already processed)
-   - **Also check**: if a `/wrapup` session log already exists for that date (any `YYYY-MM-DD-session-*.md` file for the same date without `auto-saved: true`), skip that date's checkpoints entirely — /wrapup already handled them
+   - **Also check**: if a `/wrapup` session log already exists for that date — match by the `YYYY-MM-DD` date prefix in the filename (e.g. checkpoints dated `2026-04-14` → look for `2026-04-14-session-*.md`). A session log without `auto-saved: true` in its frontmatter was written by `/wrapup` manually. If such a file exists for that date, skip that date's checkpoints entirely — /wrapup already handled them.
    - What remains are true orphans
 
    **Act on the count:**

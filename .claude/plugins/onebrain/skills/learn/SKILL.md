@@ -21,7 +21,7 @@ If not, ask:
 
 ## Step 2: Read vault.yml
 
-If vault.yml exists, read it and extract `folders.agent`. Default to `05-agent` if the file does not exist or the key is absent.
+If vault.yml exists, read it and extract `folders.agent` and `qmd_collection`. Default to `05-agent` if the file does not exist or the key is absent.
 Set `agent_folder` for all paths below.
 
 ---
@@ -65,9 +65,10 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 **For `memory/` notes:**
 - File name: `YYYY-MM-DD-slug.md` where slug is a short kebab-case description (first note of the day)
-- If a memory note already exists today (check `[agent_folder]/memory/YYYY-MM-DD-*.md`), use a counter: `YYYY-MM-DD-02-slug.md`, `YYYY-MM-DD-03-slug.md`, etc.
+- If memory notes already exist today: glob `[agent_folder]/memory/YYYY-MM-DD-*.md`, extract all numeric counters present (e.g. `02`, `03`), use `max(counters) + 1`. If no counter exists yet, the next is `02`.
 - Example (first note of day): `2026-03-23-prefers-async-comms.md`
 - Example (second note of day): `2026-03-23-02-no-long-responses.md`
+- Example (third note of day): `2026-03-23-03-another-pref.md`
 
 ---
 
@@ -75,8 +76,8 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 Before writing, search for potential conflicts with existing knowledge:
 
-1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases (e.g. "CronList persistence") over generic single words (e.g. "API", "note", "tool"). If only generic keywords are available, skip the grep and proceed to Step 6 directly.
-2. Grep `[agent_folder]/context/` and `[agent_folder]/memory/` for those keywords
+1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases (e.g. "CronList persistence") over generic single words (e.g. "API", "note", "tool"). If only generic keywords are available, skip the search and proceed to Step 6 directly.
+2. **Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, query it first with the extracted keywords (semantic search finds near-misses that exact grep would miss). Fall back to Grep for exact pattern matching if qmd is unavailable. Search `[agent_folder]/context/` and `[agent_folder]/memory/`.
 3. Read any matching files
 4. Determine if any existing entry **directly contradicts** the new fact — same topic, opposite claim
 
@@ -93,7 +94,7 @@ How do you want to handle this?
 3. Cancel — don't save anything
 ```
 
-- If **Supersede**: open the old file, find the contradicting sentence or passage (it may span multiple lines). Strike through the specific contradicted claim — if it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. **Do not apply strikethrough inside fenced code blocks (``` ... ```) or to lines beginning with `#` (headings).** Then proceed to write the new entry.
+- If **Supersede**: grep both `context/` and `memory/` may have returned multiple matching files. Handle each conflicting file separately — for each one, apply the strikethrough to the specific contradicted claim. If it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. **Do not apply strikethrough inside fenced code blocks (``` ... ``` or 4-space-indented blocks) or to lines beginning with `#` (headings).** Then proceed to write the new entry.
 - If **Save both**: proceed to write the new entry without modifying the old one.
 - If **Cancel**: stop and confirm cancellation to the user.
 
@@ -132,6 +133,16 @@ source: /learn
 
 [Pattern or behavioral observation, 1-3 sentences]
 ```
+
+---
+
+## Step 6b: Update qmd Index
+
+If `mcp__plugin_onebrain_qmd__query` is in your tool list, run:
+```bash
+qmd update -c [qmd_collection]
+```
+(where `qmd_collection` comes from vault.yml). This ensures the new file is immediately searchable, including in the next /recap run.
 
 ---
 

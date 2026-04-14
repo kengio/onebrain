@@ -135,6 +135,8 @@ Use `conf:medium` as the default for wrapup-time insights (single session observ
 
 Only add learnings that are genuinely useful long-term (not every session warrants this).
 
+**Dedup guard:** Before appending, scan the existing `## Key Learnings & Patterns` entries. If an identical or near-identical entry already exists, skip — do not write a duplicate. A `/recap` run will handle merging if needed.
+
 ---
 
 ## Step 7: Overflow to Agent Memory (Optional)

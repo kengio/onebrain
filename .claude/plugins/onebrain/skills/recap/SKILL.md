@@ -46,9 +46,13 @@ Exit gracefully : do not proceed.
 - **Recurring topics** : project names or themes that appear in ≥ 2 sessions
 - **Open Questions** : questions listed in logs that have no follow-up answer in any later log
 
+**Search order for content:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, prefer it for finding relevant content in session logs and knowledge files (semantic search catches near-misses that exact grep would miss). Use Grep/Glob for exact pattern matching (frontmatter field lookups, file existence checks) and for the `memory/` and `context/` date-filtering in Step 1 (those are structural lookups, not content searches).
+
 **From new `memory/` files:** Read each file in `new_memory_files`. Extract the behavioral pattern or preference described. These are direct candidates for MEMORY.md Key Learnings.
 
 **From new `context/` files:** Read each file in `new_context_files`. Extract any **pattern-like observations** (e.g., "We always deploy on Fridays" or "Thai users expect shorter responses"). Skip raw domain facts that are reference-only (e.g., "Stack: Go + Postgres") — those belong in context/ and do not need to be in MEMORY.md.
+
+**Tiebreaker for context/ files:** If unsure whether something is a pattern or a raw fact, apply this rule (same as /learn Step 3): "If you would change how you respond based on this information, it belongs in MEMORY.md. If it is purely reference material you look up on demand, leave it in context/."
 
 ---
 
@@ -57,7 +61,7 @@ Exit gracefully : do not proceed.
 Present the synthesis to the user before writing anything:
 
 ```
-## Recap : DD Mon – DD Mon (N sessions)
+## Recap : DD Mon – DD Mon (N sessions · M /learn files)
 
 **Patterns noticed:**
 - [recurring theme across sessions, e.g. "5 of 7 sessions touched OneBrain infrastructure"]
@@ -81,7 +85,7 @@ If a category has nothing to report, omit it.
 
 ## Step 4: Dedup check
 
-Compare every entry in "Insights worth keeping" against the existing `## Key Learnings & Patterns` section in `[agent_folder]/MEMORY.md`:
+Apply this dedup table to **all** candidate entries — whether sourced from session logs, `memory/` files, or `context/` files — against the existing `## Key Learnings & Patterns` section in `[agent_folder]/MEMORY.md`:
 
 | Case | Action |
 |------|--------|
@@ -115,12 +119,14 @@ Append each new post-dedup insight to the `## Key Learnings & Patterns` section 
 | `conf:medium` | Observed once, plausible but not directly tested |
 | `conf:low` | Inferred, assumed, or from a single indirect source |
 
-Set `[verified:YYYY-MM-DD]` to today's date when first written.
+**Confidence scoring for `memory/`-sourced entries:** Entries promoted from a `memory/` file are user-stated but not yet tested across sessions — use `conf:medium` by default. If the same pattern also appears in one or more session logs from the past 7 days, use `conf:high`.
+
+Set `[verified:YYYY-MM-DD]` to today's date when first written. For merged entries, update `[verified:YYYY-MM-DD]` to today as well (the merge re-confirms the entry).
 
 Also update the `updated:` field in the frontmatter to today's date.
 
 **Archive eligible `memory/` files:**
-For each file in `new_memory_files` whose content was successfully promoted to MEMORY.md (not dropped by dedup), offer to archive it using AskUserQuestion:
+"Successfully promoted" includes both: (a) entries appended as new, and (b) entries merged into an existing entry ("extends or refines" case) — both counts as promoted. For each file in `new_memory_files` that was promoted by either path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
 > Promoted N patterns from `memory/` to MEMORY.md. These files can now be archived:
 > - `memory/YYYY-MM-DD-slug.md` — [one-line summary]
 > Archive them? (yes / no)
@@ -148,7 +154,7 @@ Recap complete. Added N new insights to MEMORY.md (M already captured : skipped)
 
 If overflow warning was triggered, append:
 ```
-MEMORY.md is now N lines : consider /learn to trim.
+MEMORY.md is now N lines : consider /distill to compress older entries.
 ```
 
 If nothing was written (all deduped):

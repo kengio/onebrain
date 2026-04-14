@@ -32,7 +32,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **Broken wikilinks:**
 - Grep all `.md` files in `01-projects/`, `02-areas/`, `03-knowledge/`, `04-resources/`, `05-agent/` for `\[\[.*?\]\]`
-- **Skip** wikilinks found inside fenced code blocks (between ` ``` ` fences) or blockquote lines (lines beginning with `>`)
+- **Skip** wikilinks found inside fenced code blocks (between ` ``` ` fences), blockquote lines (lines beginning with `>`), or inline code spans (the entire `[[...]]` is enclosed within backticks on that line)
 - For each wikilink, extract the note name: strip any `|display text` suffix **and** any `#anchor` fragment (e.g. `[[Note#section|label]]` → match name is `Note`; preserve full original text for display)
 - Check if a `.md` file with that exact name exists anywhere in the vault (case-insensitive)
 - Flag any that don't resolve; store as: `{ broken_link, display_text, anchor, source_file, source_line }` (preserving all parts for accurate replacement later)
@@ -116,7 +116,7 @@ Collect auto-fixable issues from the Key Learnings scan:
 - `[conf:high]` entries not verified in 90+ days → downgrade to `[conf:medium]`
 - `[conf:medium]` entries not verified in 180+ days → downgrade to `[conf:low]`
 - Entries with no `[conf:...]` tag → add `[conf:medium]` as baseline, then apply staleness rules above
-- Entries with no `[verified:...]` tag → add `[verified:YYYY-MM-DD]` using the **date prefix from the entry line** (the `YYYY-MM-DD` at the start of each `- YYYY-MM-DD —` bullet); if no date prefix exists, use today's date and note it as estimated
+- Entries with no `[verified:...]` tag → add `[verified:YYYY-MM-DD]` using the **date prefix from the entry line** (the `YYYY-MM-DD` at the start of each `- YYYY-MM-DD —` bullet); if no date prefix exists, treat the entry as maximally stale — flag it as requiring manual review rather than assigning today's date (assigning today would incorrectly reset the staleness clock)
 
 If 0 issues: skip this pass, note "No MEMORY.md issues to fix."
 
@@ -143,6 +143,7 @@ For each unique broken link name:
    _Single confident match:_
    ```
    Broken link: [[Broken Note Name]] (found in N files: "Source A", "Source B")
+     Variants: [[Broken Note Name#sec|label1]] in "Source A", [[Broken Note Name]] in "Source B"
    Best match:  [[Actual Note Title]]
    Replace all occurrences? (yes / skip this one / stop)
    ```
@@ -150,6 +151,7 @@ For each unique broken link name:
    _Multiple candidates:_
    ```
    Broken link: [[Broken Note Name]] (found in N files: "Source A", "Source B")
+     Variants: [[Broken Note Name#sec|label1]] in "Source A", [[Broken Note Name]] in "Source B"
    Possible matches:
      1. [[Candidate One]]
      2. [[Candidate Two]]
@@ -157,9 +159,11 @@ For each unique broken link name:
    Enter number to replace all, or (skip this one / stop):
    ```
 
+   Show `Variants:` line only when the same broken link name appears with different `#anchor` or `|display text` combinations across files — this lets the user verify each replacement is safe.
+
    - If **yes** or a number: update all source files that contain this broken link, replacing only the note name portion of each wikilink while **preserving** any `#anchor` and `|display text` (e.g. `[[Broken Name#sec|label]]` → `[[Actual Title#sec|label]]`)
    - If **skip this one**: leave as-is, note as unresolved, continue to next broken link
-   - If **stop**: end Pass B immediately
+   - If **stop**: end Pass B immediately, then still emit the Pass B summary report for any fixes already applied before the stop
 
 3. **If no candidates found**: flag as unresolvable — user must fix manually.
 
@@ -171,7 +175,7 @@ After Pass B, report:
 
 ### Final step
 
-After both passes complete, if `qmd_collection` is set in vault.yml, run:
+After all fix passes complete (whether or not all passes ran), if `qmd_collection` is set in vault.yml, run:
 ```bash
 qmd update -c [qmd_collection]
 ```

@@ -33,10 +33,12 @@ Extract:
 
 Search across the vault for notes related to the topic. Use 2–3 specific keywords or phrases from the topic (prefer proper nouns and multi-word phrases over generic single words):
 
-1. **Session logs**: Grep `[logs_folder]/**/*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections
-2. **Inbox**: Grep `00-inbox/*.md` for related content
-3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries
-4. **Project/knowledge notes**: Glob `01-projects/**/*.md`, `03-knowledge/**/*.md`, and `04-resources/**/*.md` — filter by checking if the note title or first 100 words contain any topic keyword
+**Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, use it for the broad content searches below — it finds semantically related content that exact keyword grep would miss. Fall back to Grep where qmd is unavailable or for frontmatter-specific lookups.
+
+1. **Session logs**: Search `[logs_folder]/**/*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections
+2. **Inbox**: Search `00-inbox/*.md` for related content
+3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries (exact grep is fine here — section is short)
+4. **Project/knowledge notes**: Search `01-projects/**/*.md`, `03-knowledge/**/*.md`, and `04-resources/**/*.md` — filter by checking if the note title or first 100 words contain any topic keyword
 
 Report to user:
 > Found N sources: M session logs, P inbox notes, Q knowledge notes
@@ -48,10 +50,13 @@ Exit — do not proceed to Step 4.
 
 **If N > 20:** Too many results — the keywords may be too broad. Use AskUserQuestion:
 > Found N sources for '[topic]' — that's a lot. Do you want to:
-> 1. Narrow the scope (give me more specific keywords or a date range)
+> 1. Narrow the scope (I'll ask for more specific keywords or a date range)
 > 2. Continue with all N sources
 
-If user narrows scope, re-run the grep with refined keywords. If user confirms, proceed.
+If user picks option 1, immediately follow with a second AskUserQuestion:
+> Please provide more specific keywords or a date range (e.g. "focus on MCP setup decisions from March 2026"):
+
+Re-run the search with the refined criteria. If user confirms all N, proceed.
 
 ---
 
@@ -75,7 +80,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
 - Infer topic category (e.g. "OneBrain memory architecture" → `[knowledge_folder]/ai-systems/`)
 - Present to user using AskUserQuestion: "I'd file this under `[knowledge_folder]/[suggested-path]/`. OK, or would you like a different path?"
 - If user declines, ask for the preferred path or subfolder name before proceeding.
-- If user cancels entirely, stop — do not write the digest note.
+- If user cancels entirely, offer one more option via AskUserQuestion: "Save a draft to `00-inbox/YYYY-MM-DD-[topic]-draft.md` instead?" If yes, save the Step 4 synthesis there. If no, discard.
 - Use the confirmed path for file creation.
 
 ---
@@ -91,9 +96,11 @@ Suggest a subfolder in `[knowledge_folder]/`:
   > 2. Append — add a `## Update — YYYY-MM-DD` section with new findings
   > 3. Cancel
 
-  If **Append** is chosen: before writing new content, read the existing digest note and surface any `[conf:low]` lessons already there:
+  If **Append** is chosen: before writing new content, read the existing digest note and check for any `[conf:low]` lessons already there. If any exist, surface them:
   > This note has M low-confidence lessons. Want to re-evaluate any before appending? (list them)
-  User may promote or leave them as-is.
+  User may promote or leave them as-is. If none exist, skip this silently and proceed to append.
+
+  If **Overwrite** is chosen: preserve the original `created:` date from the existing file (it marks when the topic was first distilled). Update `sources_span` to span from the original start date to today's date.
 
 Create or update `[knowledge_folder]/[subfolder]/[Topic].md`:
 
