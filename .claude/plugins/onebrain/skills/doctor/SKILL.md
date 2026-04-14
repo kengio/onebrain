@@ -51,7 +51,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **Old unmerged checkpoints:**
 - Glob `[logs_folder]/**/*-checkpoint-*.md`
-- Read the frontmatter of each file; keep files where `merged` is **absent** from frontmatter **or** is `false` — excluding only files where `merged: true` is explicitly set
+- Read the frontmatter of each file; keep files where `merged` is **absent** from frontmatter **or** is not `true` — excluding only files where `merged: true` is explicitly set
 - Keep only files whose date (from filename) is older than 7 days
 - Suggest running /wrapup
 
@@ -120,5 +120,10 @@ Otherwise, confirm with user using AskUserQuestion:
 
 After fixing:
 > Fixed N issues. M issues require manual review (see report above).
+
+After fixing, if `qmd_collection` is set in vault.yml, run:
+```bash
+qmd update -c [qmd_collection]
+```
 
 Do NOT delete any content, modify note files outside `[agent_folder]/MEMORY.md`, or restructure vault folders automatically.

@@ -93,8 +93,8 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer | (manual only) |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | : (manual only, high impact) |
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | (manual only) |
-| `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 | `/update` | `update/SKILL.md` | Update system files from GitHub | (manual only) |
+| `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 | `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands or skills are available, or what the agent can do |
 
 **Skill Routing:** When a user message clearly maps to a skill above, invoke it directly : no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. When trigger conditions overlap, prefer the lighter-weight skill (e.g. `/capture` over `/braindump`, `/bookmark` over `/summarize`). Skills marked "manual only" require explicit `/command` always.
@@ -363,7 +363,7 @@ For cron/automated agents specifically: output is read by the user async (often 
 - Don't delete notes without confirmation
 - Don't move files to the archive folder without telling the user
 - Always prefer adding to existing notes over creating new ones
-- Keep `[agent folder]/MEMORY.md` under ~200 lines
+- Keep `[agent folder]/MEMORY.md` under ~180 lines
 
 ## Permissions
 
