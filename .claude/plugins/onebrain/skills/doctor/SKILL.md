@@ -31,7 +31,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 ### Vault Checks (`--vault`)
 
 **Broken wikilinks:**
-- Grep all `.md` files in `01-projects/`, `02-areas/`, `03-knowledge/`, `04-resources/`, `05-agent/` for `\[\[.*?\]\]`
+- Grep all `.md` files in `01-projects/`, `02-areas/`, `03-knowledge/`, `04-resources/`, `[agent_folder]/` for `\[\[.*?\]\]`
 - **Skip** wikilinks found inside fenced code blocks (between ` ``` ` fences), blockquote lines (lines beginning with `>`), or inline code spans (the entire `[[...]]` is enclosed within backticks on that line)
 - For each wikilink, extract the note name: strip any `|display text` suffix **and** any `#anchor` fragment (e.g. `[[Note#section|label]]` → match name is `Note`; preserve full original text for display)
 - Check if a `.md` file with that exact name exists anywhere in the vault (case-insensitive)
@@ -48,6 +48,10 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Flag entries where `[verified:YYYY-MM-DD]` is older than 90 days
 - Flag entries with no `[verified:...]` tag at all
 - Flag entries with `[conf:low]` not updated in 30+ days
+
+**MEMORY.md size:**
+- Count lines in `[agent_folder]/MEMORY.md`
+- Warn if count > 180: suggest running /distill to compress older entries into a knowledge note
 
 **Inbox backlog:**
 - Count files in `00-inbox/*.md`

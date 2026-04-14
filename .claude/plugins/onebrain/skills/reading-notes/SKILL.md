@@ -13,7 +13,7 @@ Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
 
 ## Before You Begin
 
-Read `vault.yml` and extract `folders.resources` as `[resources]` (default: `[resources]`).
+Read `vault.yml` and extract `folders.resources` as `[resources]` (default: `04-resources`).
 
 ---
 

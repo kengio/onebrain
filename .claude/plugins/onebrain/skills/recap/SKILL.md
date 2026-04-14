@@ -33,7 +33,7 @@ Report to the user:
 > Found N sessions (DD Mon – DD Mon) · M new /learn files
 
 If no sessions AND no /learn files found:
-> No sessions or new /learn entries in the past 7 days. Nothing to recap.
+> No sessions and no new /learn entries in the past 7 days. Nothing to recap.
 
 Exit gracefully : do not proceed.
 

@@ -56,7 +56,7 @@ Exit — do not proceed to Step 4.
 If user picks option 1, call AskUserQuestion immediately (do not wait or proceed):
 > Please provide more specific keywords or a date range (e.g. "focus on MCP setup decisions from March 2026"):
 
-Use the user's answer as refined search criteria and re-run the search from the top of Step 3. If user picks option 2 (continue with all N), proceed.
+Use the user's answer as refined search criteria and re-run the search from the top of Step 3. If the refined search still returns > 20 sources, inform the user and proceed with all N rather than asking again (one clarification cycle maximum). If user picks option 2 (continue with all N), proceed.
 
 ---
 

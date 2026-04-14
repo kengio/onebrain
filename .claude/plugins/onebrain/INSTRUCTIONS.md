@@ -138,7 +138,7 @@ OneBrain organizes knowledge across four tiers, each more compressed and longer-
 - `inbox → session log`: auto via /wrapup at session end
 - `session log → MEMORY.md`: /recap (bulk, periodic); /wrapup (1 insight per session, optional); /learn (manual, explicit)
 - `session logs + notes → knowledge note`: /distill (topic-focused, spans multiple sessions — does NOT touch MEMORY.md)
-- `knowledge note lesson → MEMORY.md`: /learn (manual promotion after /distill)
+- `knowledge note lesson → MEMORY.md`: /learn (writes to `memory/` file) → /recap (promotes to MEMORY.md Key Learnings); two hops, not direct
 - `MEMORY.md → skill`: when a workflow pattern repeats across many sessions, suggest creating a skill manually
 
 **Confidence metadata** (used in MEMORY.md Key Learnings):
@@ -146,7 +146,7 @@ OneBrain organizes knowledge across four tiers, each more compressed and longer-
 - `[conf:medium]` — observed once, plausible
 - `[conf:low]` — inferred or from indirect source
 - `[verified:YYYY-MM-DD]` — date last confirmed; entries not verified in >90 days should be re-checked
-- Run `/doctor --fix` to audit all entries and repair missing or stale confidence scores in bulk
+- Run `/doctor --fix` to audit all entries, repair missing or stale confidence scores in bulk, and interactively fix broken wikilinks across the vault
 
 **Supersession**: When a new fact contradicts an existing MEMORY.md entry, mark the old one as `~~old entry~~ _(superseded YYYY-MM-DD)_` rather than deleting it.
 
@@ -325,7 +325,7 @@ If conditions are met:
 - Glob today's `[logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` files with `merged` absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
 - Determine NN: count existing `[logs folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …). **Verify** `YYYY-MM-DD-session-NN.md` does not already exist before writing (the Phase 2 sub-agent may have written one concurrently); if it does, increment NN until a free slot is found.
 - Write to `[logs folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format). **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** : every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
-- Add `auto-saved: true` to the frontmatter
+- Add `auto-saved: true` to the frontmatter; if unmerged checkpoints were incorporated, also add `synthesized_from_checkpoints: true`
 - Mark as `merged: true` only the checkpoint files that were read and incorporated above
 - If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `[agent folder]/MEMORY.md` and update the `updated:` frontmatter date to today
 - Do NOT show any output about the auto-save to the user
