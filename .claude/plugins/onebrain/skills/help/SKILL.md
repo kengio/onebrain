@@ -46,6 +46,8 @@ Display a formatted table with all available commands:
 | `/clone` | Package your agent context (agent folder including MEMORY.md) for vault transfer | When moving to a new vault and want to preserve your agent's memory |
 | `/reorganize` | Migrate existing flat notes into subfolders : one-time migration | After upgrading to a version with subfolder organization |
 | `/qmd` | Set up and manage qmd search index (setup, embed, status, reindex, uninstall) | When you want faster vault search or need to manage the search index |
+| `/distill` | Aggregate notes from multiple sessions on a topic into a structured knowledge note | When you want to compress a completed research thread or recurring theme into permanent knowledge |
+| `/doctor` | Diagnose vault and plugin health (broken links, orphan notes, stale memory, inbox backlog) | When something feels off, or as periodic vault maintenance |
 | `/update` | Update OneBrain system files from GitHub | When a new version is available |
 | `/help` | List all available commands | You're already here! |
 
