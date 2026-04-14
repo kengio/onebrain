@@ -94,6 +94,8 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | (manual only) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub | (manual only) |
 | `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands or skills are available, or what the agent can do |
+| `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in knowledge base | user asks to distill, synthesize, or crystallize a completed research thread or topic |
+| `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 
 **Skill Routing:** When a user message clearly maps to a skill above, invoke it directly : no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. When trigger conditions overlap, prefer the lighter-weight skill (e.g. `/capture` over `/braindump`, `/bookmark` over `/summarize`). Skills marked "manual only" require explicit `/command` always.
 
@@ -120,6 +122,46 @@ qmd update -c <collection>
 where `<collection>` is the collection name from `vault.yml` (`qmd_collection` field, e.g. `ob-1-441565`). This keeps the search index in sync and prevents stale entries from appearing in results.
 
 If qmd tools are not available, or if `qmd_collection` is not present in `vault.yml`, skip this step entirely.
+
+## Memory Tier Model
+
+OneBrain organizes knowledge across four tiers, each more compressed and longer-lived than the one below:
+
+| Tier | Storage | Lifespan | Promoted by |
+|---|---|---|---|
+| **Working memory** | `00-inbox/` + current session | Hours | /wrapup, /consolidate |
+| **Episodic memory** | `07-logs/` session logs | Days–weeks | /recap |
+| **Semantic memory** | `05-agent/MEMORY.md` Key Learnings | Months | /recap (≥2 sessions pattern) |
+| **Procedural memory** | `.claude/plugins/onebrain/skills/` | Permanent | Manual (/learn signals workflow pattern) |
+
+**Promotion criteria:**
+- `inbox → session log`: auto via /wrapup at session end
+- `session log → MEMORY.md`: /recap detects pattern appearing in ≥2 sessions
+- `MEMORY.md → skill`: /recap surfaces a workflow repeated ≥3 sessions → suggest creating a skill
+
+**Confidence metadata** (used in MEMORY.md Key Learnings):
+- `[conf:high]` — empirically tested or confirmed across ≥2 sessions
+- `[conf:medium]` — observed once, plausible
+- `[conf:low]` — inferred or from indirect source
+- `[verified:YYYY-MM-DD]` — date last confirmed; entries not verified in >90 days should be re-checked
+
+**Supersession**: When a new fact contradicts an existing MEMORY.md entry, mark the old one as `~~old entry~~ _(superseded YYYY-MM-DD)_` rather than deleting it.
+
+**Typed relationships** (frontmatter convention for notes):
+Use these property names in note frontmatter to express typed relationships:
+```yaml
+uses:
+  - "[[Library or Tool]]"
+depends_on:
+  - "[[Required Component]]"
+contradicts:
+  - "[[Opposing Decision]]"
+supersedes:
+  - "[[Old Note]]"
+caused_by:
+  - "[[Root Cause]]"
+```
+Obsidian 1.4+ renders these as graph links in Graph View automatically.
 
 ## Session Behavior
 
