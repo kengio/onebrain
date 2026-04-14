@@ -36,7 +36,7 @@ Classify the content : do not ask, infer from context:
 
 ## Step 3: Find and Link Related Notes
 
-**Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, query it with the note's key concepts — it returns ranked results immediately without scanning every file. Fall back to Glob `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, `01-projects/**/*.md` + Read if qmd is unavailable or returns no confident results. Exclude the destination file itself. Include the top 1–3 most relevant as wikilinks. Do not ask : add them automatically. If no related notes are found, omit the `## Related` section entirely.
+Search for related notes (use qmd if available, otherwise Glob `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, `01-projects/**/*.md`). Exclude the destination file. Include top 1–3 as wikilinks automatically. Omit `## Related` if nothing relevant found.
 
 ---
 

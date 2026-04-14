@@ -21,9 +21,7 @@ Ask (or infer from context):
 
 ## Step 2: Scan Notes
 
-**Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, use it to find semantically related notes (e.g. query the topic or key concepts from the target note). This surfaces conceptually related content that keyword grep would miss. For a full vault scan (when scope = entire knowledge base or recently added), also Glob `01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md` to enumerate all candidates, then use qmd to rank by relevance. Fall back to Glob + Read if qmd is unavailable.
-
-For each note, extract:
+Use qmd if available for semantic search across notes; Glob + Read as fallback. For each note, extract:
 - Title
 - Tags (from frontmatter)
 - Key concepts mentioned (first 200 words)

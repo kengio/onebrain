@@ -33,12 +33,12 @@ Extract:
 
 Search across the vault for notes related to the topic. Use 2–3 specific keywords or phrases from the topic (prefer proper nouns and multi-word phrases over generic single words):
 
-**Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, use it for the broad content searches below — it finds semantically related content that exact keyword grep would miss. Fall back to Grep where qmd is unavailable or for frontmatter-specific lookups.
+Use qmd if available for content searches; Grep/Glob as fallback.
 
 1. **Session logs**: Search `[logs_folder]/**/*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections
 2. **Inbox**: Search `00-inbox/*.md` for related content
-3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries (exact grep is fine here — section is short)
-4. **Project/knowledge notes**: Search `01-projects/**/*.md`, `03-knowledge/**/*.md`, and `04-resources/**/*.md` — filter by checking if the note title or first 100 words contain any topic keyword
+3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries
+4. **Project/knowledge notes**: Search `01-projects/**/*.md`, `03-knowledge/**/*.md`, and `04-resources/**/*.md` — filter by note title or first 100 words
 
 Report to user:
 > Found N sources: M session logs, P inbox notes, Q knowledge notes

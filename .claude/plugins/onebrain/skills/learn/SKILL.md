@@ -76,8 +76,8 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 Before writing, search for potential conflicts with existing knowledge:
 
-1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases (e.g. "CronList persistence") over generic single words (e.g. "API", "note", "tool"). If only generic keywords are available, skip the search and proceed to Step 6 directly.
-2. **Search order:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, query it first with the extracted keywords (semantic search finds near-misses that exact grep would miss). Fall back to Grep for exact pattern matching if qmd is unavailable. Search `[agent_folder]/context/` and `[agent_folder]/memory/`.
+1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases over generic single words. If only generic keywords are available, skip and proceed to Step 6.
+2. Search `[agent_folder]/context/` and `[agent_folder]/memory/` for those keywords (use qmd if available, otherwise Grep).
 3. Read any matching files
 4. Determine if any existing entry **directly contradicts** the new fact — same topic, opposite claim
 
@@ -134,15 +134,7 @@ source: /learn
 [Pattern or behavioral observation, 1-3 sentences]
 ```
 
----
-
-## Step 6b: Update qmd Index
-
-If `mcp__plugin_onebrain_qmd__query` is in your tool list, run:
-```bash
-qmd update -c [qmd_collection]
-```
-(where `qmd_collection` comes from vault.yml). This ensures the new file is immediately searchable, including in the next /recap run.
+After writing, run `qmd update -c [qmd_collection]` if qmd is available (keeps the file searchable for /recap).
 
 ---
 

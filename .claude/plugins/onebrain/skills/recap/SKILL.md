@@ -40,13 +40,13 @@ Exit gracefully : do not proceed.
 
 ## Step 2: Read and extract from all sources
 
+Use qmd if available for content searches; use Glob/Grep for frontmatter lookups and date-filtering.
+
 **From session logs:** Read each log and extract:
 - **Key Decisions** : choices, directions, conclusions reached
 - **Insights & Learnings** : new understanding, patterns discovered
 - **Recurring topics** : project names or themes that appear in ≥ 2 sessions
 - **Open Questions** : questions listed in logs that have no follow-up answer in any later log
-
-**Search order for content:** If `mcp__plugin_onebrain_qmd__query` is in your tool list, prefer it for finding relevant content in session logs and knowledge files (semantic search catches near-misses that exact grep would miss). Use Grep/Glob for exact pattern matching (frontmatter field lookups, file existence checks) and for the `memory/` and `context/` date-filtering in Step 1 (those are structural lookups, not content searches).
 
 **From new `memory/` files:** Read each file in `new_memory_files`. Extract the behavioral pattern or preference described. These are direct candidates for MEMORY.md Key Learnings.
 
@@ -115,11 +115,9 @@ Append each new post-dedup insight to the `## Key Learnings & Patterns` section 
 
 | Score | When to use |
 |---|---|
-| `conf:high` | Empirically tested in this session, or confirmed across ≥ 2 sessions |
-| `conf:medium` | Observed once, plausible but not directly tested |
+| `conf:high` | Empirically tested, or confirmed across ≥ 2 sessions (including memory/ entries that also appear in session logs) |
+| `conf:medium` | Observed once, plausible — default for memory/-sourced entries |
 | `conf:low` | Inferred, assumed, or from a single indirect source |
-
-**Confidence scoring for `memory/`-sourced entries:** Entries promoted from a `memory/` file are user-stated but not yet tested across sessions — use `conf:medium` by default. If the same pattern also appears in one or more session logs from the past 7 days, use `conf:high`.
 
 Set `[verified:YYYY-MM-DD]` to today's date when first written. For merged entries, update `[verified:YYYY-MM-DD]` to today as well (the merge re-confirms the entry).
 
