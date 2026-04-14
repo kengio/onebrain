@@ -79,8 +79,26 @@ get_checkpoint_value() {
   echo "${value:-$default}"
 }
 
+get_folder_value() {
+  local key="$1" default="$2"
+  [ -z "$VAULT_YML" ] && echo "$default" && return
+  [ -f "$VAULT_YML" ] || { echo "$default"; return; }
+  local in_block=0 value=""
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^folders: ]]; then in_block=1; continue; fi
+    if [[ $in_block -eq 1 ]]; then
+      if [[ "$line" =~ ^[[:space:]]+${key}:[[:space:]]*(.+) ]]; then
+        value="${BASH_REMATCH[1]}"; value="${value//\"/}"; value="${value//\'/}"; value="${value#"${value%%[![:space:]]*}"}"; value="${value%"${value##*[![:space:]]}"}"; break
+      fi
+      if [[ "$line" =~ ^[^[:space:]] ]]; then break; fi
+    fi
+  done < "$VAULT_YML"
+  echo "${value:-$default}"
+}
+
 MSG_THRESHOLD=$(get_checkpoint_value "messages" 15)
 TIME_THRESHOLD=$(( $(get_checkpoint_value "minutes" 30) * 60 ))
+LOGS_FOLDER=$(get_folder_value "logs" "07-logs")
 
 COUNT=$(( COUNT + 1 ))
 ELAPSED=$(( NOW - LAST_TS ))
@@ -97,7 +115,7 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
     TRIGGER_LABEL="auto ($(( ELAPSED / 60 ))m elapsed)"
   fi
   # Build JSON first — restore state on json builder failure so future triggers still work
-  PROMPT="Auto-checkpoint triggered by ${TRIGGER_LABEL}. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing YYYY-MM-DD-checkpoint-*.md files in [logs folder]/YYYY/MM/ (using today's actual date in the filename pattern) to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write [logs folder]/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
+  PROMPT="Auto-checkpoint triggered by ${TRIGGER_LABEL}. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing YYYY-MM-DD-checkpoint-*.md files in ${LOGS_FOLDER}/YYYY/MM/ (using today's actual date in the filename pattern) to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write ${LOGS_FOLDER}/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
   # Try python3, python, node in order — Windows may only have 'python' or 'node'
   if command -v python3 &>/dev/null; then
     JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
