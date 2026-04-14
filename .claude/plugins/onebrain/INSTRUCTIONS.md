@@ -185,12 +185,13 @@ Run before responding to any user message:
 
 2. Get current local time (single call, can run in parallel with step 1). Replace **both** occurrences of `[timezone]` with the value from `vault.yml` (e.g. `Asia/Bangkok`). Python is tried first — it works on macOS, Linux, and Windows (via Git Bash). `TZ=... date` is the fallback for when Python is absent or fails:
    ```bash
-   python3 -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))" 2>/dev/null || TZ=[timezone] date '+%H:%M'
+   python3 -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))" 2>/dev/null || node -e "const d=new Date(); console.log(d.toLocaleTimeString('en-GB',{timeZone:'[timezone]',hour:'2-digit',minute:'2-digit'}))" 2>/dev/null || TZ=[timezone] date '+%H:%M' 2>/dev/null
    ```
    Notes:
    - `zoneinfo` requires Python 3.9+. On older Pythons, that arm fails silently and falls through.
-   - `||` works in bash and Git Bash. On Windows, run this via Git Bash — CMD and PowerShell 5.1 (the Windows default) do not support `||` as a conditional operator.
-   - If both arms fail, skip the time-of-day greeting modifier and treat as the 09:00–17:00 bucket (no emoji).
+   - Node.js fallback works on Windows, macOS, and Linux without any modules.
+   - `TZ=... date` is a last resort for Unix-only environments without Node.
+   - If all arms fail, skip the time-of-day greeting modifier and treat as the 09:00–17:00 bucket (no emoji).
 
 3. Send greeting immediately in this format:
 
