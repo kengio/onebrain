@@ -29,7 +29,7 @@ Glob `[logs_folder]/**/*.md`. Filter to files whose `date` frontmatter value is 
 - Glob `[agent_folder]/memory/*.md`. Keep files whose `created:` frontmatter is within the past 7 days. Store as `new_memory_files`.
 - Glob `[agent_folder]/context/*.md`. Keep files whose `created:` frontmatter is within the past 7 days. Store as `new_context_files`.
 
-Report to the user:
+Report to the user (M = count of new_memory_files + count of new_context_files):
 > Found N sessions (DD Mon – DD Mon) · M new /learn files
 
 If no sessions AND no new_memory_files AND no new_context_files found:

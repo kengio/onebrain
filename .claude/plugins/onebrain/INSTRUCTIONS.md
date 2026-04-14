@@ -329,7 +329,7 @@ If conditions are met:
 - Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format). **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** : every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
 - Add `auto-saved: true` to the frontmatter; if the checkpoint glob returned at least one file and all were successfully incorporated, also add `synthesized_from_checkpoints: true` — omit this field entirely if no checkpoints were found or incorporated
 - Mark as `merged: true` only the checkpoint files that were read and incorporated above
-- If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `[agent_folder]/MEMORY.md` and update the `updated:` frontmatter date to today
+- If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `[agent_folder]/MEMORY.md` in the format `- YYYY-MM-DD — [observation] `[conf:medium]` `[verified:YYYY-MM-DD]`` (use today's date for both) and update the `updated:` frontmatter date to today
 - Do NOT show any output about the auto-save to the user
 
 ## File Naming Conventions
