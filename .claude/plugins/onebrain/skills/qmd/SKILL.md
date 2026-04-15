@@ -58,11 +58,11 @@ If Cancel: tell user "You can install qmd manually with `npm install -g @tobilu/
 If npm: run `npm install -g @tobilu/qmd`. If it fails, show the error and stop.
 If bun: run `bun install -g @tobilu/qmd`. If it fails, show the error and stop.
 
-After installation, verify with `which qmd`. If still not found, tell user to check their PATH and stop.
+After installation, verify with `which qmd` (macOS/Linux) or `where qmd` (Windows). If still not found, tell user to check their PATH and stop.
 
 ### Step 4: Generate collection name
 
-1. Get vault root directory name: `basename "$CLAUDE_PROJECT_DIR"` (or PowerShell equivalent)
+1. Get vault root directory name: `basename "$CLAUDE_PROJECT_DIR"`
 2. Generate a 6-character random hex string: try `openssl rand -hex 3` first; if that fails, try `python3 -c "import secrets; print(secrets.token_hex(3))"`. If both fail, tell the user "Could not generate a unique collection name. Please run `/qmd setup` again." and stop.
 3. Collection name = `<vault-dirname>-<hex>` (e.g., `onebrain-a3f2c1`)
 

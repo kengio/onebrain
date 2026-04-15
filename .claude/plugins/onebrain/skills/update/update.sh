@@ -35,16 +35,43 @@ TREE_JSON=$(curl -sf "${API_TREE}" 2>/dev/null) || {
   exit 1
 }
 
-# Extract all blob paths
-ALL_PATHS=$(echo "${TREE_JSON}" | python3 -c "
+# Parse GitHub tree JSON — cross-platform fallback chain (python3 → python → node)
+_parse_tree() {
+  local input="$1"
+  if command -v python3 &>/dev/null; then
+    printf '%s' "${input}" | python3 -c "
 import json, sys
 for item in json.load(sys.stdin).get('tree', []):
     if item['type'] == 'blob':
-        print(item['path'])
-" 2>/dev/null) || {
+        print(item['path'])"
+  elif command -v python &>/dev/null; then
+    printf '%s' "${input}" | python -c "
+import json, sys
+for item in json.load(sys.stdin).get('tree', []):
+    if item['type'] == 'blob':
+        print(item['path'])"
+  elif command -v node &>/dev/null; then
+    printf '%s' "${input}" | node -e "
+let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
+  const obj=JSON.parse(d);
+  const tree=Array.isArray(obj.tree)?obj.tree:[];
+  tree.filter(i=>i.type==='blob').forEach(i=>console.log(i.path))
+})"
+  else
+    echo "ERROR: Python (python3/python) and Node.js are unavailable. Install either to use /update." >&2
+    exit 1
+  fi
+}
+
+# Extract all blob paths
+ALL_PATHS=$(_parse_tree "${TREE_JSON}") || {
   echo "ERROR: Could not parse file list from GitHub (unexpected response format)."
   exit 1
 }
+if [[ -z "${ALL_PATHS}" ]]; then
+  echo "ERROR: File list parsed but returned no paths — API response may be empty or rate-limited."
+  exit 1
+fi
 
 # Allowlist
 ALLOW_FILES=(".gitignore")
@@ -67,7 +94,11 @@ compare_and_apply() {
 
   if [[ ! -f "${local_path}" ]]; then
     if [[ "${APPLY}" == true ]]; then
-      mkdir -p "$(dirname "${local_path}")"
+      if ! mkdir -p "$(dirname "${local_path}")" 2>/dev/null; then
+        FAILED+=("${path}")
+        rm -f "${tmp_file}"
+        return
+      fi
       if cp "${tmp_file}" "${local_path}" 2>/dev/null; then
         ADDED+=("${path}")
       else
@@ -100,7 +131,7 @@ done
 
 # Process allowlisted directories
 for dir in "${ALLOW_DIRS[@]}"; do
-  dir_paths=$(echo "${ALL_PATHS}" | grep "^${dir}/") || true
+  dir_paths=$(printf '%s\n' "${ALL_PATHS}" | awk -v d="${dir}/" 'substr($0,1,length(d))==d') || true
 
   while IFS= read -r path; do
     [[ -z "${path}" ]] && continue
@@ -128,6 +159,7 @@ done
 # Confirmed safe: Claude Code re-loads from source (directory) when cache is absent.
 # Note: PostToolUse hook errors may appear for the remainder of the current session —
 # this is expected and resolves on next session start.
+# Claude Code uses ~/.claude/ on all platforms (macOS, Linux, Windows) — confirmed via issue #21916.
 CACHE_NOTE=""
 if [[ "${APPLY}" == true ]]; then
   CLEARED_RAW=""
@@ -141,8 +173,12 @@ if [[ "${APPLY}" == true ]]; then
     if [[ -d "${cache_dir}" ]]; then
       for ver_dir in "${cache_dir}"/*/; do
         ver=$(basename "${ver_dir}")
-        rm -rf "${ver_dir}" 2>/dev/null || true
-        CLEARED_RAW="${CLEARED_RAW}${ver}"$'\n'
+        [[ -z "${ver}" ]] && continue
+        if rm -rf "${ver_dir}" 2>/dev/null; then
+          CLEARED_RAW="${CLEARED_RAW}${ver}"$'\n'
+        else
+          echo "WARNING: Could not remove cache dir ${ver_dir} — clear it manually if the plugin does not reload." >&2
+        fi
       done
     fi
   done
