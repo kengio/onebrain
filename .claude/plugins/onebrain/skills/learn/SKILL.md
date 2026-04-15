@@ -135,13 +135,7 @@ After writing, run `qmd update -c [qmd_collection]` if qmd is available (keeps t
 
 ## Step 6: Suggest Links (background)
 
-After writing, dispatch a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`) using the Link Suggester agent with:
-- `new_note_path` : the path of the file just written (relative to vault_root)
-- `new_note_content` : the content just written
-- `vault_root` : absolute path to the directory containing vault.yml
-- `knowledge_folder`, `resources_folder`, `areas_folder`, `projects_folder` : from INSTRUCTIONS.md config
-
-Proceed to Confirm immediately — do not wait for the link suggester.
+After writing, dispatch the **Link Suggester** agent (`agents/link-suggester.md`) as a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`), passing `new_note_path`, `new_note_content`, `vault_root`, and the four folder variables. Proceed to Confirm immediately.
 
 ---
 
