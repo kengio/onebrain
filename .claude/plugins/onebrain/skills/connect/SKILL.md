@@ -27,6 +27,16 @@ Use qmd if available for semantic search across notes; fallback: Glob `[projects
 - Key concepts mentioned (first 200 words)
 - Existing wikilinks already present
 
+If the total note count exceeds 20, delegate to the **Knowledge Linker** agent instead — see Step 2b.
+
+---
+
+## Step 2b: Delegate to Agent (>20 Notes)
+
+If more than 20 notes are in scope: dispatch the **Knowledge Linker** agent (`agents/knowledge-linker.md`) as a foreground sub-agent (`run_in_background: false`, `mode: "bypassPermissions"`), passing `vault_root`, `knowledge_folder`, `resources_folder`, `areas_folder`, and `projects_folder`. The agent scans the full vault and returns connection suggestions. Once it returns, skip Steps 3–5 and proceed to Step 6.
+
+For ≤20 notes: continue with Step 3.
+
 ---
 
 ## Step 3: Find Connections
@@ -109,6 +119,3 @@ If the user asks to retro-tag existing notes (e.g. "update all notes in 01-proje
 
 ---
 
-## Delegation
-
-This skill uses the Knowledge Linker agent for deep vault scans. The agent is invoked automatically when scanning more than 20 notes.

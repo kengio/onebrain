@@ -115,15 +115,15 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 | `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands or skills are available, or what the agent can do |
 
-**Background Agents** — These agents live in `.claude/plugins/onebrain/agents/` and are dispatched automatically by skills. They are never invoked directly by the user.
+**Agents** — These agents live in `.claude/plugins/onebrain/agents/` and are dispatched automatically by skills. They are never invoked directly by the user.
 
-| Agent File | Dispatched by | Purpose |
-|-----------|--------------|---------|
-| `knowledge-linker.md` | `/connect` | Find and add wikilinks between related notes |
-| `link-suggester.md` | `/learn` | Auto-add up to 3 wikilinks to newly written notes |
-| `tag-suggester.md` | `/capture`, `/reading-notes` | Auto-add up to 3 tags from vault vocabulary to new notes |
-| `inbox-classifier.md` | `/consolidate` | Pre-classify inbox notes with folder/subfolder/link recommendations |
-| `task-extractor.md` | `/braindump` | Extract action items and format them as vault tasks |
+| Agent File | Dispatched by | Mode | Purpose |
+|-----------|--------------|------|---------|
+| `knowledge-linker.md` | `/connect` | foreground | Find and add wikilinks between related notes |
+| `link-suggester.md` | `/learn` | background | Auto-add up to 3 wikilinks to newly written notes |
+| `tag-suggester.md` | `/capture`, `/reading-notes` | background | Auto-add up to 3 tags from vault vocabulary to new notes |
+| `inbox-classifier.md` | `/consolidate` | foreground parallel | Pre-classify inbox notes with folder/subfolder/link recommendations |
+| `task-extractor.md` | `/braindump` | background | Extract action items and format them as vault tasks |
 
 **Skill Routing:** When a user message clearly maps to a skill above, invoke it directly : no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. When trigger conditions overlap, prefer the lighter-weight skill (e.g. `/capture` over `/braindump`, `/bookmark` over `/summarize`). Skills marked "manual only" require explicit `/command` always.
 
@@ -260,7 +260,7 @@ Main agent is now ready to respond to the user.
 
 ### Phase 2 : Background Sub-agent
 
-The sub-agent receives the payload from Phase 1 and performs all work that requires multiple file reads. It does NOT read MEMORY.md — `active_tasks` are passed in the prompt. All folder values in the payload are relative to `vault_root`; construct full paths as `vault_root/folder_value`.
+The sub-agent receives the payload from Phase 1 and performs all work that requires multiple file reads. It does NOT read MEMORY.md for content — `active_tasks` are passed in the prompt. It may count lines in MEMORY.md for the overflow guard (Step 5). All folder values in the payload are relative to `vault_root`; construct full paths as `vault_root/folder_value`.
 
 **Sub-agent steps:**
 
@@ -367,7 +367,7 @@ When the background sub-agent returns, the main agent sends exactly one follow-u
 
 1. Display the `briefing` text
 2. If `orphan_action` is `prompt_wrapup:{N}`: append `📋 {N} checkpoints : /wrapup?`
-3. If `context_hints` is non-empty: read each file as `vault_root/hint_path` into context (do not display anything to the user). If any file cannot be read, skip it.
+3. If `context_hints` is non-empty: read each file as `vault_root/hint_path` into context (do not display anything to the user). If any file cannot be read, skip that file.
 4. If `stale_notes` is non-empty: append to the briefing message:
    ```
    **Stale projects (30+ days):**

@@ -51,11 +51,6 @@ created: YYYY-MM-DD
 
 [Full text of what the user shared, lightly formatted]
 
-## Extracted Tasks
-
-- [ ] [task 1] 📅 YYYY-MM-DD
-- [ ] [task 2] 📅 YYYY-MM-DD
-
 ## Ideas
 
 - [idea 1]
