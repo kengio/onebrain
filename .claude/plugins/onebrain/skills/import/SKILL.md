@@ -19,15 +19,13 @@ Usage:
 
 ### Step 1: Resolve source and parse flags
 
-Resolve folders from `vault.yml` (read the file if it exists at the vault root):
+Resolve additional folders from `vault.yml` (read the file if it exists at the vault root):
 - If `vault.yml` does not exist: use all defaults below.
 - If `vault.yml` exists but cannot be parsed: report the error and stop : do not proceed with unknown folder paths.
-- `folders.inbox` → default: `00-inbox` (vault inbox; used to derive import staging path)
-- `folders.import_inbox` → default: `[inbox_folder]/imports` (import staging folder; substituting the resolved `[inbox_folder]` value)
-- `folders.resources` → default: `04-resources` (output folder for notes)
+- `folders.import_inbox` → default: `[inbox_folder]/imports` (import staging folder; substituting the resolved `[inbox_folder]` placeholder)
 - `folders.attachments` → default: `attachments` (for --attach copies)
 
-Use these resolved values throughout. Store as `[inbox_folder]`, `[resources_folder]`, `[attachments_folder]`.
+Use `[inbox_folder]` and `[resources_folder]` from session config. Store resolved `[attachments_folder]` from vault.yml above.
 
 Parse arguments:
 - Extract `--attach` flag if present (remove from path consideration)

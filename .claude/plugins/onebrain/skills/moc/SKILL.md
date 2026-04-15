@@ -17,23 +17,7 @@ Usage:
 
 ## Step 1: Read vault configuration
 
-Read `vault.yml` from the current working directory. Extract folder paths with these defaults if keys are absent:
-
-| Key | Default |
-|-----|---------|
-| `folders.inbox` | `00-inbox` |
-| `folders.projects` | `01-projects` |
-| `folders.areas` | `02-areas` |
-| `folders.knowledge` | `03-knowledge` |
-| `folders.resources` | `04-resources` |
-| `folders.agent` | `05-agent` |
-| `folders.archive` | `06-archive` |
-| `folders.logs` | `07-logs` |
-
-If `vault.yml` does not exist, use all defaults and warn the user:
-> "vault.yml not found : using default folder paths. Run `/onboarding` to set up your vault configuration."
-
-If `vault.yml` exists but cannot be read or parsed, stop immediately and tell the user:
+Read `vault.yml` from the current working directory. If it cannot be read or parsed, stop immediately and tell the user:
 > "vault.yml exists but could not be parsed : aborting. Check vault.yml for syntax errors and try again. Error: [error]."
 
 Store `moc_path = {vault_root}/MOC.md`.
@@ -44,11 +28,11 @@ Store `moc_path = {vault_root}/MOC.md`.
 
 Collect the following using Glob to count `.md` files:
 
-- **projects_count** : `.md` files under `[folders.projects]/` (recursive)
-- **areas_count** : `.md` files under `[folders.areas]/` (recursive)
-- **knowledge_count** : `.md` files under `[folders.knowledge]/` (recursive)
-- **resources_count** : `.md` files under `[folders.resources]/` (recursive)
-- **inbox_count** : `.md` files directly in `[folders.inbox]/` (non-recursive, direct children only)
+- **projects_count** : `.md` files under `[projects_folder]/` (recursive)
+- **areas_count** : `.md` files under `[areas_folder]/` (recursive)
+- **knowledge_count** : `.md` files under `[knowledge_folder]/` (recursive)
+- **resources_count** : `.md` files under `[resources_folder]/` (recursive)
+- **inbox_count** : `.md` files directly in `[inbox_folder]/` (non-recursive, direct children only)
 - **focus_note** : the single most recently modified `.md` file across projects, areas, knowledge, and resources folders. Store its display name (filename without `.md` extension) and its vault-relative path for use as a wikilink.
 
 If a folder does not exist on disk, use count 0 for that folder : this is expected for new vaults.
@@ -90,13 +74,13 @@ Write the complete file. Replace every placeholder in the template with actual v
 |------------|-------|
 | `CREATED_DATE` | preserved `created:` date or today |
 | `TODAY` | today's date (YYYY-MM-DD) |
-| `PROJECTS_FOLDER` | `folders.projects` value |
-| `AREAS_FOLDER` | `folders.areas` value |
-| `KNOWLEDGE_FOLDER` | `folders.knowledge` value |
-| `RESOURCES_FOLDER` | `folders.resources` value |
-| `AGENT_FOLDER` | `folders.agent` value |
-| `LOGS_FOLDER` | `folders.logs` value |
-| `ARCHIVE_FOLDER` | `folders.archive` value |
+| `PROJECTS_FOLDER` | `[projects_folder]` |
+| `AREAS_FOLDER` | `[areas_folder]` |
+| `KNOWLEDGE_FOLDER` | `[knowledge_folder]` |
+| `RESOURCES_FOLDER` | `[resources_folder]` |
+| `AGENT_FOLDER` | `[agent_folder]` |
+| `LOGS_FOLDER` | `[logs_folder]` |
+| `ARCHIVE_FOLDER` | `[archive_folder]` |
 | `PROJECTS_COUNT` | projects_count |
 | `AREAS_COUNT` | areas_count |
 | `KNOWLEDGE_COUNT` | knowledge_count |

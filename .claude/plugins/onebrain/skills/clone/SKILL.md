@@ -14,14 +14,7 @@ Usage: `/clone`
 
 ---
 
-## Step 1: Read vault.yml
-
-If vault.yml exists, read it and extract `folders.agent`. Default to `05-agent` if the file does not exist or the key is absent.
-Set `agent_folder` for all paths below.
-
----
-
-## Step 2: Regenerate CLONE.md
+## Step 1: Regenerate CLONE.md
 
 Write `[agent_folder]/CLONE.md` (overwrite if it exists):
 
@@ -47,7 +40,7 @@ updated: YYYY-MM-DD
 
 ---
 
-## Step 3: Display Clone Summary
+## Step 2: Display Clone Summary
 
 Show the user what will be cloned:
 > **Ready to clone:**
@@ -60,7 +53,7 @@ Show the user what will be cloned:
 
 ---
 
-## Step 4: Ask Clone Method
+## Step 3: Ask Clone Method
 
 Ask:
 > How would you like to clone?
@@ -69,7 +62,7 @@ Ask:
 
 ---
 
-## Step 5a: Folder Copy
+## Step 4a: Folder Copy
 
 If the user chose option 1:
 
@@ -85,7 +78,7 @@ If the user chose option 1:
 
 ---
 
-## Step 5b: Display Paths
+## Step 4b: Display Paths
 
 If the user chose option 2:
 

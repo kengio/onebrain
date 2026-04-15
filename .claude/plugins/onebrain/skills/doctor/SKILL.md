@@ -19,17 +19,7 @@ Usage:
 
 ## Step 1: Read vault.yml
 
-Extract folder paths and assign these variables for all steps below:
-- `[agent_folder]` = `folders.agent` (default: `05-agent`)
-- `[logs_folder]` = `folders.logs` (default: `07-logs`)
-- `[inbox_folder]` = `folders.inbox` (default: `00-inbox`)
-- `[projects_folder]` = `folders.projects` (default: `01-projects`)
-- `[areas_folder]` = `folders.areas` (default: `02-areas`)
-- `[knowledge_folder]` = `folders.knowledge` (default: `03-knowledge`)
-- `[resources_folder]` = `folders.resources` (default: `04-resources`)
-- `[qmd_collection]` = `qmd_collection`
-
-If vault.yml is missing, flag immediately:
+Read `vault.yml`. If it is missing, flag immediately:
 > ⛔ vault.yml not found — OneBrain may not be configured correctly.
 
 ---

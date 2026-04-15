@@ -19,15 +19,7 @@ If not, ask:
 
 ---
 
-## Step 2: Read vault.yml
-
-If vault.yml exists, read it and extract:
-- `folders.agent` → `[agent_folder]` (default: `05-agent`)
-- `qmd_collection` → `[qmd_collection]` (used in Step 6 to update the qmd index; if absent, qmd update is skipped)
-
----
-
-## Step 3: Classify the Input
+## Step 2: Classify the Input
 
 Apply this rule to determine the destination:
 
@@ -58,7 +50,7 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 ---
 
-## Step 4: Determine File Name
+## Step 3: Determine File Name
 
 **For `context/` notes:**
 - File name: `Topic Name.md` (Title Case, by topic)
@@ -73,7 +65,7 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 ---
 
-## Step 5: Contradiction Check
+## Step 4: Contradiction Check
 
 Before writing, search for potential conflicts with existing knowledge:
 
@@ -105,7 +97,7 @@ How do you want to handle this?
 
 ---
 
-## Step 6: Write the Note
+## Step 5: Write the Note
 
 **For `context/` notes:**
 
@@ -141,7 +133,7 @@ After writing, run `qmd update -c [qmd_collection]` if qmd is available (keeps t
 
 ---
 
-## Step 7: Confirm
+## Step 6: Confirm
 
 Report what was saved:
 > Learned: "[short summary]"
