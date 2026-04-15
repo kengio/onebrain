@@ -35,7 +35,7 @@ TREE_JSON=$(curl -sf "${API_TREE}" 2>/dev/null) || {
   exit 1
 }
 
-# Parse GitHub tree JSON — cross-platform fallback chain (python3 → python → node → grep/sed)
+# Parse GitHub tree JSON — cross-platform fallback chain (python3 → python → node)
 _parse_tree() {
   local input="$1"
   if command -v python3 &>/dev/null; then
@@ -53,14 +53,13 @@ for item in json.load(sys.stdin).get('tree', []):
   elif command -v node &>/dev/null; then
     printf '%s' "${input}" | node -e "
 let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
-  JSON.parse(d).tree.filter(i=>i.type==='blob').forEach(i=>console.log(i.path))
+  const obj=JSON.parse(d);
+  const tree=Array.isArray(obj.tree)?obj.tree:[];
+  tree.filter(i=>i.type==='blob').forEach(i=>console.log(i.path))
 })"
   else
-    # Fallback: split on object boundaries, extract path from blob entries
-    printf '%s' "${input}" | tr '{}' '\n' \
-      | grep '"type":"blob"' \
-      | grep -o '"path":"[^"]*"' \
-      | sed 's/"path":"//;s/"$//'
+    echo "ERROR: Python (python3/python) and Node.js are unavailable. Install either to use /update." >&2
+    exit 1
   fi
 }
 
@@ -69,6 +68,10 @@ ALL_PATHS=$(_parse_tree "${TREE_JSON}") || {
   echo "ERROR: Could not parse file list from GitHub (unexpected response format)."
   exit 1
 }
+if [[ -z "${ALL_PATHS}" ]]; then
+  echo "ERROR: File list parsed but returned no paths — API response may be empty or rate-limited."
+  exit 1
+fi
 
 # Allowlist
 ALLOW_FILES=(".gitignore")
@@ -91,7 +94,11 @@ compare_and_apply() {
 
   if [[ ! -f "${local_path}" ]]; then
     if [[ "${APPLY}" == true ]]; then
-      mkdir -p "$(dirname "${local_path}")"
+      if ! mkdir -p "$(dirname "${local_path}")" 2>/dev/null; then
+        FAILED+=("${path}")
+        rm -f "${tmp_file}"
+        return
+      fi
       if cp "${tmp_file}" "${local_path}" 2>/dev/null; then
         ADDED+=("${path}")
       else
@@ -124,7 +131,7 @@ done
 
 # Process allowlisted directories
 for dir in "${ALLOW_DIRS[@]}"; do
-  dir_paths=$(echo "${ALL_PATHS}" | grep "^${dir}/") || true
+  dir_paths=$(echo "${ALL_PATHS}" | grep -F "${dir}/") || true
 
   while IFS= read -r path; do
     [[ -z "${path}" ]] && continue
