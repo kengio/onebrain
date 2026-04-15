@@ -1,6 +1,6 @@
 ---
 name: Knowledge Linker
-description: Scans vault for unlinked notes and suggests wikilink connections between related content
+description: "Scans vault for unlinked notes and suggests wikilink connections between related content"
 color: blue
 ---
 
