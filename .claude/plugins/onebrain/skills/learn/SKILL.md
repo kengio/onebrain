@@ -22,7 +22,7 @@ If not, ask:
 ## Step 2: Read vault.yml
 
 If vault.yml exists, read it and extract:
-- `folders.agent` → `[agent_folder]` (default: `05-agent`)
+- `folders.agent` → `[agent_folder]` (default: `[agent_folder]`)
 - `qmd_collection` → `[qmd_collection]` (used in Step 6 to update the qmd index; if absent, qmd update is skipped)
 
 ---

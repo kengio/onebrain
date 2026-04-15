@@ -22,7 +22,7 @@ If not, ask:
 
 ## Step 2: Fetch the Page
 
-**Resolve the resources folder first:** read `vault.yml` for `folders.resources`, defaulting to `04-resources`. Store as `[resources_folder]`.
+**Resolve the resources folder first:** read `vault.yml` for `folders.resources`, defaulting to `[resources_folder]`. Store as `[resources_folder]`.
 
 Fetch the page content. Extract:
 
@@ -94,7 +94,7 @@ Say in one line:
 
 If the user asks to move or recategorize a bookmark:
 
-1. Resolve file path using `[resources_folder]` from Step 2 if in the same session, otherwise read `vault.yml` for `folders.resources` (default `04-resources`)
+1. Resolve file path using `[resources_folder]` from Step 2 if in the same session, otherwise read `vault.yml` for `folders.resources` (default `[resources_folder]`)
 2. Find the entry by name, or use the last bullet for "last bookmark"
 3. Remove from current section; append to target section (create `##` / `###` as needed)
 4. Refresh `updated` in frontmatter

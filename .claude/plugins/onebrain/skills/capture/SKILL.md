@@ -24,11 +24,11 @@ Classify the content : do not ask, infer from context:
 
 | Type | Destination |
 |------|-------------|
-| Fleeting note / rough idea | `00-inbox/YYYY-MM-DD-[slug].md` |
-| Personal insight / synthesis | `03-knowledge/[best-subfolder]/[Topic Name].md` |
-| External reference / source | `04-resources/[best-subfolder]/[Topic Name].md` |
-| Ongoing responsibility | `02-areas/[best-subfolder]/[Topic Name].md` |
-| Project update | append to `01-projects/[subfolder]/[Project Name].md` |
+| Fleeting note / rough idea | `[inbox_folder]/YYYY-MM-DD-[slug].md` |
+| Personal insight / synthesis | `[knowledge_folder]/[best-subfolder]/[Topic Name].md` |
+| External reference / source | `[resources_folder]/[best-subfolder]/[Topic Name].md` |
+| Ongoing responsibility | `[areas_folder]/[best-subfolder]/[Topic Name].md` |
+| Project update | append to `[projects_folder]/[subfolder]/[Project Name].md` |
 
 **For subfolders:** glob existing subfolders in the target folder and pick the best fit. If none match, create a new kebab-case name (1–2 words). Do not ask : decide and proceed.
 
@@ -44,7 +44,7 @@ Search for related notes (use qmd if available, otherwise Glob `[knowledge_folde
 
 **For inbox (fleeting note):**
 
-File: `00-inbox/YYYY-MM-DD-[slug].md`
+File: `[inbox_folder]/YYYY-MM-DD-[slug].md`
 
 ```markdown
 ---

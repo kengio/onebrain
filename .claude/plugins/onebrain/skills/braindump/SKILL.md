@@ -27,7 +27,7 @@ Silently analyze and classify each item:
 | **Task** | Something to do | Extract as task with date |
 | **Idea** | Creative or speculative thought | File to inbox |
 | **Note** | Fact, reference, or information | File to inbox |
-| **Project** | Something needing a dedicated note | Create/update in 01-projects/ |
+| **Project** | Something needing a dedicated note | Create/update in [projects_folder]/ |
 | **Question** | Open question or uncertainty | File to inbox with `?` tag |
 | **Feeling/Reflection** | Personal reflection or emotion | File to inbox |
 

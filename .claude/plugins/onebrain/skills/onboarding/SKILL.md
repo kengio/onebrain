@@ -176,7 +176,7 @@ If the write or append fails, tell the user: "Could not update CLAUDE.md. Please
 
 ## Step 9: Generate MEMORY.md
 
-Write `05-agent/MEMORY.md` with personalized content. If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure `05-agent/` is writable and try again." Do not proceed to Step 10.
+Write `[agent_folder_default]/MEMORY.md` with personalized content (using the hardcoded default `05-agent` since vault.yml does not exist yet). If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure the agent folder is writable and try again." Do not proceed to Step 10.
 
 > **Note:** vault.yml is not written until Step 11, so this step hardcodes the default agent folder path. Do not change this to use vault.yml : the file doesn't exist yet at this point.
 
@@ -466,7 +466,7 @@ For each of `GEMINI.md` and `AGENTS.md`:
 
 ## Path B : Step 10: Write MEMORY.md
 
-> **Note:** If `vault.yml` already exists (the edge case where plugin dir was missing), read its `agent` key under the `folders` mapping (i.e., `folders.agent` in dot-notation) to determine the agent folder. If `vault.yml` does not exist, is unreadable, or lacks the `folders.agent` key, default to `05-agent`. If `vault.yml` does not exist yet (normal first-time Path B), use `05-agent` : vault.yml is not written until Step 12.
+> **Note:** If `vault.yml` already exists (the edge case where plugin dir was missing), read its `agent` key under the `folders` mapping (i.e., `folders.agent` in dot-notation) to determine the agent folder. If `vault.yml` does not exist, is unreadable, or lacks the `folders.agent` key, default to `[agent_folder]`. If `vault.yml` does not exist yet (normal first-time Path B), use the hardcoded default `05-agent` : vault.yml is not written until Step 12.
 
 Check if `[agent_folder]/MEMORY.md` already exists:
 

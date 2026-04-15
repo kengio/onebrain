@@ -53,10 +53,10 @@ Read the file fully. Identify:
 **Secondary signal (for all other notes):** Apply the content-type rule below.
 
 Classify the item and route it to the appropriate folder:
-- **Your own synthesis, insight, or conclusion** → `03-knowledge/[subfolder]/`
-- **Reference material, external info, or source notes** → `04-resources/[subfolder]/`
-- **Project-specific work** → `01-projects/[subfolder]/`
-- **Ongoing responsibility (something you maintain over time, not a one-time insight)** → `02-areas/` : examples: health tracking, finances, career development, relationships
+- **Your own synthesis, insight, or conclusion** → `[knowledge_folder]/[subfolder]/`
+- **Reference material, external info, or source notes** → `[resources_folder]/[subfolder]/`
+- **Project-specific work** → `[projects_folder]/[subfolder]/`
+- **Ongoing responsibility (something you maintain over time, not a one-time insight)** → `[areas_folder]/` : examples: health tracking, finances, career development, relationships
 
 Confirm routing with the user for the first 3 items. After that, proceed autonomously : or if the user says 'stop and confirm', return to confirmation mode for the next item.
 > `[filename]`: This looks like [classification] : I'd route it to `[destination-folder]/`. Does that work, or would you prefer a different folder?

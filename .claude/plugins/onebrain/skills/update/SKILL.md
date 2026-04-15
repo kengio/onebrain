@@ -114,7 +114,7 @@ If the output contains `status: partial_failure`, report which files failed and 
 
 After applying updates, check for the old MEMORY.md location:
 
-1. Read `vault.yml` to determine `agent_folder` (default: `05-agent`)
+1. Read `vault.yml` to determine `agent_folder` (default: `[agent_folder]`)
 2. Check if `MEMORY.md` exists at the vault root
 3. Check if `[agent_folder]/MEMORY.md` exists
 
@@ -156,7 +156,7 @@ updated: YYYY-MM-DD
 
 ## Step 4c: Create Missing Vault Folders
 
-Resolve `[inbox_folder]` from `vault.yml` `folders.inbox` (default: `00-inbox`) and `[attachments_folder]` from `vault.yml` `folders.attachments` (default: `attachments`) : both were already read in Step 4b.
+Resolve `[inbox_folder]` from `vault.yml` `folders.inbox` (default: `[inbox_folder]`) and `[attachments_folder]` from `vault.yml` `folders.attachments` (default: `attachments`) : both were already read in Step 4b.
 
 Ensure these folders exist (create with `.gitkeep` if missing, report only new ones):
 
