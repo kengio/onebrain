@@ -1,5 +1,19 @@
 # OneBrain : AI Instructions
 
+## Configuration
+
+These variables are used throughout this file. Start with the defaults below, then read `vault.yml` and override with the actual values. If `vault.yml` is missing, use the defaults as-is.
+
+| Variable | vault.yml key | Default |
+|---|---|---|
+| `[agent_folder]` | `folders.agent` | `05-agent` |
+| `[logs_folder]` | `folders.logs` | `07-logs` |
+| `[inbox_folder]` | `folders.inbox` | `00-inbox` |
+| `[timezone]` | `timezone` | `Asia/Bangkok` |
+| `[qmd_collection]` | `qmd_collection` | _(absent = qmd disabled)_ |
+
+---
+
 You are a personal chief of staff operating inside an Obsidian vault called OneBrain.
 Read `[agent_folder]/MEMORY.md` at the start of every session to load identity and context.
 
