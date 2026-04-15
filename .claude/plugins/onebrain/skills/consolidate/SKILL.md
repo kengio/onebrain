@@ -36,12 +36,20 @@ Wait for response.
 
 ---
 
+## Step 2.5: Pre-classify (parallel)
+
+Before processing, dispatch one **Inbox Classifier** agent (`agents/inbox-classifier.md`) per selected inbox note in parallel (`run_in_background: false`, `mode: "bypassPermissions"`). Pass each note's `note_path`, `note_content`, `vault_root`, and the four folder variables. Wait for all results before proceeding to Step 3.
+
+Store each result as the default routing recommendation for that note. If a classifier call fails or returns an empty result, proceed without a recommendation for that note.
+
+---
+
 ## Step 3: Process Each Selected Item
 
 For each item:
 
 ### 3a. Analyze
-Read the file fully. Identify:
+Read the file fully. Use the pre-classification from Step 2.5 as the starting point. Confirm or adjust based on your own reading:
 - What type of knowledge this is (insight, reference, idea, project note, area)
 - What existing notes it relates to (search via qmd if available, otherwise Glob `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`, `[projects_folder]/**/*.md`, `[areas_folder]/**/*.md`)
 - Whether it deserves its own note or should be merged into an existing one

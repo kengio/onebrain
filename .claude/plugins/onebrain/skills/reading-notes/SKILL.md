@@ -129,7 +129,13 @@ Populate `## Related` by searching for vault notes related to the book's topic (
 
 ---
 
-## Step 6: Follow Up
+## Step 6: Suggest Tags (background)
+
+After writing, dispatch the **Tag Suggester** agent (`agents/tag-suggester.md`) as a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`), passing `new_note_path`, `new_note_content`, `vault_root`, and the four folder variables. Proceed to Follow Up immediately.
+
+---
+
+## Step 7: Follow Up
 
 > Notes saved to `[resources_folder]/[subfolder]/[Title] : Notes.md`.
 >

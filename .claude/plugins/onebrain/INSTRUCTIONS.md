@@ -121,6 +121,9 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 |-----------|--------------|---------|
 | `knowledge-linker.md` | `/connect` | Find and add wikilinks between related notes |
 | `link-suggester.md` | `/learn` | Auto-add up to 3 wikilinks to newly written notes |
+| `tag-suggester.md` | `/capture`, `/reading-notes` | Auto-add up to 3 tags from vault vocabulary to new notes |
+| `inbox-classifier.md` | `/consolidate` | Pre-classify inbox notes with folder/subfolder/link recommendations |
+| `task-extractor.md` | `/braindump` | Extract action items and format them as vault tasks |
 
 **Skill Routing:** When a user message clearly maps to a skill above, invoke it directly : no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. When trigger conditions overlap, prefer the lighter-weight skill (e.g. `/capture` over `/braindump`, `/bookmark` over `/summarize`). Skills marked "manual only" require explicit `/command` always.
 

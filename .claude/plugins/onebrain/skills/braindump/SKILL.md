@@ -84,7 +84,13 @@ If any item is a direct update, task, or decision for an active project in MEMOR
 
 ---
 
-## Step 5: Confirm
+## Step 5: Extract Tasks (background)
+
+After writing, dispatch the **Task Extractor** agent (`agents/task-extractor.md`) as a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`), passing `note_path`, `note_content`, `vault_root`, `projects_folder`, `inbox_folder`, and `today` (today's date as YYYY-MM-DD). Proceed to Confirm immediately.
+
+---
+
+## Step 6: Confirm
 
 Say in one line:
-> Filed to `[inbox_folder]/YYYY-MM-DD-braindump.md`. [If tasks: Extracted N tasks.] [If project link: Added note to "Project".]
+> Filed to `[inbox_folder]/YYYY-MM-DD-braindump.md`. [If project link: Added note to "Project".]
