@@ -1,6 +1,6 @@
 ---
 name: distill
-description: Aggregate notes from multiple sessions or sources on a specific topic into a single structured digest note in the knowledge base
+description: "Aggregate notes from multiple sessions or sources on a specific topic into a single structured digest note in the knowledge base"
 ---
 
 # Distill

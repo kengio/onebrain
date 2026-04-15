@@ -1,6 +1,6 @@
 ---
 name: help
-description: List all available OneBrain commands with descriptions and use cases. Invoke when user asks what you can do, wants to see commands, or seems confused about capabilities.
+description: "List all available OneBrain commands with descriptions and use cases. Invoke when user asks what you can do, wants to see commands, or seems confused about capabilities."
 ---
 
 # /help : Available Commands

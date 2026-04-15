@@ -1,6 +1,6 @@
 ---
 name: doctor
-description: Diagnose vault and plugin health — checks broken links, orphan notes, stale MEMORY.md entries, inbox backlog, and plugin config validity
+description: "Diagnose vault and plugin health — checks broken links, orphan notes, stale MEMORY.md entries, inbox backlog, and plugin config validity"
 ---
 
 # Doctor

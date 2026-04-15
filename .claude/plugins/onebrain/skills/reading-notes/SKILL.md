@@ -1,6 +1,6 @@
 ---
 name: reading-notes
-description: Process a book or article into structured progressive summary notes saved to the resources folder
+description: "Process a book or article into structured progressive summary notes saved to the resources folder"
 ---
 
 # Reading Notes

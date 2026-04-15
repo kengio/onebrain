@@ -1,6 +1,6 @@
 ---
 name: wrapup
-description: Wrap up and save the current session summary to the session log
+description: "Wrap up and save the current session summary to the session log"
 ---
 
 # Session Summary (TL;DR)

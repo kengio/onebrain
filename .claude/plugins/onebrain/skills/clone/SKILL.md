@@ -1,6 +1,6 @@
 ---
 name: clone
-description: Clone your agent's portable context (agent folder including MEMORY.md) to a folder for transfer to another vault
+description: "Clone your agent's portable context (agent folder including MEMORY.md) to a folder for transfer to another vault"
 ---
 
 # Clone

@@ -1,6 +1,6 @@
 ---
 name: research
-description: Research a topic on the web and save a structured note to the resources folder
+description: "Research a topic on the web and save a structured note to the resources folder"
 ---
 
 # Research

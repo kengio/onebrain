@@ -1,6 +1,6 @@
 ---
 name: capture
-description: Quick note capture with automatic wikilink suggestions to related existing notes
+description: "Quick note capture with automatic wikilink suggestions to related existing notes"
 ---
 
 # Capture

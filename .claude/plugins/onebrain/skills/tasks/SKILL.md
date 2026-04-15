@@ -1,6 +1,6 @@
 ---
 name: tasks
-description: Create or update the live task dashboard (TASKS.md) in Obsidian.
+description: "Create or update the live task dashboard (TASKS.md) in Obsidian."
 ---
 
 # Task Dashboard
