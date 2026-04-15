@@ -133,7 +133,7 @@ Collect auto-fixable issues from the Key Learnings scan:
 
 If 0 issues: skip this pass, note "No MEMORY.md issues to fix."
 
-Otherwise, confirm with AskUserQuestion:
+Otherwise, confirm with AskUserQuestion (if user declines, skip this pass — no changes written):
 > Found N MEMORY.md issues. Apply confidence score fixes?
 > - Add missing [conf:medium] baseline to untagged entries
 > - Downgrade stale confidence scores
@@ -195,7 +195,7 @@ After Pass B, report:
 
 ### Final step
 
-After all fix passes complete (whether or not all passes ran), if Pass A made any changes to MEMORY.md, re-sort the `## Key Learnings & Patterns` section in-place:
+After all fix passes complete (whether or not all passes ran), if Pass A actually wrote changes to MEMORY.md (i.e., user confirmed and fixes were applied — not skipped or declined), re-sort the `## Key Learnings & Patterns` section in-place:
 1. `[conf:high]` entries first, newest → oldest
 2. `[conf:medium]` entries next, newest → oldest
 3. `[conf:low]` entries last, newest → oldest
@@ -203,7 +203,7 @@ After all fix passes complete (whether or not all passes ran), if Pass A made an
 5. If a conf group has no entries, omit that group's comment marker entirely rather than leaving an empty section
 6. Entries with no `[conf:...]` tag: treat as `[conf:medium]` for sorting purposes only (do not add a tag)
 
-Then, if `qmd_collection` is set in vault.yml, run:
+Then, if any files were written to disk (Pass A or Pass B made confirmed changes), and `qmd_collection` is set in vault.yml, run:
 ```bash
 qmd update -c [qmd_collection]
 ```
