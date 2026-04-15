@@ -74,7 +74,6 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **vault.yml:**
 - Verify all declared folder paths exist in the vault
-- Check `timezone` is a non-empty string
 - Check `qmd_collection` is present (warn if absent — qmd search won't work)
 
 **plugin.json:**
