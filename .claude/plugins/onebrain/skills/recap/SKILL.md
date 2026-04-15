@@ -137,7 +137,17 @@ If **no**: leave in place — the file remains as the detailed version.
 
 ---
 
-## Step 6: Overflow check
+## Step 6: Sort Key Learnings
+
+After writing all entries, re-sort the `## Key Learnings & Patterns` section in-place:
+1. `[conf:high]` entries first, newest → oldest
+2. `[conf:medium]` entries next, newest → oldest
+3. `[conf:low]` entries last, newest → oldest
+4. Preserve the `<!-- conf:high -->` / `<!-- conf:medium -->` / `<!-- conf:low -->` comment markers as group separators
+
+---
+
+## Step 7: Overflow check
 
 Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
@@ -145,7 +155,7 @@ Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
 ---
 
-## Step 7: Confirm
+## Step 8: Confirm
 
 ```
 Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).

@@ -91,7 +91,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | user says bye or signals end of session |
 | `/learn` | `learn/SKILL.md` | Teach the agent : facts or behavioral preferences | user tells the agent to remember or learn something |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer | (manual only) |
-| `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | : (manual only, high impact) |
+| `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | (manual only, high impact) |
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | (manual only) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub | (manual only) |
 | `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |

@@ -195,7 +195,13 @@ After Pass B, report:
 
 ### Final step
 
-After all fix passes complete (whether or not all passes ran), if `qmd_collection` is set in vault.yml, run:
+After all fix passes complete (whether or not all passes ran), if Pass A made any changes to MEMORY.md, re-sort the `## Key Learnings & Patterns` section in-place:
+1. `[conf:high]` entries first, newest → oldest
+2. `[conf:medium]` entries next, newest → oldest
+3. `[conf:low]` entries last, newest → oldest
+4. Preserve the `<!-- conf:high -->` / `<!-- conf:medium -->` / `<!-- conf:low -->` comment markers as group separators
+
+Then, if `qmd_collection` is set in vault.yml, run:
 ```bash
 qmd update -c [qmd_collection]
 ```
