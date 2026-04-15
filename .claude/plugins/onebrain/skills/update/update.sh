@@ -159,8 +159,7 @@ done
 # Confirmed safe: Claude Code re-loads from source (directory) when cache is absent.
 # Note: PostToolUse hook errors may appear for the remainder of the current session —
 # this is expected and resolves on next session start.
-# TODO: On Windows, Claude Code may store cache under %APPDATA%\Claude\ instead of ~/.claude/;
-# verify empirically and add cygpath-based path detection if needed.
+# Claude Code uses ~/.claude/ on all platforms (macOS, Linux, Windows) — confirmed via issue #21916.
 CACHE_NOTE=""
 if [[ "${APPLY}" == true ]]; then
   CLEARED_RAW=""
