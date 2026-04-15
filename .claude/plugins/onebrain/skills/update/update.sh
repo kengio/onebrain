@@ -35,13 +35,37 @@ TREE_JSON=$(curl -sf "${API_TREE}" 2>/dev/null) || {
   exit 1
 }
 
-# Extract all blob paths
-ALL_PATHS=$(echo "${TREE_JSON}" | python3 -c "
+# Parse GitHub tree JSON — cross-platform fallback chain (python3 → python → node → grep/sed)
+_parse_tree() {
+  local input="$1"
+  if command -v python3 &>/dev/null; then
+    printf '%s' "${input}" | python3 -c "
 import json, sys
 for item in json.load(sys.stdin).get('tree', []):
     if item['type'] == 'blob':
-        print(item['path'])
-" 2>/dev/null) || {
+        print(item['path'])"
+  elif command -v python &>/dev/null; then
+    printf '%s' "${input}" | python -c "
+import json, sys
+for item in json.load(sys.stdin).get('tree', []):
+    if item['type'] == 'blob':
+        print(item['path'])"
+  elif command -v node &>/dev/null; then
+    printf '%s' "${input}" | node -e "
+let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{
+  JSON.parse(d).tree.filter(i=>i.type==='blob').forEach(i=>console.log(i.path))
+})"
+  else
+    # Fallback: split on object boundaries, extract path from blob entries
+    printf '%s' "${input}" | tr '{}' '\n' \
+      | grep '"type":"blob"' \
+      | grep -o '"path":"[^"]*"' \
+      | sed 's/"path":"//;s/"$//'
+  fi
+}
+
+# Extract all blob paths
+ALL_PATHS=$(_parse_tree "${TREE_JSON}") || {
   echo "ERROR: Could not parse file list from GitHub (unexpected response format)."
   exit 1
 }

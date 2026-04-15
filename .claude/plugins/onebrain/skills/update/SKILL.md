@@ -63,18 +63,13 @@ Ask: **"Proceed with update?"** and wait for confirmation before continuing.
 
 ## Step 2: Compare (Dry-Run)
 
-Detect the platform and run the appropriate script in dry-run mode:
+Run the update script in dry-run mode:
 
-Use the platform reported in your session context (e.g. `Platform: darwin` or `Platform: win32`) to choose the right script. If the platform is Windows, use PowerShell; otherwise use bash.
+```bash
+bash .claude/plugins/onebrain/skills/update/update.sh
+```
 
-- **Unix/macOS:**
-  ```bash
-  bash .claude/plugins/onebrain/skills/update/update.sh
-  ```
-- **Windows:**
-  ```powershell
-  powershell -File .claude/plugins/onebrain/skills/update/update.ps1
-  ```
+On Windows with Git for Windows, use the same command — Git Bash provides `bash` and all required tools.
 
 > **Note:** The dry-run and apply passes each fetch files independently from GitHub. This is intentional : scripts are stateless and require no temp storage between runs. The window between passes is small enough that mid-run upstream changes are not a practical concern for a personal tool.
 
@@ -95,16 +90,13 @@ Wait for confirmation before continuing.
 
 ## Step 3: Apply
 
-Run the update script in apply mode (same platform detection as Step 2):
+Run the update script in apply mode:
 
-- **Unix/macOS:**
-  ```bash
-  bash .claude/plugins/onebrain/skills/update/update.sh --apply
-  ```
-- **Windows** (same platform detection as Step 2):
-  ```powershell
-  powershell -File .claude/plugins/onebrain/skills/update/update.ps1 -Apply
-  ```
+```bash
+bash .claude/plugins/onebrain/skills/update/update.sh --apply
+```
+
+On Windows with Git for Windows, use the same command.
 
 If the output contains `status: partial_failure`, report which files failed and advise re-running `/update`.
 
