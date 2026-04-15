@@ -97,10 +97,12 @@ Apply this dedup table to **all** candidate entries — whether sourced from ses
 
 To merge: rewrite the existing bullet in-place to incorporate the new detail, keeping the original date.
 
-After dedup, if no new insights remain:
+After dedup, if no new insights remain (all were dropped as identical/subset — meaning no merges and no new appends occurred):
 > All insights are already captured in MEMORY.md : nothing new to add.
 
-Exit : do not write.
+Exit : do not proceed to Step 5, 6, 7, or 8.
+
+If merges occurred in Step 4 (i.e., MEMORY.md was modified in-place) but no new entries remain to append: skip the append portion of Step 5 (do not write new bullets), but still run the archive offer in Step 5, then continue to Steps 6, 7, and 8.
 
 ---
 
@@ -125,7 +127,8 @@ Set `[verified:YYYY-MM-DD]` to today's date when first written. For merged entri
 Also update the `updated:` field in the frontmatter to today's date.
 
 **Archive eligible `memory/` files:**
-"Successfully promoted" includes: (a) entries appended as new, (b) entries merged into an existing entry ("extends or refines"), and (c) entries used to supersede an existing entry ("contradicts" case) — all three count as promoted. For each file in `new_memory_files` that was promoted by either path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
+This step runs regardless of whether new entries were appended or only in-place merges/supersessions occurred.
+"Successfully promoted" includes: (a) entries appended as new, (b) entries merged into an existing entry ("extends or refines"), and (c) entries used to supersede an existing entry ("contradicts" case) — all three count as promoted. For each file in `new_memory_files` that was promoted by any path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
 > Promoted N patterns from `memory/` to MEMORY.md. These files can now be archived:
 > - `memory/YYYY-MM-DD-slug.md` — [one-line summary]
 > Archive them? (yes / no)
@@ -137,7 +140,19 @@ If **no**: leave in place — the file remains as the detailed version.
 
 ---
 
-## Step 6: Overflow check
+## Step 6: Sort Key Learnings
+
+If MEMORY.md was modified in Step 4 (merges, supersessions) or Step 5 (new appends), re-sort the `## Key Learnings & Patterns` section in-place:
+1. `[conf:high]` entries first, newest → oldest
+2. `[conf:medium]` entries next, newest → oldest
+3. `[conf:low]` entries last, newest → oldest
+4. Preserve each `<!-- conf:* ... -->` comment line exactly as-is (the markers may have additional text after the tier name, e.g. `<!-- conf:high — empirically confirmed -->`); do not strip or rewrite them
+5. If a conf group has no entries, omit that group's comment marker entirely rather than leaving an empty section
+6. Entries with no `[conf:...]` tag: treat as `[conf:medium]` for sorting purposes only (do not add a tag)
+
+---
+
+## Step 7: Overflow check
 
 Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
@@ -145,13 +160,21 @@ Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
 ---
 
-## Step 7: Confirm
+## Step 8: Confirm
 
+Use the appropriate message based on what occurred:
+
+If new entries were appended (with or without merges):
 ```
 Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).
 ```
 
-If nothing was written (all deduped):
+If only in-place merges occurred (no new appends):
+```
+Recap complete. Updated M existing entries in MEMORY.md (merged). No new insights appended.
+```
+
+If nothing was written (all were deduped as identical/subset — no merges, no new entries):
 ```
 Recap complete. No new insights to add : all N insights already captured in MEMORY.md.
 ```

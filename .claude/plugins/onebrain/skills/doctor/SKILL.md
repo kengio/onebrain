@@ -74,8 +74,8 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **vault.yml:**
 - Verify all declared folder paths exist in the vault
-- Check `timezone` is a non-empty string
 - Check `qmd_collection` is present (warn if absent — qmd search won't work)
+- Check if `timezone` key is present — it is no longer used; warn the user to remove it
 
 **plugin.json:**
 - Read `.claude/plugins/onebrain/.claude-plugin/plugin.json`
@@ -106,6 +106,7 @@ Use this format:
 🟢 vault.yml: OK
 🟢 plugin.json: OK (vX.X.X)
 🔴 qmd_collection: missing — qmd search will not work
+🟡 vault.yml: `timezone` key found — no longer used, safe to remove
 
 ---
 N issues found (M critical 🔴, P warnings 🟡)
@@ -121,7 +122,7 @@ If no issues:
 
 ## Step 4: Auto-fix (`--fix` flag only)
 
-Run both fix passes. Each pass confirms with the user before writing.
+Run all fix passes. Each pass confirms with the user before writing.
 
 ### Pass A: MEMORY.md confidence scores
 
@@ -133,7 +134,7 @@ Collect auto-fixable issues from the Key Learnings scan:
 
 If 0 issues: skip this pass, note "No MEMORY.md issues to fix."
 
-Otherwise, confirm with AskUserQuestion:
+Otherwise, confirm with AskUserQuestion (if user declines, skip this pass — no changes written):
 > Found N MEMORY.md issues. Apply confidence score fixes?
 > - Add missing [conf:medium] baseline to untagged entries
 > - Downgrade stale confidence scores
@@ -193,9 +194,26 @@ After Pass B, report:
 > Fixed N broken links across M files. P links could not be matched automatically — fix manually.
 > Modified files: [list of file paths that were changed]
 
+### Pass C: Deprecated vault.yml keys
+
+If `timezone` key was found in vault.yml (from Step 2 config check): confirm with AskUserQuestion:
+> `timezone` in vault.yml is no longer used — the agent now uses local machine time. Remove it?
+
+If **yes**: remove the `timezone` line from vault.yml. If **no**: leave as-is.
+
+If `timezone` was not found: skip this pass, note "No deprecated keys to clean up."
+
 ### Final step
 
-After all fix passes complete (whether or not all passes ran), if `qmd_collection` is set in vault.yml, run:
+After all fix passes complete (whether or not all passes ran), if Pass A actually wrote changes to MEMORY.md (i.e., user confirmed and fixes were applied — not skipped or declined), re-sort the `## Key Learnings & Patterns` section in-place:
+1. `[conf:high]` entries first, newest → oldest
+2. `[conf:medium]` entries next, newest → oldest
+3. `[conf:low]` entries last, newest → oldest
+4. Preserve each `<!-- conf:* ... -->` comment line exactly as-is (the markers may have additional text after the tier name, e.g. `<!-- conf:high — empirically confirmed -->`); do not strip or rewrite them
+5. If a conf group has no entries, omit that group's comment marker entirely rather than leaving an empty section
+6. Entries with no `[conf:...]` tag: treat as `[conf:medium]` for sorting purposes only (do not add a tag)
+
+Then, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml, which is not a markdown note and is not indexed by qmd), and `qmd_collection` is set in vault.yml, run:
 ```bash
 qmd update -c [qmd_collection]
 ```

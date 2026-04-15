@@ -205,7 +205,6 @@ updated: [TODAY'S DATE]
 
 **Tone:** [tone]
 **Detail level:** [detail_level]
-**Timezone:** [not set]
 
 ## Goals & Focus Areas
 
