@@ -231,7 +231,7 @@ Run before responding to any user message:
 
    **No-repeat rule** : do not ask about facts already in loaded context. If the user's message contradicts context, trust their message.
 
-4. Dispatch a **background sub-agent** (`run_in_background: true`) with this prompt payload:
+4. Dispatch a **background sub-agent** (`run_in_background: true`, `mode: "bypassPermissions"`) with this prompt payload:
 
    ```
    vault_root: [absolute path to the directory containing vault.yml]
