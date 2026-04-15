@@ -30,7 +30,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 **If TASKS.md does not exist:**
 
-Create it with this exact content (replace `YYYY-MM-DD` with today's date and substitute all five bracket-notation variables : `[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]` : with actual values extracted in Step 1; `.claude` is a hardcoded literal and requires no substitution):
+Create it with this exact content (replace `YYYY-MM-DD` with today's date and substitute all five bracket-notation variables : `[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]` : with their session config values; `.claude` is a hardcoded literal and requires no substitution):
 
 `````markdown
 ---
@@ -129,7 +129,7 @@ Read the file. Extract `created:` from the frontmatter : if absent, use today's 
 Overwrite the entire file using the same template as above, substituting:
 - `created:` with the extracted (or today's) date
 - `updated:` with today's date
-- All five bracket-notation variables from the Step 1 table (`[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]`) with actual values extracted from `vault.yml`
+- All five bracket-notation variables (`[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]`) with their session config values
 
 If the write fails, stop immediately and tell the user:
 

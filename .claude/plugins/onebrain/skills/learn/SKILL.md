@@ -69,7 +69,7 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 Before writing, search for potential conflicts with existing knowledge:
 
-1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases over generic single words. If only generic keywords are available, skip and proceed to Step 6.
+1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases over generic single words. If only generic keywords are available, skip and proceed to Step 5.
 2. Search `[agent_folder]/context/` and `[agent_folder]/memory/` for those keywords (use qmd if available, otherwise Grep).
 3. Read any matching files
 4. Determine if any existing entry **directly contradicts** the new fact — same topic, opposite claim
@@ -93,7 +93,7 @@ How do you want to handle this?
 - If **Save both**: proceed to write the new entry without modifying the old one.
 - If **Cancel**: stop and confirm cancellation to the user.
 
-**If no contradiction is found**, proceed directly to Step 6 — no user interaction needed.
+**If no contradiction is found**, proceed directly to Step 5 — no user interaction needed.
 
 ---
 
