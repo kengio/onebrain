@@ -131,7 +131,7 @@ done
 
 # Process allowlisted directories
 for dir in "${ALLOW_DIRS[@]}"; do
-  dir_paths=$(echo "${ALL_PATHS}" | grep -F "${dir}/") || true
+  dir_paths=$(printf '%s\n' "${ALL_PATHS}" | awk -v d="${dir}/" 'substr($0,1,length(d))==d') || true
 
   while IFS= read -r path; do
     [[ -z "${path}" ]] && continue
@@ -159,6 +159,8 @@ done
 # Confirmed safe: Claude Code re-loads from source (directory) when cache is absent.
 # Note: PostToolUse hook errors may appear for the remainder of the current session —
 # this is expected and resolves on next session start.
+# TODO: On Windows, Claude Code may store cache under %APPDATA%\Claude\ instead of ~/.claude/;
+# verify empirically and add cygpath-based path detection if needed.
 CACHE_NOTE=""
 if [[ "${APPLY}" == true ]]; then
   CLEARED_RAW=""
@@ -172,8 +174,12 @@ if [[ "${APPLY}" == true ]]; then
     if [[ -d "${cache_dir}" ]]; then
       for ver_dir in "${cache_dir}"/*/; do
         ver=$(basename "${ver_dir}")
-        rm -rf "${ver_dir}" 2>/dev/null || true
-        CLEARED_RAW="${CLEARED_RAW}${ver}"$'\n'
+        [[ -z "${ver}" ]] && continue
+        if rm -rf "${ver_dir}" 2>/dev/null; then
+          CLEARED_RAW="${CLEARED_RAW}${ver}"$'\n'
+        else
+          echo "WARNING: Could not remove cache dir ${ver_dir} — clear it manually if the plugin does not reload." >&2
+        fi
       done
     fi
   done
