@@ -6,14 +6,14 @@ These variables are used throughout this file. Start with the defaults below, th
 
 | Variable | vault.yml key | Default |
 |---|---|---|
-| `[agent_folder]` | `folders.agent` | `05-agent` |
-| `[logs_folder]` | `folders.logs` | `07-logs` |
 | `[inbox_folder]` | `folders.inbox` | `00-inbox` |
 | `[projects_folder]` | `folders.projects` | `01-projects` |
 | `[areas_folder]` | `folders.areas` | `02-areas` |
 | `[knowledge_folder]` | `folders.knowledge` | `03-knowledge` |
 | `[resources_folder]` | `folders.resources` | `04-resources` |
+| `[agent_folder]` | `folders.agent` | `05-agent` |
 | `[archive_folder]` | `folders.archive` | `06-archive` |
+| `[logs_folder]` | `folders.logs` | `07-logs` |
 | `[qmd_collection]` | `qmd_collection` | _(absent = qmd disabled)_ |
 
 ---
