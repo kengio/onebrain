@@ -68,7 +68,7 @@ After installation, verify with `which qmd`. If still not found, tell user to ch
 
 ### Step 5: Read archive folder from vault.yml
 
-Read vault.yml. Get `folders.archive` value (default: `06-archive`).
+Read vault.yml. Get `folders.archive` value (default: `[archive_folder]`).
 
 ### Step 6: Create the qmd collection
 

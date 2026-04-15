@@ -37,7 +37,7 @@ Silently analyze and classify each item:
 
 File immediately : do not ask for confirmation first.
 
-Create `00-inbox/YYYY-MM-DD-braindump.md`. If a file with that name already exists: glob `00-inbox/YYYY-MM-DD-braindump*.md`, count matches N, use suffix `-{N+1}` (e.g. `-2`, `-3`):
+Create `[inbox_folder]/YYYY-MM-DD-braindump.md`. If a file with that name already exists: glob `[inbox_folder]/YYYY-MM-DD-braindump*.md`, count matches N, use suffix `-{N+1}` (e.g. `-2`, `-3`):
 
 ```markdown
 ---
@@ -74,7 +74,7 @@ created: YYYY-MM-DD
 (Omit this section if no related notes are found)
 ```
 
-Find related notes via qmd if available; fallback: Glob `01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`. Omit `## Related Notes` if nothing relevant found.
+Find related notes via qmd if available; fallback: Glob `[projects_folder]/**/*.md`, `[areas_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`. Omit `## Related Notes` if nothing relevant found.
 
 ---
 
@@ -87,4 +87,4 @@ If any item is a direct update, task, or decision for an active project in MEMOR
 ## Step 5: Confirm
 
 Say in one line:
-> Filed to `00-inbox/YYYY-MM-DD-braindump.md`. [If tasks: Extracted N tasks.] [If project link: Added note to "Project".]
+> Filed to `[inbox_folder]/YYYY-MM-DD-braindump.md`. [If tasks: Extracted N tasks.] [If project link: Added note to "Project".]

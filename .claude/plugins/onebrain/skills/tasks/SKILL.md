@@ -24,11 +24,11 @@ Extract the following folder paths from `vault.yml`, storing each as a variable 
 
 | vault.yml key | Variable | Default |
 |---|---|---|
-| `folders.logs` | `[logs_folder]` | `07-logs` |
-| `folders.archive` | `[archive_folder]` | `06-archive` |
-| `folders.knowledge` | `[knowledge_folder]` | `03-knowledge` |
-| `folders.resources` | `[resources_folder]` | `04-resources` |
-| `folders.agent` | `[agent_folder]` | `05-agent` |
+| `folders.logs` | `[logs_folder]` | `[logs_folder]` |
+| `folders.archive` | `[archive_folder]` | `[archive_folder]` |
+| `folders.knowledge` | `[knowledge_folder]` | `[knowledge_folder]` |
+| `folders.resources` | `[resources_folder]` | `[resources_folder]` |
+| `folders.agent` | `[agent_folder]` | `[agent_folder]` |
 
 `.claude` is always excluded as a hardcoded literal (not in vault.yml) : it is the plugin host directory and is not user-configurable.
 

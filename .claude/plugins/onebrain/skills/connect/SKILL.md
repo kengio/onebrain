@@ -14,14 +14,14 @@ Find meaningful connections between your notes and suggest wikilinks to build a 
 Ask (or infer from context):
 > Do you want to find connections:
 > - For a **specific note** (name it)
-> - Across your entire **knowledge base** (`01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`)
+> - Across your entire **knowledge base** (`[projects_folder]/**/*.md`, `[areas_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`)
 > - For **recently added notes** (last 7 days)
 
 ---
 
 ## Step 2: Scan Notes
 
-Use qmd if available for semantic search across notes; fallback: Glob `01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`. For each note, extract:
+Use qmd if available for semantic search across notes; fallback: Glob `[projects_folder]/**/*.md`, `[areas_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`. For each note, extract:
 - Title
 - Tags (from frontmatter)
 - Key concepts mentioned (first 200 words)

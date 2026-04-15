@@ -14,8 +14,8 @@ Best run on Friday afternoon or over the weekend.
 ## Before You Begin
 
 Read `vault.yml` and extract:
-- `folders.logs` as `logs_folder` (default: `07-logs`)
-- `folders.agent` as `agent_folder` (default: `05-agent`)
+- `folders.logs` as `logs_folder` (default: `[logs_folder]`)
+- `folders.agent` as `agent_folder` (default: `[agent_folder]`)
 
 ---
 

@@ -22,12 +22,12 @@ If not, ask:
 ## Step 2: Read vault.yml
 
 Extract:
-- `folders.logs` → `[logs_folder]` (default: `07-logs`)
-- `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
-- `folders.agent` → `[agent_folder]` (default: `05-agent`)
-- `folders.inbox` → `[inbox_folder]` (default: `00-inbox`)
-- `folders.projects` → `[projects_folder]` (default: `01-projects`)
-- `folders.resources` → `[resources_folder]` (default: `04-resources`)
+- `folders.logs` → `[logs_folder]` (default: `[logs_folder]`)
+- `folders.knowledge` → `[knowledge_folder]` (default: `[knowledge_folder]`)
+- `folders.agent` → `[agent_folder]` (default: `[agent_folder]`)
+- `folders.inbox` → `[inbox_folder]` (default: `[inbox_folder]`)
+- `folders.projects` → `[projects_folder]` (default: `[projects_folder]`)
+- `folders.resources` → `[resources_folder]` (default: `[resources_folder]`)
 - `qmd_collection` → for index update after writing
 
 ---

@@ -36,7 +36,7 @@ Classify the content : do not ask, infer from context:
 
 ## Step 3: Find and Link Related Notes
 
-Search for related notes (use qmd if available, otherwise Glob `03-knowledge/**/*.md`, `04-resources/**/*.md`, `02-areas/**/*.md`, `01-projects/**/*.md`). Exclude the destination file. Include top 1–3 as wikilinks automatically. Omit `## Related` if nothing relevant found.
+Search for related notes (use qmd if available, otherwise Glob `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`, `[areas_folder]/**/*.md`, `[projects_folder]/**/*.md`). Exclude the destination file. Include top 1–3 as wikilinks automatically. Omit `## Related` if nothing relevant found.
 
 ---
 

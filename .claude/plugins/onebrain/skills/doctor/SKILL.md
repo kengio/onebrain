@@ -20,9 +20,9 @@ Usage:
 ## Step 1: Read vault.yml
 
 Extract folder paths and assign these variables for all steps below:
-- `[agent_folder]` = `folders.agent` (default: `05-agent`)
-- `[logs_folder]` = `folders.logs` (default: `07-logs`)
-- `[inbox_folder]` = `folders.inbox` (default: `00-inbox`)
+- `[agent_folder]` = `folders.agent` (default: `[agent_folder]`)
+- `[logs_folder]` = `folders.logs` (default: `[logs_folder]`)
+- `[inbox_folder]` = `folders.inbox` (default: `[inbox_folder]`)
 - `[qmd_collection]` = `qmd_collection`
 
 If vault.yml is missing, flag immediately:
@@ -37,14 +37,14 @@ Run all applicable checks based on flags (default: all). Collect findings before
 ### Vault Checks (`--vault`)
 
 **Broken wikilinks:**
-- Grep all `.md` files in `01-projects/`, `02-areas/`, `03-knowledge/`, `04-resources/`, `[agent_folder]/` for `\[\[.*?\]\]`
+- Grep all `.md` files in `[projects_folder]/`, `[areas_folder]/`, `[knowledge_folder]/`, `[resources_folder]/`, `[agent_folder]/` for `\[\[.*?\]\]`
 - **Skip** wikilinks found inside fenced code blocks (between ` ``` ` fences), blockquote lines (lines beginning with `>`), or inline code spans (the entire `[[...]]` is enclosed within backticks on that line)
 - For each wikilink, extract the note name: strip any `|display text` suffix **and** any `#anchor` fragment (e.g. `[[Note#section|label]]` → match name is `Note`; preserve full original text for display)
 - Check if a `.md` file with that exact name exists anywhere in the vault (case-insensitive)
 - Flag any that don't resolve; store as: `{ broken_link, display_text, anchor, source_file, source_line }` (preserving all parts for accurate replacement later)
 
 **Orphan notes:**
-- Find notes in `03-knowledge/` and `04-resources/` that have no inbound wikilinks from any other note
+- Find notes in `[knowledge_folder]/` and `[resources_folder]/` that have no inbound wikilinks from any other note
 - These may be disconnected from the knowledge graph
 - Report only — no auto-fix (linking requires semantic judgment; use /connect instead)
 

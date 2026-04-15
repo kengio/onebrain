@@ -49,7 +49,7 @@ Say:
 
 > Welcome to OneBrain : where human and AI thinking become one.
 >
-> I'm going to ask you a few quick questions to personalize your vault. This takes about 2 minutes, and you can always update your settings later by editing `05-agent/MEMORY.md` directly.
+> I'm going to ask you a few quick questions to personalize your vault. This takes about 2 minutes, and you can always update your settings later by editing `[agent_folder]/MEMORY.md` directly.
 >
 > Let's start!
 
@@ -178,7 +178,7 @@ If the write or append fails, tell the user: "Could not update CLAUDE.md. Please
 
 Write `05-agent/MEMORY.md` with personalized content. If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure `05-agent/` is writable and try again." Do not proceed to Step 10.
 
-> **Note:** vault.yml is not written until Step 11, so this step hardcodes `05-agent` as the agent folder. Do not change this to use vault.yml : the file doesn't exist yet at this point.
+> **Note:** vault.yml is not written until Step 11, so this step hardcodes the default agent folder path. Do not change this to use vault.yml : the file doesn't exist yet at this point.
 
 ```markdown
 ---
