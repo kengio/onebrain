@@ -1,6 +1,6 @@
 ---
 name: weekly
-description: Weekly reflection : review the past week's sessions, surface patterns, and plan ahead
+description: "Weekly reflection : review the past week's sessions, surface patterns, and plan ahead"
 ---
 
 # Weekly Reflection
@@ -8,14 +8,6 @@ description: Weekly reflection : review the past week's sessions, surface patter
 Review your week, surface patterns, and set intentions for the week ahead.
 
 Best run on Friday afternoon or over the weekend.
-
----
-
-## Before You Begin
-
-Read `vault.yml` and extract:
-- `folders.logs` as `logs_folder` (default: `07-logs`)
-- `folders.agent` as `agent_folder` (default: `05-agent`)
 
 ---
 

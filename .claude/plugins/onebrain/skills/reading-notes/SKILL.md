@@ -1,6 +1,6 @@
 ---
 name: reading-notes
-description: Process a book or article into structured progressive summary notes saved to the resources folder
+description: "Process a book or article into structured progressive summary notes saved to the resources folder"
 ---
 
 # Reading Notes
@@ -11,13 +11,6 @@ Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
 
 ---
 
-## Before You Begin
-
-Read `vault.yml` and extract:
-- `folders.resources` → `[resources_folder]` (default: `04-resources`)
-- `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
-
----
 
 ## Step 1: Get the Book/Article Info
 

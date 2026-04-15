@@ -1,6 +1,6 @@
 ---
 name: tasks
-description: Create or update the live task dashboard (TASKS.md) in Obsidian.
+description: "Create or update the live task dashboard (TASKS.md) in Obsidian."
 ---
 
 # Task Dashboard
@@ -20,16 +20,6 @@ Read `vault.yml` from the current working directory. The directory containing `v
 
 Then proceed with cwd as vault root.
 
-Extract the following folder paths from `vault.yml`, storing each as a variable for use in Step 2. If a key is absent, use the default shown:
-
-| vault.yml key | Variable | Default |
-|---|---|---|
-| `folders.logs` | `[logs_folder]` | `07-logs` |
-| `folders.archive` | `[archive_folder]` | `06-archive` |
-| `folders.knowledge` | `[knowledge_folder]` | `03-knowledge` |
-| `folders.resources` | `[resources_folder]` | `04-resources` |
-| `folders.agent` | `[agent_folder]` | `05-agent` |
-
 `.claude` is always excluded as a hardcoded literal (not in vault.yml) : it is the plugin host directory and is not user-configurable.
 
 ---
@@ -40,7 +30,7 @@ Determine `tasks_path = {vault_root}/TASKS.md`.
 
 **If TASKS.md does not exist:**
 
-Create it with this exact content (replace `YYYY-MM-DD` with today's date and substitute all five bracket-notation variables : `[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]` : with actual values extracted in Step 1; `.claude` is a hardcoded literal and requires no substitution):
+Create it with this exact content (replace `YYYY-MM-DD` with today's date and substitute all five bracket-notation variables : `[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]` : with their session config values; `.claude` is a hardcoded literal and requires no substitution):
 
 `````markdown
 ---
@@ -139,7 +129,7 @@ Read the file. Extract `created:` from the frontmatter : if absent, use today's 
 Overwrite the entire file using the same template as above, substituting:
 - `created:` with the extracted (or today's) date
 - `updated:` with today's date
-- All five bracket-notation variables from the Step 1 table (`[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]`) with actual values extracted from `vault.yml`
+- All five bracket-notation variables (`[logs_folder]`, `[archive_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]`) with their session config values
 
 If the write fails, stop immediately and tell the user:
 

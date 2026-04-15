@@ -1,6 +1,6 @@
 ---
 name: recap
-description: Cross-session synthesis : reads session logs, context/, and memory/ from the past 7 days, surfaces patterns and insights, and updates MEMORY.md Key Learnings. Run periodically to keep long-term memory current.
+description: "Cross-session synthesis : reads session logs, context/, and memory/ from the past 7 days, surfaces patterns and insights, and updates MEMORY.md Key Learnings. Run periodically to keep long-term memory current."
 ---
 
 # /recap : Cross-Session Synthesis
@@ -8,15 +8,6 @@ description: Cross-session synthesis : reads session logs, context/, and memory/
 Reads session logs, and any recently-created files in `context/` and `memory/`, from the past 7 days. Surfaces patterns, decisions, and insights, then updates `MEMORY.md` Key Learnings with new, deduplicated entries.
 
 **Distinct from `/wrapup`:** `/wrapup` summarizes the current session just ended. `/recap` looks back across multiple sessions to surface long-term patterns.
-
----
-
-## Before You Begin
-
-Read `vault.yml` and extract:
-- `folders.logs` as `[logs_folder]` (default: `07-logs`)
-- `folders.agent` as `[agent_folder]` (default: `05-agent`)
-- `folders.archive` as `[archive_folder]` (default: `06-archive`)
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: distill
-description: Aggregate notes from multiple sessions or sources on a specific topic into a single structured digest note in the knowledge base
+description: "Aggregate notes from multiple sessions or sources on a specific topic into a single structured digest note in the knowledge base"
 ---
 
 # Distill
@@ -19,20 +19,7 @@ If not, ask:
 
 ---
 
-## Step 2: Read vault.yml
-
-Extract:
-- `folders.logs` → `[logs_folder]` (default: `07-logs`)
-- `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
-- `folders.agent` → `[agent_folder]` (default: `05-agent`)
-- `folders.inbox` → `[inbox_folder]` (default: `00-inbox`)
-- `folders.projects` → `[projects_folder]` (default: `01-projects`)
-- `folders.resources` → `[resources_folder]` (default: `04-resources`)
-- `qmd_collection` → for index update after writing
-
----
-
-## Step 3: Gather Source Material
+## Step 2: Gather Source Material
 
 Search across the vault for notes related to the topic. Use 2–3 specific keywords or phrases from the topic (prefer proper nouns and multi-word phrases over generic single words):
 
@@ -49,7 +36,7 @@ Report to user (N = total matches across all sources; Q = project/knowledge/reso
 **If N = 0:** Stop and inform the user:
 > No notes found matching '[topic]'. Try a broader keyword or check the topic name.
 
-Exit — do not proceed to Step 4.
+Exit — do not proceed to Step 3.
 
 **If N > 20:** Too many results — the keywords may be too broad. Use AskUserQuestion:
 > Found N sources for '[topic]' — that's a lot. Do you want to:
@@ -59,11 +46,11 @@ Exit — do not proceed to Step 4.
 If user picks option 1, call AskUserQuestion immediately (do not wait or proceed):
 > Please provide more specific keywords or a date range (e.g. "focus on MCP setup decisions from March 2026"):
 
-Use the user's answer as refined search criteria and re-run the search from the top of Step 3. If the refined search still returns > 20 sources, inform the user and proceed with all N rather than asking again (one clarification cycle maximum). If user picks option 2 (continue with all N), proceed.
+Use the user's answer as refined search criteria and re-run the search from the top of Step 2. If the refined search still returns > 20 sources, inform the user and proceed with all N rather than asking again (one clarification cycle maximum). If user picks option 2 (continue with all N), proceed.
 
 ---
 
-## Step 4: Synthesize
+## Step 3: Synthesize
 
 Extract and consolidate across all sources:
 - **Core question** — what was being explored or decided?
@@ -77,7 +64,7 @@ Present a brief synthesis preview to the user before writing.
 
 ---
 
-## Step 5: Choose Destination
+## Step 4: Choose Destination
 
 Suggest a subfolder in `[knowledge_folder]/`:
 - Infer topic category (e.g. "OneBrain memory architecture" → `[knowledge_folder]/ai-systems/`)
@@ -88,7 +75,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
 
 ---
 
-## Step 6: Write the Digest Note
+## Step 5: Write the Digest Note
 
 **Before writing:** Check if `[knowledge_folder]/[subfolder]/[Topic].md` already exists.
 
@@ -158,7 +145,7 @@ If you want any lesson to persist in long-term memory, promote it manually:
 
 ---
 
-## Step 7: Update qmd Index
+## Step 6: Update qmd Index
 
 If `qmd_collection` is set in vault.yml, run:
 ```bash

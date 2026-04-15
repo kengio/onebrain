@@ -1,6 +1,6 @@
 ---
 name: qmd
-description: Set up and manage qmd search index for faster vault search. Subcommands: setup, embed, status, reindex, uninstall.
+description: "Set up and manage qmd search index for faster vault search. Subcommands: setup, embed, status, reindex, uninstall."
 ---
 
 # /qmd : qmd Search Integration
@@ -66,22 +66,18 @@ After installation, verify with `which qmd`. If still not found, tell user to ch
 2. Generate a 6-character random hex string: try `openssl rand -hex 3` first; if that fails, try `python3 -c "import secrets; print(secrets.token_hex(3))"`. If both fail, tell the user "Could not generate a unique collection name. Please run `/qmd setup` again." and stop.
 3. Collection name = `<vault-dirname>-<hex>` (e.g., `onebrain-a3f2c1`)
 
-### Step 5: Read archive folder from vault.yml
-
-Read vault.yml. Get `folders.archive` value (default: `06-archive`).
-
-### Step 6: Create the qmd collection
+### Step 5: Create the qmd collection
 
 Run:
 ```
 qmd collection add <vault-root-path> --name <collection-name> --ignore ".obsidian/**" --ignore ".claude/**" --ignore ".git/**" --ignore "docs/**" --ignore "<archive-folder>/**" --ignore "attachments/**"
 ```
 
-Where `<vault-root-path>` is the value of `$CLAUDE_PROJECT_DIR` and `<archive-folder>` is the value read in Step 5.
+Where `<vault-root-path>` is the value of `$CLAUDE_PROJECT_DIR` and `<archive-folder>` is `[archive_folder]`.
 
 If the command fails, show the error and stop.
 
-### Step 7: Add context description
+### Step 6: Add context description
 
 Run:
 ```
@@ -90,7 +86,7 @@ qmd context add "qmd://<collection-name>" "Personal Obsidian knowledge vault : n
 
 If this command fails, report the error but continue (context is optional metadata).
 
-### Step 8: Store collection name in vault.yml
+### Step 7: Store collection name in vault.yml
 
 Read vault.yml. Add `qmd_collection: <collection-name>` as a top-level key immediately after the `method:` line (before the `folders:` block). Write the full updated vault.yml back.
 
@@ -105,7 +101,7 @@ folders:
 
 If the write fails, show the error. Tell the user to manually add `qmd_collection: <collection-name>` to vault.yml. Stop.
 
-### Step 9: Run initial index
+### Step 8: Run initial index
 
 Run:
 ```
@@ -114,7 +110,7 @@ qmd update -c <collection-name>
 
 Report progress. If it fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
 
-### Step 10: Confirm completion
+### Step 9: Confirm completion
 
 Say:
 > qmd is set up! Collection `<collection-name>` is indexed and ready.

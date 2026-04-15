@@ -1,21 +1,11 @@
 ---
 name: wrapup
-description: Wrap up and save the current session summary to the session log
+description: "Wrap up and save the current session summary to the session log"
 ---
 
 # Session Summary (TL;DR)
 
 Generates a summary of this session and saves it to the logs folder for future recall.
-
----
-
-## Before You Begin
-
-Read `vault.yml` and extract:
-- `folders.logs` as `[logs_folder]` (default: `07-logs`)
-- `folders.agent` as `[agent_folder]` (default: `05-agent`)
-
-Use these variables for all file paths in the steps below.
 
 ---
 

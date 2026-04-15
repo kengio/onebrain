@@ -1,6 +1,6 @@
 ---
 name: summarize
-description: Fetch a URL and create a structured summary note saved to the resources folder. Invoke when user wants to deeply process a link, article, blog post, documentation, or paper into a permanent vault note.
+description: "Fetch a URL and create a structured summary note saved to the resources folder. Invoke when user wants to deeply process a link, article, blog post, documentation, or paper into a permanent vault note."
 ---
 
 # Summarize
@@ -11,13 +11,6 @@ Usage: `/summarize [url]`
 
 ---
 
-## Before You Begin
-
-Read `vault.yml` and extract:
-- `folders.resources` → `[resources_folder]` (default: `04-resources`)
-- `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
-
----
 
 ## Step 1: Get the URL
 

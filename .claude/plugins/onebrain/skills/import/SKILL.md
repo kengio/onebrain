@@ -1,6 +1,6 @@
 ---
 name: import
-description: Import local files (PDF, Word, PowerPoint, Excel, images, video, scripts) from a staging inbox folder or explicit path into structured markdown notes in the resources folder (default 04-resources/, resolved from vault.yml). Invoke when user runs /import, /import [path], or /import --attach.
+description: "Import local files (PDF, Word, PowerPoint, Excel, images, video, scripts) from a staging inbox folder or explicit path into structured markdown notes in the resources folder (default 04-resources/, resolved from vault.yml). Invoke when user runs /import, /import [path], or /import --attach."
 ---
 
 # Import
@@ -19,15 +19,13 @@ Usage:
 
 ### Step 1: Resolve source and parse flags
 
-Resolve folders from `vault.yml` (read the file if it exists at the vault root):
+Resolve additional folders from `vault.yml` (read the file if it exists at the vault root):
 - If `vault.yml` does not exist: use all defaults below.
 - If `vault.yml` exists but cannot be parsed: report the error and stop : do not proceed with unknown folder paths.
-- `folders.inbox` → default: `00-inbox` (vault inbox; used to derive import staging path)
-- `folders.import_inbox` → default: `[inbox_folder]/imports` (import staging folder; substituting the resolved `[inbox_folder]` value)
-- `folders.resources` → default: `04-resources` (output folder for notes)
+- `folders.import_inbox` → default: `[inbox_folder]/imports` (import staging folder; substituting the resolved `[inbox_folder]` placeholder)
 - `folders.attachments` → default: `attachments` (for --attach copies)
 
-Use these resolved values throughout. Store as `[inbox_folder]`, `[resources_folder]`, `[attachments_folder]`.
+Use `[inbox_folder]` and `[resources_folder]` from session config. Store resolved `[attachments_folder]` from vault.yml above.
 
 Parse arguments:
 - Extract `--attach` flag if present (remove from path consideration)
@@ -572,6 +570,6 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 - **Excel (full extraction)**: replaces `## Key Points / Contents` : use `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
 - **Excel (stub)**: `## Summary` : left blank for manual entry
 
-**Scan for related notes:** After creating the note, grep `[resources_folder]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found : add links manually._`
+**Scan for related notes:** After creating the note, grep `[resources_folder]/**/*.md` and `[knowledge_folder]/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found : add links manually._`
 
 > **Note on `file_path`:** `file_path` is only included for files imported from an explicit path (kept in place after import). For inbox-staged files, `file_path` is omitted : the staging copy is deleted and the note is the permanent artifact.

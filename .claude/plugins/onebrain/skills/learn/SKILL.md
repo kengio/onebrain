@@ -1,6 +1,6 @@
 ---
 name: learn
-description: Teach the AI something and save it to the agent folder for future recall : context about your world or behavioral patterns
+description: "Teach the AI something and save it to the agent folder for future recall : context about your world or behavioral patterns"
 ---
 
 # Learn
@@ -19,15 +19,7 @@ If not, ask:
 
 ---
 
-## Step 2: Read vault.yml
-
-If vault.yml exists, read it and extract:
-- `folders.agent` → `[agent_folder]` (default: `05-agent`)
-- `qmd_collection` → `[qmd_collection]` (used in Step 6 to update the qmd index; if absent, qmd update is skipped)
-
----
-
-## Step 3: Classify the Input
+## Step 2: Classify the Input
 
 Apply this rule to determine the destination:
 
@@ -58,7 +50,7 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 ---
 
-## Step 4: Determine File Name
+## Step 3: Determine File Name
 
 **For `context/` notes:**
 - File name: `Topic Name.md` (Title Case, by topic)
@@ -73,11 +65,11 @@ If classification is unclear, ask: "Is this about your world (context) or how yo
 
 ---
 
-## Step 5: Contradiction Check
+## Step 4: Contradiction Check
 
 Before writing, search for potential conflicts with existing knowledge:
 
-1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases over generic single words. If only generic keywords are available, skip and proceed to Step 6.
+1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases over generic single words. If only generic keywords are available, skip and proceed to Step 5.
 2. Search `[agent_folder]/context/` and `[agent_folder]/memory/` for those keywords (use qmd if available, otherwise Grep).
 3. Read any matching files
 4. Determine if any existing entry **directly contradicts** the new fact — same topic, opposite claim
@@ -101,11 +93,11 @@ How do you want to handle this?
 - If **Save both**: proceed to write the new entry without modifying the old one.
 - If **Cancel**: stop and confirm cancellation to the user.
 
-**If no contradiction is found**, proceed directly to Step 6 — no user interaction needed.
+**If no contradiction is found**, proceed directly to Step 5 — no user interaction needed.
 
 ---
 
-## Step 6: Write the Note
+## Step 5: Write the Note
 
 **For `context/` notes:**
 
@@ -141,7 +133,7 @@ After writing, run `qmd update -c [qmd_collection]` if qmd is available (keeps t
 
 ---
 
-## Step 7: Confirm
+## Step 6: Confirm
 
 Report what was saved:
 > Learned: "[short summary]"
