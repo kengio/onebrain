@@ -38,7 +38,7 @@ Wait for response.
 
 ## Step 2.5: Pre-classify (parallel)
 
-Before processing, dispatch one **Inbox Classifier** agent (`agents/inbox-classifier.md`) per selected inbox note in parallel (`run_in_background: false`, `mode: "bypassPermissions"`). Pass each note's `note_path`, `note_content`, `vault_root`, and the four folder variables. Wait for all results before proceeding to Step 3.
+Before processing, dispatch one **Inbox Classifier** agent (`agents/inbox-classifier.md`) per selected inbox note in parallel (`run_in_background: false`, `mode: "bypassPermissions"`). Pass each note's `note_path`, `note_content`, `vault_root`, `knowledge_folder`, `resources_folder`, `areas_folder`, and `projects_folder`. Wait for all results before proceeding to Step 3.
 
 Store each result as the default routing recommendation for that note. If a classifier call fails or returns an empty result, proceed without a recommendation for that note.
 

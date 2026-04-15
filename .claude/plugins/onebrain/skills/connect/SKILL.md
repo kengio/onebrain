@@ -33,7 +33,7 @@ If the total note count exceeds 20, delegate to the **Knowledge Linker** agent i
 
 ## Step 2b: Delegate to Agent (>20 Notes)
 
-If more than 20 notes are in scope: dispatch the **Knowledge Linker** agent (`agents/knowledge-linker.md`) as a foreground sub-agent (`run_in_background: false`, `mode: "bypassPermissions"`), passing `vault_root`, `knowledge_folder`, `resources_folder`, `areas_folder`, and `projects_folder`. The agent scans the full vault and returns connection suggestions. Once it returns, present those suggestions to the user and ask for approval (Step 4), implement approved links (Step 5), then continue from Step 6.
+If more than 20 notes are in scope: dispatch the **Knowledge Linker** agent (`agents/knowledge-linker.md`) as a foreground sub-agent (`run_in_background: false`, `mode: "bypassPermissions"`), passing `vault_root`, `knowledge_folder`, `resources_folder`, `areas_folder`, and `projects_folder`. The agent always scans the full vault regardless of the scope chosen in Step 1. Once it returns, present those suggestions to the user and ask for approval (Step 4), implement approved links (Step 5), then continue from Step 6.
 
 For ≤20 notes: continue with Step 3.
 

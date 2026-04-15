@@ -44,6 +44,7 @@ You receive:
 ## Constraints
 
 - Never write, move, or delete any file
-- If `note_content` is too short to classify (<3 lines), return `type: error` with `reason: "note_content is too short to classify"` and omit `target` and `links`
+- If `note_content` is empty or blank (zero non-whitespace characters), return `type: error` with `reason: "note_content is empty"` and omit `target` and `links`
+- If `note_content` is too short to classify (<3 non-empty lines), return `type: error` with `reason: "note_content is too short to classify"` and omit `target` and `links`
 - If no related notes are found, return `links: []`
 - Keep `reason` to one sentence
