@@ -213,7 +213,7 @@ After all fix passes complete (whether or not all passes ran), if Pass A actuall
 5. If a conf group has no entries, omit that group's comment marker entirely rather than leaving an empty section
 6. Entries with no `[conf:...]` tag: treat as `[conf:medium]` for sorting purposes only (do not add a tag)
 
-Then, if any files were written to disk (Pass A or Pass B made confirmed changes), and `qmd_collection` is set in vault.yml, run:
+Then, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml, which is not a markdown note and is not indexed by qmd), and `qmd_collection` is set in vault.yml, run:
 ```bash
 qmd update -c [qmd_collection]
 ```
