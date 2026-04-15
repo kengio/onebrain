@@ -151,3 +151,19 @@ Say:
 > [If MEMORY.md updated]: I also added a learning to `[agent_folder]/MEMORY.md`.
 >
 > Good session! See you next time.
+
+---
+
+## Step 9: Auto Recap Check
+
+After the session log is written and Step 8 confirmation is sent, silently check if a recap is overdue:
+
+1. Read `[agent_folder]/MEMORY.md` frontmatter and extract the `updated:` date field
+2. If `[agent_folder]/MEMORY.md` does not exist, or `updated:` is absent or cannot be parsed, skip this step silently — no output, no error
+3. Calculate the number of days between the `updated:` date and today
+4. If days ≥ 7: append this single line to the wrapup output (after the Step 8 confirmation):
+   ```
+   📊 MEMORY.md hasn't been updated in N days — consider running /recap
+   ```
+   (where N is the actual number of days calculated)
+5. If days < 7: do nothing, no output

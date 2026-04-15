@@ -98,7 +98,19 @@ Related: [[Link 1]]
 
 ---
 
-## Step 5: Confirm
+## Step 5: Suggest Links (background)
+
+After writing, dispatch a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`) using the Link Suggester agent with:
+- `new_note_path` : the path of the file just written (relative to vault_root)
+- `new_note_content` : the content just written
+- `vault_root` : absolute path to the directory containing vault.yml
+- `knowledge_folder`, `resources_folder`, `areas_folder`, `projects_folder` : from INSTRUCTIONS.md config
+
+The main agent proceeds to the Confirm step immediately — do not wait for the link suggester.
+
+---
+
+## Step 6: Confirm
 
 Say in one line:
 > Captured to `[file path]`. [If links added: Linked to "Note A", "Note B".]

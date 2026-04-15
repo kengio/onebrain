@@ -264,6 +264,10 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - Group: overdue first, then due today
    - Include the source note name for each task
 
+   **Coming up (next 3 days):**
+   - From the same grep results, keep tasks where date > today AND date ≤ today+3
+   - Include the source note name for each task
+
    **Open from last session:**
    - Glob `[logs_folder]/**/*.md` matching filename pattern `YYYY-MM-DD-session-*.md`; find the most recent one whose `date` frontmatter is **before today**
    - If no such file exists, skip this section
@@ -277,12 +281,16 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
    - [ ] Overdue task 📅 YYYY-MM-DD (overdue - from "Note Name")
 
+   **Coming up (3 days):**
+   - [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
+
    **Open from last session:**
    - [ ] Action item text
    ```
    - `Ddd` is the abbreviated day of week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
    - Omit `· inbox N` if `inbox_count` is 0
-   - If both task sources are empty, use a single line: `No tasks or open items for today.`
+   - Omit the "Coming up" section entirely if no tasks fall in that window
+   - If both task sources (due/overdue and open from last session) are empty, use a single line: `No tasks or open items for today.`
 
 2. **Orphan checkpoints** : Find checkpoint files from past sessions that were never turned into a session log. These need to be either auto-synthesized (if few) or flagged to the user (if many).
 
@@ -305,10 +313,38 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
      5. Set `orphan_action: merged:{N}` (where N = total number of checkpoints merged)
    - **>5 files** : too many to synthesize safely; set `orphan_action: prompt_wrapup:{N}` and let the user decide
 
-3. **Return** to main agent:
+3. **Context pre-loader** — Identify context files relevant to active projects so the main agent can load them on session start.
+
+   - Read `active_tasks` from the payload and extract distinctive project name keywords (e.g. "OneBrain" from "OneBrain v2.0.0", "Finastra" from "Finastra onboarding") — use the most distinctive single word per project, lowercased
+   - For each keyword, Glob `[agent_folder]/context/` for files whose filename contains that keyword (case-insensitive)
+   - Collect all matching file paths (relative to `vault_root`); deduplicate; keep max 3 total
+   - Store as `context_hints: [list of relative file paths]`
+   - If no matches found or `[agent_folder]/context/` does not exist, store `context_hints: []`
+
+4. **Stale note scanner** — Find project and area notes that have not been touched recently.
+
+   - Glob `[projects_folder]/**/*.md` and `[areas_folder]/**/*.md`
+   - For each file, check its filesystem last-modified date (mtime)
+   - Keep only files where mtime is more than 30 days before today
+   - Exclude any file whose name starts with `TASKS` or `MOC`
+   - Sort results by mtime ascending (stalest first)
+   - Keep max 5 results
+   - Store as `stale_notes: [{path, days_since_modified}]` (paths relative to `vault_root`)
+   - If none found, store `stale_notes: []`
+
+5. **MEMORY.md overflow guard** — Check whether the agent memory file is approaching its size limit.
+
+   - Count total lines in `[agent_folder]/MEMORY.md`
+   - If count > 160: store `memory_lines: N` (actual line count)
+   - If count ≤ 160: store `memory_lines: 0`
+
+6. **Return** to main agent:
    ```
    briefing: "[assembled briefing text from step 1]"
    orphan_action: none | merged:{N} | prompt_wrapup:{N}
+   context_hints: [path1, path2, ...]
+   stale_notes: [{path, days_since_modified}, ...]
+   memory_lines: N
    ```
 
 ### Session-Start Briefing
@@ -317,7 +353,16 @@ When the background sub-agent returns, the main agent sends exactly one follow-u
 
 1. Display the `briefing` text
 2. If `orphan_action` is `prompt_wrapup:{N}`: append `📋 {N} checkpoints : /wrapup?`
-3. Always append a hint on a new line, in italics, adapted to the user's language. Example: `_รัน /daily อีกครั้งเพื่อดูสถานะได้ครับ_`
+3. If `context_hints` is non-empty: silently read each file in the list — do NOT display anything to the user, just load the content into context so it is available for the session
+4. If `stale_notes` is non-empty: append to the briefing message:
+   ```
+   **Stale projects (30+ days):**
+   - `[path]` (N days)
+   ```
+   Show max 3 entries; if there are more, add `(+N more — run /doctor for full list)`
+5. If `memory_lines` > 0: append one line to the briefing:
+   `⚠️ MEMORY.md is N lines — consider /distill`
+6. Always append a hint on a new line, in italics, adapted to the user's language. Example: `_รัน /daily อีกครั้งเพื่อดูสถานะได้ครับ_`
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
 
