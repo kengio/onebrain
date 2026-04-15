@@ -6,8 +6,10 @@
 #   bash .claude/plugins/onebrain/skills/update/update.sh           # dry-run (compare only)
 #   bash .claude/plugins/onebrain/skills/update/update.sh --apply   # apply updates
 #
-# Note: wrapped in main() so bash reads the entire script before execution — prevents
-# misaligned reads if this file is replaced by its own --apply run.
+# Note: two-layer self-replacement guard:
+#   1. main() — bash parses the full function body before executing any of it
+#   2. exit $? at end — terminates the process immediately after main() returns,
+#      preventing bash from issuing a second read into the now-replaced file on disk.
 
 set -uo pipefail
 
