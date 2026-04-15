@@ -213,3 +213,4 @@ echo "status: ok"
 
 } # end main
 main "$@"
+exit $?  # terminate immediately after main — prevents bash from reading the replaced script file
