@@ -75,6 +75,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 **vault.yml:**
 - Verify all declared folder paths exist in the vault
 - Check `qmd_collection` is present (warn if absent — qmd search won't work)
+- Check if `timezone` key is present — it is no longer used; warn the user to remove it
 
 **plugin.json:**
 - Read `.claude/plugins/onebrain/.claude-plugin/plugin.json`
@@ -105,6 +106,7 @@ Use this format:
 🟢 vault.yml: OK
 🟢 plugin.json: OK (vX.X.X)
 🔴 qmd_collection: missing — qmd search will not work
+🟡 vault.yml: `timezone` key found — no longer used, safe to remove
 
 ---
 N issues found (M critical 🔴, P warnings 🟡)
