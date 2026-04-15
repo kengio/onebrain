@@ -1,6 +1,6 @@
 ---
 name: onboarding
-description: First-run setup for OneBrain : personalize identity, communication style, and vault configuration
+description: "First-run setup for OneBrain : personalize identity, communication style, and vault configuration"
 ---
 
 ## Install Path Detection

@@ -1,6 +1,6 @@
 ---
 name: reorganize
-description: Migrate vault structure : either full 5-folder → 8-folder migration, or subfolder organization for flat notes
+description: "Migrate vault structure : either full 5-folder → 8-folder migration, or subfolder organization for flat notes"
 ---
 
 # Reorganize Vault

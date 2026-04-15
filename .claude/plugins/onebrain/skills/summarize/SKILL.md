@@ -11,13 +11,6 @@ Usage: `/summarize [url]`
 
 ---
 
-## Before You Begin
-
-Read `vault.yml` and extract:
-- `folders.resources` → `[resources_folder]` (default: `04-resources`)
-- `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
-
----
 
 ## Step 1: Get the URL
 

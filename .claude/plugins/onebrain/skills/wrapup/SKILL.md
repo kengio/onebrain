@@ -9,16 +9,6 @@ Generates a summary of this session and saves it to the logs folder for future r
 
 ---
 
-## Before You Begin
-
-Read `vault.yml` and extract:
-- `folders.logs` as `[logs_folder]` (default: `07-logs`)
-- `folders.agent` as `[agent_folder]` (default: `05-agent`)
-
-Use these variables for all file paths in the steps below.
-
----
-
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.

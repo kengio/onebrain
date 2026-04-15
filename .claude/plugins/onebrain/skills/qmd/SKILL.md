@@ -1,6 +1,6 @@
 ---
 name: qmd
-description: Set up and manage qmd search index for faster vault search. Subcommands: setup, embed, status, reindex, uninstall.
+description: "Set up and manage qmd search index for faster vault search. Subcommands: setup, embed, status, reindex, uninstall."
 ---
 
 # /qmd : qmd Search Integration

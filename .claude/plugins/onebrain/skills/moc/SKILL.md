@@ -1,6 +1,6 @@
 ---
 name: moc
-description: Create or update the vault portal (MOC.md) at the vault root : a Map of Content with live Dataview queries, AI summary, and user Pinned section.
+description: "Create or update the vault portal (MOC.md) at the vault root : a Map of Content with live Dataview queries, AI summary, and user Pinned section."
 ---
 
 # Vault Portal

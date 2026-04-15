@@ -1,6 +1,6 @@
 ---
 name: update
-description: Update OneBrain skills, config, and plugins from GitHub : never touches your notes or data
+description: "Update OneBrain skills, config, and plugins from GitHub : never touches your notes or data"
 ---
 
 ## Install Path Detection

@@ -1,6 +1,6 @@
 ---
 name: braindump
-description: Capture a stream of raw thoughts : classify them and file to inbox with action items extracted
+description: "Capture a stream of raw thoughts : classify them and file to inbox with action items extracted"
 ---
 
 # Braindump

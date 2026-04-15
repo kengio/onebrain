@@ -1,6 +1,6 @@
 ---
 name: learn
-description: Teach the AI something and save it to the agent folder for future recall : context about your world or behavioral patterns
+description: "Teach the AI something and save it to the agent folder for future recall : context about your world or behavioral patterns"
 ---
 
 # Learn
