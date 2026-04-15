@@ -144,7 +144,7 @@ OneBrain organizes knowledge across four tiers, each more compressed and longer-
 **Confidence metadata** (used in MEMORY.md Key Learnings):
 - `[conf:high]` — empirically tested or confirmed across ≥2 sessions
 - `[conf:medium]` — observed once, plausible
-- `[conf:low]` — inferred or from indirect source
+- `[conf:low]` — inferred, assumed, or from a single indirect source
 - `[verified:YYYY-MM-DD]` — date last confirmed; entries not verified in >90 days should be re-checked
 - Run `/doctor --fix` to audit all entries, repair missing or stale confidence scores in bulk, and interactively fix broken wikilinks across the vault
 

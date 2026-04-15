@@ -102,7 +102,7 @@ After dedup, if no new insights remain (all were dropped as identical/subset —
 
 Exit : do not proceed to Step 5, 6, 7, or 8.
 
-If merges occurred in Step 4 (i.e., MEMORY.md was modified in-place) but no new entries remain to append: skip Step 5, but continue to Steps 6, 7, and 8.
+If merges occurred in Step 4 (i.e., MEMORY.md was modified in-place) but no new entries remain to append: skip the append portion of Step 5 (do not write new bullets), but still run the archive offer in Step 5, then continue to Steps 6, 7, and 8.
 
 ---
 
