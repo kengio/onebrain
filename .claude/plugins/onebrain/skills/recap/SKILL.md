@@ -127,7 +127,8 @@ Set `[verified:YYYY-MM-DD]` to today's date when first written. For merged entri
 Also update the `updated:` field in the frontmatter to today's date.
 
 **Archive eligible `memory/` files:**
-"Successfully promoted" includes: (a) entries appended as new, (b) entries merged into an existing entry ("extends or refines"), and (c) entries used to supersede an existing entry ("contradicts" case) — all three count as promoted. For each file in `new_memory_files` that was promoted by either path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
+This step runs regardless of whether new entries were appended or only in-place merges/supersessions occurred.
+"Successfully promoted" includes: (a) entries appended as new, (b) entries merged into an existing entry ("extends or refines"), and (c) entries used to supersede an existing entry ("contradicts" case) — all three count as promoted. For each file in `new_memory_files` that was promoted by any path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
 > Promoted N patterns from `memory/` to MEMORY.md. These files can now be archived:
 > - `memory/YYYY-MM-DD-slug.md` — [one-line summary]
 > Archive them? (yes / no)
@@ -161,11 +162,19 @@ Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 
 ## Step 8: Confirm
 
+Use the appropriate message based on what occurred:
+
+If new entries were appended (with or without merges):
 ```
 Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).
 ```
 
-If nothing new was appended (all were deduped — no merges, no new entries):
+If only in-place merges or supersessions occurred (no new appends):
+```
+Recap complete. Updated M existing entries in MEMORY.md (merged or superseded). No new insights appended.
+```
+
+If nothing was written (all were deduped as identical/subset — no merges, no new entries):
 ```
 Recap complete. No new insights to add : all N insights already captured in MEMORY.md.
 ```
