@@ -102,7 +102,7 @@ After dedup, if no new insights remain (all were dropped as identical/subset —
 
 Exit : do not proceed to Step 5, 6, 7, or 8.
 
-If merges or supersessions occurred in Step 4 (i.e., MEMORY.md was modified in-place) but no new entries remain to append: skip Step 5, but continue to Steps 6, 7, and 8.
+If merges occurred in Step 4 (i.e., MEMORY.md was modified in-place) but no new entries remain to append: skip Step 5, but continue to Steps 6, 7, and 8.
 
 ---
 
@@ -169,9 +169,9 @@ If new entries were appended (with or without merges):
 Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).
 ```
 
-If only in-place merges or supersessions occurred (no new appends):
+If only in-place merges occurred (no new appends):
 ```
-Recap complete. Updated M existing entries in MEMORY.md (merged or superseded). No new insights appended.
+Recap complete. Updated M existing entries in MEMORY.md (merged). No new insights appended.
 ```
 
 If nothing was written (all were deduped as identical/subset — no merges, no new entries):
