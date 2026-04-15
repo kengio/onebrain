@@ -58,24 +58,24 @@ Move existing flat notes into category-based subfolders (kebab-case, max 2 level
 
 Find notes that are directly in a top-level folder (not already in a subfolder):
 
-- `01-projects/*.md` : glob top-level only (not `01-projects/**/*.md`)
-- `02-areas/*.md` : glob top-level only
-- `03-knowledge/*.md` : glob top-level only
-- `04-resources/*.md` : glob top-level only
-- `07-logs/*.md` : flat session log files not yet in a `YYYY/MM/` subfolder
+- `[projects_folder]/*.md` : glob top-level only (not `[projects_folder]/**/*.md`)
+- `[areas_folder]/*.md` : glob top-level only
+- `[knowledge_folder]/*.md` : glob top-level only
+- `[resources_folder]/*.md` : glob top-level only
+- `[logs_folder]/*.md` : flat session log files not yet in a `YYYY/MM/` subfolder
 
-Also check `06-archive/*.md` for any flat archive files.
+Also check `[archive_folder]/*.md` for any flat archive files.
 
 Exclude `.gitkeep` files.
 
 Report:
 > Found N notes to organize:
-> - `03-knowledge/`: N notes
-> - `04-resources/`: N notes
-> - `02-areas/`: N notes
-> - `01-projects/`: N notes
-> - `07-logs/`: N session logs
-> - `06-archive/`: N archive files
+> - `[knowledge_folder]/`: N notes
+> - `[resources_folder]/`: N notes
+> - `[areas_folder]/`: N notes
+> - `[projects_folder]/`: N notes
+> - `[logs_folder]/`: N session logs
+> - `[archive_folder]/`: N archive files
 
 If nothing is found, say:
 > Your vault is already organized into subfolders : nothing to do!
@@ -86,16 +86,16 @@ If nothing is found, say:
 
 For each note, analyze its content and frontmatter to suggest a subfolder:
 
-**For `03-knowledge/`, `04-resources/`, `02-areas/`, and `01-projects/` notes:**
+**For `[knowledge_folder]/`, `[resources_folder]/`, `[areas_folder]/`, and `[projects_folder]/` notes:**
 - Read the file's title, tags, and first paragraph
 - Suggest a kebab-case subfolder path (max 2 levels, e.g. `programming/python`, `health/fitness`)
 - Group notes with the same suggested subfolder together
 
-**For `07-logs/` session log files:**
+**For `[logs_folder]/` session log files:**
 - Extract `YYYY` and `MM` from the filename (`YYYY-MM-DD-session-NN.md`)
 - Suggest `YYYY/MM` as the subfolder
 
-**For `06-archive/` flat files:**
+**For `[archive_folder]/` flat files:**
 - Use today's date for archiving: `YYYY/MM`
 - Or read the note's `created:` frontmatter if present and use that date instead
 
@@ -104,23 +104,23 @@ Present the full migration plan as a table:
 ```
 ## Proposed Reorganization
 
-### 03-knowledge/ (N notes)
+### [knowledge_folder]/ (N notes)
 | Note | → Subfolder |
 |------|------------|
 | Machine Learning.md | → technology/ai |
 | Sleep Optimization.md | → health |
 
-### 04-resources/ (N notes)
+### [resources_folder]/ (N notes)
 | Note | → Subfolder |
 |------|------------|
 | Python Basics.md | → programming/python |
 
-### 01-projects/ (N notes)
+### [projects_folder]/ (N notes)
 | Note | → Subfolder |
 |------|------------|
 | Website Redesign.md | → web-development |
 
-### 07-logs/ (N session logs)
+### [logs_folder]/ (N session logs)
 | File | → Subfolder |
 |------|------------|
 | 2026-01-15-session-01.md | → 2026/01 |
@@ -159,12 +159,12 @@ Process notes by folder (all knowledge, then resources, then areas, then project
 Report:
 > Reorganization complete!
 >
-> - Moved N notes in `03-knowledge/` into N subfolders
-> - Moved N notes in `04-resources/` into N subfolders
-> - Moved N notes in `02-areas/` into N subfolders
-> - Moved N notes in `01-projects/` into N subfolders
-> - Moved N session logs in `07-logs/` into YYYY/MM folders
-> - Moved N files in `06-archive/` into YYYY/MM folders
+> - Moved N notes in `[knowledge_folder]/` into N subfolders
+> - Moved N notes in `[resources_folder]/` into N subfolders
+> - Moved N notes in `[areas_folder]/` into N subfolders
+> - Moved N notes in `[projects_folder]/` into N subfolders
+> - Moved N session logs in `[logs_folder]/` into YYYY/MM folders
+> - Moved N files in `[archive_folder]/` into YYYY/MM folders
 > - Skipped N notes (left in place)
 >
 > All existing wikilinks (`[[Note Name]]`) still work : Obsidian resolves links by filename, not path.
