@@ -97,10 +97,12 @@ Apply this dedup table to **all** candidate entries — whether sourced from ses
 
 To merge: rewrite the existing bullet in-place to incorporate the new detail, keeping the original date.
 
-After dedup, if no new insights remain:
+After dedup, if no new insights remain (all were dropped as identical/subset — meaning no merges and no new appends occurred):
 > All insights are already captured in MEMORY.md : nothing new to add.
 
-Exit : do not write.
+Exit : do not proceed to Step 5, 6, 7, or 8.
+
+If merges or supersessions occurred in Step 4 (i.e., MEMORY.md was modified in-place) but no new entries remain to append: skip Step 5, but continue to Steps 6, 7, and 8.
 
 ---
 
@@ -139,7 +141,7 @@ If **no**: leave in place — the file remains as the detailed version.
 
 ## Step 6: Sort Key Learnings
 
-After writing all entries, re-sort the `## Key Learnings & Patterns` section in-place:
+If MEMORY.md was modified in Step 4 (merges, supersessions) or Step 5 (new appends), re-sort the `## Key Learnings & Patterns` section in-place:
 1. `[conf:high]` entries first, newest → oldest
 2. `[conf:medium]` entries next, newest → oldest
 3. `[conf:low]` entries last, newest → oldest
@@ -163,7 +165,7 @@ Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
 Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).
 ```
 
-If nothing was written (all deduped):
+If nothing new was appended (all were deduped — no merges, no new entries):
 ```
 Recap complete. No new insights to add : all N insights already captured in MEMORY.md.
 ```
