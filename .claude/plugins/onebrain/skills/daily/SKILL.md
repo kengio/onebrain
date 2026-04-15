@@ -18,7 +18,7 @@ Read `vault.yml` and extract:
 
 Count inbox items: Glob `[inbox_folder]/*.md` and store the count as `[inbox_count]`.
 
-Determine today's date (`YYYY-MM-DD`) and current local time in Asia/Bangkok:
+Determine today's date (`YYYY-MM-DD`) and current local time (local machine time):
 - **Morning mode**: before 10:00
 - **Normal mode**: 10:00 and later
 
