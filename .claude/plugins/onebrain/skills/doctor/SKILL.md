@@ -122,7 +122,7 @@ If no issues:
 
 ## Step 4: Auto-fix (`--fix` flag only)
 
-Run both fix passes. Each pass confirms with the user before writing.
+Run all fix passes. Each pass confirms with the user before writing.
 
 ### Pass A: MEMORY.md confidence scores
 
@@ -193,6 +193,15 @@ For each unique broken link name:
 After Pass B, report:
 > Fixed N broken links across M files. P links could not be matched automatically — fix manually.
 > Modified files: [list of file paths that were changed]
+
+### Pass C: Deprecated vault.yml keys
+
+If `timezone` key was found in vault.yml (from Step 2 config check): confirm with AskUserQuestion:
+> `timezone` in vault.yml is no longer used — the agent now uses local machine time. Remove it?
+
+If **yes**: remove the `timezone` line from vault.yml. If **no**: leave as-is.
+
+If `timezone` was not found: skip this pass, note "No deprecated keys to clean up."
 
 ### Final step
 
