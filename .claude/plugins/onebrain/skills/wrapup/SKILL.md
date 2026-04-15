@@ -161,9 +161,9 @@ After the session log is written and Step 8 confirmation is sent, silently check
 1. Read `[agent_folder]/MEMORY.md` frontmatter and extract the `updated:` date field
 2. If `[agent_folder]/MEMORY.md` does not exist, or `updated:` is absent or cannot be parsed, skip this step silently — no output, no error
 3. Calculate the number of days between the `updated:` date and today
-4. If days ≥ 7: append this single line to the wrapup output (after the Step 8 confirmation):
+4. If days ≥ 7: insert this line into the Step 8 output, before the `Good session!` sign-off:
    ```
    📊 MEMORY.md hasn't been updated in N days — consider running /recap
    ```
-   (where N is the actual number of days calculated)
+   (where N is the actual number of days calculated; use the same YYYY-MM-DD date established in Step 1 as "today")
 5. If days < 7: do nothing, no output

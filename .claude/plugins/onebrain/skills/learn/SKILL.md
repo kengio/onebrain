@@ -141,7 +141,7 @@ After writing, dispatch a background sub-agent (`run_in_background: true`, `mode
 - `vault_root` : absolute path to the directory containing vault.yml
 - `knowledge_folder`, `resources_folder`, `areas_folder`, `projects_folder` : from INSTRUCTIONS.md config
 
-The main agent proceeds to the Confirm step immediately — do not wait for the link suggester.
+Proceed to Confirm immediately — do not wait for the link suggester.
 
 ---
 

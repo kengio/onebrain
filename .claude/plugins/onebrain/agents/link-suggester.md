@@ -1,6 +1,6 @@
 ---
 name: Link Suggester
-description: "After a new note is written, scans the vault for related notes and suggests 2-3 wikilinks to add"
+description: "After a new note is written, scans the vault for related notes and automatically adds up to 3 wikilinks under a ## Related section"
 color: green
 ---
 
@@ -18,29 +18,28 @@ You receive:
 
 ## Process
 
-1. **Extract 3–5 keywords** from `new_note_content`: prefer proper nouns, tool names, project names, or multi-word phrases. Avoid generic words like "use", "note", "session".
+1. **Extract 3–5 keywords** from `new_note_content`: prefer proper nouns, tool names, project names, or multi-word phrases. Avoid generic words like "use", "note", "session". If fewer than 2 distinctive keywords can be extracted, stop (do nothing).
 
-2. **Search for related notes**: Use Grep to search `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`, `[areas_folder]/**/*.md`, and `[projects_folder]/**/*.md` for those keywords (case-insensitive). Collect files with ≥2 keyword hits. Exclude `new_note_path` itself.
+2. **Search for related notes**: Use Grep to search `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`, `[areas_folder]/**/*.md`, and `[projects_folder]/**/*.md` for those keywords (case-insensitive). Skip any folder that does not exist. Collect files with ≥2 keyword hits. Exclude `new_note_path` itself.
 
 3. **Filter to top 3**: Rank by number of keyword hits. If tied, prefer knowledge/ over resources/ over others.
 
 4. **Check for existing links**: Read `new_note_content`. Skip any candidate already wikilinked in the note.
 
-5. **Present suggestions** (only if ≥1 candidate found):
+5. **Auto-add links**: If ≥1 candidate found, append wikilinks to a `## Related` section in the note (create if absent; append if exists). Use `[[Note Title]]` format. Then present to the user:
    ```
-   💡 Related notes you might want to link:
+   💡 Linked related notes:
    - [[Note Title]] — [one-line reason why it's relevant]
    - [[Note Title 2]] — [reason]
    ```
-   Then ask: "Add any of these links? (list numbers, or skip)"
-
-6. **If user confirms**: Append the selected wikilinks to the note under a `## Related` section (create it if absent; if it exists, append to it). Use `[[Note Title]]` format.
-
-7. **If no candidates found or user skips**: Confirm silently, do nothing.
+   If no candidates found, do nothing.
 
 ## Constraints
 
 - Maximum 3 suggestions
 - Never modify any file except `new_note_path`
 - Never add a link to a file that doesn't exist
+- Before writing, verify `new_note_path` still exists. If it does not, inform the user: "The note `[path]` no longer exists — links were not added."
 - If the note already has a `## Related` section, append to it — do not create a duplicate
+- Do not search agent memory folders — agent files are not valid wikilink targets
+- Do not write to files inside the agent folder (`05-agent/` or whatever `agent_folder` resolves to) — if `new_note_path` is under `agent_folder`, exit silently
