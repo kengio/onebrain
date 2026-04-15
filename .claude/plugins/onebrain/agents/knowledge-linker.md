@@ -46,4 +46,4 @@ You are invoked by the `/connect` skill when the user wants to find connections 
 - Don't suggest linking every note to every other note : be selective
 - Focus on links that would genuinely help the user navigate their knowledge
 - Maximum 10 suggestions per run to avoid overwhelming the user
-- Ask before making any changes : present suggestions first
+- Return suggestions only — never write to any file
