@@ -66,7 +66,7 @@ Always use Obsidian wikilink syntax to connect related notes:
 [[Note Title|display text]]
 ```
 
-When creating a new note, search the vault first (using qmd or Grep), then suggest 2-3 relevant wikilinks to existing notes.
+When creating a new note, search the vault first (using qmd or Grep), then automatically add the top 1–3 relevant wikilinks under a `## Related` section.
 
 ## Note Frontmatter
 
@@ -114,6 +114,16 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/update` | `update/SKILL.md` | Update system files from GitHub | (manual only) |
 | `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 | `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands or skills are available, or what the agent can do |
+
+**Agents** — These agents live in `.claude/plugins/onebrain/agents/` and are dispatched automatically by skills. They are never invoked directly by the user.
+
+| Agent File | Dispatched by | Mode | Purpose |
+|-----------|--------------|------|---------|
+| `knowledge-linker.md` | `/connect` | foreground | Find and add wikilinks between related notes |
+| `link-suggester.md` | `/learn` | background | Auto-add up to 3 wikilinks to newly written notes |
+| `tag-suggester.md` | `/capture`, `/reading-notes` | background | Auto-add up to 3 tags from vault vocabulary to new notes |
+| `inbox-classifier.md` | `/consolidate` | foreground parallel | Pre-classify inbox notes with folder/subfolder/link recommendations |
+| `task-extractor.md` | `/braindump` | background | Extract action items and format them as vault tasks |
 
 **Skill Routing:** When a user message clearly maps to a skill above, invoke it directly : no `/command` needed. If intent is ambiguous, use AskUserQuestion to confirm before invoking. When trigger conditions overlap, prefer the lighter-weight skill (e.g. `/capture` over `/braindump`, `/bookmark` over `/summarize`). Skills marked "manual only" require explicit `/command` always.
 
@@ -240,6 +250,7 @@ Run before responding to any user message:
    inbox_folder: [inbox_folder]
    knowledge_folder: [knowledge_folder]
    projects_folder: [projects_folder]
+   areas_folder: [areas_folder]
    today: YYYY-MM-DD
    active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
    is_weekend: true|false
@@ -249,7 +260,7 @@ Main agent is now ready to respond to the user.
 
 ### Phase 2 : Background Sub-agent
 
-The sub-agent receives the payload from Phase 1 and performs all work that requires multiple file reads. It does NOT read MEMORY.md — `active_tasks` are passed in the prompt. All folder values in the payload are relative to `vault_root`; construct full paths as `vault_root/folder_value`.
+The sub-agent receives the payload from Phase 1 and performs all work that requires multiple file reads. It does NOT read MEMORY.md for content — `active_tasks` are passed in the prompt. It may count lines in MEMORY.md for the overflow guard (Step 5). All folder values in the payload are relative to `vault_root`; construct full paths as `vault_root/folder_value`.
 
 **Sub-agent steps:**
 
@@ -262,6 +273,10 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for task lines matching `- [ ] .*📅 \d{4}-\d{2}-\d{2}`
    - Keep only tasks where the date ≤ today
    - Group: overdue first, then due today
+   - Include the source note name for each task
+
+   **Coming up (next 3 days):**
+   - From the same grep results, keep tasks where date > today AND date ≤ today+3
    - Include the source note name for each task
 
    **Open from last session:**
@@ -277,12 +292,16 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    - [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
    - [ ] Overdue task 📅 YYYY-MM-DD (overdue - from "Note Name")
 
+   **Coming up (3 days):**
+   - [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
+
    **Open from last session:**
    - [ ] Action item text
    ```
    - `Ddd` is the abbreviated day of week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
    - Omit `· inbox N` if `inbox_count` is 0
-   - If both task sources are empty, use a single line: `No tasks or open items for today.`
+   - Omit the "Coming up" section entirely if no tasks fall in that window
+   - If all three task sources (due/overdue, coming up, and open from last session) are empty, use a single line: `No tasks or open items for today.`
 
 2. **Orphan checkpoints** : Find checkpoint files from past sessions that were never turned into a session log. These need to be either auto-synthesized (if few) or flagged to the user (if many).
 
@@ -301,23 +320,63 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
      2. Count existing session logs for that date (`YYYY-MM-DD-session-*.md`) → next NN, zero-padded to 2 digits (e.g. `01`, `02`)
      3. Write a session log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter fields `auto-saved: true` and `synthesized_from_checkpoints: true`
         - **Every Key Decision, Action Item, and Open Question from every checkpoint must appear explicitly in the log** : do not write the file until all checkpoint content is reflected
+        - **If the write fails**: do not mark any checkpoints as `merged: true`; set `orphan_action: none` and stop — do not attempt further checkpoint processing
      4. For each checkpoint file whose content was read and incorporated: set `merged: true` in its frontmatter
      5. Set `orphan_action: merged:{N}` (where N = total number of checkpoints merged)
    - **>5 files** : too many to synthesize safely; set `orphan_action: prompt_wrapup:{N}` and let the user decide
 
-3. **Return** to main agent:
+3. **Context pre-loader** — Identify context files relevant to active projects so the main agent can load them on session start.
+
+   - Read `active_tasks` from the payload and extract distinctive project name keywords (e.g. "OneBrain" from "OneBrain v2.0.0", "Finastra" from "Finastra onboarding") — use the most distinctive single word per project, lowercased
+   - For each keyword, Glob `[agent_folder]/context/` for files whose filename contains that keyword (case-insensitive)
+   - Collect all matching file paths (relative to `vault_root`); deduplicate; keep max 3 total
+   - Store as `context_hints: [list of relative file paths]`
+   - If no matches found or `[agent_folder]/context/` does not exist, store `context_hints: []`
+
+4. **Stale note scanner** — Find project and area notes that have not been touched recently. (Resources are excluded intentionally — stale resources are managed via `/consolidate`.)
+
+   - Glob `[projects_folder]/**/*.md` and `[areas_folder]/**/*.md`
+   - For each file, check its filesystem last-modified date (mtime)
+   - Keep only files where mtime is more than 30 days before today
+   - Exclude any file whose name starts with `TASKS` or `MOC`
+   - Sort results by mtime ascending (stalest first)
+   - Keep max 5 results; if a folder does not exist, skip it
+   - Compute `days_since_modified` as `floor((today - mtime_date).days)` — always an integer
+   - Store as `stale_notes: [{path, days_since_modified}]` (paths relative to `vault_root`)
+   - If none found, store `stale_notes: []`
+
+5. **MEMORY.md overflow guard** — Check whether the agent memory file is approaching its size limit.
+
+   - Count total lines in `[agent_folder]/MEMORY.md`
+   - Include `memory_lines: N` in the return payload only if count > 160; otherwise omit
+
+6. **Return** to main agent:
    ```
    briefing: "[assembled briefing text from step 1]"
    orphan_action: none | merged:{N} | prompt_wrapup:{N}
+   context_hints: [path1, path2, ...]
+   stale_notes: [{path: string (vault-relative), days_since_modified: integer}, ...]
+   memory_lines: N          # only present when MEMORY.md exceeds 160 lines
    ```
 
 ### Session-Start Briefing
 
 When the background sub-agent returns, the main agent sends exactly one follow-up message:
 
+**Fallback defaults** — If the sub-agent fails or returns incomplete data, use these defaults and still send the follow-up: `briefing: "Daily briefing unavailable."`, `orphan_action: none`, `context_hints: []`, `stale_notes: []`, `memory_lines` absent.
+
 1. Display the `briefing` text
 2. If `orphan_action` is `prompt_wrapup:{N}`: append `📋 {N} checkpoints : /wrapup?`
-3. Always append a hint on a new line, in italics, adapted to the user's language. Example: `_รัน /daily อีกครั้งเพื่อดูสถานะได้ครับ_`
+3. If `context_hints` is non-empty: read each file as `vault_root/hint_path` into context (do not display anything to the user). If any file cannot be read, skip that file.
+4. If `stale_notes` is non-empty: append to the briefing message:
+   ```
+   **Stale projects (30+ days):**
+   - `[path]` (N days)
+   ```
+   Show max 3 entries; if there are more, add `(+N more — run /doctor for full list)`
+5. If `memory_lines` is present in the payload: append one line to the briefing:
+   `⚠️ MEMORY.md is N lines — consider /recap`
+6. Always append a hint on a new line, in italics, adapted to the user's language. Example: `_Run /daily again to check your status_`
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
 

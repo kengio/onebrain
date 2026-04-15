@@ -7,10 +7,10 @@ Thanks for your interest in contributing. This document covers how the project i
 Good contributions include:
 
 - New slash commands (skills)
+- New background agents (focused autonomous tasks dispatched by skills)
 - Improvements to existing skills — clearer instructions, better prompts, edge case handling
 - Bug fixes in install scripts
 - README and documentation improvements
-- Support for additional AI agents
 
 ## Project Structure
 
@@ -28,7 +28,11 @@ Good contributions include:
 ├── hooks/
 │   └── hooks.json                       Hook configuration (session automation)
 └── agents/
-    └── knowledge-linker.md              Knowledge graph agent (used by /connect)
+    ├── knowledge-linker.md              Knowledge graph agent (used by /connect)
+    ├── link-suggester.md                Auto-add wikilinks after note creation (used by /learn)
+    ├── tag-suggester.md                 Auto-add tags from vault vocabulary (used by /capture, /reading-notes)
+    ├── inbox-classifier.md              Pre-classify inbox notes for /consolidate
+    └── task-extractor.md                Extract action items from braindumps (used by /braindump)
 ```
 
 Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
@@ -58,9 +62,37 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 - Prefer adding steps over removing them — removals can break workflows users depend on
 - Test manually: open a vault, invoke the command, follow it through
 
-## Adding a New Agent
+## Skills vs Agents — When to Use Which
 
-Agents are specialized subprocesses invoked by skills for focused, autonomous tasks. The existing example is [`knowledge-linker.md`](.claude/plugins/onebrain/agents/knowledge-linker.md), used by `/connect`.
+| | Skill | Agent |
+|--|-------|-------|
+| Invoked by | User (slash command or auto-route) | Another skill |
+| Runs | Inline, sequential | Background or parallel |
+| User interaction | Yes — can ask questions, confirm | No — autonomous, notifies only |
+| Scope | Multi-step workflow | Single focused task |
+| Reuse | One entry point | Can be dispatched by many skills |
+
+**Create an agent when all of these are true:**
+1. The task is self-contained and does not need user input mid-run
+2. It would block the main agent for more than one step if done inline
+3. It is either reusable across multiple skills, or benefits from parallel execution (e.g. classifying 10 inbox notes simultaneously)
+
+**Keep it in the skill when:**
+- The task is a single step that is already fast
+- It needs user confirmation before acting
+- It only makes sense in one skill's sequential flow
+
+**Existing agents** (for reference before adding a new one):
+
+| Agent | Dispatched by | Mode | Purpose |
+|-------|--------------|------|---------|
+| `knowledge-linker.md` | `/connect` | foreground | Find and add wikilinks across vault |
+| `link-suggester.md` | `/learn` | background | Auto-add up to 3 wikilinks to a new note |
+| `tag-suggester.md` | `/capture`, `/reading-notes` | background | Auto-add up to 3 tags from vault vocabulary |
+| `inbox-classifier.md` | `/consolidate` | foreground parallel | Pre-classify inbox notes for routing |
+| `task-extractor.md` | `/braindump` | background | Extract action items as formatted vault tasks |
+
+## Adding a New Agent
 
 1. Create `.claude/plugins/onebrain/agents/[agent-name].md`
 2. Add YAML frontmatter:
@@ -68,17 +100,25 @@ Agents are specialized subprocesses invoked by skills for focused, autonomous ta
    ```yaml
    ---
    name: Agent Display Name
-   description: One-line description — when this agent should be invoked
+   description: One-line description — what this agent does and when it runs
    color: blue
    ---
    ```
 
    Supported colors: `blue`, `green`, `red`, `yellow`, `purple`, `orange`.
 
-3. Write the agent's system prompt — its role, process, and output format
-4. Invoke the agent from a skill using the Agent tool, passing it the task context
+3. Write the agent prompt with these sections:
+   - **Input** — list every variable the agent receives
+   - **Process** — numbered steps; keep it to ≤7 steps
+   - **Constraints** — hard limits (max items, files it may not touch, exit conditions)
 
-Agents are stateless — they receive context from the invoking skill and return a result. Keep them focused on a single task.
+4. Dispatch the agent from the invoking skill using the Agent tool. Pass all required input as a structured prompt payload. Choose the dispatch mode:
+   - `run_in_background: true` — for fire-and-forget tasks (link suggestion, tagging). The skill proceeds immediately; the agent notifies the user when done.
+   - `run_in_background: false` — for tasks whose results the skill needs before continuing (classification, analysis). Launch multiple in parallel when processing a batch.
+
+5. Register the agent in the **Agents** table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and in the table above. Note: both tables include a Mode column; keep them in sync.
+
+Agents are stateless — they receive all context in the prompt payload and do not retain memory between invocations. Keep them focused on a single task.
 
 ## Adding a New Hook
 

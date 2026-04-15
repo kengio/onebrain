@@ -133,7 +133,13 @@ After writing, run `qmd update -c [qmd_collection]` if qmd is available (keeps t
 
 ---
 
-## Step 6: Confirm
+## Step 6: Suggest Links (background)
+
+After writing, dispatch the **Link Suggester** agent (`agents/link-suggester.md`) as a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`), passing `new_note_path`, `new_note_content`, `vault_root`, `knowledge_folder`, `resources_folder`, `areas_folder`, and `projects_folder`. Proceed to Confirm immediately.
+
+---
+
+## Step 7: Confirm
 
 Report what was saved:
 > Learned: "[short summary]"

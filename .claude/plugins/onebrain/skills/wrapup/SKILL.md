@@ -142,12 +142,25 @@ If a genuinely useful long-term insight emerged this session : a clear behaviora
 
 ---
 
-## Step 8: Confirm
+## Step 8: Auto Recap Check
+
+Before confirming, silently check if a recap is overdue:
+
+1. Read `[agent_folder]/MEMORY.md` frontmatter and extract the `updated:` date field
+2. If `[agent_folder]/MEMORY.md` does not exist, or `updated:` is absent or cannot be parsed, set `recap_hint` to nil — no output, no error
+3. Calculate the number of days between the `updated:` date and today (use the same YYYY-MM-DD date established in Step 1)
+4. If days ≥ 7: set `recap_hint` to `📊 MEMORY.md hasn't been updated in N days — consider running /recap` (where N is the actual number of days)
+5. If days < 7: set `recap_hint` to nil
+
+---
+
+## Step 9: Confirm
 
 Say:
 > Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
 >
 > [If action items]: I logged N action items : they'll appear in your Tasks view.
-> [If MEMORY.md updated]: I also added a learning to `[agent_folder]/MEMORY.md`.
+> [If MEMORY.md updated in Step 6]: I also added a learning to `[agent_folder]/MEMORY.md`.
+> [If recap_hint is set]: [recap_hint]
 >
 > Good session! See you next time.
