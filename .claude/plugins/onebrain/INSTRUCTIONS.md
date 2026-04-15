@@ -9,6 +9,8 @@ These variables are used throughout this file. Start with the defaults below, th
 | `[agent_folder]` | `folders.agent` | `05-agent` |
 | `[logs_folder]` | `folders.logs` | `07-logs` |
 | `[inbox_folder]` | `folders.inbox` | `00-inbox` |
+| `[projects_folder]` | `folders.projects` | `01-projects` |
+| `[knowledge_folder]` | `folders.knowledge` | `03-knowledge` |
 | `[timezone]` | `timezone` | `Asia/Bangkok` |
 | `[qmd_collection]` | `qmd_collection` | _(absent = qmd disabled)_ |
 
@@ -130,12 +132,10 @@ Without embeddings, `mcp__plugin_onebrain_qmd__query` uses BM25 keyword search o
 Whenever you add, edit, or delete any file in the vault, check first whether qmd is available by looking for `mcp__plugin_onebrain_qmd__query` in your tool list. If it is available, immediately run:
 
 ```bash
-qmd update -c <collection>
+qmd update -c [qmd_collection]
 ```
 
-where `<collection>` is the collection name from `vault.yml` (`qmd_collection` field, e.g. `ob-1-441565`). This keeps the search index in sync and prevents stale entries from appearing in results.
-
-If qmd tools are not available, or if `qmd_collection` is not present in `vault.yml`, skip this step entirely.
+This keeps the search index in sync. If qmd tools are not available, or `[qmd_collection]` is absent, skip this step entirely.
 
 ## Memory Tier Model
 
@@ -144,8 +144,8 @@ OneBrain organizes knowledge across four tiers, each more compressed and longer-
 | Tier | Storage | Lifespan | Promoted by |
 |---|---|---|---|
 | **Working memory** | `00-inbox/` + current session | Hours | /wrapup, /consolidate |
-| **Episodic memory** | `07-logs/` session logs | Days–weeks | /recap |
-| **Semantic memory** | `05-agent/MEMORY.md` Key Learnings | Months | /recap, /wrapup (1 insight), /learn |
+| **Episodic memory** | `[logs_folder]/` session logs | Days–weeks | /recap |
+| **Semantic memory** | `[agent_folder]/MEMORY.md` Key Learnings | Months | /recap, /wrapup (1 insight), /learn |
 | **Procedural memory** | `.claude/plugins/onebrain/skills/` | Permanent | Manual (/learn signals workflow pattern) |
 
 **Promotion criteria:**
@@ -188,8 +188,8 @@ Session startup runs in two phases. Phase 1 greets the user immediately. Phase 2
 
 Run before responding to any user message:
 
-1. Read `vault.yml`, `.claude/plugins/onebrain/.claude-plugin/plugin.json`, and `[agent_folder]/MEMORY.md` **in parallel**.
-   - `vault.yml`: get `folders`, `timezone` (default: `Asia/Bangkok` if absent)
+1. Read `vault.yml`, `.claude/plugins/onebrain/.claude-plugin/plugin.json`, and `[agent_folder]/MEMORY.md` **in parallel**. Use Configuration defaults for any variable while `vault.yml` is loading; override with actual values once it resolves.
+   - `vault.yml`: override the **Configuration** variables at the top of this file with actual values
    - `plugin.json`: get `version` for greeting; if file absent, skip version
    - `MEMORY.md`: load identity, personality, active projects and their task dates
 
@@ -197,7 +197,7 @@ Run before responding to any user message:
    >
    > **Agent memory (on-demand only):** `[agent_folder]/memory/` is searched only when the user's request relates to a past pattern. Never loaded at startup.
 
-2. Get current local time (single call, can run in parallel with step 1). Replace **both** occurrences of `[timezone]` with the value from `vault.yml` (e.g. `Asia/Bangkok`). Python is tried first — it works on macOS, Linux, and Windows (via Git Bash). `TZ=... date` is the fallback for when Python is absent or fails:
+2. Get current local time using `[timezone]` (from Configuration). Run in parallel with step 1. Python is tried first — it works on macOS, Linux, and Windows (via Git Bash). `TZ=... date` is the fallback for when Python is absent or fails:
    ```bash
    python3 -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('[timezone]')).strftime('%H:%M'))" 2>/dev/null || node -e "const d=new Date(); console.log(d.toLocaleTimeString('en-GB',{timeZone:'[timezone]',hour:'2-digit',minute:'2-digit'}))" 2>/dev/null || TZ=[timezone] date '+%H:%M' 2>/dev/null
    ```
@@ -233,11 +233,11 @@ Run before responding to any user message:
 
    ```
    vault_root: [absolute vault root path]
-   agent_folder: [from vault.yml folders.agent]
-   logs_folder: [from vault.yml folders.logs]
-   inbox_folder: [from vault.yml folders.inbox]
-   knowledge_folder: [from vault.yml folders.knowledge]
-   projects_folder: [from vault.yml folders.projects, default 01-projects]
+   agent_folder: [agent_folder]
+   logs_folder: [logs_folder]
+   inbox_folder: [inbox_folder]
+   knowledge_folder: [knowledge_folder]
+   projects_folder: [projects_folder]
    today: YYYY-MM-DD
    active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
    is_weekend: true|false
