@@ -16,7 +16,7 @@ Usage: `/clone`
 
 ## Step 1: Read vault.yml
 
-If vault.yml exists, read it and extract `folders.agent`. Default to `[agent_folder]` if the file does not exist or the key is absent.
+If vault.yml exists, read it and extract `folders.agent`. Default to `05-agent` if the file does not exist or the key is absent.
 Set `agent_folder` for all paths below.
 
 ---

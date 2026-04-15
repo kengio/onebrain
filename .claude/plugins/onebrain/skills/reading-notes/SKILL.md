@@ -14,8 +14,8 @@ Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
 ## Before You Begin
 
 Read `vault.yml` and extract:
-- `folders.resources` → `[resources_folder]` (default: `[resources_folder]`)
-- `folders.knowledge` → `[knowledge_folder]` (default: `[knowledge_folder]`)
+- `folders.resources` → `[resources_folder]` (default: `04-resources`)
+- `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
 
 ---
 

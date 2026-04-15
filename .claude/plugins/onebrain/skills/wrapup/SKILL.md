@@ -12,8 +12,8 @@ Generates a summary of this session and saves it to the logs folder for future r
 ## Before You Begin
 
 Read `vault.yml` and extract:
-- `folders.logs` as `[logs_folder]` (default: `[logs_folder]`)
-- `folders.agent` as `[agent_folder]` (default: `[agent_folder]`)
+- `folders.logs` as `[logs_folder]` (default: `07-logs`)
+- `folders.agent` as `[agent_folder]` (default: `05-agent`)
 
 Use these variables for all file paths in the steps below.
 

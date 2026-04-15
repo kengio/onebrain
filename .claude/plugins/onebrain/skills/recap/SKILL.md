@@ -14,9 +14,9 @@ Reads session logs, and any recently-created files in `context/` and `memory/`, 
 ## Before You Begin
 
 Read `vault.yml` and extract:
-- `folders.logs` as `[logs_folder]` (default: `[logs_folder]`)
-- `folders.agent` as `[agent_folder]` (default: `[agent_folder]`)
-- `folders.archive` as `[archive_folder]` (default: `[archive_folder]`)
+- `folders.logs` as `[logs_folder]` (default: `07-logs`)
+- `folders.agent` as `[agent_folder]` (default: `05-agent`)
+- `folders.archive` as `[archive_folder]` (default: `06-archive`)
 
 ---
 

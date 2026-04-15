@@ -12,9 +12,9 @@ Surfaces tasks due today and open items from the last session.
 ## Before You Begin
 
 Read `vault.yml` and extract:
-- `folders.logs` as `[logs_folder]` (default: `[logs_folder]`)
-- `folders.inbox` as `[inbox_folder]` (default: `[inbox_folder]`)
-- `folders.projects` as `[projects_folder]` (default: `[projects_folder]`)
+- `folders.logs` as `[logs_folder]` (default: `07-logs`)
+- `folders.inbox` as `[inbox_folder]` (default: `00-inbox`)
+- `folders.projects` as `[projects_folder]` (default: `01-projects`)
 
 Count inbox items: Glob `[inbox_folder]/*.md` and store the count as `[inbox_count]`.
 

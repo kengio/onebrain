@@ -21,14 +21,14 @@ Read `vault.yml` from the current working directory. Extract folder paths with t
 
 | Key | Default |
 |-----|---------|
-| `folders.inbox` | `[inbox_folder]` |
-| `folders.projects` | `[projects_folder]` |
-| `folders.areas` | `[areas_folder]` |
-| `folders.knowledge` | `[knowledge_folder]` |
-| `folders.resources` | `[resources_folder]` |
-| `folders.agent` | `[agent_folder]` |
-| `folders.archive` | `[archive_folder]` |
-| `folders.logs` | `[logs_folder]` |
+| `folders.inbox` | `00-inbox` |
+| `folders.projects` | `01-projects` |
+| `folders.areas` | `02-areas` |
+| `folders.knowledge` | `03-knowledge` |
+| `folders.resources` | `04-resources` |
+| `folders.agent` | `05-agent` |
+| `folders.archive` | `06-archive` |
+| `folders.logs` | `07-logs` |
 
 If `vault.yml` does not exist, use all defaults and warn the user:
 > "vault.yml not found : using default folder paths. Run `/onboarding` to set up your vault configuration."

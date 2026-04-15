@@ -20,9 +20,9 @@ Usage:
 ## Step 1: Read vault.yml
 
 Extract folder paths and assign these variables for all steps below:
-- `[agent_folder]` = `folders.agent` (default: `[agent_folder]`)
-- `[logs_folder]` = `folders.logs` (default: `[logs_folder]`)
-- `[inbox_folder]` = `folders.inbox` (default: `[inbox_folder]`)
+- `[agent_folder]` = `folders.agent` (default: `05-agent`)
+- `[logs_folder]` = `folders.logs` (default: `07-logs`)
+- `[inbox_folder]` = `folders.inbox` (default: `00-inbox`)
 - `[qmd_collection]` = `qmd_collection`
 
 If vault.yml is missing, flag immediately:
