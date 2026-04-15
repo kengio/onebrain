@@ -143,7 +143,9 @@ After writing all entries, re-sort the `## Key Learnings & Patterns` section in-
 1. `[conf:high]` entries first, newest → oldest
 2. `[conf:medium]` entries next, newest → oldest
 3. `[conf:low]` entries last, newest → oldest
-4. Preserve the `<!-- conf:high -->` / `<!-- conf:medium -->` / `<!-- conf:low -->` comment markers as group separators
+4. Preserve each `<!-- conf:* ... -->` comment line exactly as-is (the markers may have additional text after the tier name, e.g. `<!-- conf:high — empirically confirmed -->`); do not strip or rewrite them
+5. If a conf group has no entries, omit that group's comment marker entirely rather than leaving an empty section
+6. Entries with no `[conf:...]` tag: treat as `[conf:medium]` for sorting purposes only (do not add a tag)
 
 ---
 
