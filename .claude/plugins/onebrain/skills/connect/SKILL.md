@@ -21,7 +21,7 @@ Ask (or infer from context):
 
 ## Step 2: Scan Notes
 
-List and read the relevant notes using recursive glob patterns (`01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`). For each note, extract:
+Use qmd if available for semantic search across notes; fallback: Glob `01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`. For each note, extract:
 - Title
 - Tags (from frontmatter)
 - Key concepts mentioned (first 200 words)
@@ -78,6 +78,34 @@ After connecting, optionally run:
 > Want me to list notes with no outbound links? These "orphan" notes might be missing connections.
 
 List them if yes, let user decide what to do.
+
+---
+
+## Step 7: Offer Typed Relationship Frontmatter
+
+Skip this step if no wikilinks were approved or implemented in Step 5.
+
+After implementing approved wikilinks, use AskUserQuestion to offer typed relationship frontmatter:
+
+> Want me to also add typed relationship properties to the frontmatter of connected notes? This makes connections machine-readable and shows relationship types in Obsidian Graph View. (yes / no)
+
+If user agrees:
+- For each connection found, determine the best relationship type: `uses`, `depends_on`, `contradicts`, `supersedes`, `caused_by`
+- Read the source note's frontmatter
+- Add or append to the appropriate property list
+- Do not duplicate existing entries (check current frontmatter before writing)
+
+---
+
+## Step 8: Batch Retro-tag Mode
+
+If the user asks to retro-tag existing notes (e.g. "update all notes in 01-projects/onebrain/"):
+- Glob the target folder for `.md` files
+- For each note: read content + existing frontmatter
+- Suggest typed relationships based on existing wikilinks and content
+- Present suggestions in batches of 5, ask for approval before writing
+- Before writing, check existing frontmatter properties and skip any relationship already present to avoid duplicates
+- Write approved typed relationships to frontmatter
 
 ---
 

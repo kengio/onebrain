@@ -43,7 +43,7 @@ For each item:
 ### 3a. Analyze
 Read the file fully. Identify:
 - What type of knowledge this is (insight, reference, idea, project note, area)
-- What existing notes it relates to (search `03-knowledge/**/*.md`, `04-resources/**/*.md`, `01-projects/**/*.md`, and `02-areas/**/*.md`)
+- What existing notes it relates to (search via qmd if available, otherwise Glob `03-knowledge/**/*.md`, `04-resources/**/*.md`, `01-projects/**/*.md`, `02-areas/**/*.md`)
 - Whether it deserves its own note or should be merged into an existing one
 
 ### 3b. Decide Destination

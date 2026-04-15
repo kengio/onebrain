@@ -5,10 +5,10 @@ description: Import local files (PDF, Word, PowerPoint, Excel, images, video, sc
 
 # Import
 
-Process local files into permanent vault notes in `[resources]/` (resolved from vault.yml; default: `04-resources/`).
+Process local files into permanent vault notes in `[resources_folder]/` (resolved from vault.yml; default: `04-resources/`).
 
 Usage:
-- `/import` : scan default import staging inbox (`[inbox]/imports/`, resolved from vault.yml)
+- `/import` : scan default import staging inbox (`[inbox_folder]/imports/`, resolved from vault.yml)
 - `/import /path/to/file` : import a single explicit file
 - `/import --attach` : scan inbox and copy supported files into vault for inline Obsidian preview
 - `/import /path/to/file --attach` : single file with attach
@@ -23,11 +23,11 @@ Resolve folders from `vault.yml` (read the file if it exists at the vault root):
 - If `vault.yml` does not exist: use all defaults below.
 - If `vault.yml` exists but cannot be parsed: report the error and stop : do not proceed with unknown folder paths.
 - `folders.inbox` → default: `00-inbox` (vault inbox; used to derive import staging path)
-- `folders.import_inbox` → default: `[inbox]/imports` (import staging folder; substituting the resolved `[inbox]` value)
+- `folders.import_inbox` → default: `[inbox_folder]/imports` (import staging folder; substituting the resolved `[inbox_folder]` value)
 - `folders.resources` → default: `04-resources` (output folder for notes)
 - `folders.attachments` → default: `attachments` (for --attach copies)
 
-Use these resolved values throughout. Store as `[inbox]`, `[resources]`, `[attachments]`.
+Use these resolved values throughout. Store as `[inbox_folder]`, `[resources_folder]`, `[attachments_folder]`.
 
 Parse arguments:
 - Extract `--attach` flag if present (remove from path consideration)
@@ -44,7 +44,7 @@ Parse arguments:
 5. Skip Steps 2 and 3 below. Go directly to Step 4 with this single file.
 
 **Batch mode:**
-1. Use `[inbox]` resolved in Step 1 above (default: `[inbox]/imports` from vault.yml).
+1. Use `[inbox_folder]` resolved in Step 1 above (default: `[inbox_folder]/imports` from vault.yml).
 2. List all files recursively in the inbox folder.
 3. If the inbox folder does not exist, report:
    > Import inbox not found at `[inbox path]`. Run `/onboarding` to set up your vault, or use `/import /path/to/file` to import a specific file.
@@ -100,10 +100,10 @@ After all subagents complete, show a summary:
 ```
 Import complete : 4 notes created:
 
-  [resources]/research/report.md         (from report.pdf)
-  [resources]/finance/budget-summary.md  (from budget.xlsx)
-  [resources]/media/hero-image.md        (from hero-image.png)
-  [resources]/scripts/cleanup.md         (from cleanup.sh)
+  [resources_folder]/research/report.md         (from report.pdf)
+  [resources_folder]/finance/budget-summary.md  (from budget.xlsx)
+  [resources_folder]/media/hero-image.md        (from hero-image.png)
+  [resources_folder]/scripts/cleanup.md         (from cleanup.sh)
 
 4 files removed from inbox.
 ```
@@ -124,7 +124,7 @@ If any files were skipped due to unsupported type:
 If a note was created but the inbox delete failed (partial success):
 ```
 ⚠ 1 partial success:
-  report.pdf : note created at [resources]/research/report.md, but inbox file could not be deleted. Delete manually.
+  report.pdf : note created at [resources_folder]/research/report.md, but inbox file could not be deleted. Delete manually.
 ```
 
 ### Supported File Types
@@ -243,21 +243,21 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - **Core thesis or purpose**: what is this document fundamentally about?
 
 3. Choose output subfolder:
-   - Glob existing subfolders in `[resources]/*/` (resolved from vault.yml)
+   - Glob existing subfolders in `[resources_folder]/*/` (resolved from vault.yml)
    - Pick a kebab-case subfolder matching the document's topic (e.g. `research`, `finance`, `legal`)
    - Prefer an existing subfolder if the topic matches; create a new one only if none fit
-   - **Single-file mode**: confirm with user: "I'd file this under `[resources]/[suggested]/`. OK?"
+   - **Single-file mode**: confirm with user: "I'd file this under `[resources_folder]/[suggested]/`. OK?"
    - **Batch mode**: auto-select without confirmation (user confirms all files in Step 3 of orchestrator)
    - File name: title-cased derivation of the document title (or filename if no title)
 
-4. Create note at `[resources]/[subfolder]/[Title].md` using the Note Template below.
+4. Create note at `[resources_folder]/[subfolder]/[Title].md` using the Note Template below.
    - `file_type`: `pdf`
    - Summary: 2-3 sentence distillation of the document's purpose and key findings
    - Key Points: bullet list of 3-7 main points from the document
 
 5. If `--attach` flag is set:
-   - Run: `mkdir -p "[vault-root]/[attachments]/pdf/"`
-   - Run: `cp "[filepath]" "[vault-root]/[attachments]/pdf/[filename]"`
+   - Run: `mkdir -p "[vault-root]/[attachments_folder]/pdf/"`
+   - Run: `cp "[filepath]" "[vault-root]/[attachments_folder]/pdf/[filename]"`
    - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed to the note body (above the Summary section)
 
@@ -431,8 +431,8 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
 3. Create note same as above (same subfolder selection rule : confirm in single-file mode, auto-select in batch mode), but with `file_type`: `svg`.
 
 **--attach behavior (PNG, JPG, JPEG, GIF, WebP, SVG):**
-- Run: `mkdir -p "[vault-root]/[attachments]/images/"`
-- Run: `cp "[filepath]" "[vault-root]/[attachments]/images/[filename]"`
+- Run: `mkdir -p "[vault-root]/[attachments_folder]/images/"`
+- Run: `cp "[filepath]" "[vault-root]/[attachments_folder]/images/[filename]"`
 - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
 - Add `![[filename]]` embed above the Summary section in the note
 
@@ -457,8 +457,8 @@ Executed by a subagent. Inputs: file path, vault root, `--attach` flag, inbox fl
    - Key Points: left blank : add context about this video manually
 
 3. `--attach` behavior:
-   - Run: `mkdir -p "[vault-root]/[attachments]/video/"`
-   - Run: `cp "[filepath]" "[vault-root]/[attachments]/video/[filename]"`
+   - Run: `mkdir -p "[vault-root]/[attachments_folder]/video/"`
+   - Run: `cp "[filepath]" "[vault-root]/[attachments_folder]/video/[filename]"`
    - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed above the Summary section
 
@@ -572,6 +572,6 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 - **Excel (full extraction)**: replaces `## Key Points / Contents` : use `## Summary` (AI-generated) + `## [Sheet Name]` (markdown table per sheet)
 - **Excel (stub)**: `## Summary` : left blank for manual entry
 
-**Scan for related notes:** After creating the note, grep `[resources]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found : add links manually._`
+**Scan for related notes:** After creating the note, grep `[resources_folder]/**/*.md` and `03-knowledge/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found : add links manually._`
 
 > **Note on `file_path`:** `file_path` is only included for files imported from an explicit path (kept in place after import). For inbox-staged files, `file_path` is omitted : the staging copy is deleted and the note is the permanent artifact.

@@ -156,23 +156,23 @@ updated: YYYY-MM-DD
 
 ## Step 4c: Create Missing Vault Folders
 
-Resolve `[inbox]` from `vault.yml` `folders.inbox` (default: `00-inbox`) and `[attachments]` from `vault.yml` `folders.attachments` (default: `attachments`) : both were already read in Step 4b.
+Resolve `[inbox_folder]` from `vault.yml` `folders.inbox` (default: `00-inbox`) and `[attachments_folder]` from `vault.yml` `folders.attachments` (default: `attachments`) : both were already read in Step 4b.
 
 Ensure these folders exist (create with `.gitkeep` if missing, report only new ones):
 
 | Folder | Introduced |
 |--------|-----------|
-| `[inbox]/imports/` | v1.2.0 |
-| `[attachments]/` | v1.2.0 |
-| `[attachments]/pdf/` | v1.2.0 |
-| `[attachments]/images/` | v1.2.0 |
-| `[attachments]/video/` | v1.2.0 |
+| `[inbox_folder]/imports/` | v1.2.0 |
+| `[attachments_folder]/` | v1.2.0 |
+| `[attachments_folder]/pdf/` | v1.2.0 |
+| `[attachments_folder]/images/` | v1.2.0 |
+| `[attachments_folder]/video/` | v1.2.0 |
 
 Also ensure `vault.yml` has these keys under `folders:` (add if missing, never touch `qmd_collection`):
 
 | Key | Value | Introduced |
 |-----|-------|-----------|
-| `import_inbox` | `[inbox]/imports` | v1.2.0 |
+| `import_inbox` | `[inbox_folder]/imports` | v1.2.0 |
 | `attachments` | `attachments` | v1.2.0 |
 
 When inserting missing keys: read the file, insert within the existing `folders:` block (not at end of file), write back the full file. If the `folders:` block is absent, report and skip.

@@ -40,12 +40,14 @@ Display a formatted table with all available commands:
 | `/moc` | Create or refresh vault portal (MOC.md) : a Map of Content with live queries, AI summary, and your pinned links | When you want a bird's-eye view of your entire vault |
 | `/weekly` | Weekly reflection : review sessions, patterns, intentions | At the end of each week for review and planning |
 | `/daily` | Two-phase daily briefing : surfaces tasks and last session context, then saves your stated focus as a daily note | Every morning (or any time you want to reset your focus for the day) |
-| `/recap` | Cross-session synthesis : reads 7 days of logs, surfaces patterns, updates MEMORY.md Key Learnings | Periodically, when you want to distill recent sessions into long-term memory |
+| `/recap` | Cross-session synthesis : reads 7 days of session logs + newly /learned context/ and memory/ files, surfaces patterns, updates MEMORY.md Key Learnings | Periodically, when you want to distill recent sessions into long-term memory |
 | `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
 | `/learn` | Teach the agent something : facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
 | `/clone` | Package your agent context (agent folder including MEMORY.md) for vault transfer | When moving to a new vault and want to preserve your agent's memory |
 | `/reorganize` | Migrate existing flat notes into subfolders : one-time migration | After upgrading to a version with subfolder organization |
 | `/qmd` | Set up and manage qmd search index (setup, embed, status, reindex, uninstall) | When you want faster vault search or need to manage the search index |
+| `/distill` | Aggregate notes from multiple sessions on a topic into a structured knowledge note | When you want to compress a completed research thread or recurring theme into permanent knowledge |
+| `/doctor` | Diagnose vault and plugin health (broken links, orphan notes, stale memory, inbox backlog) | When something feels off, or as periodic vault maintenance |
 | `/update` | Update OneBrain system files from GitHub | When a new version is available |
 | `/help` | List all available commands | You're already here! |
 

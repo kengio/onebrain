@@ -11,6 +11,14 @@ Usage: `/summarize [url]`
 
 ---
 
+## Before You Begin
+
+Read `vault.yml` and extract:
+- `folders.resources` → `[resources_folder]` (default: `04-resources`)
+- `folders.knowledge` → `[knowledge_folder]` (default: `03-knowledge`)
+
+---
+
 ## Step 1: Get the URL
 
 If provided after the command, use it directly.
@@ -22,9 +30,7 @@ If not, ask:
 
 ## Step 2: Check Bookmarks
 
-Resolve the resources folder: read `vault.yml` for `folders.resources`, defaulting to `04-resources`.
-
-Grep `[resources]/Bookmarks.md` for the URL. If found, note it silently : you will offer to remove it after the summary note is saved (Step 7).
+Grep `[resources_folder]/Bookmarks.md` for the URL. If found, note it silently : you will offer to remove it after the summary note is saved (Step 7).
 
 ---
 
@@ -64,12 +70,12 @@ Identify:
 
 **Resolve subfolder:**
 
-1. Glob existing subfolders in `[resources]/*/`
+1. Glob existing subfolders in `[resources_folder]/*/`
 2. Suggest a kebab-case subfolder based on the article's topic (max 2 levels, e.g. `productivity/tools`)
-3. Present to user: "I'd file this under `[resources]/[suggested-path]/`. OK?"
+3. Present to user: "I'd file this under `[resources_folder]/[suggested-path]/`. OK?"
 4. Use confirmed path for file creation.
 
-**Create the summary note** at `[resources]/[subfolder]/[Article Title].md`:
+**Create the summary note** at `[resources_folder]/[subfolder]/[Article Title].md`:
 
 ```markdown
 ---
@@ -115,9 +121,9 @@ published: [Publication date if known]
 
 ## Step 7: Suggest Links and Clean Up Bookmark
 
-**Suggest links:** Scan `[resources]/**/*.md` and `03-knowledge/**/*.md` for notes related to the article's topic.
+**Suggest links:** Search for related vault notes (use qmd if available, otherwise Glob `[resources_folder]/**/*.md` and `[knowledge_folder]/**/*.md`).
 
-> Summary saved to `[resources]/[subfolder]/[Title].md`.
+> Summary saved to `[resources_folder]/[subfolder]/[Title].md`.
 >
 > This looks related to:
 > - "Related Note 1" : [why]

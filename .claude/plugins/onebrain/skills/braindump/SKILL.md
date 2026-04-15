@@ -37,7 +37,7 @@ Silently analyze and classify each item:
 
 File immediately : do not ask for confirmation first.
 
-Create `00-inbox/YYYY-MM-DD-braindump.md` (append `-2`, `-3` if file exists):
+Create `00-inbox/YYYY-MM-DD-braindump.md`. If a file with that name already exists: glob `00-inbox/YYYY-MM-DD-braindump*.md`, count matches N, use suffix `-{N+1}` (e.g. `-2`, `-3`):
 
 ```markdown
 ---
@@ -73,6 +73,8 @@ created: YYYY-MM-DD
 [[Link to relevant existing notes if any]]
 (Omit this section if no related notes are found)
 ```
+
+Find related notes via qmd if available; fallback: Glob `01-projects/**/*.md`, `02-areas/**/*.md`, `03-knowledge/**/*.md`, `04-resources/**/*.md`. Omit `## Related Notes` if nothing relevant found.
 
 ---
 

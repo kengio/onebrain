@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>Your personal AI OS</strong> — persistent memory, 22+ skills, and a full local stack<br>
+  <strong>Your personal AI OS</strong> — persistent memory, 24+ skills, and a full local stack<br>
   (Claude Code + Obsidian + tmux + Telegram), entirely on your own machine.
 </p>
 
@@ -30,7 +30,7 @@
 
 ## What is OneBrain?
 
-OneBrain is an AI operating system layer built on top of Obsidian. It gives your AI agent persistent memory, a structured knowledge vault, and 22+ pre-built skills — so every session picks up exactly where the last one left off.
+OneBrain is an AI operating system layer built on top of Obsidian. It gives your AI agent persistent memory, a structured knowledge vault, and 24+ pre-built skills — so every session picks up exactly where the last one left off.
 
 Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forever. No cloud sync required. No proprietary format. Just your agent, your vault, your data.
 
@@ -44,12 +44,15 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 |---|---|---|
 | 🧠 | **Persistent Memory** | Remembers your name, goals, preferences, and decisions across every session |
 | 🖥️ | **Personal AI OS** | Full local stack: Claude Code + Obsidian + tmux + Telegram — no cloud infra needed |
-| ⚡ | **22+ Skills** | Braindump, research, consolidate, bookmark, import files, daily briefing, and more |
+| ⚡ | **24+ Skills** | Braindump, research, consolidate, bookmark, import files, daily briefing, and more |
 | 📂 | **Vault-native Markdown** | Plain Markdown, no lock-in. Your data stays yours forever |
 | 🤖 | **Multi-agent** | Works with Claude Code, Gemini CLI, or any agent that reads Markdown |
 | 🔌 | **Zero Config** | Clone, open in Obsidian, run `/onboarding`. Ready in under 2 minutes |
 | 📓 | **Session Logs & Checkpoints** | Every conversation saved with summaries and action items. Auto-checkpoints fire every 15 messages or 30 min so nothing is lost mid-session *(auto-checkpoint requires Claude Code)* |
 | 🔗 | **Knowledge Synthesis** | `/consolidate` turns inbox captures into permanent connected knowledge |
+| 🔬 | **Confidence-scored Memory** | Every insight carries `[conf:high/medium/low]` + `[verified:YYYY-MM-DD]` — knowledge that grows more reliable with use |
+| 💎 | **Knowledge Distillation** | `/distill` crystallizes a completed research thread into a permanent structured note in your knowledge base |
+| 🩺 | **Vault Doctor** | `/doctor` audits broken links, orphan notes, stale memory, and inbox backlog; `--fix` auto-repairs confidence scores and wikilinks |
 | 🎓 | **Teachable AI** | `/learn` permanently shapes how your agent thinks and responds |
 | 📱 | **Mobile Access** | Send instructions and receive briefings from anywhere via Telegram |
 
@@ -101,13 +104,14 @@ After `/onboarding`, your AI agent:
 
 ### Memory System
 
-OneBrain uses a three-layer memory system:
+OneBrain uses a four-tier memory system — each tier is more compressed and longer-lived than the one below:
 
-| Layer | Location | What it stores |
-|-------|----------|---------------|
-| **Identity** | `05-agent/MEMORY.md` | Name, goals, style, active projects — loaded every session |
-| **Knowledge** | `05-agent/context/` + `memory/` | Domain facts, stack, team, behavioral patterns |
-| **History** | `07-logs/YYYY/MM/` | Session summaries, decisions, action items — searchable |
+| Tier | Location | What it stores | Promoted by |
+|------|----------|---------------|-------------|
+| **Working** | `00-inbox/` + current session | Raw captures, active conversation | `/consolidate`, `/wrapup` |
+| **Episodic** | `07-logs/YYYY/MM/` | Session summaries, decisions, action items | `/wrapup`, auto-checkpoint |
+| **Semantic** | `05-agent/MEMORY.md` | Key learnings with confidence scores (`[conf:high/medium/low]`) | `/recap`, `/wrapup`, `/learn` |
+| **Knowledge** | `03-knowledge/`, `05-agent/context/` + `memory/` | Permanent notes, domain facts, behavioral patterns | `/distill`, `/learn` |
 
 ---
 
@@ -165,7 +169,7 @@ Then run `/onboarding`.
 <a id="commands"></a>
 
 <details>
-<summary><strong>📋 22+ Commands</strong></summary>
+<summary><strong>📋 24+ Commands</strong></summary>
 <br>
 
 | Command | What it does |
@@ -182,7 +186,8 @@ Then run `/onboarding`.
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/daily` | Daily briefing — surfaces tasks and last session context, then saves your focus as a daily note |
-| `/recap` | Cross-session synthesis — surface patterns across sessions and update long-term memory |
+| `/recap` | Cross-session synthesis — surface patterns across sessions and update long-term memory (MEMORY.md) |
+| `/distill [topic]` | Crystallize a completed topic thread into a permanent knowledge note in `03-knowledge/` |
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
 | `/wrapup` | Wrap up session — merges any auto-checkpoints and saves full summary to session log |
@@ -190,6 +195,7 @@ Then run `/onboarding`.
 | `/clone` | Package your agent context for transfer to a new vault |
 | `/reorganize` | Migrate flat notes into organized subfolders |
 | `/qmd` | Set up fast vault search index — enables semantic search across all notes |
+| `/doctor` | Vault + config health check — broken links, orphan notes, stale memory entries, inbox backlog |
 | `/update` | Update skills, config, and plugins from GitHub |
 | `/help` | List all available commands with descriptions |
 
@@ -266,17 +272,20 @@ Checkpoints: `07-logs/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md` — auto-generated by
 <summary><strong>🧠 Memory System</strong></summary>
 <br>
 
-OneBrain uses a three-layer memory system:
+OneBrain uses a four-tier memory system, where knowledge flows upward as it gets validated:
 
-**Layer 1 — `05-agent/MEMORY.md`** (always loaded, ~200 lines max)
-Your identity: name, role, goals, communication style, recurring context. The AI reads this at the start of every session and uses it to personalize responses.
+**Tier 1 — Working memory** (`00-inbox/` + current session)
+Everything that hasn't been processed yet. Captures from `/braindump`, `/capture`, and quick notes land here. Process with `/consolidate` to move into the knowledge base.
 
-**Layer 2 — `05-agent/`** (persistent agent knowledge)
-Long-lived facts and preferences that don't fit in `MEMORY.md`. Two subfolders: `context/` for domain knowledge (your stack, team, customers) and `memory/` for behavioral patterns (how you like to work). Managed by `/learn`. Clone everything with `/clone` when switching vaults.
+**Tier 2 — Episodic memory** (`07-logs/`)
+Session logs: `YYYY-MM-DD-session-NN.md` in `YYYY/MM/` subfolders. Contains summaries, decisions, insights, and action items from each session. Generated by `/wrapup`.
+Checkpoints: `YYYY-MM-DD-checkpoint-NN.md` — auto-generated mid-session by hooks. Merged into the session log by `/wrapup`.
 
-**Layer 3 — `07-logs/`** (searchable session history)
-Session logs: `YYYY-MM-DD-session-NN.md` in `YYYY/MM/` subfolders. Contains summaries, decisions, insights, and action items. Generated by `/wrapup` at the end of each session.
-Checkpoints: `YYYY-MM-DD-checkpoint-NN.md` — auto-generated mid-session by hooks. Merged into the session log by `/wrapup` or on next session start if the session ended without a wrapup.
+**Tier 3 — Semantic memory** (`05-agent/MEMORY.md`, ~180 lines max)
+Always loaded at session start. Key learnings with confidence scoring: `[conf:high]` (tested across sessions), `[conf:medium]` (observed once), `[conf:low]` (inferred). Each entry tagged with `[verified:YYYY-MM-DD]`. Updated by `/recap` (bulk, periodic) and `/wrapup` (one insight per session). Use `/doctor --fix` to audit and repair stale confidence scores.
+
+**Tier 4 — Knowledge base** (`03-knowledge/`, `05-agent/context/` + `memory/`)
+Permanent, searchable notes. `/distill` crystallizes a completed topic thread into a structured note in `03-knowledge/`. `/learn` saves domain facts (`context/`) and behavioral patterns (`memory/`). Use `/learn` to promote specific lessons from a distilled note into `MEMORY.md`.
 
 ### Task Syntax
 
