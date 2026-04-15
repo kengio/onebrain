@@ -58,7 +58,7 @@ If Cancel: tell user "You can install qmd manually with `npm install -g @tobilu/
 If npm: run `npm install -g @tobilu/qmd`. If it fails, show the error and stop.
 If bun: run `bun install -g @tobilu/qmd`. If it fails, show the error and stop.
 
-After installation, verify with `which qmd`. If still not found, tell user to check their PATH and stop.
+After installation, verify with `which qmd` (macOS/Linux) or `where qmd` (Windows). If still not found, tell user to check their PATH and stop.
 
 ### Step 4: Generate collection name
 

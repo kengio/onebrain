@@ -59,6 +59,8 @@ Tell the user what will and won't be updated:
 
 Ask: **"Proceed with update?"** and wait for confirmation before continuing.
 
+> **Requirement:** `update.sh` requires Python (`python3` or `python`) or Node.js in PATH to parse the GitHub API response. If none are found, the script will exit with an error — tell the user to install Python or Node.js and retry.
+
 ---
 
 ## Step 2: Compare (Dry-Run)
