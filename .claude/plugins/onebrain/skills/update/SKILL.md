@@ -51,7 +51,38 @@ Steps:
    d. Run /doctor verification (newly-synced /doctor with new checks)
    e. Sync remaining repo files: INSTRUCTIONS.md, README.md, CONTRIBUTING.md, CHANGELOG.md
    f. Bump plugin.json version (last — completion signal)
-5. Write migration log to `07-logs/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`
+5. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
+
+   ```markdown
+   ---
+   tags: [update-log]
+   date: YYYY-MM-DD
+   from_version: X.X.X
+   to_version: X.X.X
+   ---
+
+   # Update Log — vX.X.X → vX.X.X
+
+   ## Steps Completed
+
+   - [x] Step 1: Migrated N Key Learnings → memory/ (N behavioral, N project)
+   - [x] Step 2: Migrated context/ → memory/ (N files)
+   - [x] Step 3: Updated frontmatter on N memory/ files
+   - [x] Step 4: Restructured MEMORY.md → 3 sections
+   - [x] Step 5: Created INDEX.md (N active entries)
+   - [x] Step 6: Backfilled recapped: on N session logs
+   - [x] Step 7: /doctor — N issues
+   - [x] Step 8: Initialized vault.yml stats + recap block
+
+   ## Summary
+
+   N files created, N modified, N deleted.
+   ```
+
+   - Mark each step `[x]` on completion; leave `[ ]` if skipped (with reason)
+   - If a step had nothing to do (e.g. context/ already absent), write `[x] Step 2: Skipped — context/ not present`
+   - If /doctor found issues in Step 7, list them under the step line
+
 6. Report summary to user
 
 ## Vault Migration Steps
