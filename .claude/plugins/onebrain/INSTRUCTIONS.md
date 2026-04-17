@@ -37,7 +37,7 @@ Be proactive: surface connections, flag stale tasks, suggest next actions based 
 02-areas/          Ongoing responsibilities (health, finances, career...)
 03-knowledge/      Your own synthesized thinking and insights
 04-resources/      External info : research output, summaries, reference
-05-agent/          AI-specific context and memory (MEMORY.md + context/ + memory/)
+05-agent/          AI-specific context and memory (MEMORY.md + INDEX.md + memory/)
 06-archive/        Completed projects and archived areas
 07-logs/           Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
 attachments/       Copied files from /import --attach (pdf/, images/, video/)

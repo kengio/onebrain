@@ -34,7 +34,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - /learn filename collision check with auto-incrementing -NN rename suffix
 - /learn type inference from content semantics (5 categories)
 - /learn Active Projects intent detection
-- /doctor: 10 new memory health checks including min_frequency validation
+- /doctor: 11 new memory health checks including min_frequency validation
 - /doctor --fix: rebuild INDEX.md, auto-rename non-compliant files, reset min_frequency
 - Soft delete for memory files — delete moves to 06-archive/05-agent/memory/YYYY-MM/
 - Pre-migration backup (MEMORY.md + context/) to 06-archive/ before /update migration

@@ -209,7 +209,7 @@ Then run `/onboarding`.
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/daily` | Daily briefing — surfaces tasks and last session context, then saves your focus as a daily note |
-| `/recap` | Cross-session synthesis — surface patterns across sessions and update long-term memory (MEMORY.md) |
+| `/recap` | Cross-session synthesis — batch-promote recurring insights from session logs into `memory/` files (does NOT write to MEMORY.md) |
 | `/distill [topic]` | Crystallize a completed topic thread into a permanent knowledge note in `03-knowledge/` |
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
