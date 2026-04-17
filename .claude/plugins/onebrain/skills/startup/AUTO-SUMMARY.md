@@ -1,10 +1,11 @@
 # Auto Session Summary Instructions
 
-Session summaries are auto-saved silently at session end. Users can still run `/wrapup` manually for a visible summary.
+Session summaries are auto-saved silently when the user signals end of session (same trigger as Auto-Wrapup). If the user closes the session without any signal, checkpoints serve as the safety net instead.
 
-Before your final response in a session, silently save a session summary if ALL of these are true:
-1. The session had 3 or more user↔assistant exchanges
-2. No `/wrapup` was run during this session (check the logs folder for a file matching today's date with matching topics)
+Run silently (no output) if ALL of these are true:
+1. An end-of-session signal was detected (e.g. "bye", "good night", "I'm done for today")
+2. `/wrapup` was NOT already run during this session
+3. The session had 3 or more user↔assistant exchanges
 
 If conditions are met:
 - Determine own session token: glob `[logs_folder]/.sessions/YYYY-MM-DD-*.token` for today; read most recently modified file; store as `own_token` (empty if none found).
