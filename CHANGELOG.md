@@ -28,7 +28,7 @@ Memory system redesign — replaces MEMORY.md Key Learnings with a structured `m
 - Memory file naming convention: kebab-case, 3–5 words, no date prefix
 
 **Session management**
-- Session token isolation — Phase 1 generates a 6-char random token per session; written to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token`
+- Session token isolation — Phase 1 generates a 6-char random token per session; stored in agent context only (no file written to disk)
 - Checkpoint filenames embed session token: `YYYY-MM-DD-{token}-checkpoint-NN.md`
 - Phase 2 orphan detection groups checkpoints by token — each token group produces one session log, preventing content mixing from concurrent sessions
 - /wrapup and AUTO-SUMMARY glob only own-session checkpoints (by token); legacy checkpoints (no token) use backward-compatible fallback
@@ -74,7 +74,8 @@ Memory system redesign — replaces MEMORY.md Key Learnings with a structured `m
 - /clone: includes INDEX.md; memory/ instead of context/; preserves recapped: on session logs; archive option added
 - /onboarding: new MEMORY.md + INDEX.md templates; vault.yml recap block; upgrade guard
 - README.md: folder structure updated, Memory Promotion section added
-- Auto-wrapup trigger moved from MEMORY.md Critical Behaviors to INSTRUCTIONS.md
+- Auto-wrapup removed — replaced by Auto Session Summary (fires silently at session end when /wrapup was not run)
+- /update: read-new-execute-in-place bootstrap; 8-step vault migration; writes migration log to `07-logs/`
 
 ### Removed
 
