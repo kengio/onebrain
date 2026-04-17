@@ -38,16 +38,17 @@ if [ "$NOW" -eq 0 ]; then exit 0; fi
 
 # --- Read or initialize state ---
 if [ -f "$STATE_FILE" ]; then
-  IFS=':' read -r COUNT LAST_TS < "$STATE_FILE"
+  IFS=':' read -r COUNT LAST_TS CHKPT_NN < "$STATE_FILE"
   if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || ! [[ "$LAST_TS" =~ ^[0-9]+$ ]]; then
     # Malformed — reset cleanly; COUNT=0 so increment will bring it to 1
-    COUNT=0
+    COUNT=0; CHKPT_NN=0
     LAST_TS=$(stat -f %m "$STATE_FILE" 2>/dev/null || stat -c %Y "$STATE_FILE" 2>/dev/null || node -e "const fs=require('fs');console.log(Math.floor(fs.statSync(process.argv[1]).mtimeMs/1000))" "$STATE_FILE" 2>/dev/null || echo "$NOW")
   elif [ "$COUNT" -eq 0 ] && [ $(( NOW - LAST_TS )) -lt $SKIP_WINDOW ]; then
     exit 0  # another checkpoint just fired — skip
   fi
+  [[ "$CHKPT_NN" =~ ^[0-9]+$ ]] || CHKPT_NN=0  # default for old 2-field state files
 else
-  COUNT=0; LAST_TS=$NOW
+  COUNT=0; LAST_TS=$NOW; CHKPT_NN=0
 fi
 
 # --- Stop mode: check thresholds against vault.yml config ---
@@ -110,7 +111,7 @@ ELAPSED=$(( NOW - LAST_TS ))
 if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; then
   if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
     # Threshold fired on time but not enough activity — reset and wait next round
-    echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null
+    echo "0:${NOW}:${CHKPT_NN}" > "$STATE_FILE" 2>/dev/null
     exit 0
   fi
   # Calculate next checkpoint filename — Claude reads INSTRUCTIONS.md to handle it silently
@@ -118,11 +119,8 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   [ -z "$TODAY" ] && TODAY=$(python3 -c "import datetime; print(datetime.date.today())" 2>/dev/null)
   [ -z "$TODAY" ] && TODAY=$(node -e "const d=new Date();console.log(d.toISOString().slice(0,10))" 2>/dev/null)
   if [ -z "$TODAY" ]; then exit 0; fi
-  YEAR="${TODAY%%-*}"
-  MONTH="${TODAY#*-}"; MONTH="${MONTH%%-*}"
-  LOG_DIR="${LOGS_FOLDER_ABS}/${YEAR}/${MONTH}"
-  EXISTING=$(ls "${LOG_DIR}/${TODAY}-"*checkpoint*.md 2>/dev/null | wc -l | tr -d ' ')
-  NN=$(printf "%02d" $(( EXISTING + 1 )))
+  CHKPT_NN=$(( CHKPT_NN + 1 ))
+  NN=$(printf "%02d" "$CHKPT_NN")
   PROMPT="${TODAY}-checkpoint-${NN}.md"
   # Build JSON — just the filename as reason; Claude follows INSTRUCTIONS.md
   if command -v python3 &>/dev/null; then
@@ -138,12 +136,12 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
     # all builders failed — skip checkpoint silently (exit 0 avoids Claude Code error warning)
     exit 0
   fi
-  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+  if ! echo "0:${NOW}:${CHKPT_NN}" > "$STATE_FILE" 2>/dev/null; then
     # state file not writable — still emit JSON so checkpoint is saved, but count won't reset
     :
   fi
   printf '%s\n' "$JSON"
 else
-  echo "${COUNT}:${LAST_TS}" > "$STATE_FILE"
+  echo "${COUNT}:${LAST_TS}:${CHKPT_NN}" > "$STATE_FILE"
 fi
 exit 0
