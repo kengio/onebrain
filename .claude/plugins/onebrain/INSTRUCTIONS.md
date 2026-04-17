@@ -256,7 +256,7 @@ Note inline: `[Loading memory: filename]`
 
 ### Auto Checkpoint
 
-When the stop hook sends a message that is **just a filename** matching `YYYY-MM-DD-TOKEN-checkpoint-NN.md` (no slashes), silently write a checkpoint to `[logs_folder]/YYYY/MM/<filename>`. Extract `YYYY` and `MM` from the filename to construct the full path. Create parent directories if missing. No output to user.
+When the stop hook sends a message that is **just a filename** matching `YYYY-MM-DD-{token}-checkpoint-NN.md` (no slashes), silently write a checkpoint to `[logs_folder]/YYYY/MM/<filename>`. Extract `YYYY` and `MM` from the filename to construct the full path. Create parent directories if missing. No output to user.
 
 Write:
 
@@ -346,7 +346,7 @@ For cron/automated agents specifically: output is read by the user async (often 
 - Don't delete notes without confirmation
 - Don't move files to the archive folder without telling the user
 - Always prefer adding to existing notes over creating new ones
-- Keep `[agent_folder]/MEMORY.md` under ~180 lines
+- Keep `[agent_folder]/MEMORY.md` under ~180 lines (Phase 2 warns in daily briefing at 180; /doctor audits at 180)
 
 ## Permissions
 

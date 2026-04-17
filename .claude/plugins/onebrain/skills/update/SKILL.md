@@ -98,7 +98,7 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
 - If any check fails: surface to user with suggestion to run /doctor --fix
 
 **Step 8: Initialize vault.yml stats + recap block**
-- Add stats: block: set last_doctor_run to today; leave other fields absent
+- Add stats: block: set last_doctor_run to today; leave last_memory_review and last_recap absent (written on first use)
 - Add recap: block: min_sessions: 6, min_frequency: 2
 - Skip if vault.yml doesn't exist or user opted out via --skip-stats
 

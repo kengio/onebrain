@@ -99,7 +99,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 5. **MEMORY.md overflow guard** — Check whether the agent memory file is approaching its size limit.
 
    - Count total lines in `[agent_folder]/MEMORY.md`
-   - Include `memory_lines: N` in the return payload only if count > 160; otherwise omit
+   - Include `memory_lines: N` in the return payload only if count > 180; otherwise omit
 
 6. **Return** to main agent:
    ```
@@ -107,5 +107,5 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
    orphan_action: none | merged:{N} | prompt_wrapup:{N}
    context_hints: [path1, path2, ...]
    stale_notes: [{path: string (vault-relative), days_since_modified: integer}, ...]
-   memory_lines: N          # only present when MEMORY.md exceeds 160 lines
+   memory_lines: N          # only present when MEMORY.md exceeds 180 lines
    ```

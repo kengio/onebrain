@@ -24,7 +24,7 @@ This skill handles two scenarios:
 
 Only run if `vault.yml` is missing `folders.areas`.
 
-1. Create new folders: `02-areas/`, `04-resources/`, `05-agent/context/`, `05-agent/memory/`
+1. Create new folders: `02-areas/`, `04-resources/`, `05-agent/memory/`
 2. Rename `03-archive/` → `06-archive/`: move all contents preserving `YYYY/MM/` structure
 3. Rename `04-logs/` → `07-logs/`: move all contents preserving `YYYY/MM/` structure
 4. Classify existing `02-knowledge/` notes:
@@ -32,7 +32,7 @@ Only run if `vault.yml` is missing `folders.areas`.
    - If frontmatter has a `source:` field matching `/research`, `/summarize`, or `/reading-notes` → move to `04-resources/[same subfolder]`
    - Otherwise → keep in `03-knowledge/` (treat as synthesized content)
    - Notes that cannot be automatically classified → list them and ask the user before moving
-5. Write `README.md` into each new root folder (content from `.claude/plugins/onebrain/skills/onboarding/SKILL.md` Step 10b)
+5. Verify `05-agent/INDEX.md` exists; if not, create an empty INDEX.md with the standard frontmatter (`total_active: 0`, `total_needs_review: 0`, `updated: YYYY-MM-DD`)
 6. Update `vault.yml` with all 8 keys:
    ```yaml
    method: onebrain
