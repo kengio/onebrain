@@ -46,24 +46,35 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 2. **Orphan checkpoints** : Find checkpoint files from past sessions that were never turned into a session log. These need to be either auto-synthesized (if few) or flagged to the user (if many).
 
    **Filter down to true orphans:**
-   - Glob `[logs_folder]/**/*-checkpoint-*.md`
+   - Glob `[logs_folder]/**/*-checkpoint-*.md` (matches both legacy and token-format filenames)
    - Keep only files where the **date in the filename is before today**
    - Discard files older than 3 days (too stale to synthesize meaningfully)
-   - Read frontmatter of each remaining file — **exclude any file where `merged: true`** (already processed)
-   - **Also check**: if a `/wrapup` session log already exists for that date — match by the `YYYY-MM-DD` date prefix in the filename (e.g. checkpoints dated `2026-04-14` → look for `2026-04-14-session-*.md`). A session log without `auto-saved: true` in its frontmatter was written by `/wrapup` manually. If such a file exists for that date, skip that date's checkpoints entirely — /wrapup already handled them.
+   - Read frontmatter of each remaining file — **exclude any file where `merged: true`**
+   - **Also check**: if a `/wrapup` session log already exists for that date — a session log without `auto-saved: true` in its frontmatter was written by `/wrapup` manually; skip that date's checkpoints entirely — /wrapup already handled them.
    - What remains are true orphans
 
-   **Act on the count:**
-   - **0 files** : nothing to do; set `orphan_action: none`
-   - **1–5 files** : auto-synthesize silently, per date group:
+   **Group by token:**
+   - For each orphan file, parse its filename:
+     - Token format: `YYYY-MM-DD-{token}-checkpoint-NN.md` → extract `{token}` (6-char alphanumeric)
+     - Legacy format: `YYYY-MM-DD-checkpoint-NN.md` (no token) → assign to a "legacy" group per date
+   - Files with the same token (and same date) form one group → one session log
+   - Legacy files on the same date form one legacy group → one session log
+   - **Exclude** any group whose token matches `session_token` from the Phase 1 payload (those belong to the current live session — not orphaned yet)
+
+   **Act on the total group count:**
+   - **0 groups** : nothing to do; set `orphan_action: none`
+   - **1–5 groups** : auto-synthesize silently, one session log per group:
      1. Read every checkpoint file in the group and extract its full content
-     2. Count existing session logs for that date (`YYYY-MM-DD-session-*.md`) → next NN, zero-padded to 2 digits (e.g. `01`, `02`)
-     3. Write a session log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter fields `auto-saved: true` and `synthesized_from_checkpoints: true`
-        - **Every Key Decision, Action Item, and Open Question from every checkpoint must appear explicitly in the log** : do not write the file until all checkpoint content is reflected
-        - **If the write fails**: do not mark any checkpoints as `merged: true`; set `orphan_action: none` and stop — do not attempt further checkpoint processing
-     4. For each checkpoint file whose content was read and incorporated: set `merged: true` in its frontmatter
-     5. Set `orphan_action: merged:{N}` (where N = total number of checkpoints merged)
-   - **>5 files** : too many to synthesize safely; set `orphan_action: prompt_wrapup:{N}` and let the user decide
+     2. The session log date = date from the checkpoint filenames in this group
+     3. Count existing session logs for that date (`YYYY-MM-DD-session-*.md`) → next NN, zero-padded to 2 digits
+     4. Write session log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter:
+        `auto-saved: true`, `synthesized_from_checkpoints: true`
+        For token groups (non-legacy), also add: `session_token: {token}`
+        - **Every Key Decision, Action Item, and Open Question from every checkpoint must appear explicitly in the log** — do not write until all checkpoint content is reflected
+        - **If the write fails**: do not mark any checkpoints `merged: true`; set `orphan_action: none` and stop
+     5. Mark each incorporated checkpoint `merged: true`
+     6. Set `orphan_action: merged:{N}` (N = total checkpoints merged across all groups)
+   - **>5 groups** : too many to synthesize safely; set `orphan_action: prompt_wrapup:{N}` (N = total checkpoints)
 
 3. **Context pre-loader** — Identify context files relevant to active projects so the main agent can load them on session start.
 
