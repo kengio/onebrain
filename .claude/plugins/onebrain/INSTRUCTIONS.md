@@ -199,6 +199,14 @@ Run before responding to any user message:
 
 3b. After sending the greeting, load `memory/` files matching active project keywords from INDEX.md (use Topics column). Only load `status: active` and `status: needs-review` files. Deprecated files are never loaded. Load matching files for the user's first message content as well, once it arrives. This step is non-blocking — the main agent is ready to respond while loading.
 
+3c. Generate a **session token**: 6-char random alphanumeric string.
+    Write to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token` (create `.sessions/` dir if absent).
+    Use Python/node/shell for PID and token generation:
+    ```bash
+    python3 -c "import random,string,os; t=''.join(random.choices(string.ascii_lowercase+string.digits,k=6)); open(f'{logs_dir}/.sessions/{date}-{os.getpid()}.token','w').write(t); print(t)"
+    ```
+    Store as `session_token` for use in checkpoint hook and Phase 2 payload.
+
 4. Dispatch a **background sub-agent** (`run_in_background: true`, `mode: "bypassPermissions"`) with this prompt payload:
 
    ```
@@ -213,6 +221,7 @@ Run before responding to any user message:
    active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
    is_weekend: true|false
    memory_folder: [agent_folder]/memory
+   session_token: "{session_token}"
    ```
 
 Main agent is now ready to respond to the user.
