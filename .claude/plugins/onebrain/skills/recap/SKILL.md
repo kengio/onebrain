@@ -1,171 +1,115 @@
----
-name: recap
-description: "Cross-session synthesis : reads session logs, context/, and memory/ from the past 7 days, surfaces patterns and insights, and updates MEMORY.md Key Learnings. Run periodically to keep long-term memory current."
----
+# /recap
 
-# /recap : Cross-Session Synthesis
+Batch-promotes insights from session logs into memory/ files. Applies frequency filtering
+to ensure only recurring insights are promoted. Does NOT write to MEMORY.md — Critical
+Behaviors are promoted exclusively via /learn.
 
-Reads session logs, and any recently-created files in `context/` and `memory/`, from the past 7 days. Surfaces patterns, decisions, and insights, then updates `MEMORY.md` Key Learnings with new, deduplicated entries.
+## Session Log Discovery
 
-**Distinct from `/wrapup`:** `/wrapup` summarizes the current session just ended. `/recap` looks back across multiple sessions to surface long-term patterns.
+Glob `07-logs/` for session logs; filter to files WITHOUT `recapped:` frontmatter field.
+Process only those (faster than scanning all logs).
 
----
+If no unrecapped logs found → tell user "ไม่มี session logs ที่ยังไม่ได้ recap" and stop.
 
-## Step 1: Find sources from the past 7 days
+## Run Threshold
 
-**Session logs:**
-Glob `[logs_folder]/**/*.md`. Filter to files whose `date` frontmatter value is within the past 7 days (today inclusive).
+Read `recap.min_sessions` from `vault.yml` (default: `6` if field absent).
+Read `recap.min_frequency` from `vault.yml` (default: `2` if field absent).
 
-**Recent /learn files:**
-- Glob `[agent_folder]/memory/*.md`. Keep files whose `created:` frontmatter is within the past 7 days. Store as `new_memory_files`.
-- Glob `[agent_folder]/context/*.md`. Keep files whose `created:` frontmatter is within the past 7 days. Store as `new_context_files`.
+**1 unrecapped log:**
+→ warn: "มีแค่ 1 session log — promotion filter ต้องการอย่างน้อย {min_frequency} sessions ครับ"
+→ stop (nothing can pass frequency filter with only 1 log)
 
-Report to the user (M = count of new_memory_files + count of new_context_files):
-> Found N sessions (DD Mon – DD Mon) · M new /learn files
+**2 to (min_sessions - 1) unrecapped logs:**
+→ warn: "มี {N}/{min_sessions} sessions — ยังไม่ถึง threshold แนะนำให้รอให้ครบก่อนครับ รัน recap ต่อเลยไหม?"
+→ AskUserQuestion: `run-now / wait`
+→ if `wait`: stop without processing
 
-If no sessions AND no new_memory_files AND no new_context_files found:
-> No sessions and no new /learn entries in the past 7 days. Nothing to recap.
+**≥ min_sessions unrecapped logs:**
+→ proceed immediately, no confirmation needed
 
-Exit gracefully : do not proceed.
+## Promotion Filter (always applied, regardless of log count)
 
----
+After deciding to proceed, apply frequency filter to all extracted insights:
+- Promote only insights whose topic appears in ≥ min_frequency of the session logs being processed
+- Single-occurrence insights → skip; insight stays in session log (accessible later via /distill)
 
-## Step 2: Read and extract from all sources
+Example (min_frequency=2, 8 logs):
+- Topic "recap"    → appears in logs 1, 3, 5, 7 → ✅ promote
+- Topic "dreaming" → appears in log 2 only       → ⏭ skip
+- Topic "worktree" → appears in logs 4, 6        → ✅ promote
 
-Use qmd if available for content searches; use Glob/Grep for frontmatter lookups and date-filtering.
+## Conflict Handling
 
-**From session logs:** Read each log and extract:
-- **Key Decisions** : choices, directions, conclusions reached
-- **Insights & Learnings** : new understanding, patterns discovered
-- **Recurring topics** : project names or themes that appear in ≥ 2 sessions
-- **Open Questions** : questions listed in logs that have no follow-up answer in any later log
+When insights conflict with existing memory files, scan ONLY files with `status: active`
+or `status: needs-review` — skip deprecated files.
 
-**From new `memory/` files:** Read each file in `new_memory_files`. Extract the behavioral pattern or preference described. These are direct candidates for MEMORY.md Key Learnings.
+Collect ALL conflicts first, then resolve sequentially:
 
-**From new `context/` files:** Read each file in `new_context_files`. Extract any **pattern-like observations** (e.g., "We always deploy on Fridays" or "Thai users expect shorter responses"). Skip raw domain facts that are reference-only (e.g., "Stack: Go + Postgres") — those belong in context/ and do not need to be in MEMORY.md.
+⚠️ พบ conflict 3 รายการ — จัดการทีละอัน
 
-**Tiebreaker for context/ files:** If unsure whether something is a pattern or a raw fact, apply this rule (same as /learn Step 3): "If you would change how you respond based on this information, it belongs in MEMORY.md. If it is purely reference material you look up on demand, leave it in context/."
+[1/3] 📝 insight จาก session 2026-04-15:
+      "repo ย้ายไปที่ ~/projects/onebrain-v2"
 
----
+      ขัดแย้งกับ memory/onebrain-development.md
+      → update / supersede / separate / skip
 
-## Step 3: Synthesize and display
+Options:
+- **update** → merge insight into existing file in-place, bump `verified`
+- **supersede** → create new file; deprecate old; remove old row from INDEX.md;
+  set `supersedes:` on new, `superseded_by:` on old
+- **separate** → create new file, no changes to existing
+- **skip** → discard this insight, move on
 
-Present the synthesis to the user before writing anything:
+## Memory Consolidation
 
-```
-## Recap : DD Mon – DD Mon (N sessions · M /learn files)
+After resolving conflicts, scan for files with overlapping topics.
+Build a topic frequency map from all active+needs-review files.
+Scan only files whose topics appear in 2+ files — skip deprecated.
 
-**Patterns noticed:**
-- [recurring theme across sessions, e.g. "5 of 7 sessions touched OneBrain infrastructure"]
+Resolve sequentially [1/N]:
 
-**Key decisions:**
-- [consolidated list of decisions made across sessions]
+🔀 พบไฟล์ที่มี topics ซ้ำกัน [1/2] — แนะนำให้รวม
 
-**Insights worth keeping:**
-- [insight not already present in MEMORY.md Key Learnings]
+memory/dev-workflow.md       (topics: dev, worktree)
+memory/dev-worktree-setup.md (topics: dev, worktree, setup)
 
-**From /learn (past 7 days):**
-- [behavioral pattern or observation from memory/ files, if any]
+→ merge / skip
 
-**Open threads:**
-- [question that appeared in logs but was never answered]
-```
+**merge:**
+1. Read both files
+2. Synthesize (do NOT concatenate) into one coherent document preserving all unique information
+3. Name new file after shared topics (e.g. `dev-workflow-worktree.md`)
+4. Frontmatter: keep highest `conf`; most recent `verified`; if either was `needs-review`
+   → merged file inherits `needs-review` (caution wins)
+5. Deprecate both old files + remove their rows from INDEX.md
+6. Add new file to INDEX.md
 
-If a category has nothing to report, omit it.
+**Contradiction during merge:** if files contain contradicting facts, do NOT auto-pick.
+AskUserQuestion showing both versions: `keep version A / keep version B / cancel merge`
 
----
+**skip** → leave both files as-is, move to next opportunity
 
-## Step 4: Dedup check
+## Order of Operations
 
-Apply this dedup table to **all** candidate entries — whether sourced from session logs, `memory/` files, or `context/` files — against the existing `## Key Learnings & Patterns` section in `[agent_folder]/MEMORY.md`:
+1. Read `recap.min_sessions` and `recap.min_frequency` from `vault.yml` (apply defaults if absent)
+2. Apply run threshold check (warn / stop / proceed per rules above)
+3. Extract insights from all unrecapped session logs; apply promotion filter (`min_frequency`)
+4. Collect and resolve all conflicts (sequential [1/N])
+5. Run memory consolidation (sequential [1/N])
+6. For EVERY processed session log (whether it produced insights or not):
+   - Set `recapped: YYYY-MM-DD` in frontmatter
+   - Extract 2–4 keywords from log content → set `topics: [...]` in frontmatter
+7. `auto-saved: true` and `synthesized_from_checkpoints: true` logs processed same way
+8. Update `vault.yml` `stats.last_recap: YYYY-MM-DD`
 
-| Case | Action |
-|------|--------|
-| Insight is identical or a subset of an existing entry | Drop : do not append |
-| Insight extends or refines an existing entry | Merge into the existing entry; add `[conf:X]` `[verified:YYYY-MM-DD]` if the existing entry lacks them; append `_(updated YYYY-MM-DD)_` at the end of the line |
-| Insight contradicts an existing entry | Mark old as `~~old entry~~ _(superseded YYYY-MM-DD)_`, keep new for append |
-| Insight is genuinely new | Keep for append |
+## Writing Promoted Insights
 
-To merge: rewrite the existing bullet in-place to incorporate the new detail, keeping the original date.
+Each insight that passes the frequency filter:
+- Write to `memory/kebab-case-topic.md` with frontmatter (source: /recap, status: active,
+  conf: medium, verified: today, updated: today, created: today, topics: [...])
+- Filename collision: if target exists, suffix with `-NN` automatically (no user prompt —
+  batch mode)
+- Add row to INDEX.md; update INDEX.md `updated:` and `total_active` counter
 
-After dedup, if no new insights remain (all were dropped as identical/subset — meaning no merges and no new appends occurred):
-> All insights are already captured in MEMORY.md : nothing new to add.
-
-Exit : do not proceed to Step 5, 6, 7, or 8.
-
-If merges occurred in Step 4 (i.e., MEMORY.md was modified in-place) but no new entries remain to append: skip the append portion of Step 5 (do not write new bullets), but still run the archive offer in Step 5, then continue to Steps 6, 7, and 8.
-
----
-
-## Step 5: Update MEMORY.md
-
-Append each new post-dedup insight to the `## Key Learnings & Patterns` section of `[agent_folder]/MEMORY.md`:
-
-```
-- YYYY-MM-DD — [observation] `[conf:X]` `[verified:YYYY-MM-DD]`
-```
-
-**Confidence scoring** (assess at write time):
-
-| Score | When to use |
-|---|---|
-| `conf:high` | Empirically tested, or confirmed across ≥ 2 sessions (including memory/ entries that also appear in session logs) |
-| `conf:medium` | Observed once, plausible — default for memory/-sourced entries |
-| `conf:low` | Inferred, assumed, or from a single indirect source |
-
-Set `[verified:YYYY-MM-DD]` to today's date when first written. For merged entries, update `[verified:YYYY-MM-DD]` to today as well (the merge re-confirms the entry).
-
-Also update the `updated:` field in the frontmatter to today's date.
-
-**Archive eligible `memory/` files:**
-This step runs regardless of whether new entries were appended or only in-place merges/supersessions occurred.
-"Successfully promoted" includes: (a) entries appended as new, (b) entries merged into an existing entry ("extends or refines"), and (c) entries used to supersede an existing entry ("contradicts" case) — all three count as promoted. For each file in `new_memory_files` that was promoted by any path (not dropped as identical/subset), offer to archive it using AskUserQuestion:
-> Promoted N patterns from `memory/` to MEMORY.md. These files can now be archived:
-> - `memory/YYYY-MM-DD-slug.md` — [one-line summary]
-> Archive them? (yes / no)
-
-If **yes**: move each file to `[archive_folder]/YYYY/MM/[filename]`.
-If **no**: leave in place — the file remains as the detailed version.
-
-**Never archive `context/` files** — they contain detailed domain facts that are not fully captured by a single MEMORY.md entry.
-
----
-
-## Step 6: Sort Key Learnings
-
-If MEMORY.md was modified in Step 4 (merges, supersessions) or Step 5 (new appends), re-sort the `## Key Learnings & Patterns` section in-place:
-1. `[conf:high]` entries first, newest → oldest
-2. `[conf:medium]` entries next, newest → oldest
-3. `[conf:low]` entries last, newest → oldest
-4. Preserve each `<!-- conf:* ... -->` comment line exactly as-is (the markers may have additional text after the tier name, e.g. `<!-- conf:high — empirically confirmed -->`); do not strip or rewrite them
-5. If a conf group has no entries, omit that group's comment marker entirely rather than leaving an empty section
-6. Entries with no `[conf:...]` tag: treat as `[conf:medium]` for sorting purposes only (do not add a tag)
-
----
-
-## Step 7: Overflow check
-
-Count the total lines in `[agent_folder]/MEMORY.md`. If the count exceeds 180:
-
-> MEMORY.md is now N lines (recommended limit: 180). Consider running `/distill` to synthesize older entries into a knowledge note, then trim the condensed entries from MEMORY.md.
-
----
-
-## Step 8: Confirm
-
-Use the appropriate message based on what occurred:
-
-If new entries were appended (with or without merges):
-```
-Recap complete. Added N new insights to MEMORY.md (M already captured : skipped).
-```
-
-If only in-place merges occurred (no new appends):
-```
-Recap complete. Updated M existing entries in MEMORY.md (merged). No new insights appended.
-```
-
-If nothing was written (all were deduped as identical/subset — no merges, no new entries):
-```
-Recap complete. No new insights to add : all N insights already captured in MEMORY.md.
-```
+Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /learn.
