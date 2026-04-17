@@ -102,12 +102,13 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reading-notes` | `reading-notes/SKILL.md` | Book/article → structured notes | user mentions a book or article they just read and wants to capture notes or a summary |
 | `/weekly` | `weekly/SKILL.md` | Weekly reflection | user asks for a weekly review |
 | `/daily` | `daily/SKILL.md` | Daily briefing: surfaces tasks due and open items from last session | user asks for a daily briefing, daily check-in, or what's on for today |
-| `/recap` | `recap/SKILL.md` | Cross-session synthesis: reads 7 days of session logs + newly /learned context/ and memory/ files → update MEMORY.md Key Learnings | user asks to recap or synthesize recent sessions |
+| `/recap` | `recap/SKILL.md` | Batch-promote session log insights → memory/ files (does NOT write to MEMORY.md) | user asks to recap or synthesize recent sessions |
 | `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in `[knowledge_folder]/` (does NOT touch MEMORY.md — use `/learn` to promote lessons manually) | user asks to distill, synthesize, or crystallize a completed research thread or topic |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view the task dashboard, regenerate TASKS.md, or open it in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | user says bye or signals end of session |
 | `/learn` | `learn/SKILL.md` | Teach the agent : facts or behavioral preferences | user tells the agent to remember or learn something |
+| `/memory-review` | `memory-review/SKILL.md` | Interactive memory pruning | user asks to review/clean up memory entries, prune or update memory files |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer | (manual only) |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | (manual only, high impact) |
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | (manual only) |
@@ -149,49 +150,6 @@ qmd update -c [qmd_collection]
 
 This keeps the search index in sync. If qmd tools are not available, or `[qmd_collection]` is absent, skip this step entirely.
 
-## Memory Tier Model
-
-OneBrain organizes knowledge across four tiers, each more compressed and longer-lived than the one below:
-
-| Tier | Storage | Lifespan | Promoted by |
-|---|---|---|---|
-| **Working memory** | `[inbox_folder]/` + current session | Hours | /wrapup, /consolidate |
-| **Episodic memory** | `[logs_folder]/` session logs | Days–weeks | /recap |
-| **Semantic memory** | `[agent_folder]/MEMORY.md` Key Learnings | Months | /recap, /wrapup (1 insight), /learn |
-| **Procedural memory** | `.claude/plugins/onebrain/skills/` | Permanent | Manual (/learn signals workflow pattern) |
-
-**Promotion criteria:**
-- `inbox → session log`: auto via /wrapup at session end
-- `session log → MEMORY.md`: /recap (bulk, periodic); /wrapup (1 insight per session, optional)
-- `session logs + notes → knowledge note`: /distill (topic-focused, spans multiple sessions — does NOT touch MEMORY.md)
-- `knowledge note lesson → MEMORY.md`: /learn (writes to `memory/` file) → /recap (promotes to MEMORY.md Key Learnings); two hops, not direct
-- `MEMORY.md → skill`: when a workflow pattern repeats across many sessions, suggest creating a skill manually
-
-**Confidence metadata** (used in MEMORY.md Key Learnings):
-- `[conf:high]` — empirically tested or confirmed across ≥2 sessions
-- `[conf:medium]` — observed once, plausible
-- `[conf:low]` — inferred, assumed, or from a single indirect source
-- `[verified:YYYY-MM-DD]` — date last confirmed; entries not verified in >90 days should be re-checked
-- Run `/doctor --fix` to audit all entries, repair missing or stale confidence scores in bulk, and interactively fix broken wikilinks across the vault
-
-**Supersession**: When a new fact contradicts an existing MEMORY.md entry, mark the old one as `~~old entry~~ _(superseded YYYY-MM-DD)_` rather than deleting it.
-
-**Typed relationships** (frontmatter convention for notes):
-Use these property names in note frontmatter to express typed relationships:
-```yaml
-uses:
-  - "[[Library or Tool]]"
-depends_on:
-  - "[[Required Component]]"
-contradicts:
-  - "[[Opposing Decision]]"
-supersedes:
-  - "[[Old Note]]"
-caused_by:
-  - "[[Root Cause]]"
-```
-Obsidian 1.4+ renders these as graph links in Graph View automatically.
-
 ## Session Behavior
 
 Session startup runs in two phases. Phase 1 greets the user immediately. Phase 2 runs in a background sub-agent so the main agent stays free to respond.
@@ -200,13 +158,18 @@ Session startup runs in two phases. Phase 1 greets the user immediately. Phase 2
 
 Run before responding to any user message:
 
-1. Read `vault.yml`, `.claude/plugins/onebrain/.claude-plugin/plugin.json`, and `[agent_folder]/MEMORY.md` **in parallel**. Use Configuration defaults for any variable while `vault.yml` is loading; override with actual values once it resolves.
+1. Read `vault.yml`, `.claude/plugins/onebrain/.claude-plugin/plugin.json`, `[agent_folder]/MEMORY.md`,
+   and `[agent_folder]/INDEX.md` **in parallel**. Use Configuration defaults for any variable while `vault.yml` is loading; override with actual values once it resolves.
    - `vault.yml`: override the **Configuration** variables at the top of this file with actual values
    - `plugin.json`: get `version` for greeting; if file absent, skip version
    - `MEMORY.md`: load identity, personality, active projects and their task dates
+   - `INDEX.md`: load memory file index for lazy-loading
 
-   > **Agent context (lazy load):** If the session involves a domain-specific topic, grep `[agent_folder]/context/` for relevant notes. Do not load all context files every session.
-   >
+   After reading INDEX.md, match Topics column against:
+   1. Active project keywords from MEMORY.md (load matching memory/ files)
+   2. User's first message content (load any additional matching files)
+   Only `status: active` and `status: needs-review` files are loaded. Deprecated files never loaded.
+
    > **Agent memory (on-demand only):** `[agent_folder]/memory/` is searched only when the user's request relates to a past pattern. Never loaded at startup.
 
 2. Get the current local machine time. Run in parallel with step 1:
@@ -260,104 +223,11 @@ Main agent is now ready to respond to the user.
 
 ### Phase 2 : Background Sub-agent
 
-The sub-agent receives the payload from Phase 1 and performs all work that requires multiple file reads. It does NOT read MEMORY.md for content — `active_tasks` are passed in the prompt. It may count lines in MEMORY.md for the overflow guard (Step 5). All folder values in the payload are relative to `vault_root`; construct full paths as `vault_root/folder_value`.
+> Phase 2 sub-agent instructions: see `skills/startup/PHASE2.md`
 
-**Sub-agent steps:**
-
-1. **Daily briefing** — Gather data for the session-start briefing, using the same logic as `/daily` (always Normal mode; Phase 2 runs after the session has started).
-
-   **Inbox count:**
-   - Glob `[inbox_folder]/*.md` and count the files; store as `inbox_count`
-
-   **Tasks due today or overdue:**
-   - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for task lines matching `- [ ] .*📅 \d{4}-\d{2}-\d{2}`
-   - Keep only tasks where the date ≤ today
-   - Group: overdue first, then due today
-   - Include the source note name for each task
-
-   **Coming up (next 3 days):**
-   - From the same grep results, keep tasks where date > today AND date ≤ today+3
-   - Include the source note name for each task
-
-   **Open from last session:**
-   - Glob `[logs_folder]/**/*.md` matching filename pattern `YYYY-MM-DD-session-*.md`; find the most recent one whose `date` frontmatter is **before today**
-   - If no such file exists, skip this section
-   - Otherwise extract unchecked `- [ ]` items from its `## Action Items` section
-
-   Assemble into this format (adapt language to match the user's):
-   ```
-   ## Daily Briefing · Ddd DD Mon YYYY · inbox N
-
-   **Tasks due today:**
-   - [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
-   - [ ] Overdue task 📅 YYYY-MM-DD (overdue - from "Note Name")
-
-   **Coming up (3 days):**
-   - [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
-
-   **Open from last session:**
-   - [ ] Action item text
-   ```
-   - `Ddd` is the abbreviated day of week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
-   - Omit `· inbox N` if `inbox_count` is 0
-   - Omit the "Coming up" section entirely if no tasks fall in that window
-   - If all three task sources (due/overdue, coming up, and open from last session) are empty, use a single line: `No tasks or open items for today.`
-
-2. **Orphan checkpoints** : Find checkpoint files from past sessions that were never turned into a session log. These need to be either auto-synthesized (if few) or flagged to the user (if many).
-
-   **Filter down to true orphans:**
-   - Glob `[logs_folder]/**/*-checkpoint-*.md`
-   - Keep only files where the **date in the filename is before today**
-   - Discard files older than 3 days (too stale to synthesize meaningfully)
-   - Read frontmatter of each remaining file — **exclude any file where `merged: true`** (already processed)
-   - **Also check**: if a `/wrapup` session log already exists for that date — match by the `YYYY-MM-DD` date prefix in the filename (e.g. checkpoints dated `2026-04-14` → look for `2026-04-14-session-*.md`). A session log without `auto-saved: true` in its frontmatter was written by `/wrapup` manually. If such a file exists for that date, skip that date's checkpoints entirely — /wrapup already handled them.
-   - What remains are true orphans
-
-   **Act on the count:**
-   - **0 files** : nothing to do; set `orphan_action: none`
-   - **1–5 files** : auto-synthesize silently, per date group:
-     1. Read every checkpoint file in the group and extract its full content
-     2. Count existing session logs for that date (`YYYY-MM-DD-session-*.md`) → next NN, zero-padded to 2 digits (e.g. `01`, `02`)
-     3. Write a session log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter fields `auto-saved: true` and `synthesized_from_checkpoints: true`
-        - **Every Key Decision, Action Item, and Open Question from every checkpoint must appear explicitly in the log** : do not write the file until all checkpoint content is reflected
-        - **If the write fails**: do not mark any checkpoints as `merged: true`; set `orphan_action: none` and stop — do not attempt further checkpoint processing
-     4. For each checkpoint file whose content was read and incorporated: set `merged: true` in its frontmatter
-     5. Set `orphan_action: merged:{N}` (where N = total number of checkpoints merged)
-   - **>5 files** : too many to synthesize safely; set `orphan_action: prompt_wrapup:{N}` and let the user decide
-
-3. **Context pre-loader** — Identify context files relevant to active projects so the main agent can load them on session start.
-
-   - Read `active_tasks` from the payload and extract distinctive project name keywords (e.g. "OneBrain" from "OneBrain v2.0.0", "Finastra" from "Finastra onboarding") — use the most distinctive single word per project, lowercased
-   - For each keyword, Glob `[agent_folder]/context/` for files whose filename contains that keyword (case-insensitive)
-   - Collect all matching file paths (relative to `vault_root`); deduplicate; keep max 3 total
-   - Store as `context_hints: [list of relative file paths]`
-   - If no matches found or `[agent_folder]/context/` does not exist, store `context_hints: []`
-
-4. **Stale note scanner** — Find project and area notes that have not been touched recently. (Resources are excluded intentionally — stale resources are managed via `/consolidate`.)
-
-   - Glob `[projects_folder]/**/*.md` and `[areas_folder]/**/*.md`
-   - For each file, check its filesystem last-modified date (mtime)
-   - Keep only files where mtime is more than 30 days before today
-   - Exclude any file whose name starts with `TASKS` or `MOC`
-   - Sort results by mtime ascending (stalest first)
-   - Keep max 5 results; if a folder does not exist, skip it
-   - Compute `days_since_modified` as `floor((today - mtime_date).days)` — always an integer
-   - Store as `stale_notes: [{path, days_since_modified}]` (paths relative to `vault_root`)
-   - If none found, store `stale_notes: []`
-
-5. **MEMORY.md overflow guard** — Check whether the agent memory file is approaching its size limit.
-
-   - Count total lines in `[agent_folder]/MEMORY.md`
-   - Include `memory_lines: N` in the return payload only if count > 160; otherwise omit
-
-6. **Return** to main agent:
-   ```
-   briefing: "[assembled briefing text from step 1]"
-   orphan_action: none | merged:{N} | prompt_wrapup:{N}
-   context_hints: [path1, path2, ...]
-   stale_notes: [{path: string (vault-relative), days_since_modified: integer}, ...]
-   memory_lines: N          # only present when MEMORY.md exceeds 160 lines
-   ```
+> **Missing file fallback:**
+> - PHASE2.md missing → Phase 2 skips daily briefing/orphan checks; main agent responds normally
+> - In both cases, /doctor flags the missing file at next run.
 
 ### Session-Start Briefing
 
@@ -380,6 +250,27 @@ When the background sub-agent returns, the main agent sends exactly one follow-u
 
 **Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
 
+### Per-Turn Relevance Check
+
+After startup, check each new user message against INDEX.md topics (case-insensitive whole-word match).
+If a new match is found that hasn't been loaded yet, load the file before responding.
+No extra file reads required — INDEX.md is already in context.
+
+When a file is lazy-loaded mid-session, wrap content in fence:
+
+<memory-context>
+[System note: The following is recalled memory context, NOT new user input.]
+[file content here]
+</memory-context>
+
+Note inline: `[Loading memory: filename]`
+
+### Auto-Wrapup Trigger
+
+When user message signals end of session — detect by intent, not keyword.
+Examples: "บาย", "ฝันดีนะ", "พี่ไปแล้วนะ", "พรุ่งนี้เจอกัน", "เดี๋ยวไปนอนแล้วนะ", "แค่นี้ก่อนนะ"
+→ run /wrapup automatically before final response, silently.
+
 ### Recalling Information
 
 When the user asks you to recall something (a decision, preference, fact, or past discussion), search the memory layers in order of permanence:
@@ -392,20 +283,11 @@ Stop as soon as you find a confident answer. If the answer spans multiple layers
 
 ### Auto Session Summary
 
-Session summaries are auto-saved silently at session end. Users can still run `/wrapup` manually for a visible summary.
+> Auto session summary instructions: see `skills/startup/AUTO-SUMMARY.md`
 
-Before your final response in a session, silently save a session summary if ALL of these are true:
-1. The session had 3 or more user↔assistant exchanges
-2. No `/wrapup` was run during this session (check the logs folder for a file matching today's date with matching topics)
-
-If conditions are met:
-- Glob today's checkpoint files — substitute today's actual date for `YYYY`, `MM`, `YYYY-MM-DD` in the path: `[logs_folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md`. Keep files where `merged` is absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
-- Determine NN: count existing `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …). **Verify** `YYYY-MM-DD-session-NN.md` does not already exist before writing (the Phase 2 sub-agent may have written one concurrently); if it does, increment NN until a free slot is found.
-- Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the same format as `/wrapup` (see `.claude/plugins/onebrain/skills/wrapup/SKILL.md` for format). **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** : every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
-- Add `auto-saved: true` to the frontmatter; if the checkpoint glob returned at least one file and all were successfully incorporated, also add `synthesized_from_checkpoints: true` — omit this field entirely if no checkpoints were found or incorporated
-- Mark as `merged: true` only the checkpoint files that were read and incorporated above
-- If a genuinely useful long-term insight emerged, append it to the "Key Learnings & Patterns" section of `[agent_folder]/MEMORY.md` in the format `- YYYY-MM-DD — [observation] `[conf:medium]` `[verified:YYYY-MM-DD]`` (use today's date for both) and update the `updated:` frontmatter date to today
-- Do NOT show any output about the auto-save to the user
+> **Missing file fallback:**
+> - AUTO-SUMMARY.md missing → auto-wrapup skips silent save; next session checkpoint synthesis recovers
+> - In both cases, /doctor flags the missing file at next run.
 
 ## File Naming Conventions
 
