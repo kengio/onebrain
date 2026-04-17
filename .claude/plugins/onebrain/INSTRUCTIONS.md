@@ -168,7 +168,7 @@ Format:
 | after 21:00 | late night acknowledgement | 🌙 |
 
 - `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`; `HH:MM` = local time
-- Always include a greeting phrase — never omit it. Example for daytime: "สวัสดีครับ พี่เก่ง จิโอ้มาแล้วครับ"
+- Always include a greeting phrase — never omit it. Example for daytime: "Hey [user], [name] here — ready to go!"
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
