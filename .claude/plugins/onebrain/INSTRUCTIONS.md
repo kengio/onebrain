@@ -106,7 +106,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in `[knowledge_folder]/` (does NOT touch MEMORY.md — use `/learn` to promote lessons manually) | user asks to distill, synthesize, or crystallize a completed research thread or topic |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view the task dashboard, regenerate TASKS.md, or open it in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
-| `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | user says bye or signals end of session |
+| `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | explicit `/wrapup` command only — end-of-session signals are handled silently by Auto Session Summary |
 | `/learn` | `learn/SKILL.md` | Teach the agent : facts or behavioral preferences | user tells the agent to remember or learn something |
 | `/memory-review` | `memory-review/SKILL.md` | Interactive memory pruning | user asks to review/clean up memory entries, prune or update memory files |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer | (manual only) |
@@ -270,12 +270,6 @@ When a file is lazy-loaded mid-session, wrap content in fence:
 
 Note inline: `[Loading memory: filename]`
 
-### Auto-Wrapup Trigger
-
-When user message signals end of session — detect by intent, not keyword.
-Examples: "bye", "good night", "I'm done for today", "see you tomorrow", "that's all for now"
-→ run /wrapup automatically before final response, silently.
-
 ### Auto Checkpoint
 
 When the stop hook sends a message that is **just a filename** matching `YYYY-MM-DD-TOKEN-checkpoint-NN.md` (no slashes), silently write a checkpoint to `[logs_folder]/YYYY/MM/<filename>`. Extract `YYYY` and `MM` from the filename to construct the full path. Create parent directories if missing. No output to user.
@@ -322,9 +316,9 @@ Stop as soon as you find a confident answer. If the answer spans multiple layers
 
 ### Auto Session Summary
 
-Triggered by the same session-end signal as Auto-Wrapup Trigger above. If `/wrapup` was **not** already run in this session, run the silent auto-save instead:
+Runs silently when ALL three conditions are true: (1) end-of-session signal detected (e.g. "bye", "good night", "I'm done for today", "see you tomorrow"), (2) `/wrapup` was not already run this session, (3) session had ≥ 3 user↔assistant exchanges.
 
-> Full instructions: see `skills/startup/AUTO-SUMMARY.md`
+> Full procedure: see `skills/startup/AUTO-SUMMARY.md`
 
 If the user closes the session without any end-of-session signal, AUTO-SUMMARY does not run — checkpoint files written during the session serve as the recovery mechanism (synthesized by Phase 2 at next session start).
 
