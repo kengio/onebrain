@@ -22,14 +22,14 @@ Update OneBrain system files from the source repo to the latest version.
 ### Major Version Bump Guard
 
 If `new_major > current_major` (e.g. vault is v1.10.0, repo branch has v2.0.0):
-→ AskUserQuestion: "ตรวจพบ major version bump (v{current} → v{new}) — นี่อาจมี breaking changes ยืนยันอัปเดตไหมครับ?"
+→ AskUserQuestion: "Major version bump detected (v{current} → v{new}) — this may include breaking changes. Proceed with update?"
 Options: `update / cancel`
 → If cancel: stop immediately, no changes made
 → If update: proceed with normal confirmation flow below
 
 Minor/patch bumps (1.10.0 → 1.10.1, 1.10.0 → 1.11.0): proceed without major version prompt.
 
-6. AskUserQuestion: "อัปเดตเป็น vX.X.X ไหมครับ?" (Thai) / "Update to vX.X.X?" (English)
+6. AskUserQuestion: "Update to vX.X.X?"
    Options: `update / cancel`
 7. If confirmed → proceed to bootstrap below
 
@@ -76,7 +76,7 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
 **Step 4: Restructure MEMORY.md** (MUST run after Step 1)
 - Remove ## Key Learnings, ## Key Decisions, ## Recurring Contexts sections entirely
 - Keep ## Identity & Personality, ## Active Projects, ## Critical Behaviors (preserve user items)
-- Remove "Auto-wrapup เมื่อพี่บาย" from Critical Behaviors if present
+- Remove any auto-wrapup trigger entry from Critical Behaviors if present
 - Update `updated:` frontmatter to today
 
 **Step 5: Create INDEX.md**

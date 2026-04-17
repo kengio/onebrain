@@ -177,7 +177,7 @@ If the write or append fails, tell the user: "Could not update CLAUDE.md. Please
 ## Step 9: Generate MEMORY.md
 
 **Upgrade scenario:** If `05-agent/MEMORY.md` already exists, skip this step entirely and warn the user:
-> MEMORY.md มีอยู่แล้ว — ใช้ /update เพื่อ migrate โครงสร้างใหม่แทนครับ
+> MEMORY.md already exists — use /update to migrate to the new structure instead.
 
 Do NOT overwrite existing data.
 
@@ -492,7 +492,7 @@ For each of `GEMINI.md` and `AGENTS.md`:
 Check if `[agent_folder]/MEMORY.md` already exists:
 
 **If it exists:** Skip this step entirely — do NOT overwrite existing data. Warn the user:
-> MEMORY.md มีอยู่แล้ว — ใช้ /update เพื่อ migrate โครงสร้างใหม่แทนครับ
+> MEMORY.md already exists — use /update to migrate to the new structure instead.
 
 **If it does not exist:** Proceed directly.
 

@@ -273,7 +273,7 @@ Note inline: `[Loading memory: filename]`
 ### Auto-Wrapup Trigger
 
 When user message signals end of session — detect by intent, not keyword.
-Examples: "บาย", "ฝันดีนะ", "พี่ไปแล้วนะ", "พรุ่งนี้เจอกัน", "เดี๋ยวไปนอนแล้วนะ", "แค่นี้ก่อนนะ"
+Examples: "bye", "good night", "I'm done for today", "see you tomorrow", "that's all for now"
 → run /wrapup automatically before final response, silently.
 
 ### Auto Checkpoint

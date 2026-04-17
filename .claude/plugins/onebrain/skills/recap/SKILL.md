@@ -9,7 +9,7 @@ Behaviors are promoted exclusively via /learn.
 Glob `[logs_folder]/**/*-session-*.md`; filter to files WITHOUT `recapped:` frontmatter field.
 Process only those (faster than scanning all logs).
 
-If no unrecapped logs found → tell user "ไม่มี session logs ที่ยังไม่ได้ recap" and stop.
+If no unrecapped logs found → tell user "No unrecapped session logs found." and stop.
 
 ## Run Threshold
 
@@ -17,11 +17,11 @@ Read `recap.min_sessions` from `vault.yml` (default: `6` if field absent).
 Read `recap.min_frequency` from `vault.yml` (default: `2` if field absent).
 
 **1 unrecapped log:**
-→ warn: "มีแค่ 1 session log — promotion filter ต้องการอย่างน้อย {min_frequency} sessions ครับ"
+→ warn: "Only 1 session log — promotion filter requires at least {min_frequency} sessions."
 → stop (nothing can pass frequency filter with only 1 log)
 
 **2 to (min_sessions - 1) unrecapped logs:**
-→ warn: "มี {N}/{min_sessions} sessions — ยังไม่ถึง threshold แนะนำให้รอให้ครบก่อนครับ รัน recap ต่อเลยไหม?"
+→ warn: "{N}/{min_sessions} sessions — below threshold. Recommended to wait for more sessions. Run recap now?"
 → AskUserQuestion: `run-now / wait`
 → if `wait`: stop without processing
 
@@ -46,12 +46,12 @@ or `status: needs-review` — skip deprecated files.
 
 Collect ALL conflicts first, then resolve sequentially:
 
-⚠️ พบ conflict 3 รายการ — จัดการทีละอัน
+⚠️ 3 conflicts found — resolving one at a time
 
-[1/3] 📝 insight จาก session YYYY-MM-DD:
-      "repo ย้ายไปที่ ~/projects/onebrain-v2"
+[1/3] 📝 insight from session YYYY-MM-DD:
+      "repo moved to ~/projects/onebrain-v2"
 
-      ขัดแย้งกับ memory/onebrain-development.md
+      Conflicts with memory/onebrain-development.md
       → update / supersede / separate / skip
 
 Options:
@@ -69,7 +69,7 @@ Scan only files whose topics appear in 2+ files — skip deprecated.
 
 Resolve sequentially [1/N]:
 
-🔀 พบไฟล์ที่มี topics ซ้ำกัน [1/2] — แนะนำให้รวม
+🔀 Overlapping topics found [1/2] — merge recommended
 
 memory/dev-workflow.md       (topics: dev, worktree)
 memory/dev-worktree-setup.md (topics: dev, worktree, setup)

@@ -171,9 +171,9 @@ Display:
 
 | Condition | Message |
 |---|---|
-| unrecapped 1–3, last recap ≤ 7 days ago | `_💾 {N} session logs ยังไม่ได้ recap (ล่าสุด: YYYY-MM-DD)_` |
-| unrecapped > 3 OR last recap > 7 days ago | `_⚠️ {N} session logs ยังไม่ได้ recap — ล่าสุด recap: YYYY-MM-DD_` |
-| never recapped | `_⚠️ {N} session logs ยังไม่ได้ recap — ยังไม่เคย recap_` |
+| unrecapped 1–3, last recap ≤ 7 days ago | `_💾 {N} session logs not yet recapped (last: YYYY-MM-DD)_` |
+| unrecapped > 3 OR last recap > 7 days ago | `_⚠️ {N} session logs not yet recapped — last recap: YYYY-MM-DD_` |
+| never recapped | `_⚠️ {N} session logs not yet recapped — never recapped_` |
 
 ---
 

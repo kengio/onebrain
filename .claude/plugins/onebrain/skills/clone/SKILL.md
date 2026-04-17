@@ -33,7 +33,7 @@ Do NOT strip these fields — the new vault should not reprocess already-recappe
 
 ## Archive Folder Option
 
-AskUserQuestion: "รวม `06-archive/05-agent/memory/` (deleted memory files) ด้วยไหมครับ?"
+AskUserQuestion: "Include `[archive_folder]/[agent_folder]/memory/` (deleted memory files)?"
 Options: `include / skip`
 - `include`: copy `06-archive/05-agent/memory/` into clone package (full history)
 - `skip`: omit archive folder (clean fresh-feeling vault)

@@ -11,7 +11,7 @@ file system scanning for the listing phase.
 ## Edge Case: Empty INDEX
 
 If memory/ is empty or has no active/needs-review entries → display
-"ไม่มี memory files ให้ review" and stop.
+"No memory files to review." and stop.
 
 ## Entry Ordering
 
@@ -48,7 +48,7 @@ Show each entry in this format:
 decrement `total_active` if entry was `active`, or `total_needs_review` if entry was `needs-review`.
 `verified` unchanged. File stays in memory/ (browsable in Obsidian).
 
-**delete** → AskUserQuestion: "ย้าย `memory/X.md` ไป archive และลบออกจาก INDEX ด้วยไหมครับ?"
+**delete** → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
 Options: `confirm / cancel`
 If confirm:
 1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`

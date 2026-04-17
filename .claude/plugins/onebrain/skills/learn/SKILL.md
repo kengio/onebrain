@@ -13,13 +13,13 @@ Write to `MEMORY.md ## Active Projects` ONLY when the user message explicitly re
 a project lifecycle event.
 
 Triggers Active Projects update (write to MEMORY.md):
-- "เริ่ม project X", "project Y เสร็จแล้ว", "เพิ่ม project Z", "อัพเดท status ของ project A"
+- "starting project X", "project Y is done", "adding project Z", "updating status of project A"
 
 Does NOT trigger (write to memory/ file instead):
-- "ใน project X เราใช้ Y", "เคยทำ project X"
+- "in project X we use Y", "I worked on project X before"
 
 When unclear → AskUserQuestion:
-"เพิ่มเข้า Active Projects ใน MEMORY.md หรือสร้าง memory file ใหม่ครับ?"
+"Add to Active Projects in MEMORY.md, or create a memory file?"
 Options: `active-projects / memory-file`
 
 ## Contradiction Detection
@@ -29,15 +29,15 @@ Scan ONLY files with `status: active` or `status: needs-review` — skip depreca
 
 If a potential conflict is found, show via AskUserQuestion:
 
-⚠️ พบไฟล์ที่อาจขัดแย้ง: memory/onebrain-development.md
+⚠️ Possible conflict: memory/onebrain-development.md
    "Source repo path, /update workflow"
 
-   ไฟล์ใหม่: "repo ย้ายไปที่ ~/projects/onebrain-v2"
-   ไฟล์เดิม: "repo อยู่ที่ ~/projects/onebrain"
+   New fact: "repo moved to ~/projects/onebrain-v2"
+   Existing: "repo at ~/projects/onebrain"
 
-   1) update  — แก้ไขไฟล์เดิม (เนื้อหาเก่ายังถูกบางส่วน)
-   2) supersede — สร้างไฟล์ใหม่แทน (เนื้อหาเก่าล้าสมัยทั้งหมด)
-   3) separate — สร้างไฟล์ใหม่แยก (ไม่ขัดแย้งกัน ต้องการเก็บทั้งคู่)
+   1) update   — edit existing file (old content still partially correct)
+   2) supersede — create new file, deprecate old (old content fully outdated)
+   3) separate  — create new file separately (no conflict, keep both)
 
 **update** → read existing file, merge new fact in-place, bump `verified` to today.
 No new file created, INDEX.md unchanged.

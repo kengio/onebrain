@@ -226,13 +226,13 @@ Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and t
 
 | Check | Action |
 |---|---|
-| INDEX.md missing | AskUserQuestion: "INDEX.md ไม่พบ — สร้างไฟล์เปล่าไหมครับ?" `yes / no` |
+| INDEX.md missing | AskUserQuestion: "INDEX.md not found — create an empty one?" `yes / no` |
 | Files in memory/ not in INDEX.md | Read frontmatter; skip `status: deprecated`; list remaining as orphans |
 | Rows in INDEX.md pointing to missing files | List dead links |
 | Files with `verified` > 90 days | Check active/needs-review only (skip deprecated); auto-set `status: needs-review` in file and INDEX.md |
 | Critical Behaviors section > 15 items | Warn: suggest moving excess to memory/ |
 | Checkpoint files with `merged: true` | Delete them (safety net — /wrapup handles these, /doctor catches stragglers) |
-| Checkpoint files > 14 days old with no session log | AskUserQuestion: "พบ {N} checkpoint เก่า >14 วัน ที่ไม่มี session log — ลบทิ้งทั้งหมดไหมครับ?" `delete-all / show-list / skip` |
+| Checkpoint files > 14 days old with no session log | AskUserQuestion: "Found {N} checkpoints >14 days old with no session log — delete all?" `delete-all / show-list / skip` |
 | memory/ files with non-compliant names | List offenders (not kebab-case, has date prefix, or >5 words); `--fix` auto-renames |
 | memory/ files with non-default `type` AND not used by 2+ files | Warn possible typo; suggest nearest default via Levenshtein distance ≤2 |
 | `recapped` date in the future (>today) | Warn — likely manual mistake; suggest correcting |
@@ -267,8 +267,8 @@ Update `vault.yml` `stats.last_doctor_fix: YYYY-MM-DD` on completion.
 ## Migration Safety Net
 
 If `05-agent/context/` still exists:
-→ warn: "พบ context/ folder — /update migration อาจยังไม่ได้รัน"
-→ AskUserQuestion: "migrate ไฟล์ทั้งหมดเข้า memory/ ไหมครับ?" `migrate / skip`
+→ warn: "context/ folder found — /update migration may not have run yet"
+→ AskUserQuestion: "Migrate all files into memory/?" `migrate / skip`
 → This check catches edge cases only — the full migration runs via /update
 
 ---
