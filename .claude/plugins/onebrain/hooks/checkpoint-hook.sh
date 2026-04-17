@@ -6,9 +6,10 @@
 #         Outputs JSON {"decision":"block","reason":"YYYY-MM-DD-checkpoint-NN.md"} —
 #         just the filename. Claude reads INSTRUCTIONS.md to write the checkpoint silently.
 #
-# State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS) — uses $TMPDIR/$TEMP/$TMP for Windows compat
+# State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS:CHKPT_NN) — uses $TMPDIR/$TEMP/$TMP for Windows compat
+# Legacy 2-field format (COUNT:LAST_TS) is tolerated: CHKPT_NN defaults to 0, so NN restarts at 01.
 # COUNT=0 with fresh timestamp in an *existing* state file signals post-checkpoint reset;
-# absence of state file = first run.
+# absence of state file = first run (CHKPT_NN=0 → first checkpoint is always 01).
 # SKIP_WINDOW=60: prevents re-trigger immediately after a checkpoint resets COUNT to 0.
 # MIN_ACTIVITY guard: if fewer than 2 messages since last checkpoint, reset and skip —
 # no file is created for sessions with no meaningful activity.
@@ -83,27 +84,8 @@ get_checkpoint_value() {
   echo "${value:-$default}"
 }
 
-get_folder_value() {
-  local key="$1" default="$2"
-  [ -z "$VAULT_YML" ] && echo "$default" && return
-  [ -f "$VAULT_YML" ] || { echo "$default"; return; }
-  local in_block=0 value=""
-  while IFS= read -r line; do
-    if [[ "$line" =~ ^folders: ]]; then in_block=1; continue; fi
-    if [[ $in_block -eq 1 ]]; then
-      if [[ "$line" =~ ^[[:space:]]+${key}:[[:space:]]*(.+) ]]; then
-        value="${BASH_REMATCH[1]}"; value="${value//\"/}"; value="${value//\'/}"; value="${value#"${value%%[![:space:]]*}"}"; value="${value%"${value##*[![:space:]]}"}"; break
-      fi
-      if [[ "$line" =~ ^[^[:space:]] ]]; then break; fi
-    fi
-  done < "$VAULT_YML"
-  echo "${value:-$default}"
-}
-
 MSG_THRESHOLD=$(get_checkpoint_value "messages" 15)
 TIME_THRESHOLD=$(( $(get_checkpoint_value "minutes" 30) * 60 ))
-LOGS_FOLDER=$(get_folder_value "logs" "07-logs")
-LOGS_FOLDER_ABS="${VAULT_ROOT:+${VAULT_ROOT}/}${LOGS_FOLDER}"
 
 COUNT=$(( COUNT + 1 ))
 ELAPSED=$(( NOW - LAST_TS ))

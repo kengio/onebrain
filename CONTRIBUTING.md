@@ -153,7 +153,7 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 
 Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
 
-**Example — checkpoint system:** OneBrain's built-in `checkpoint-hook.sh` uses the `Stop` hook to auto-save session snapshots. It fires after every response, tracks message count + elapsed time against configurable thresholds, and writes a checkpoint file when either threshold is reached. State is kept in `/tmp/onebrain-{PPID}.state` (format: `COUNT:LAST_TS`) so the hook can accumulate counts across responses without forking a long-running process.
+**Example — checkpoint system:** OneBrain's built-in `checkpoint-hook.sh` uses the `Stop` hook to auto-save session snapshots. It fires after every response, tracks message count + elapsed time against configurable thresholds, and writes a checkpoint file when either threshold is reached. State is kept in `/tmp/onebrain-{PPID}.state` (format: `COUNT:LAST_TS:CHKPT_NN`) so the hook can accumulate counts across responses without forking a long-running process.
 
 **To add a hook:**
 

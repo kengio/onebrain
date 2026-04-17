@@ -56,7 +56,7 @@ Extract and consolidate across all sources:
 - **Core question** — what was being explored or decided?
 - **What we found** — key findings, facts, conclusions
 - **Key decisions made** — explicit choices that were committed to
-- **Lessons** — generalizable insights worth keeping long-term (assign confidence score)
+- **Lessons** — generalizable insights worth keeping long-term
 - **Open questions** — still unresolved as of the most recent source
 - **Entities involved** — tools, projects, people mentioned
 
@@ -86,7 +86,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
   > 2. Append — add a `## Update — YYYY-MM-DD` section with new findings
   > 3. Cancel
 
-  If **Append** is chosen: before writing new content, read the existing digest note and check for any lessons marked as low-confidence. If any exist, surface them:
+  If **Append** is chosen: before writing new content, read the existing digest note and check for any lessons that appear hedged or uncertain in phrasing (e.g. "might", "possibly", "unclear if", or legacy `[conf:low]` markers). If any exist, surface them:
   > This note has M low-confidence lessons. Want to re-evaluate any before appending? (list them)
   User may promote or leave them as-is. If none exist, skip this silently and proceed to append.
 
@@ -122,8 +122,7 @@ sources_span: YYYY-MM-DD to YYYY-MM-DD
 ## Lessons
 
 [Generalizable insights — use /learn to promote to memory/]
-- [Lesson 1]
-- [Lesson 2]
+- [list generalizable insights]
 
 ## Open Questions
 
