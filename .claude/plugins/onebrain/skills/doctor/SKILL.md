@@ -52,7 +52,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **MEMORY.md size:**
 - Count lines in `[agent_folder]/MEMORY.md`
-- Warn if count > 180: suggest reviewing Critical Behaviors with /memory-review to move lower-priority entries to `memory/`
+- Warn if count > 180: suggest manually pruning Critical Behaviors — remove entries that no longer apply or have been superseded
 
 **Inbox backlog:**
 - Count files in `[inbox_folder]/*.md`

@@ -57,7 +57,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 
    **Group by token:**
    - For each orphan file, parse its filename:
-     - Token format: `YYYY-MM-DD-{token}-checkpoint-NN.md` → extract `{token}` (6-char alphanumeric)
+     - Token format: `YYYY-MM-DD-{session_token}-checkpoint-NN.md` → extract `{session_token}` (6-char alphanumeric)
      - Legacy format: `YYYY-MM-DD-checkpoint-NN.md` (no token) → assign to a "legacy" group per date
    - Files with the same token (and same date) form one group → one session log
    - Legacy files on the same date form one legacy group → one session log
@@ -71,7 +71,7 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
      3. Count existing session logs for that date (`YYYY-MM-DD-session-*.md`) → next NN, zero-padded to 2 digits
      4. Write session log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` with frontmatter:
         `auto-saved: true`, `synthesized_from_checkpoints: true`
-        For token groups (non-legacy), also add: `session_token: {token}`
+        For token groups (non-legacy), also add: `session_token: {session_token}`
         - **Every Key Decision, Action Item, and Open Question from every checkpoint must appear explicitly in the log** — do not write until all checkpoint content is reflected
         - **If the write fails**: do not mark any checkpoints `merged: true`; set `orphan_action: none` and stop
      5. Mark each incorporated checkpoint `merged: true`
