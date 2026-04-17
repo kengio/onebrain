@@ -121,7 +121,7 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   YEAR="${TODAY%%-*}"
   MONTH="${TODAY#*-}"; MONTH="${MONTH%%-*}"
   LOG_DIR="${LOGS_FOLDER_ABS}/${YEAR}/${MONTH}"
-  EXISTING=$(ls "${LOG_DIR}/"${TODAY}-*checkpoint*.md 2>/dev/null | wc -l | tr -d ' ')
+  EXISTING=$(ls "${LOG_DIR}/${TODAY}-"*checkpoint*.md 2>/dev/null | wc -l | tr -d ' ')
   NN=$(printf "%02d" $(( EXISTING + 1 )))
   PROMPT="${TODAY}-checkpoint-${NN}.md"
   # Build JSON — just the filename as reason; Claude follows INSTRUCTIONS.md

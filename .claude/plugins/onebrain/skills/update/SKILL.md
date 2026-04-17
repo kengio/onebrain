@@ -152,7 +152,7 @@ Your personality is [personality description].
 Old-section mapping (apply when migrating from pre-v1.10.0 structure):
 - `## Agent Identity` + `## Identity` + `## Communication Style` + `## Goals & Focus Areas` + `## Values & Working Principles` + `## AI Personality Instructions` → consolidate into `## Identity & Personality`
 - `## Active Projects` → keep as-is
-- `## Critical Behaviors` → preserve if present; if absent, create with items from `## Values & Working Principles` plus an empty comment
+- `## Critical Behaviors` → preserve if present; if absent, create with items from `## Values & Working Principles` plus an empty comment; remove any auto-wrapup trigger entry if present (auto-wrapup is now handled by AUTO-SUMMARY.md)
 - Remove entirely: `## Key Learnings`, `## Key Decisions`, `## Recurring Contexts`
 
 Always: update `updated:` frontmatter to today.
@@ -168,7 +168,7 @@ Always: update `updated:` frontmatter to today.
   - **Description**: 1-line summary derived from file content (not from frontmatter)
 - For each file with supersedes: X, set superseded_by: [this file] on X's frontmatter
 - Set cache fields: total_active, total_needs_review (omit last_review)
-- If INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format
+- If INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format; preserve existing Description values from old rows (map by filename) rather than regenerating from scratch
 
 **Step 6: Backfill recapped: on existing session logs**
 - If 07-logs/ doesn't exist → skip
