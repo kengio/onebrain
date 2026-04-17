@@ -158,17 +158,17 @@ Format:
 
 - `[name]` = agent name from MEMORY.md `## Identity & Personality` (**Agent:** field)
 - `[user]` = user name from MEMORY.md (**User:** field)
-- `[greeting]`/`[emoji]` from time-of-day:
+- `[greeting]`/`[emoji]` from time-of-day — adapt phrase naturally to user's language:
 
-| Local time | Greeting | Emoji |
+| Local time | Greeting concept | Emoji |
 |---|---|---|
-| before 09:00 | morning phrase | ☀️ |
-| 09:00–17:00 | (omit greeting) | (none) |
-| 17:00–21:00 | evening phrase | 🌆 |
-| after 21:00 | late night phrase | 🌙 |
+| before 09:00 | good morning + ready | ☀️ |
+| 09:00–17:00 | hello + ready to work | (none) |
+| 17:00–21:00 | good evening + ready | 🌆 |
+| after 21:00 | late night acknowledgement | 🌙 |
 
 - `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`; `HH:MM` = local time
-- When greeting is omitted (09:00–17:00): format is `**[name]** [user]` (no emoji, no greeting phrase)
+- Always include a greeting phrase — never omit it. Example for daytime: "สวัสดีครับ พี่เก่ง จิโอ้มาแล้วครับ"
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
