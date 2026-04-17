@@ -138,6 +138,28 @@ session → session log (`/wrapup`) → `memory/` files (`/recap`) → `MEMORY.m
 
 ---
 
+## Automatic Session Saving
+
+OneBrain has three automatic behaviors that run without you doing anything:
+
+| Behavior | Trigger | What it does |
+|----------|---------|-------------|
+| **Auto Checkpoint** | Every 15 messages, every 30 min, or before context compression | Writes a checkpoint file to `07-logs/YYYY/MM/` as a safety net |
+| **Auto-Wrapup** | You say "bye", "good night", "I'm done for today", etc. | Silently runs `/wrapup` — creates a full session log before final response |
+| **Auto Session Summary** | Same end-of-session signal — but only if `/wrapup` was not already run this session AND ≥ 3 exchanges | Saves a silent session log (marked `auto-saved: true`) without showing any output |
+
+**How they work together:**
+
+- Auto-Wrapup always fires first when an end-of-session signal is detected. Auto Session Summary evaluates after, and **skips if /wrapup already ran** — so you never get duplicate session logs.
+- If you ran `/wrapup` manually earlier in the session and then say "bye": Auto-Wrapup fires and runs /wrapup again (second log), Auto Session Summary skips.
+- If the session ends with no signal (browser closed, terminal killed): Auto Checkpoint files serve as the recovery mechanism. At next session start, Phase 2 automatically synthesizes any orphaned checkpoints into a session log.
+
+**The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
+
+> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook). Auto-Wrapup and Auto Session Summary work with any agent that follows INSTRUCTIONS.md.
+
+---
+
 ## Get Started
 
 ### Option 1 — Fresh vault (recommended)
