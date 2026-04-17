@@ -180,10 +180,10 @@ Display inline after the greeting. If any of the following are non-empty, show t
 - [ ] task description 📅 YYYY-MM-DD
 ```
 
-Always append on its own line, in italics, adapted to the user's language. Example:
+If inbox_count > 0, orphan_count > 0, or tasks found: append a hint on its own line, in italics, adapted to the user's language. Example:
 `_Run /daily to see all tasks_`
 
-If inbox_count = 0 and orphan_count = 0 and no tasks found: append only the hint line.
+If inbox_count = 0 and orphan_count = 0 and no tasks found: show nothing after the greeting.
 
 ### Per-Turn Relevance Check
 
