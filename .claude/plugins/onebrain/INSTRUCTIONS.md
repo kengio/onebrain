@@ -235,6 +235,15 @@ merged: false
 
 - [bullet list of decisions made]
 
+## Insights & Learnings
+
+- [new understanding, patterns, discoveries — omit if none]
+
+## What Worked / Didn't Work
+
+- ✅ [something that worked]
+- ❌ [something that didn't — omit section if no notable friction]
+
 ## Action Items
 
 - [ ] [task] 📅 YYYY-MM-DD
