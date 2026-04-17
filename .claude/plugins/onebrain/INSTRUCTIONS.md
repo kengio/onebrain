@@ -152,11 +152,10 @@ Run before responding to any user message.
 Format:
 ```
 ────────────────────────────────────
-**[name]** [emoji] [greeting] [user]
+[emoji] [greeting] [user]
 *Ddd · DD Mon YYYY · HH:MM*
 ```
 
-- `[name]` = agent name from MEMORY.md `## Identity & Personality` (**Agent:** field)
 - `[user]` = user name from MEMORY.md (**User:** field)
 - `[greeting]`/`[emoji]` from time-of-day — adapt phrase naturally to user's language:
 
@@ -168,7 +167,7 @@ Format:
 | after 21:00 | late night acknowledgement | 🌙 |
 
 - `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`; `HH:MM` = local time
-- Always include a greeting phrase — never omit it. Example for daytime: "Hey [user], [name] here — ready to go!"
+- Always include a greeting phrase — never omit it. Example for daytime: "Hey [user], ready to go!"
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
