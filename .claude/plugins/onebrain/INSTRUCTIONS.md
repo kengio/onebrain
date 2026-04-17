@@ -177,7 +177,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 - Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
 - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 \d{4}-\d{2}-\d{2}` → keep only tasks where date ≤ today; group overdue first, then due today
-- Glob `[logs_folder]/**/*-checkpoint-*.md` → keep files where date in filename is before today and not older than 3 days; read frontmatter of each; discard files where `merged: true`; also discard files whose date already has a session log (`YYYY-MM-DD-session-*.md`) without `auto-saved: true` (means /wrapup already handled it); count remaining as `orphan_count`
+- Glob `[logs_folder]/**/*-checkpoint-*.md` → keep files where date in filename is before today and not older than 3 days; read frontmatter of each; discard files where `merged: true`; also discard files whose date already has a session log (`YYYY-MM-DD-session-*.md`) that does NOT contain `auto-saved: true` in its frontmatter (a log without `auto-saved: true` means /wrapup ran manually and already merged the checkpoints); count remaining as `orphan_count`
 
 **Step 4 — Send startup status (after Step 3 completes):**
 
@@ -192,7 +192,10 @@ Otherwise, append after the greeting:
 Pending tasks:
 - [ ] task description 📅 YYYY-MM-DD (overdue)
 - [ ] task description 📅 YYYY-MM-DD
+(+N more — /daily for full list)      ← show only if tasks exceed 5
 ```
+
+Show at most 5 tasks (overdue first, then due today). If there are more, append the count line above.
 
 Then append a hint line, adapted to the user's language. Example:
 `→ /daily for more`
