@@ -3,7 +3,7 @@ name: memory-review
 description: "Interactive review of all memory/ files — keep, update, deprecate, or delete entries one by one"
 ---
 
-# /memory-review
+# Memory Review
 
 Interactive review session for pruning and updating memory entries.
 
