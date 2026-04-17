@@ -149,11 +149,11 @@ Run before responding to any user message.
 
 **Step 2 — Send greeting immediately:**
 
-Format:
+Format — use plain text only, no markdown syntax:
 ```
 ────────────────────────────────────
 [emoji] [greeting] [user]
-*Ddd · DD Mon YYYY · HH:MM*
+Ddd · DD Mon YYYY · HH:MM
 ```
 
 - `[user]` = user name from MEMORY.md (**User:** field)
@@ -189,13 +189,13 @@ Otherwise, append after the greeting:
 📥 inbox [N]                          ← omit if inbox_count = 0
 📋 [N] checkpoints — /wrapup?         ← omit if orphan_count = 0
 
-**งานค้าง:**
-- [ ] task description 📅 YYYY-MM-DD _(overdue)_
+งานค้าง:
+- [ ] task description 📅 YYYY-MM-DD (overdue)
 - [ ] task description 📅 YYYY-MM-DD
 ```
 
-Then append a hint on its own line, in italics, adapted to the user's language. Example:
-`_Run /daily to see all tasks_`
+Then append a hint line, adapted to the user's language. Example:
+`→ /daily for more`
 
 ### Per-Turn Relevance Check
 
