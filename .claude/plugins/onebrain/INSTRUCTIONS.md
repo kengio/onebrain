@@ -146,7 +146,7 @@ Run before responding to any user message.
 - Read `vault.yml` → load Configuration variables; override defaults once resolved
 - Read `.claude/plugins/onebrain/.claude-plugin/plugin.json` → get `version` (skip if absent)
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
-- Get current local time: `python3 -c "from datetime import datetime; print(datetime.now().strftime('%H:%M'))" 2>/dev/null || node -e "const d=new Date(); console.log(d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))" 2>/dev/null || date '+%H:%M' 2>/dev/null` — if all fail, treat as 09:00–17:00 (no emoji)
+- Get current local time in HH:MM format — if unavailable, treat as 09:00–17:00 (no emoji)
 
 **Step 2 — Send greeting immediately:**
 ```
