@@ -12,12 +12,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.10.1] — 2026-04-18
 
-Migration hardening and checkpoint hook cleanup.
+Migration hardening, compact MEMORY.md Identity format, and cross-skill consistency.
 
-- `/update` migration: explicit rename rules for memory files (date prefix, numeric segment, >5 words → kebab-case 3–5 words); wikilinks in INDEX.md updated after rename
-- `/update` migration: full MEMORY.md 3-section template with old-section mapping — pre-v1.10.0 vaults (7+ sections) now correctly consolidated
-- `/update` migration: exact INDEX.md column spec enforced (`File | Topics | Type | Status | Description`); rewrite triggered if wrong
-- Checkpoint hook: sends just `YYYY-MM-DD-checkpoint-NN.md` as reason instead of full instruction paragraph — cleaner stop hook display; Claude follows INSTRUCTIONS.md to write checkpoint silently
+**`/update` migration spec:**
+- Step 3: explicit rename rules (date prefix, numeric segment, >5 words → kebab-case 3–5 words); INDEX.md wikilinks updated after rename
+- Step 4: compact Identity & Personality format — 5-field block replaces verbose 6-field block + redundant bullets; skip-rewrite now checks field labels not just section headings (v1.10.0 vaults with old format now correctly migrate); field-level extraction hints for old-section consolidation; Language field conditional (omit if absent)
+- Step 5: exact column spec (`File | Topics | Type | Status | Description`) enforced; existing Description values preserved on rewrite
+
+**`/doctor` improvements:**
+- Stale check: now reads `memory/` file frontmatter (`conf:`, `verified:`) instead of MEMORY.md Key Learnings bullets
+- Pass A: patches `memory/` file confidence scores directly; removed obsolete Key Learnings re-sort
+- New health check: detects old 6-field Identity format (`**Agent name:**`, `**User name:**`) and warns
+- New `--fix` pass: rewrites MEMORY.md Identity & Personality to compact format in-place
+
+**`/onboarding`:** Step 9 template updated to compact Identity format (consistent with `/update` Step 4)
+
+**Cross-skill consistency** (stale references to removed sections):
+- `INSTRUCTIONS.md`: Phase 1 startup now reads `## Identity & Personality`; agent name extracted from `**Agent:**` field — fixes silent personality fallback after migration
+- `/clone`, `/distill`, `/weekly`: updated to reference `memory/` files and `## Identity & Personality` instead of removed MEMORY.md sections
+
+**Checkpoint hook:** sends just `YYYY-MM-DD-checkpoint-NN.md` as reason; fixed glob quoting for iCloud paths with spaces
 
 ## [1.10.0] — 2026-04-17
 
