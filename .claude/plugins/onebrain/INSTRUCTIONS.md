@@ -189,7 +189,7 @@ Otherwise, append after the greeting:
 📥 inbox [N]                          ← omit if inbox_count = 0
 📋 [N] checkpoints — /wrapup?         ← omit if orphan_count = 0
 
-งานค้าง:
+Pending tasks:
 - [ ] task description 📅 YYYY-MM-DD (overdue)
 - [ ] task description 📅 YYYY-MM-DD
 ```
