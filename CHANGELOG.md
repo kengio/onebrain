@@ -12,18 +12,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.10.2] — 2026-04-18
 
-Instant startup — replaces blocking Phase 2 background sub-agent with inline tool calls; new greeting format.
+Instant startup and greeting redesign.
 
-- Startup: Phase 2 background sub-agent removed; replaced with 3 inline tool calls (Glob inbox count, Grep overdue/today tasks, Glob orphan checkpoints) — no agent spawn, no UI block
-- Greeting: new plain-text card format — Unicode separator line, time-based phrase + user name, date/time on second line; no markdown syntax
-- Startup status block shown only when there is content (inbox, tasks, or checkpoints); `/daily` hint appended; clean sessions show greeting only
-- `/daily` morning mode: finds most recent session log (today or earlier) instead of strictly before today — sessions already started today are now included in recap
-- `/update` backup: `MEMORY.md.YYYY-MM-DD.bak` → `MEMORY-YYYY-MM-DD.md` for Obsidian compatibility
-- Checkpoint template: added missing `## Insights & Learnings` and `## What Worked / Didn't Work` sections
-- `AUTO-SUMMARY.md`: explicit section list enforced; stale Phase 2 race condition note removed
-- `PHASE2.md`: deleted (dead code); `/doctor` check removed
-- `INSTRUCTIONS.md`: fixed `## Identity & Personality` heading reference (was using wrong section names)
-- `/update`: changelog entry now displayed verbatim before confirmation prompt — cannot be skipped or summarized
+- Startup: Phase 2 background sub-agent removed; inline tool calls replace it (Glob inbox, Grep tasks, Glob checkpoints) — no UI block
+- Greeting: plain-text card format — Unicode line, time-based phrase + user name, date/time; status block only when content exists
+- `/daily` morning mode: most recent session log (today or earlier) instead of strictly before today
+- Checkpoint template: restored missing `## Insights & Learnings` and `## What Worked / Didn't Work` sections
+- `/update`: changelog entry displayed verbatim before confirmation; backup renamed `MEMORY-YYYY-MM-DD.md`
+- `PHASE2.md` deleted; `/doctor` PHASE2 check removed; `AUTO-SUMMARY.md` and `INSTRUCTIONS.md` references cleaned up
 
 ## [1.10.1] — 2026-04-18
 
