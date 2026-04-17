@@ -213,3 +213,60 @@ qmd update -c [qmd_collection]
 ```
 
 Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and the files containing broken wikilinks, or restructure vault folders automatically.
+
+---
+
+## Memory Health Checks
+
+| Check | Action |
+|---|---|
+| INDEX.md missing | AskUserQuestion: "INDEX.md ไม่พบ — สร้างไฟล์เปล่าไหมครับ?" `yes / no` |
+| Files in memory/ not in INDEX.md | Read frontmatter; skip `status: deprecated`; list remaining as orphans |
+| Rows in INDEX.md pointing to missing files | List dead links |
+| Files with `verified` > 90 days | Check active/needs-review only (skip deprecated); auto-set `status: needs-review` in file and INDEX.md |
+| Critical Behaviors section > 15 items | Warn: suggest moving excess to memory/ |
+| Checkpoint files with `merged: true` | Delete them (safety net — /wrapup handles these, /doctor catches stragglers) |
+| Checkpoint files > 14 days old with no session log | AskUserQuestion: "พบ {N} checkpoint เก่า >14 วัน ที่ไม่มี session log — ลบทิ้งทั้งหมดไหมครับ?" `delete-all / show-list / skip` |
+| memory/ files with non-compliant names | List offenders (not kebab-case, has date prefix, or >5 words); `--fix` auto-renames |
+| memory/ files with non-default `type` AND not used by 2+ files | Warn possible typo; suggest nearest default via Levenshtein distance ≤2 |
+| `recapped` date in the future (>today) | Warn — likely manual mistake; suggest correcting |
+| `vault.yml` `recap.min_frequency` < 2 or non-integer | Warn invalid config; `--fix` resets to default 2 |
+
+---
+
+## /doctor --fix
+
+Ongoing maintenance only (not migration). Fixes issues arising after initial setup:
+
+1. **Rebuild INDEX.md** from scratch:
+   - Read frontmatter of all files in `memory/`
+   - Skip files with `status: deprecated` (not in INDEX by design)
+   - Rebuild table with active and needs-review entries only
+   - Recalculate `total_active`, `total_needs_review`
+   - Set `updated:` to today
+
+2. **Auto-rename non-compliant memory files:**
+   - kebab-case (lowercase, hyphens only)
+   - No date prefix (e.g. `2026-04-17-topic.md` → `topic.md`)
+   - 3–5 words
+   - Update INDEX.md wikilinks to match renamed files
+
+3. **Reset `recap.min_frequency`** to `2` if invalid value found in vault.yml.
+
+Update `vault.yml` `stats.last_doctor_fix: YYYY-MM-DD` on completion.
+
+---
+
+## Migration Safety Net
+
+If `05-agent/context/` still exists:
+→ warn: "พบ context/ folder — /update migration อาจยังไม่ได้รัน"
+→ AskUserQuestion: "migrate ไฟล์ทั้งหมดเข้า memory/ ไหมครับ?" `migrate / skip`
+→ This check catches edge cases only — the full migration runs via /update
+
+---
+
+## On Completion
+
+Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`.
+If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
