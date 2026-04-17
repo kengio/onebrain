@@ -144,16 +144,15 @@ Run before responding to any user message.
 
 **Step 1 — Critical path (greeting blocks on these):** Run in parallel:
 - Read `vault.yml` → load Configuration variables; override defaults once resolved
-- Read `.claude/plugins/onebrain/.claude-plugin/plugin.json` → get `version` (skip if absent)
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
 - Get current local time in HH:MM format — if unavailable, treat as 09:00–17:00 (no emoji)
 
 **Step 2 — Send greeting immediately:**
 ```
-**OneBrain vX.X.X**
+**OneBrain**
 [greeting] [name] [emoji]
 ```
-- `vX.X.X` from plugin.json; `[name]` from MEMORY.md "Agent Identity"; `[greeting]`/`[emoji]` from time-of-day:
+- `[name]` from MEMORY.md "Agent Identity"; `[greeting]`/`[emoji]` from time-of-day:
 
 | Local time | Concept | Emoji |
 |---|---|---|
