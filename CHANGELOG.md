@@ -12,11 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.10.1] — 2026-04-18
 
-Fixes incomplete migration from pre-v1.10.0 vaults — `/update` now enforces explicit structure on MEMORY.md, INDEX.md, and memory file names.
+Migration hardening and checkpoint hook cleanup.
 
-- **Step 3**: explicit rename rules — date prefix, numeric segment prefix, Title-Case, and >5-word filenames all get normalized to kebab-case 3–5 words; wikilinks in INDEX.md updated after rename
-- **Step 4**: full MEMORY.md target template with old-section mapping; vaults migrating from pre-v1.10.0 (7+ sections) are now correctly consolidated into 3 sections (Identity & Personality / Active Projects / Critical Behaviors)
-- **Step 5**: exact INDEX.md column spec `File | Topics | Type | Status | Description`; rewrite triggered if column order or Description column is missing
+- `/update` migration: explicit rename rules for memory files (date prefix, numeric segment, >5 words → kebab-case 3–5 words); wikilinks in INDEX.md updated after rename
+- `/update` migration: full MEMORY.md 3-section template with old-section mapping — pre-v1.10.0 vaults (7+ sections) now correctly consolidated
+- `/update` migration: exact INDEX.md column spec enforced (`File | Topics | Type | Status | Description`); rewrite triggered if wrong
+- Checkpoint hook: sends just `YYYY-MM-DD-checkpoint-NN.md` as reason instead of full instruction paragraph — cleaner stop hook display; Claude follows INSTRUCTIONS.md to write checkpoint silently
 
 ## [1.10.0] — 2026-04-17
 

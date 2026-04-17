@@ -3,7 +3,8 @@
 # Usage: checkpoint-hook.sh stop
 #
 # stop — fires after every response; checkpoints on message/time threshold
-#         Uses JSON {"decision":"block","reason":"..."} to inject prompt back to Claude.
+#         Outputs JSON {"decision":"block","reason":"YYYY-MM-DD-checkpoint-NN.md"} —
+#         just the filename. Claude reads INSTRUCTIONS.md to write the checkpoint silently.
 #
 # State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS) — uses $TMPDIR/$TEMP/$TMP for Windows compat
 # COUNT=0 with fresh timestamp in an *existing* state file signals post-checkpoint reset;
@@ -112,14 +113,18 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
     echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null
     exit 0
   fi
-  if [ "$COUNT" -ge "$MSG_THRESHOLD" ]; then
-    TRIGGER_LABEL="auto (${COUNT} messages)"
-  else
-    TRIGGER_LABEL="auto ($(( ELAPSED / 60 ))m elapsed)"
-  fi
-  # Build JSON first — restore state on json builder failure so future triggers still work
-  PROMPT="Auto-checkpoint triggered by ${TRIGGER_LABEL}. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing YYYY-MM-DD-checkpoint-*.md files in ${LOGS_FOLDER_ABS}/YYYY/MM/ (using today's actual date in the filename pattern) to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write ${LOGS_FOLDER_ABS}/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
-  # Try python3, python, node in order — Windows may only have 'python' or 'node'
+  # Calculate next checkpoint filename — Claude reads INSTRUCTIONS.md to handle it silently
+  TODAY=$(date +%Y-%m-%d 2>/dev/null)
+  [ -z "$TODAY" ] && TODAY=$(python3 -c "import datetime; print(datetime.date.today())" 2>/dev/null)
+  [ -z "$TODAY" ] && TODAY=$(node -e "const d=new Date();console.log(d.toISOString().slice(0,10))" 2>/dev/null)
+  if [ -z "$TODAY" ]; then exit 0; fi
+  YEAR="${TODAY%%-*}"
+  MONTH="${TODAY#*-}"; MONTH="${MONTH%%-*}"
+  LOG_DIR="${LOGS_FOLDER_ABS}/${YEAR}/${MONTH}"
+  EXISTING=$(ls "${LOG_DIR}/"${TODAY}-*checkpoint*.md 2>/dev/null | wc -l | tr -d ' ')
+  NN=$(printf "%02d" $(( EXISTING + 1 )))
+  PROMPT="${TODAY}-checkpoint-${NN}.md"
+  # Build JSON — just the filename as reason; Claude follows INSTRUCTIONS.md
   if command -v python3 &>/dev/null; then
     JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
   elif command -v python &>/dev/null; then
@@ -127,8 +132,7 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   elif command -v node &>/dev/null; then
     JSON=$(node -e "process.stdout.write(JSON.stringify({decision:'block',reason:process.argv[1]})+'\n')" "$PROMPT" 2>/dev/null)
   else
-    ESCAPED=$(printf '%s' "$PROMPT" | tr -d '\r' | sed 's/\\/\\\\/g; s/"/\\"/g')
-    JSON="{\"decision\":\"block\",\"reason\":\"${ESCAPED}\"}"
+    JSON="{\"decision\":\"block\",\"reason\":\"${PROMPT}\"}"
   fi
   if [ -z "$JSON" ]; then
     # all builders failed — skip checkpoint silently (exit 0 avoids Claude Code error warning)
