@@ -1,3 +1,8 @@
+---
+name: recap
+description: "Batch-promote recurring insights from session logs into memory/ files with frequency filtering"
+---
+
 # /recap
 
 Batch-promotes insights from session logs into memory/ files. Applies frequency filtering

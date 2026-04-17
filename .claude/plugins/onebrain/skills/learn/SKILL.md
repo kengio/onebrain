@@ -1,3 +1,8 @@
+---
+name: learn
+description: "Teach the agent a new fact or behavioral preference and save it to memory/ for future recall"
+---
+
 # /learn
 
 Teach the agent a new fact or behavioral preference. Writes immediately to memory/ — no batch processing.
