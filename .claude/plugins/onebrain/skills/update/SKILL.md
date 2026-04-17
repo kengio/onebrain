@@ -102,19 +102,73 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
 
 **Step 3: Update existing memory/ files**
 - Add missing frontmatter fields: topics, type, conf, verified, updated
-- Rename non-compliant files (date prefix, Title-Case, >5 words) → kebab-case 3–5 words
+- Rename non-compliant files → kebab-case 3–5 words. A file is non-compliant if it has:
+  - A date prefix (e.g. `2026-04-05-bump-version-every-pr.md` → `bump-version-pr.md`)
+  - A numeric segment prefix (e.g. `2026-04-05-02-superpowers-docs-in-vault.md` → `superpowers-docs-vault.md`)
+  - Title-Case or spaces in the filename
+  - More than 5 words (strip stop words; keep the meaningful 3–5)
+- After renaming: update all `[[wikilinks]]` in INDEX.md and any `supersedes:`/`superseded_by:` references to use the new filename
+- Compliant example: `bump-version-pr.md`, `dev-workflow-worktree.md`, `telegram-format.md`
 
 **Step 4: Restructure MEMORY.md** (MUST run after Step 1)
-- Remove ## Key Learnings, ## Key Decisions, ## Recurring Contexts sections entirely
-- Keep ## Identity & Personality, ## Active Projects, ## Critical Behaviors (preserve user items)
-- Remove any auto-wrapup trigger entry from Critical Behaviors if present
-- Update `updated:` frontmatter to today
+
+Target structure — exactly 3 sections. If MEMORY.md already has this structure, skip rewrite but still update `updated:` frontmatter.
+
+```markdown
+## Identity & Personality
+
+**Agent name:** [name]
+**Agent personality:** [personality description]
+**User name:** [user_name]
+**User role:** [role]
+**Tone:** [tone]
+**Detail level:** [detail_level]
+
+You are [agent_name], [user_name]'s personal chief of staff inside their Obsidian vault.
+Your personality is [personality description].
+[Language/gender/self-reference rules if set]
+
+- Introduce yourself as [agent_name] when appropriate
+- Address them as [user_name]
+- Tone: [tone], [detail_level]
+- Role context: [user_name] is a [role]
+- Language: [language rules]
+- Always prioritize their top goal: [primary goal]
+- Be proactive: surface relevant connections, flag stale items, suggest next steps
+- Keep responses grounded in their vault — reference actual notes when relevant
+- [Any AskUserQuestion or tool-use preferences]
+
+## Active Projects
+
+<!-- Updated by /consolidate and /braindump -->
+- **[Project]** — [status emoji + label]. [description].
+
+## Critical Behaviors
+
+- [behavioral item]
+<!-- Add behavioral preferences here via /learn -->
+```
+
+Old-section mapping (apply when migrating from pre-v1.10.0 structure):
+- `## Agent Identity` + `## Identity` + `## Communication Style` + `## Goals & Focus Areas` + `## Values & Working Principles` + `## AI Personality Instructions` → consolidate into `## Identity & Personality`
+- `## Active Projects` → keep as-is
+- `## Critical Behaviors` → preserve if present; if absent, create with items from `## Values & Working Principles` plus an empty comment
+- Remove entirely: `## Key Learnings`, `## Key Decisions`, `## Recurring Contexts`
+
+Always: update `updated:` frontmatter to today.
 
 **Step 5: Create INDEX.md**
 - Read frontmatter of all files in memory/ (batch 20 at a time if >50 files)
 - Include only status: active and status: needs-review in table
+- Column format (exact order): `| File | Topics | Type | Status | Description |`
+  - **File**: wikilink `[[filename-without-extension]]`
+  - **Topics**: comma-separated topics from frontmatter
+  - **Type**: from frontmatter (behavioral / project / context)
+  - **Status**: from frontmatter (active / needs-review)
+  - **Description**: 1-line summary derived from file content (not from frontmatter)
 - For each file with supersedes: X, set superseded_by: [this file] on X's frontmatter
 - Set cache fields: total_active, total_needs_review (omit last_review)
+- If INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format
 
 **Step 6: Backfill recapped: on existing session logs**
 - If 07-logs/ doesn't exist → skip
