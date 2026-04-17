@@ -21,7 +21,7 @@ Migration hardening and cross-skill consistency.
 - `/onboarding`: Step 9 MEMORY.md template updated to compact Identity format
 - `INSTRUCTIONS.md`: startup now reads `## Identity & Personality` — fixes silent personality fallback after migration
 - `/clone`, `/distill`, `/weekly`: updated to reference `memory/` files and `## Identity & Personality` instead of removed MEMORY.md sections
-- Checkpoint hook: fixed glob quoting for iCloud paths with spaces
+- Checkpoint hook: sends just `YYYY-MM-DD-checkpoint-NN.md` as reason instead of full instruction paragraph; fixed glob quoting for iCloud paths with spaces
 
 ## [1.10.0] — 2026-04-17
 
