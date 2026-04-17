@@ -165,13 +165,6 @@ Run before responding to any user message:
    - `MEMORY.md`: load identity, personality, active projects and their task dates
    - `INDEX.md`: load memory file index for lazy-loading
 
-   After reading INDEX.md, match Topics column against:
-   1. Active project keywords from MEMORY.md (load matching memory/ files)
-   2. User's first message content (load any additional matching files)
-   Only `status: active` and `status: needs-review` files are loaded. Deprecated files never loaded.
-
-   > **Agent memory (on-demand only):** `[agent_folder]/memory/` is searched only when the user's request relates to a past pattern. Never loaded at startup.
-
 2. Get the current local machine time. Run in parallel with step 1:
    ```bash
    python3 -c "from datetime import datetime; print(datetime.now().strftime('%H:%M'))" 2>/dev/null || node -e "const d=new Date(); console.log(d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))" 2>/dev/null || date '+%H:%M' 2>/dev/null
@@ -204,6 +197,8 @@ Run before responding to any user message:
 
    **No-repeat rule** : do not ask about facts already in loaded context. If the user's message contradicts context, trust their message.
 
+3b. After sending the greeting, load `memory/` files matching active project keywords from INDEX.md (use Topics column). Only load `status: active` and `status: needs-review` files. Deprecated files are never loaded. Load matching files for the user's first message content as well, once it arrives. This step is non-blocking — the main agent is ready to respond while loading.
+
 4. Dispatch a **background sub-agent** (`run_in_background: true`, `mode: "bypassPermissions"`) with this prompt payload:
 
    ```
@@ -217,6 +212,7 @@ Run before responding to any user message:
    today: YYYY-MM-DD
    active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
    is_weekend: true|false
+   memory_folder: [agent_folder]/memory
    ```
 
 Main agent is now ready to respond to the user.
@@ -237,7 +233,7 @@ When the background sub-agent returns, the main agent sends exactly one follow-u
 
 1. Display the `briefing` text
 2. If `orphan_action` is `prompt_wrapup:{N}`: append `📋 {N} checkpoints : /wrapup?`
-3. If `context_hints` is non-empty: read each file as `vault_root/hint_path` into context (do not display anything to the user). If any file cannot be read, skip that file.
+3. If `context_hints` is non-empty: read each file as `vault_root/hint_path` into context. If any file cannot be read, skip that file. Append a single line to the briefing showing which files were loaded: `_Loaded: memory/file-a.md, memory/file-b.md_` (italics, in user's language). If none were successfully read, omit this line.
 4. If `stale_notes` is non-empty: append to the briefing message:
    ```
    **Stale projects (30+ days):**

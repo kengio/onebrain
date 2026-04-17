@@ -74,21 +74,28 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
 - Glob 07-logs/**/*-session-*.md
 - For each: read date: frontmatter → set recapped: YYYY-MM-DD using that same date
 - Fallback: if date: missing, parse YYYY-MM-DD prefix from filename
+- **Note:** This marks all pre-migration logs as recapped so /recap does not reprocess them. Historical patterns were already in MEMORY.md Key Learnings (now migrated to memory/ in Step 1). If the user wishes to retroactively promote insights from a specific old log, they can clear its `recapped:` field before running /recap.
 
 **Step 7: Verify migration**
 - Run /doctor (newly-synced version) automatically
 - Expected: 0 orphans, 0 dead links, 0 non-compliant names, INDEX.md present
 - If any check fails: surface to user with suggestion to run /doctor --fix
 
-**Step 13: Initialize vault.yml stats + recap block**
+**Step 8: Initialize vault.yml stats + recap block**
 - Add stats: block: set last_doctor_run to today; leave other fields absent
 - Add recap: block: min_sessions: 6, min_frequency: 2
 - Skip if vault.yml doesn't exist or user opted out via --skip-stats
 
 ## --dry-run Mode
 
-`/update --dry-run` → run all steps WITHOUT writing. Output:
-"Would create: ...", "Would modify: ...", "Would delete: ..."
+`/update --dry-run` → run all steps WITHOUT writing. For each migration step, output:
+```
+[Step N] Would create: [logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md
+[Step N] Would modify: [agent_folder]/MEMORY.md — remove Key Learnings section
+[Step N] Would create: [agent_folder]/memory/kebab-topic.md
+[Step N] Would delete: [agent_folder]/context/
+```
+The version check, changelog display, and AskUserQuestion confirmation still happen normally in dry-run mode. No files are written, moved, or deleted. At the end, print a summary: "Dry run complete — N files would be created, M modified, P deleted."
 
 ## Failure Recovery
 

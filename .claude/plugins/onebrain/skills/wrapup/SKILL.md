@@ -37,7 +37,7 @@ Absence of `recapped:` field = not yet processed by /recap.
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
-2. Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md` (also check yesterday's folder if session started before midnight : i.e., `[logs_folder]/YYYY/MM_PREV/YYYY-MM-DD_PREV-checkpoint-*.md` for the prior calendar day)
+2. Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-checkpoint-*.md`. Also check yesterday's folder if the session may have started before midnight: compute yesterday's date (decrement by 1 day, accounting for month/year rollover) and glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-checkpoint-*.md` using yesterday's actual year, month, and date values.
 3. Filter: keep only files where frontmatter field `merged` is absent or not `true`
 4. If any found: **read every file in the filtered list** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 : not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
 5. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
@@ -141,7 +141,7 @@ This prevents /wrapup from re-reading the same checkpoints in future sessions.
 
 After session log is written successfully:
 1. Delete checkpoint files merged into this session's log
-2. Scan `07-logs/**/*-checkpoint-*.md` for any remaining files with `merged: true` → delete them
+2. Safety-net scan (current month only): glob `[logs_folder]/YYYY/MM/*-checkpoint-*.md` for files with `merged: true` → delete them. Scoped to current month to avoid expensive vault-wide glob on large vaults.
 
 Guard: only delete AFTER confirming session log write succeeded. Never delete before or during write.
 

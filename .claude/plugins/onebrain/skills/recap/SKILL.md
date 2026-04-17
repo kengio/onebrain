@@ -6,7 +6,7 @@ Behaviors are promoted exclusively via /learn.
 
 ## Session Log Discovery
 
-Glob `07-logs/` for session logs; filter to files WITHOUT `recapped:` frontmatter field.
+Glob `[logs_folder]/**/*-session-*.md`; filter to files WITHOUT `recapped:` frontmatter field.
 Process only those (faster than scanning all logs).
 
 If no unrecapped logs found → tell user "ไม่มี session logs ที่ยังไม่ได้ recap" and stop.
@@ -81,9 +81,10 @@ memory/dev-worktree-setup.md (topics: dev, worktree, setup)
 2. Synthesize (do NOT concatenate) into one coherent document preserving all unique information
 3. Name new file after shared topics (e.g. `dev-workflow-worktree.md`)
 4. Frontmatter: keep highest `conf`; most recent `verified`; if either was `needs-review`
-   → merged file inherits `needs-review` (caution wins)
-5. Deprecate both old files + remove their rows from INDEX.md
-6. Add new file to INDEX.md
+   → merged file inherits `needs-review` (caution wins); update `total_needs_review` accordingly
+5. Deprecate both old files + remove their rows from INDEX.md; for each deprecated file:
+   decrement `total_active` if it was `active`, or `total_needs_review` if it was `needs-review`
+6. Add new file to INDEX.md; increment `total_active` (or `total_needs_review` if inherited `needs-review`)
 
 **Contradiction during merge:** if files contain contradicting facts, do NOT auto-pick.
 AskUserQuestion showing both versions: `keep version A / keep version B / cancel merge`
@@ -111,7 +112,8 @@ Each insight that passes the frequency filter:
   updated: today, created: today, topics: [...]`
 - Filename collision: if target exists, suffix with `-NN` automatically (no user prompt —
   batch mode)
-- Add row to INDEX.md: `| [[memory/filename]] | topic1, topic2 | type | active | description |`
+- Infer `type` from content (same 5 categories as /learn): behavioral / context / dev / project / reference — pick silently, no prompt
+- Add row to INDEX.md: `| [[memory/filename]] | topic1, topic2 | {inferred-type} | active | description |`
 - Update INDEX.md `updated:` and `total_active` counter
 
 Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /learn.

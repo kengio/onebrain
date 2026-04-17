@@ -252,7 +252,7 @@ total_needs_review: 0
 |------|--------|------|--------|-------------|
 ```
 
-Omit `last_review:` from frontmatter — it is set by the first `/memory-review` run.
+Omit `last_review:` from INDEX.md frontmatter — last review date is tracked in `vault.yml stats.last_memory_review:`, updated by /memory-review on each run.
 
 ---
 
@@ -312,7 +312,7 @@ recap:
   min_sessions: 6
   min_frequency: 2
 
-# Update channel (v1.9.7+ — controls which GitHub branch /update pulls from)
+# Update channel (controls which GitHub branch /update pulls from)
 # update_channel: stable    # stable | next | 1.x | 2.x — uncomment to change
 ```
 

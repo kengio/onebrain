@@ -44,17 +44,18 @@ Show each entry in this format:
 
 **needs-review** → sets `status: needs-review`; bumps `updated` to today. `verified` unchanged.
 
-**deprecate** → sets `status: deprecated`; bumps `updated` to today; removes row from INDEX.md.
+**deprecate** → sets `status: deprecated`; bumps `updated` to today; removes row from INDEX.md;
+decrement `total_active` if entry was `active`, or `total_needs_review` if entry was `needs-review`.
 `verified` unchanged. File stays in memory/ (browsable in Obsidian).
 
 **delete** → AskUserQuestion: "ย้าย `memory/X.md` ไป archive และลบออกจาก INDEX ด้วยไหมครับ?"
 Options: `confirm / cancel`
 If confirm:
-1. Move file to `06-archive/05-agent/memory/YYYY-MM/X.md`
+1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`
 2. Add `archived: YYYY-MM-DD` to file frontmatter
-3. Remove row from INDEX.md
+3. Remove row from INDEX.md; decrement `total_active` if status was `active`, `total_needs_review` if status was `needs-review`
 4. If archive path already exists: suffix with `-NN` (e.g. `dev-workflow-02.md`) — never overwrite
-5. Auto-create `06-archive/05-agent/memory/YYYY-MM/` folder if missing
+5. Auto-create `[archive_folder]/[agent_folder]/memory/YYYY-MM/` folder if missing
 
 **skip** → move to next entry, no changes.
 
