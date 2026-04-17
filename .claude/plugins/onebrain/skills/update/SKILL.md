@@ -10,12 +10,28 @@ Update OneBrain system files from the source repo to the latest version.
 ## Version Check
 
 1. Read current version from vault's `plugin.json` (`[agent_folder]/../../.claude-plugin/plugin.json` or `.claude/plugins/onebrain/.claude-plugin/plugin.json`)
-2. Read new version from repo's `plugin.json` (check `~/projects/onebrain/plugin.json` or look for the installed repo path)
-3. If equal → "Already up to date vX.X.X" and stop
-4. If newer → read `CHANGELOG.md` from repo; display release notes in user's language
-5. AskUserQuestion: "อัปเดตเป็น vX.X.X ไหมครับ?" (Thai) / "Update to vX.X.X?" (English)
+2. Read `update_channel` from `vault.yml` (default: `stable` if field absent).
+   Map to GitHub branch:
+   - `stable` → `main`
+   - `next` → `next`
+   - `N.x` (e.g. `1.x`, `2.x`) → `N.x`
+3. Read new version from repo's `plugin.json` on the mapped branch (not always main)
+4. If equal → "Already up to date vX.X.X" and stop
+5. If newer → read `CHANGELOG.md` from repo; display release notes in user's language
+
+### Major Version Bump Guard
+
+If `new_major > current_major` (e.g. vault is v1.9.7, repo branch has v2.0.0):
+→ AskUserQuestion: "ตรวจพบ major version bump (v{current} → v{new}) — นี่อาจมี breaking changes ยืนยันอัปเดตไหมครับ?"
+Options: `update / cancel`
+→ If cancel: stop immediately, no changes made
+→ If update: proceed with normal confirmation flow below
+
+Minor/patch bumps (1.9.7 → 1.9.8, 1.9.7 → 1.10.0): proceed without major version prompt.
+
+6. AskUserQuestion: "อัปเดตเป็น vX.X.X ไหมครับ?" (Thai) / "Update to vX.X.X?" (English)
    Options: `update / cancel`
-6. If confirmed → proceed to bootstrap below
+7. If confirmed → proceed to bootstrap below
 
 ## Self-Update Bootstrap (Read-New, Execute-In-Place)
 
