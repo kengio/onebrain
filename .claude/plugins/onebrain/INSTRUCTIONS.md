@@ -166,11 +166,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 
 **Step 3 — After greeting (run all in parallel, non-blocking):**
 - Read `[agent_folder]/INDEX.md` → load memory file index for lazy-loading
-- Generate session token (6-char alphanumeric) → write to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token`:
-  ```bash
-  python3 -c "import random,string,os,sys; logs,d=sys.argv[1],sys.argv[2]; t=''.join(random.choices(string.ascii_lowercase+string.digits,k=6)); os.makedirs(f'{logs}/.sessions',exist_ok=True); open(f'{logs}/.sessions/{d}-{os.getpid()}.token','w').write(t); print(t)" "[logs_folder_abs]" "YYYY-MM-DD"
-  ```
-  Store as `session_token`.
+- Generate session token: 6-char lowercase alphanumeric. Write to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token` (create `.sessions/` if absent). Store result as `session_token`.
 - Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Dispatch **background sub-agent** once token is ready (`run_in_background: true`, `mode: "bypassPermissions"`):
   ```
