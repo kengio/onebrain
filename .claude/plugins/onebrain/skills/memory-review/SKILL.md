@@ -74,6 +74,7 @@ Every skill that modifies INDEX.md must update these frontmatter cache fields:
 - `updated` — set to today after any modification
 
 On /memory-review completion: update `vault.yml` `stats.last_memory_review: YYYY-MM-DD`.
+Update regardless of whether any changes were made — the field tracks when the user last reviewed, not when they last changed something. Only skip the update if the user invoked **stop** before processing any entries.
 
 ## Edge Cases
 
