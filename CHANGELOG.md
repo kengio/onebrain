@@ -34,6 +34,11 @@ Memory system redesign — replaces MEMORY.md Key Learnings with a structured `m
 - /wrapup and AUTO-SUMMARY glob only own-session checkpoints (by token); legacy checkpoints (no token) use backward-compatible fallback
 - Session log frontmatter: `recapped:` (set by /recap) and `topics:` fields
 
+**Session startup**
+- `skills/startup/QMD.md` — QMD search strategy extracted from INSTRUCTIONS.md; lazy-loaded only when qmd tools are in the tool list
+- Phase 1 greeting latency reduced: critical path is now vault.yml + MEMORY.md + time only; INDEX.md, token generation, and memory/ lazy-load deferred to after greeting
+- Phase 2: all 5 background tasks (briefing, orphan detection, context pre-load, stale scan, overflow guard) run in parallel
+
 **Skills — new capabilities**
 - `skills/startup/PHASE2.md` — extracted from INSTRUCTIONS.md; token-aware orphan detection
 - `skills/startup/AUTO-SUMMARY.md` — extracted from INSTRUCTIONS.md; token-aware checkpoint glob
@@ -66,7 +71,9 @@ Memory system redesign — replaces MEMORY.md Key Learnings with a structured `m
 - MEMORY.md restructured to 3 sections only: Identity & Personality, Active Projects, Critical Behaviors (~55 lines); Key Learnings/Decisions/Recurring Contexts removed
 - MEMORY.md loaded with INDEX.md in parallel at session startup; memory/ files loaded lazily by topic
 - memory/ consolidates all files previously in context/ (folder removed)
-- INSTRUCTIONS.md reduced ~456 → ~338 lines; Phase 2 and Auto-Summary extracted to skill files
+- INSTRUCTIONS.md reduced ~456 → ~338 lines; Phase 2, Auto-Summary, and QMD instructions extracted to skill files; no embedded scripts — plain-language requirements throughout
+- Greeting simplified: no OneBrain header, no version number (version accessible via /help)
+- Checkpoint hook: sends bare filename as hook reason instead of full JSON prompt — prevents prompt injection and reduces context noise
 - /learn: writes to memory/ + auto-updates INDEX.md; one-file-per-concept rule enforced
 - /recap: promotes session log insights to memory/ only — does NOT write to MEMORY.md; Critical Behaviors promoted exclusively via /learn
 - /wrapup: writes session log only; checkpoint cleanup scoped to current month; recap reminder added
