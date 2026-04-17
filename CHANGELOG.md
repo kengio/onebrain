@@ -1,6 +1,6 @@
 ---
-latest_version: 1.10.0
-released: 2026-04-17
+latest_version: 1.10.1
+released: 2026-04-18
 ---
 
 # Changelog
@@ -9,6 +9,14 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## [1.10.1] — 2026-04-18
+
+Fixes incomplete migration from pre-v1.10.0 vaults — `/update` now enforces explicit structure on MEMORY.md, INDEX.md, and memory file names.
+
+- **Step 3**: explicit rename rules — date prefix, numeric segment prefix, Title-Case, and >5-word filenames all get normalized to kebab-case 3–5 words; wikilinks in INDEX.md updated after rename
+- **Step 4**: full MEMORY.md target template with old-section mapping; vaults migrating from pre-v1.10.0 (7+ sections) are now correctly consolidated into 3 sections (Identity & Personality / Active Projects / Critical Behaviors)
+- **Step 5**: exact INDEX.md column spec `File | Topics | Type | Status | Description`; rewrite triggered if column order or Description column is missing
 
 ## [1.10.0] — 2026-04-17
 
