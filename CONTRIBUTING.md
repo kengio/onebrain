@@ -208,3 +208,43 @@ Open a GitHub issue with:
 - What actually happened
 - Which AI agent you were using (Claude Code, Gemini CLI, etc.)
 - Relevant skill output if applicable
+
+## Memory Skills
+
+### Layer Ownership
+
+Each memory layer has designated skills. Do not write to a layer outside your skill's scope.
+
+| Layer | Storage | Written by |
+|---|---|---|
+| Session logs | `07-logs/` | `/wrapup` only |
+| Memory files | `05-agent/memory/` | `/learn`, `/recap`, `/memory-review` |
+| MEMORY.md — Identity | `05-agent/MEMORY.md` | `/onboarding`, manual |
+| MEMORY.md — Active Projects | `05-agent/MEMORY.md` | `/learn`, manual |
+| MEMORY.md — Critical Behaviors | `05-agent/MEMORY.md` | `/learn` only |
+
+### Critical Behaviors Promotion Threshold
+
+A behavior qualifies for MEMORY.md Critical Behaviors ONLY when ALL three are true:
+1. Must apply every session without exception (not situational)
+2. Forgetting causes high-impact failure (lost work, broken merge, etc.)
+3. Cannot be inferred from context — must be explicitly remembered
+
+If any condition fails → write to `memory/` with `type: behavioral` instead.
+
+### Memory File Naming Convention
+
+- Format: `kebab-case.md` — lowercase, hyphens, no spaces
+- Length: 3–5 words (e.g. `dev-workflow-superpowers.md`)
+- No date prefix — creation date tracked in `created:` frontmatter
+- One concept per file
+
+### INDEX.md Sync Rules
+
+INDEX.md must be kept in sync at all times. Every skill that creates, updates, deprecates,
+or deletes a memory/ file must also update INDEX.md:
+- Create → add row; increment `total_active`
+- Deprecate → remove row; decrement `total_active`
+- Delete (soft) → remove row; decrement `total_active`; move file to archive
+- Update → update row Description and Type columns if changed
+- After any change: set INDEX.md frontmatter `updated:` to today
