@@ -293,7 +293,7 @@ Keep under 250 words.
 When the user asks you to recall something (a decision, preference, fact, or past discussion), search the memory layers in order of permanence:
 
 1. **`[agent_folder]/MEMORY.md`** : already in context; check here first
-2. **`[agent_folder]/memory/`** : grep for domain facts and behavioral preferences
+2. **`[agent_folder]/memory/`** : INDEX.md is already in context — match query keywords against its Topics column to identify relevant files, then read those files. If no topic match, grep memory/ directly. Use qmd if available for broader semantic search.
 3. **`[logs_folder]/`** : grep session logs for past decisions and discussions
 
 Stop as soon as you find a confident answer. If the answer spans multiple layers, synthesize across them.
