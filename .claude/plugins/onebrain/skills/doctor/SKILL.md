@@ -247,7 +247,7 @@ Ongoing maintenance only (not migration). Fixes issues arising after initial set
 
 2. **Auto-rename non-compliant memory files:**
    - kebab-case (lowercase, hyphens only)
-   - No date prefix (e.g. `2026-04-17-topic.md` → `topic.md`)
+   - No date prefix (e.g. `YYYY-MM-DD-topic.md` → `topic.md`)
    - 3–5 words
    - Update INDEX.md wikilinks to match renamed files
 

@@ -48,7 +48,7 @@ Collect ALL conflicts first, then resolve sequentially:
 
 ⚠️ พบ conflict 3 รายการ — จัดการทีละอัน
 
-[1/3] 📝 insight จาก session 2026-04-15:
+[1/3] 📝 insight จาก session YYYY-MM-DD:
       "repo ย้ายไปที่ ~/projects/onebrain-v2"
 
       ขัดแย้งกับ memory/onebrain-development.md
@@ -106,10 +106,12 @@ AskUserQuestion showing both versions: `keep version A / keep version B / cancel
 ## Writing Promoted Insights
 
 Each insight that passes the frequency filter:
-- Write to `memory/kebab-case-topic.md` with frontmatter (source: /recap, status: active,
-  conf: medium, verified: today, updated: today, created: today, topics: [...])
+- Write to `memory/kebab-case-topic.md` with frontmatter:
+  `tags: [agent-memory], source: /recap, status: active, conf: medium, verified: today,
+  updated: today, created: today, topics: [...]`
 - Filename collision: if target exists, suffix with `-NN` automatically (no user prompt —
   batch mode)
-- Add row to INDEX.md; update INDEX.md `updated:` and `total_active` counter
+- Add row to INDEX.md: `| [[memory/filename]] | topic1, topic2 | type | active | description |`
+- Update INDEX.md `updated:` and `total_active` counter
 
 Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /learn.
