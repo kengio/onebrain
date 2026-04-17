@@ -30,7 +30,7 @@
 
 ## What is OneBrain?
 
-OneBrain is an AI operating system layer built on top of Obsidian. It gives your AI agent persistent memory, a structured knowledge vault, and 24+ pre-built skills — so every session picks up exactly where the last one left off.
+OneBrain is an AI operating system layer built on top of Obsidian. It gives your AI agent persistent memory, a structured knowledge vault, and 25+ pre-built skills — so every session picks up exactly where the last one left off.
 
 Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forever. No cloud sync required. No proprietary format. Just your agent, your vault, your data.
 
@@ -238,6 +238,7 @@ Then run `/onboarding`.
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
 | `/wrapup` | Wrap up session — merges any auto-checkpoints and saves full summary to session log |
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences |
+| `/memory-review` | Interactive review of memory files — keep, update, deprecate, or delete entries |
 | `/clone` | Package your agent context for transfer to a new vault |
 | `/reorganize` | Migrate flat notes into organized subfolders |
 | `/qmd` | Set up fast vault search index — enables semantic search across all notes |
