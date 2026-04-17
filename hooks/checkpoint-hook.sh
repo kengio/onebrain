@@ -134,8 +134,7 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   else
     TOKEN_PART=""
   fi
-  # Pre-compute checkpoint filename (so reason is just the filename, not a long prompt)
-  TODAY_DATE=$(date '+%Y-%m-%d' 2>/dev/null || python3 -c "from datetime import date; print(date.today())" 2>/dev/null || node -e "console.log(new Date().toISOString().slice(0,10))" 2>/dev/null)
+  # Pre-compute checkpoint filename (TODAY_DATE already set by session token lookup above)
   CHECKPOINT_DIR="${LOGS_FOLDER_ABS}/${TODAY_DATE%%-*}/$(echo "$TODAY_DATE" | cut -d'-' -f2)"
   EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}${TOKEN_PART}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
   NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
