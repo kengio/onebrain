@@ -12,7 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.10.3] — 2026-04-18
 
-- `AUTO-SUMMARY.md`: delete merged checkpoint files after session log is written (matches /wrapup Step 6 behavior)
+Auto Session Summary aligned with /wrapup behavior.
+
+- Delete merged checkpoint files after session log write (write-success guard + safety-net scan)
+- Check yesterday's folder for cross-midnight sessions (matches /wrapup Step 1.3)
+- Explicit frontmatter spec: `session: NN` field added; all `merged:` variants handled
+- `## What Worked / Didn't Work` omit rule inlined — no longer relies on /wrapup cross-reference
 
 ## [1.10.2] — 2026-04-18
 
