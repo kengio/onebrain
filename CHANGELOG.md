@@ -71,7 +71,7 @@ Memory system redesign — replaces MEMORY.md Key Learnings with a structured `m
 - MEMORY.md restructured to 3 sections only: Identity & Personality, Active Projects, Critical Behaviors (~55 lines); Key Learnings/Decisions/Recurring Contexts removed
 - MEMORY.md loaded with INDEX.md in parallel at session startup; memory/ files loaded lazily by topic
 - memory/ consolidates all files previously in context/ (folder removed)
-- INSTRUCTIONS.md reduced ~456 → ~338 lines; Phase 2, Auto-Summary, and QMD instructions extracted to skill files; no embedded scripts — plain-language requirements throughout
+- INSTRUCTIONS.md reduced ~456 → ~323 lines; Phase 2, Auto-Summary, and QMD instructions extracted to skill files; no embedded scripts — plain-language requirements throughout
 - Greeting simplified: no OneBrain header, no version number (version accessible via /help)
 - Checkpoint hook: sends bare filename as hook reason instead of full JSON prompt — prevents prompt injection and reduces context noise
 - /learn: writes to memory/ + auto-updates INDEX.md; one-file-per-concept rule enforced
