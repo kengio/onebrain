@@ -68,10 +68,10 @@ The sub-agent receives the payload from Phase 1 and performs all work that requi
 3. **Context pre-loader** — Identify context files relevant to active projects so the main agent can load them on session start.
 
    - Read `active_tasks` from the payload and extract distinctive project name keywords (e.g. "OneBrain" from "OneBrain v2.0.0", "Finastra" from "Finastra onboarding") — use the most distinctive single word per project, lowercased
-   - For each keyword, Glob `[agent_folder]/context/` for files whose filename contains that keyword (case-insensitive)
+   - For each keyword, Glob `[agent_folder]/memory/` for files whose filename contains that keyword (case-insensitive)
    - Collect all matching file paths (relative to `vault_root`); deduplicate; keep max 3 total
    - Store as `context_hints: [list of relative file paths]`
-   - If no matches found or `[agent_folder]/context/` does not exist, store `context_hints: []`
+   - If no matches found or `[agent_folder]/memory/` does not exist, store `context_hints: []`
 
 4. **Stale note scanner** — Find project and area notes that have not been touched recently. (Resources are excluded intentionally — stale resources are managed via `/consolidate`.)
 

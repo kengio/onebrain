@@ -268,7 +268,6 @@ Create the following folders. For each folder, check if it exists first; if not,
 03-knowledge/
 04-resources/
 05-agent/              ← root folder
-05-agent/context/      ← subfolder only (no README)
 05-agent/memory/       ← subfolder only (no README)
 06-archive/
 07-logs/
