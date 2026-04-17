@@ -1,6 +1,6 @@
 # Auto Session Summary Instructions
 
-Session summaries are auto-saved silently when the user signals end of session (same trigger as Auto-Wrapup). If the user closes the session without any signal, checkpoints serve as the safety net instead.
+Session summaries are auto-saved silently when the user signals end of session (e.g. "bye", "good night", "I'm done for today"). If the user closes the session without any signal, checkpoints serve as the safety net instead.
 
 Run silently (no output) if ALL of these are true:
 1. An end-of-session signal was detected (e.g. "bye", "good night", "I'm done for today")

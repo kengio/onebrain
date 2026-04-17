@@ -161,7 +161,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 
 **Step 3 — After greeting (run all in parallel, non-blocking):**
 - Read `[agent_folder]/INDEX.md` → load memory file index for lazy-loading
-- Generate session token: 6-char lowercase alphanumeric. Write to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token` (create `.sessions/` if absent). Store result as `session_token`.
+- Generate `session_token`: 6-char random lowercase alphanumeric. Store in context for this session.
 - Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Dispatch **background sub-agent** once token is ready (`run_in_background: true`, `mode: "bypassPermissions"`):
   ```
@@ -190,7 +190,7 @@ When the background sub-agent returns, the main agent sends exactly one follow-u
 
 1. Display the `briefing` text
 2. If `orphan_action` is `prompt_wrapup:{N}`: append `📋 {N} checkpoints : /wrapup?`
-3. If `context_hints` is non-empty: read each file as `vault_root/hint_path` into context. If any file cannot be read, skip that file. Append a single line to the briefing showing which files were loaded: `_Loaded: memory/file-a.md, memory/file-b.md_` (italics, in user's language). If none were successfully read, omit this line.
+3. If `context_hints` is non-empty: skip any file already loaded in Phase 1 Step 3. For remaining files, read each as `vault_root/hint_path` into context. If any file cannot be read, skip it. If any new files were successfully loaded, append a single line: `_Loaded: memory/file-a.md, memory/file-b.md_` (italics, in user's language). If all were already loaded or none could be read, omit this line.
 4. If `stale_notes` is non-empty: append to the briefing message:
    ```
    **Stale projects (30+ days):**
@@ -220,7 +220,7 @@ Note inline: `[Loading memory: filename]`
 
 ### Auto Checkpoint
 
-When the stop hook sends a message that is **just a filename** matching `YYYY-MM-DD-{token}-checkpoint-NN.md` (no slashes), silently write a checkpoint to `[logs_folder]/YYYY/MM/<filename>`. Extract `YYYY` and `MM` from the filename to construct the full path. Create parent directories if missing. No output to user.
+When the stop hook sends a message that is **just a filename** matching `YYYY-MM-DD-checkpoint-NN.md` (no slashes), silently write a checkpoint to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md` — insert `session_token` from context into the filename. Extract `YYYY` and `MM` from the hook filename to construct the path. Create parent directories if missing. No output to user.
 
 Write:
 
