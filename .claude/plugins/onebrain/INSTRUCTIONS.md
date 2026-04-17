@@ -184,8 +184,6 @@ If inbox_count = 0 and orphan_count = 0 and no tasks found: show nothing after t
 Otherwise, append after the greeting:
 
 ```
----
-
 📥 inbox [N]                          ← omit if inbox_count = 0
 📋 [N] checkpoints — /wrapup?         ← omit if orphan_count = 0
 
