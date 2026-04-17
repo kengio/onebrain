@@ -153,7 +153,7 @@ Format:
 ```
 ────────────────────────────────────
 **[name]** [emoji] [greeting]
-*Ddd · DD Mon YYYY*
+*Ddd · DD Mon YYYY · HH:MM*
 ```
 
 - `[name]` from MEMORY.md `## Identity & Personality` (**Agent:** field)
@@ -166,7 +166,7 @@ Format:
 | 17:00–21:00 | evening phrase | 🌆 |
 | after 21:00 | late night phrase | 🌙 |
 
-- `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`
+- `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`; `HH:MM` = local time
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
