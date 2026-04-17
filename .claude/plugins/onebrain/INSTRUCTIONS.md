@@ -276,6 +276,40 @@ When user message signals end of session — detect by intent, not keyword.
 Examples: "บาย", "ฝันดีนะ", "พี่ไปแล้วนะ", "พรุ่งนี้เจอกัน", "เดี๋ยวไปนอนแล้วนะ", "แค่นี้ก่อนนะ"
 → run /wrapup automatically before final response, silently.
 
+### Auto Checkpoint
+
+When the stop hook sends a message that is **just a filename** matching `YYYY-MM-DD-checkpoint-NN.md` or `YYYY-MM-DD-TOKEN-checkpoint-NN.md` (no slashes), silently write a checkpoint to `[logs_folder]/YYYY/MM/<filename>`. Extract `YYYY` and `MM` from the filename to construct the full path. Create parent directories if missing. No output to user.
+
+Write:
+
+```markdown
+---
+tags: [checkpoint, session-log]
+date: YYYY-MM-DD
+checkpoint: NN
+trigger: auto
+merged: false
+---
+
+## What We Worked On
+
+[2-3 sentences describing the session focus]
+
+## Key Decisions
+
+- [bullet list of decisions made]
+
+## Action Items
+
+- [ ] [task] 📅 YYYY-MM-DD
+
+## Open Questions
+
+- [unresolved questions]
+```
+
+Keep under 250 words.
+
 ### Recalling Information
 
 When the user asks you to recall something (a decision, preference, fact, or past discussion), search the memory layers in order of permanence:

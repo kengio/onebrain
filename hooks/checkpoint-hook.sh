@@ -134,8 +134,13 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   else
     TOKEN_PART=""
   fi
-  # Build JSON first — restore state on json builder failure so future triggers still work
-  PROMPT="Auto-checkpoint triggered by ${TRIGGER_LABEL}. Silently save a checkpoint to the vault logs. Steps: (1) Get today's date YYYY-MM-DD, extract YYYY and MM. (2) Count existing YYYY-MM-DD${TOKEN_PART}-checkpoint-*.md files in ${LOGS_FOLDER_ABS}/YYYY/MM/ (using today's actual date in the filename pattern) to find the next checkpoint number NN (zero-padded, starts at 01). (3) Write ${LOGS_FOLDER_ABS}/YYYY/MM/YYYY-MM-DD${TOKEN_PART}-checkpoint-NN.md with this exact frontmatter: tags: [checkpoint, session-log], date: YYYY-MM-DD, checkpoint: NN, trigger: auto, merged: false. (4) Content sections: ## What We Worked On (2-3 sentences), ## Key Decisions (bullet list), ## Action Items (tasks with date YYYY-MM-DD), ## Open Questions (bullet list). Keep under 250 words total. No output to user."
+  # Pre-compute checkpoint filename (so reason is just the filename, not a long prompt)
+  TODAY_DATE=$(date '+%Y-%m-%d' 2>/dev/null || python3 -c "from datetime import date; print(date.today())" 2>/dev/null || node -e "console.log(new Date().toISOString().slice(0,10))" 2>/dev/null)
+  CHECKPOINT_DIR="${LOGS_FOLDER_ABS}/${TODAY_DATE%%-*}/$(echo "$TODAY_DATE" | cut -d'-' -f2)"
+  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}${TOKEN_PART}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
+  NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
+  PROMPT="${TODAY_DATE}${TOKEN_PART}-checkpoint-${NN_CP}.md"
+  # Build JSON — send filename as reason; INSTRUCTIONS.md handles the write logic
   # Try python3, python, node in order — Windows may only have 'python' or 'node'
   if command -v python3 &>/dev/null; then
     JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
