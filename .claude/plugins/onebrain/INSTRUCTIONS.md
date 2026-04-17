@@ -151,6 +151,7 @@ Run before responding to any user message.
 
 Format:
 ```
+────────────────────────────────────
 **[name]** [emoji] [greeting]
 *Ddd · DD Mon YYYY*
 ```
