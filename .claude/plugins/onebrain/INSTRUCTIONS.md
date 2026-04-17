@@ -147,11 +147,7 @@ Run before responding to any user message.
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
 - Get current local time in HH:MM format — if unavailable, treat as 09:00–17:00 (no emoji)
 
-**Step 2 — Send greeting immediately:**
-```
-**OneBrain**
-[greeting] [name] [emoji]
-```
+**Step 2 — Send greeting immediately:** `[greeting] [name] [emoji]`
 - `[name]` from MEMORY.md "Agent Identity"; `[greeting]`/`[emoji]` from time-of-day:
 
 | Local time | Concept | Emoji |
