@@ -43,7 +43,7 @@ Steps:
 2. Read repo's CHANGELOG.md to identify migration steps for current version
 3. Follow the NEW SKILL.md instructions (not the vault's old copy)
 4. Execute migration in this order:
-   a. Pre-migration backup: copy `05-agent/MEMORY.md` → `06-archive/05-agent/MEMORY.md.YYYY-MM-DD.bak`
+   a. Pre-migration backup: copy `05-agent/MEMORY.md` → `06-archive/05-agent/MEMORY-YYYY-MM-DD.md`
       and `05-agent/context/` → `06-archive/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync skill files first: skills/startup/, skills/memory-review/, skills/doctor/,
       skills/learn/, skills/recap/, skills/wrapup/, skills/clone/, skills/onboarding/, skills/update/
