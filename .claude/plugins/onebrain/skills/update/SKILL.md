@@ -1,258 +1,97 @@
 ---
 name: update
-description: "Update OneBrain skills, config, and plugins from GitHub : never touches your notes or data"
+description: "Update OneBrain system files from the source repo to the latest version"
 ---
 
-## Install Path Detection
-
-Check if `.claude/plugins/onebrain/` exists in the current vault directory.
-
-**If it does NOT exist:**
-> OneBrain is installed as a global plugin but hasn't been adopted into this vault yet.
-> Run `/onboarding` first to bundle OneBrain into your vault : after that, `/update` will work normally.
-
-Do not proceed further.
-
----
-
-# Update OneBrain
-
-Fetch the latest OneBrain system files from GitHub and apply them to this vault.
-Your notes, memory, and personal settings are never touched.
-
----
-
-## Step 0: Version Check
-
-Compare the local plugin version against the remote before prompting the user.
-
-1. Read local version from `.claude/plugins/onebrain/.claude-plugin/plugin.json`
-2. Fetch remote version:
-   ```bash
-   curl -sf "https://raw.githubusercontent.com/kengio/onebrain/main/.claude/plugins/onebrain/.claude-plugin/plugin.json"
-   ```
-3. Compare:
-   - **Same version:** Report `OneBrain is already up to date (vX.Y.Z).` and stop — do not proceed to Step 1.
-   - **Remote fetch fails:** Skip this check silently and proceed to Step 1 as normal.
-   - **Different version:** Proceed to Step 1, and include the version delta in the prompt: `Update available: vX.Y.Z → vA.B.C. Proceed?`
-
----
-
-## Step 1: Explain & Confirm
-
-Tell the user what will and won't be updated:
-
-**WILL update (system files only):**
-- `.gitignore`
-- `.claude/plugins/onebrain/` : all plugin files (skills, hooks, agents, INSTRUCTIONS.md)
-- `.claude-plugin/` : local plugin marketplace registry
-
-**WILL NOT touch (your data and preferences):**
-- All your note folders (00-inbox through 07-logs) : all your notes
-- `[agent_folder]/MEMORY.md` : your identity and session context
-- `vault.yml` : your vault configuration
-- `.obsidian/` : all Obsidian settings
-- `.claude/settings.local.json` : your local Claude settings
-- `.claude/onebrain.local.md` : your local plugin config
-- `install.sh`, `install.ps1` : fresh-install only, not part of the vault
-- `README.md`, `CONTRIBUTING.md`, `LICENSE`, `assets/` : repo-only files
-
-Ask: **"Proceed with update?"** and wait for confirmation before continuing.
-
-> **Requirement:** `update.sh` requires Python (`python3` or `python`) or Node.js in PATH to parse the GitHub API response. If none are found, the script will exit with an error — tell the user to install Python or Node.js and retry.
-
----
-
-## Step 2: Compare (Dry-Run)
-
-Run the update script in dry-run mode:
-
-```bash
-bash .claude/plugins/onebrain/skills/update/update.sh
-```
-
-On Windows with Git for Windows, use the same command — Git Bash provides `bash` and all required tools.
-
-> **Note:** The dry-run and apply passes each fetch files independently from GitHub. This is intentional : scripts are stateless and require no temp storage between runs. The window between passes is small enough that mid-run upstream changes are not a practical concern for a personal tool.
-
-Parse the output and present a summary to the user:
-
-> Found: N modified, N new, N deleted, N unchanged.
-> Modified: [list files marked with ~]
-> New: [list files marked with +]
-> Deleted: [list files marked with -]
->
-> Apply these updates?
-
-If the output contains `status: partial_failure` or any lines starting with `!`, stop and report which files failed to fetch. Tell the user to re-run `/update` to retry.
-
-Wait for confirmation before continuing.
-
----
-
-## Step 3: Apply
-
-Run the update script in apply mode:
-
-```bash
-bash .claude/plugins/onebrain/skills/update/update.sh --apply
-```
-
-On Windows with Git for Windows, use the same command.
-
-If the output contains `status: partial_failure`, report which files failed and advise re-running `/update`.
-
----
-
-## Step 4b: Migrate MEMORY.md (If Needed)
-
-After applying updates, check for the old MEMORY.md location:
-
-1. Check if `MEMORY.md` exists at the vault root
-2. Check if `[agent_folder]/MEMORY.md` exists
-
-**Case A : Root MEMORY.md exists, agent folder MEMORY.md does not:**
-- If `[agent_folder]/` does not exist, create it along with `context/` and `memory/` subfolders (each with a `.gitkeep`)
-- Copy the content of `MEMORY.md` to `[agent_folder]/MEMORY.md`
-- If copy fails: report the error and stop : do not offer to delete the root copy
-- If copy succeeds: verify the new file is non-empty, then ask: "Copied MEMORY.md to `[agent_folder]/MEMORY.md`. Can I delete the root copy?"
-- Delete root `MEMORY.md` only after confirmation
-
-**Case B : Both exist:**
-> Found `MEMORY.md` at the vault root AND at `[agent_folder]/MEMORY.md`. The agent will use `[agent_folder]/MEMORY.md`. Please review and delete the root copy manually: `MEMORY.md`.
-
-**Case C : Only agent folder MEMORY.md exists:** No action.
-
-**Case D : Neither exists:** No action. User will need to run `/onboarding`.
-
----
-
-## Step 4b-ii: Patch MEMORY.md Frontmatter (If Needed)
-
-Ensure `[agent_folder]/MEMORY.md` has correct frontmatter (skip if file doesn't exist):
-
-**Required fields:**
-```yaml
----
-tags: [agent-memory]
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
----
-```
-
-- If frontmatter is malformed (opening `---` with no closing `---`): report and skip
-- If frontmatter is missing: prepend the block above (use today's date for both fields)
-- If frontmatter is present but incomplete: insert only the missing keys
-- If frontmatter is complete: skip silently
-
----
-
-## Step 4c: Create Missing Vault Folders
-
-Use `[inbox_folder]` from session config. Resolve `[attachments_folder]` from vault.yml (`folders.attachments`; default: `attachments`).
-
-Ensure these folders exist (create with `.gitkeep` if missing, report only new ones):
-
-| Folder | Introduced |
-|--------|-----------|
-| `[inbox_folder]/imports/` | v1.2.0 |
-| `[attachments_folder]/` | v1.2.0 |
-| `[attachments_folder]/pdf/` | v1.2.0 |
-| `[attachments_folder]/images/` | v1.2.0 |
-| `[attachments_folder]/video/` | v1.2.0 |
-
-Also ensure `vault.yml` has these keys under `folders:` (add if missing, never touch `qmd_collection`):
-
-| Key | Value | Introduced |
-|-----|-------|-----------|
-| `import_inbox` | `[inbox_folder]/imports` | v1.2.0 |
-| `attachments` | `attachments` | v1.2.0 |
-
-When inserting missing keys: read the file, insert within the existing `folders:` block (not at end of file), write back the full file. If the `folders:` block is absent, report and skip.
-
----
-
-## Step 4d: Migrate Plugin Key (onebrain-local → onebrain)
-
-Check `.claude/settings.json` and `.claude/settings.local.json`. For each that exists:
-- If the file cannot be read or parsed as JSON: report the error and skip it
-- Rename `"onebrain@onebrain-local"` → `"onebrain@onebrain"` in `enabledPlugins`
-- Rename `"onebrain-local"` → `"onebrain"` in `extraKnownMarketplaces`
-- If both old and new keys exist: remove the old one
-- Report: "Migrated stale marketplace keys in `[file]`."
-
----
-
-## Step 4e: Migrate Instruction Files to @import (If Needed)
-
-The @import line: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
-
-**CLAUDE.md:**
-- Does not exist → create with just the @import line
-- Already has @import line → skip
-- Has `# OneBrain` heading → replace the OneBrain block with @import line (preserve any user content above it)
-- Other content, no @import → append @import line at the end
-
-**GEMINI.md and AGENTS.md:**
-- Does not exist → create with just the @import line
-- Already has @import line → skip
-- Any other content → replace entire file with @import line
-
----
-
-## Step 4f: Add Checkpoint Config to vault.yml (If Missing)
-
-Read `vault.yml`. If a `checkpoint:` top-level key is **absent**, append this block:
-
-````yaml
-
-checkpoint:
-  messages: 15    # auto-checkpoint every N message exchanges
-  minutes: 30     # auto-checkpoint every N minutes (whichever comes first)
-````
-
-Rules:
-- **Never overwrite existing values** : only add the section if entirely absent
-- If `vault.yml` does not exist: skip silently
-- Report: "Added `checkpoint:` config to `vault.yml` (defaults: 15 messages, 30 min)."
-- If already present: skip silently (no output)
-
----
-
-## Step 4g: Register Stop Checkpoint Hook in Project settings.json (If Missing)
-
-The Stop hook must be registered in the vault's `.claude/settings.json` : it is not picked up from plugin `hooks.json` automatically. This step ensures it is present.
-
-1. Derive the vault root (directory containing `vault.yml`)
-2. Set hook path: `[vault_root]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh`
-3. Read `.claude/settings.json`:
-   - If the file does not exist: treat it as `{}` (the write in step 7 will create it)
-   - If the file exists but cannot be parsed as JSON: report error and skip
-4. Check if `hooks.Stop` already contains a command referencing `checkpoint-hook.sh stop`. Set `stop_added = false` if already present, `stop_added = true` if added.
-5. If **absent**: add the Stop hook entry under `hooks.Stop` (create `hooks` key if missing), set `stop_added = true`:
-   ```json
-   {
-     "matcher": "",
-     "hooks": [{ "type": "command", "command": "bash \"[hook_path]\" stop" }]
-   }
-   ```
-6. Check `hooks.PreCompact`:
-   - If it contains an entry referencing `checkpoint-hook.sh precompact`: remove that entry; set `precompact_removed = true`
-   - If the `PreCompact` array is now empty (or was already empty): remove the `PreCompact` key entirely
-7. If `stop_added` OR `precompact_removed`: write the updated JSON back to `.claude/settings.json`, then report:
-   - If `stop_added` AND `precompact_removed`: "Registered Stop checkpoint hook and removed legacy PreCompact entry in `.claude/settings.json`. Note: paths are absolute : re-run `/update` if you move this vault."
-   - If `stop_added` only: "Registered Stop checkpoint hook in `.claude/settings.json`. Note: paths are absolute : re-run `/update` if you move this vault."
-   - If `precompact_removed` only (Stop was already present): "Removed legacy PreCompact checkpoint hook from `.claude/settings.json`."
-8. If neither `stop_added` nor `precompact_removed`: skip silently (no output)
-
----
-
-## Step 5: Report
-
-Show a final summary of everything updated and migrated. Then suggest:
-
-> **Done.** OneBrain has been updated.
->
-> Next steps:
-> - Run `/reload-plugins` to apply changes immediately in this session
-> - Or start a new Claude Code session : changes are picked up automatically
+# /update
+
+Update OneBrain system files from the source repo to the latest version.
+
+## Version Check
+
+1. Read current version from vault's `plugin.json` (`[agent_folder]/../../.claude-plugin/plugin.json` or `.claude/plugins/onebrain/.claude-plugin/plugin.json`)
+2. Read new version from repo's `plugin.json` (check `~/projects/onebrain/plugin.json` or look for the installed repo path)
+3. If equal → "Already up to date vX.X.X" and stop
+4. If newer → read `CHANGELOG.md` from repo; display release notes in user's language
+5. AskUserQuestion: "อัปเดตเป็น vX.X.X ไหมครับ?" (Thai) / "Update to vX.X.X?" (English)
+   Options: `update / cancel`
+6. If confirmed → proceed to bootstrap below
+
+## Self-Update Bootstrap (Read-New, Execute-In-Place)
+
+Skills are markdown instructions — the agent can read the new SKILL.md from the repo and
+follow it as instructions in the same conversation. No re-invoke needed.
+
+Steps:
+1. Read repo's `skills/update/SKILL.md` content into agent context
+2. Read repo's CHANGELOG.md to identify migration steps for current version
+3. Follow the NEW SKILL.md instructions (not the vault's old copy)
+4. Execute migration in this order:
+   a. Pre-migration backup: copy `05-agent/MEMORY.md` → `06-archive/05-agent/MEMORY.md.YYYY-MM-DD.bak`
+      and `05-agent/context/` → `06-archive/05-agent/context.YYYY-MM-DD/` (if context/ exists)
+   b. Sync skill files first: skills/startup/, skills/memory-review/, skills/doctor/,
+      skills/learn/, skills/recap/, skills/wrapup/, skills/clone/, skills/onboarding/, skills/update/
+   c. Run vault migration steps 1–7 (using newly-synced skill logic)
+   d. Run /doctor verification (newly-synced /doctor with new checks)
+   e. Sync remaining repo files: INSTRUCTIONS.md, README.md, CONTRIBUTING.md, CHANGELOG.md
+   f. Bump plugin.json version (last — completion signal)
+5. Write migration log to `07-logs/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`
+6. Report summary to user
+
+## Vault Migration Steps
+
+Run these steps IN ORDER. Halt on first failure — do not continue.
+
+**Step 1: Migrate MEMORY.md Key Learnings → memory/** (MUST run before Step 4)
+- Read ## Key Learnings and ## Key Decisions from MEMORY.md
+- Tool behaviors (bash tricks, RTK, draw.io, cron patterns) → delete, do not migrate
+- Genuine behavioral patterns → write to memory/ (type: behavioral, source: /update, conf: medium, created: today, verified: today, updated: today)
+- Key Decisions → write to memory/ (type: project, source: /update)
+
+**Step 2: Migrate context/ → memory/**
+- For each file in 05-agent/context/: rename to kebab-case, move to memory/
+- Add frontmatter: type: context, source: /update, conf: medium, created: (preserve if exists else today), verified: today, updated: today, topics: [2–4 keywords from content]
+- Delete context/ folder after all files migrated
+
+**Step 3: Update existing memory/ files**
+- Add missing frontmatter fields: topics, type, conf, verified, updated
+- Rename non-compliant files (date prefix, Title-Case, >5 words) → kebab-case 3–5 words
+
+**Step 4: Restructure MEMORY.md** (MUST run after Step 1)
+- Remove ## Key Learnings, ## Key Decisions, ## Recurring Contexts sections entirely
+- Keep ## Identity & Personality, ## Active Projects, ## Critical Behaviors (preserve user items)
+- Remove "Auto-wrapup เมื่อพี่บาย" from Critical Behaviors if present
+- Update `updated:` frontmatter to today
+
+**Step 5: Create INDEX.md**
+- Read frontmatter of all files in memory/ (batch 20 at a time if >50 files)
+- Include only status: active and status: needs-review in table
+- For each file with supersedes: X, set superseded_by: [this file] on X's frontmatter
+- Set cache fields: total_active, total_needs_review (omit last_review)
+
+**Step 6: Backfill recapped: on existing session logs**
+- If 07-logs/ doesn't exist → skip
+- Glob 07-logs/**/*-session-*.md
+- For each: read date: frontmatter → set recapped: YYYY-MM-DD using that same date
+- Fallback: if date: missing, parse YYYY-MM-DD prefix from filename
+
+**Step 7: Verify migration**
+- Run /doctor (newly-synced version) automatically
+- Expected: 0 orphans, 0 dead links, 0 non-compliant names, INDEX.md present
+- If any check fails: surface to user with suggestion to run /doctor --fix
+
+**Step 13: Initialize vault.yml stats + recap block**
+- Add stats: block: set last_doctor_run to today; leave other fields absent
+- Add recap: block: min_sessions: 6, min_frequency: 2
+- Skip if vault.yml doesn't exist or user opted out via --skip-stats
+
+## --dry-run Mode
+
+`/update --dry-run` → run all steps WITHOUT writing. Output:
+"Would create: ...", "Would modify: ...", "Would delete: ..."
+
+## Failure Recovery
+
+- Version stays old until plugin.json bump (step 4f) — re-running /update retries from start
+- Already-synced files are idempotent (compare content before overwriting)
+- If vault in unrecoverable state: restore from backup in 06-archive/, then re-run /update
