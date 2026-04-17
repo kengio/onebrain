@@ -1,6 +1,6 @@
 ---
-latest_version: 1.10.0
-released: 2026-04-17
+latest_version: 1.10.1
+released: 2026-04-18
 ---
 
 # Changelog
@@ -9,6 +9,19 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## [1.10.1] — 2026-04-18
+
+Migration hardening and cross-skill consistency.
+
+- `/update` Step 3: explicit memory file rename rules (date prefix, numeric segment, >5 words → kebab-case 3–5 words); INDEX.md wikilinks updated after rename
+- `/update` Step 4: compact MEMORY.md Identity format (5-field block); skip-rewrite now checks field labels not just headings — v1.10.0 vaults with old 6-field format now correctly migrate; field extraction hints; Language field conditional (omit if absent)
+- `/update` Step 5: exact column spec (`File | Topics | Type | Status | Description`) enforced; existing Description values preserved on rewrite
+- `/doctor`: stale check reads `memory/` file frontmatter instead of MEMORY.md Key Learnings; new health check detects old Identity format; `--fix` rewrites Identity to compact format in-place
+- `/onboarding`: Step 9 MEMORY.md template updated to compact Identity format
+- `INSTRUCTIONS.md`: startup now reads `## Identity & Personality` — fixes silent personality fallback after migration
+- `/clone`, `/distill`, `/weekly`: updated to reference `memory/` files and `## Identity & Personality` instead of removed MEMORY.md sections
+- Checkpoint hook: sends just `YYYY-MM-DD-checkpoint-NN.md` as reason instead of full instruction paragraph; fixed glob quoting for iCloud paths with spaces; NN now per-session counter in state file — always starts at 01 each session
 
 ## [1.10.0] — 2026-04-17
 

@@ -80,9 +80,9 @@ created: YYYY-MM-DD
 
 ## Personality (Personalized During Onboarding)
 
-Read the "AI Personality Instructions" and "Agent Identity" sections in `[agent_folder]/MEMORY.md` and follow them.
+Read the `## Identity & Personality` section in `[agent_folder]/MEMORY.md` and follow it.
 The agent has a name and personality set during onboarding — use the name and match the personality style.
-If `[agent_folder]/MEMORY.md` has no "Agent Identity" section, onboarding has not run yet — use a helpful, concise, and professional tone until then.
+If `[agent_folder]/MEMORY.md` has no `## Identity & Personality` section, onboarding has not run yet — use a helpful, concise, and professional tone until then.
 
 ## Available Workflows
 
@@ -113,7 +113,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | (manual only, high impact) |
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | (manual only) |
 | `/update` | `update/SKILL.md` | Update system files from GitHub | (manual only) |
-| `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale MEMORY.md entries, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
+| `/doctor` | `doctor/SKILL.md` | Vault + config health check: broken links, orphan notes, stale memory/ files, plugin config | user asks to check vault health, diagnose issues, or run /doctor |
 | `/help` | `help/SKILL.md` | List available commands with use cases | user asks what commands or skills are available, or what the agent can do |
 
 **Agents** — These agents live in `.claude/plugins/onebrain/agents/` and are dispatched automatically by skills. They are never invoked directly by the user.
@@ -148,7 +148,7 @@ Run before responding to any user message.
 - Get current local time in HH:MM format — if unavailable, treat as 09:00–17:00 (no emoji)
 
 **Step 2 — Send greeting immediately:** `[greeting] [name] [emoji]`
-- `[name]` from MEMORY.md "Agent Identity"; `[greeting]`/`[emoji]` from time-of-day:
+- `[name]` from MEMORY.md `## Identity & Personality` (**Agent:** field); `[greeting]`/`[emoji]` from time-of-day:
 
 | Local time | Concept | Emoji |
 |---|---|---|

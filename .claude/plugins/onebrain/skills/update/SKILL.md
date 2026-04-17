@@ -102,19 +102,74 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
 
 **Step 3: Update existing memory/ files**
 - Add missing frontmatter fields: topics, type, conf, verified, updated
-- Rename non-compliant files (date prefix, Title-Case, >5 words) → kebab-case 3–5 words
+- Rename non-compliant files → kebab-case 3–5 words. A file is non-compliant if it has:
+  - A date prefix (e.g. `2026-04-05-bump-version-every-pr.md` → `bump-version-pr.md`)
+  - A numeric segment prefix (e.g. `2026-04-05-02-superpowers-docs-in-vault.md` → `superpowers-docs-vault.md`)
+  - Title-Case or spaces in the filename
+  - More than 5 words (strip stop words; keep the meaningful 3–5)
+- After renaming: update all `[[wikilinks]]` in INDEX.md and any `supersedes:`/`superseded_by:` references to use the new filename
+- Compliant example: `bump-version-pr.md`, `dev-workflow-worktree.md`, `telegram-format.md`
 
 **Step 4: Restructure MEMORY.md** (MUST run after Step 1)
-- Remove ## Key Learnings, ## Key Decisions, ## Recurring Contexts sections entirely
-- Keep ## Identity & Personality, ## Active Projects, ## Critical Behaviors (preserve user items)
-- Remove any auto-wrapup trigger entry from Critical Behaviors if present
-- Update `updated:` frontmatter to today
+
+Target structure — exactly 3 sections. Skip rewrite only if MEMORY.md already uses the compact Identity labels (`**Agent:**`, `**User:**`, `**Tone:**`). If the old 6-field labels are present (`**Agent name:**`, `**User name:**`, etc.), rewrite even if the 3 section headings already exist. Always update `updated:` frontmatter.
+
+```markdown
+## Identity & Personality
+
+**Agent:** [name] · [gender/pronoun rules if set]
+**Personality:** [personality description]
+**User:** [user_name] · [role]
+**Tone:** [tone] · [detail_level]
+**Language:** [language rules — omit this line if no language rules are set]
+
+You are [agent_name], [user_name]'s personal chief of staff inside their Obsidian vault.
+
+- Priority goal: [primary goal]
+- Proactive: surface connections, flag stale items, suggest next steps
+- Ground responses in vault — reference actual notes when relevant
+- [AskUserQuestion or tool-use preferences, if set]
+
+## Active Projects
+
+<!-- Updated by /consolidate and /braindump -->
+- **[Project]** — [status emoji + label]. [description].
+
+## Critical Behaviors
+
+- [behavioral item]
+<!-- Add behavioral preferences here via /learn -->
+```
+
+Old-section mapping (apply when migrating from pre-v1.10.0 structure):
+- `## Agent Identity` + `## Identity` + `## Communication Style` + `## Goals & Focus Areas` + `## Values & Working Principles` + `## AI Personality Instructions` → consolidate into `## Identity & Personality`
+- `## Active Projects` → keep as-is
+- `## Critical Behaviors` → preserve if present; if absent, create with items from `## Values & Working Principles` plus an empty comment; remove any auto-wrapup trigger entry if present (auto-wrapup is now handled by AUTO-SUMMARY.md)
+- Remove entirely: `## Key Learnings`, `## Key Decisions`, `## Recurring Contexts`
+
+Field extraction hints (for old-section consolidation):
+- **Agent:** → name from `## Agent Identity` or `## Identity`; gender/pronoun rules from `## AI Personality Instructions` if present; omit gender/pronoun suffix if absent
+- **Personality:** → archetype + description from `## AI Personality Instructions` or `## Communication Style`
+- **User:** → name from `## Agent Identity`; role from `## Agent Identity` or `## Goals & Focus Areas`
+- **Tone:** → tone + detail_level from `## Communication Style`
+- **Language:** → language rules from `## Communication Style` or `## Agent Identity` if present; omit line entirely if absent
+- Priority goal bullet → first entry from `## Goals & Focus Areas`
+- `## Values & Working Principles` items → `## Critical Behaviors` (only if Critical Behaviors was absent)
+
+Always: update `updated:` frontmatter to today.
 
 **Step 5: Create INDEX.md**
 - Read frontmatter of all files in memory/ (batch 20 at a time if >50 files)
 - Include only status: active and status: needs-review in table
+- Column format (exact order): `| File | Topics | Type | Status | Description |`
+  - **File**: wikilink `[[filename-without-extension]]`
+  - **Topics**: comma-separated topics from frontmatter
+  - **Type**: from frontmatter (behavioral / project / context)
+  - **Status**: from frontmatter (active / needs-review)
+  - **Description**: 1-line summary derived from file content (not from frontmatter)
 - For each file with supersedes: X, set superseded_by: [this file] on X's frontmatter
 - Set cache fields: total_active, total_needs_review (omit last_review)
+- If INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format; preserve existing Description values from old rows (map by filename) rather than regenerating from scratch
 
 **Step 6: Backfill recapped: on existing session logs**
 - If 07-logs/ doesn't exist → skip

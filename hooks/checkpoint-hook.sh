@@ -5,7 +5,8 @@
 # stop — fires after every response; checkpoints on message/time threshold
 #         Uses JSON {"decision":"block","reason":"..."} to inject prompt back to Claude.
 #
-# State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS) — uses $TMPDIR/$TEMP/$TMP for Windows compat
+# State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS:CHKPT_NN) — uses $TMPDIR/$TEMP/$TMP for Windows compat
+# Legacy 2-field format (COUNT:LAST_TS) is tolerated: CHKPT_NN defaults to 0, so NN restarts at 01.
 # COUNT=0 with fresh timestamp in an *existing* state file signals post-checkpoint reset;
 # absence of state file = first run.
 # SKIP_WINDOW=60: prevents re-trigger immediately after a checkpoint resets COUNT to 0.

@@ -1,6 +1,6 @@
 ---
 name: doctor
-description: "Diagnose vault and plugin health — checks broken links, orphan notes, stale MEMORY.md entries, inbox backlog, and plugin config validity"
+description: "Diagnose vault and plugin health — checks broken links, orphan notes, stale memory/ files, inbox backlog, and plugin config validity"
 ---
 
 # Doctor
@@ -42,13 +42,13 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - These may be disconnected from the knowledge graph
 - Report only — no auto-fix (linking requires semantic judgment; use /connect instead)
 
-**Stale MEMORY.md entries:**
-- Read `[agent_folder]/MEMORY.md`. If the file does not exist, skip all MEMORY.md checks (stale entries, size) and report: `🟡 MEMORY.md: not found at [agent_folder]/MEMORY.md — run /onboarding`
-- Read Key Learnings
-- **Skip** lines that begin with `~~` (already superseded — do not flag as stale)
-- Flag entries where `[verified:YYYY-MM-DD]` is older than 90 days
-- Flag entries with no `[verified:...]` tag at all
-- Flag entries with `[conf:low]` where `[verified:YYYY-MM-DD]` is older than 30 days (or has no `[verified:...]` tag)
+**Stale memory/ files:**
+- If `[agent_folder]/MEMORY.md` does not exist, report: `🟡 MEMORY.md: not found — run /onboarding` and skip both this check and the MEMORY.md size check below
+- If `memory/` folder does not exist, skip this check
+- Read all `memory/` files with `status: active` or `status: needs-review`; skip `status: deprecated`
+- Flag files where `verified:` frontmatter is older than 90 days
+- Flag files with no `verified:` field
+- Flag files with `conf: low` where `verified:` is older than 30 days (or absent)
 
 **MEMORY.md size:**
 - Count lines in `[agent_folder]/MEMORY.md`
@@ -96,7 +96,8 @@ Use this format:
 ### Vault
 🔴 Broken links (N): [[Missing Note]] in "Source Note"
 🟡 Orphan notes (N): 03-knowledge/topic/Note.md
-🟡 Stale MEMORY.md entries (N): not verified in 90+ days
+🟡 Stale memory/ files (N): not verified in 90+ days
+🟡 MEMORY.md structure: pre-v1.10.1 Identity format — run /doctor --fix or /update
 🟡 MEMORY.md size: N lines — consider /distill to compress
 🟢 MEMORY.md size: OK (N lines)
 🟡 Inbox backlog: N files — consider /consolidate
@@ -124,26 +125,25 @@ If no issues:
 
 Run all fix passes. Each pass confirms with the user before writing.
 
-### Pass A: MEMORY.md confidence scores
+### Pass A: memory/ confidence scores
 
-Collect auto-fixable issues from the Key Learnings scan:
-- `[conf:high]` entries not verified in 90+ days → downgrade to `[conf:medium]`
-- `[conf:medium]` entries not verified in 180+ days → downgrade to `[conf:low]`
-- Entries with no `[conf:...]` tag → add `[conf:medium]` as baseline, then apply staleness rules above
-- Entries with no `[verified:...]` tag → add `[verified:YYYY-MM-DD]` using the **date prefix from the entry line** (the `YYYY-MM-DD` at the start of each `- YYYY-MM-DD —` bullet); if no date prefix exists, treat the entry as maximally stale — flag it as requiring manual review rather than assigning today's date (assigning today would incorrectly reset the staleness clock)
+Collect auto-fixable issues from the stale memory/ files scan:
+- `conf: high` files with `verified:` older than 90 days → downgrade to `conf: medium`
+- `conf: medium` files with `verified:` older than 180 days → downgrade to `conf: low`
+- Files with no `conf:` field → add `conf: medium` as baseline, then apply staleness rules above
+- Files with no `verified:` field → flag for manual review (do not assign today's date — would reset the staleness clock)
 
-If 0 issues: skip this pass, note "No MEMORY.md issues to fix."
+If 0 issues: skip this pass, note "No memory/ confidence issues to fix."
 
 Otherwise, confirm with AskUserQuestion (if user declines, skip this pass — no changes written):
-> Found N MEMORY.md issues. Apply confidence score fixes?
-> - Add missing [conf:medium] baseline to untagged entries
+> Found N memory/ confidence issues. Apply fixes?
+> - Add missing conf: medium baseline to files with no conf field
 > - Downgrade stale confidence scores
-> - Add missing [verified:...] dates from entry date prefixes
-> - Flag maximally stale entries (no [verified:] tag AND no date prefix) for manual review — these will NOT be auto-fixed
+> - Flag files with no verified: date for manual review — these will NOT be auto-fixed
 
-After applying auto-fixes, if any maximally stale entries were found, list each one verbatim as a blockquote so the user can review and update manually:
-> ⚠️ Maximally stale — needs manual review:
-> > `- [entry text]`
+After applying auto-fixes, list any files flagged for manual review:
+> ⚠️ Needs manual review (no verified: date):
+> > `memory/filename.md`
 
 ### Pass B: Broken wikilink fuzzy-fix
 
@@ -205,15 +205,7 @@ If `timezone` was not found: skip this pass, note "No deprecated keys to clean u
 
 ### Final step
 
-After all fix passes complete (whether or not all passes ran), if Pass A actually wrote changes to MEMORY.md (i.e., user confirmed and fixes were applied — not skipped or declined), re-sort the `## Key Learnings & Patterns` section in-place:
-1. `[conf:high]` entries first, newest → oldest
-2. `[conf:medium]` entries next, newest → oldest
-3. `[conf:low]` entries last, newest → oldest
-4. Preserve each `<!-- conf:* ... -->` comment line exactly as-is (the markers may have additional text after the tier name, e.g. `<!-- conf:high — empirically confirmed -->`); do not strip or rewrite them
-5. If a conf group has no entries, omit that group's comment marker entirely rather than leaving an empty section
-6. Entries with no `[conf:...]` tag: treat as `[conf:medium]` for sorting purposes only (do not add a tag)
-
-Then, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml, which is not a markdown note and is not indexed by qmd), and `qmd_collection` is set in vault.yml, run:
+After all fix passes complete, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml, which is not a markdown note and is not indexed by qmd), and `qmd_collection` is set in vault.yml, run:
 ```bash
 qmd update -c [qmd_collection]
 ```
@@ -231,6 +223,7 @@ Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and t
 | Rows in INDEX.md pointing to missing files | List dead links |
 | Files with `verified` > 90 days | Check active/needs-review only (skip deprecated); auto-set `status: needs-review` in file and INDEX.md |
 | Critical Behaviors section > 15 items | Warn: suggest moving excess to memory/ |
+| MEMORY.md `## Identity & Personality` uses old 6-field labels (`**Agent name:**`, `**User name:**`) | Warn: "MEMORY.md Identity block uses pre-v1.10.1 format — run /doctor --fix or /update to migrate" |
 | Checkpoint files with `merged: true` | Delete them (safety net — /wrapup handles these, /doctor catches stragglers) |
 | Checkpoint files > 14 days old with no session log | AskUserQuestion: "Found {N} checkpoints >14 days old with no session log — delete all?" `delete-all / show-list / skip` |
 | memory/ files with non-compliant names | List offenders (not kebab-case, has date prefix, or >5 words); `--fix` auto-renames |
@@ -259,6 +252,11 @@ Ongoing maintenance only (not migration). Fixes issues arising after initial set
    - Update INDEX.md wikilinks to match renamed files
 
 3. **Reset `recap.min_frequency`** to `2` if invalid value found in vault.yml.
+
+4. **Rewrite MEMORY.md Identity & Personality to compact format:**
+   - Trigger: old 6-field labels detected (`**Agent name:**`, `**User name:**`, etc.)
+   - Confirm with AskUserQuestion: "MEMORY.md has pre-v1.10.1 Identity format. Rewrite to compact format?" Options: `yes / no`
+   - If yes: apply same migration as /update Step 4 — extract field values using extraction hints, write compact block, preserve all other sections unchanged
 
 Update `vault.yml` `stats.last_doctor_fix: YYYY-MM-DD` on completion.
 
