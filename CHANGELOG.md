@@ -1,6 +1,6 @@
 ---
 latest_version: 1.10.0
-released: TBD
+released: 2026-04-17
 ---
 
 # Changelog
@@ -10,7 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## [1.10.0] — TBD
+## [1.10.0] — 2026-04-17
 
 Memory system redesign — replaces MEMORY.md Key Learnings with a structured `memory/` file tier, adds session isolation for concurrent sessions, and introduces update channel control.
 
