@@ -322,11 +322,15 @@ Stop as soon as you find a confident answer. If the answer spans multiple layers
 
 ### Auto Session Summary
 
-> Auto session summary instructions: see `skills/startup/AUTO-SUMMARY.md`
+Triggered by the same session-end signal as Auto-Wrapup Trigger above. If `/wrapup` was **not** already run in this session, run the silent auto-save instead:
+
+> Full instructions: see `skills/startup/AUTO-SUMMARY.md`
+
+If the user closes the session without any end-of-session signal, AUTO-SUMMARY does not run — checkpoint files written during the session serve as the recovery mechanism (synthesized by Phase 2 at next session start).
 
 > **Missing file fallback:**
-> - AUTO-SUMMARY.md missing → auto-wrapup skips silent save; next session checkpoint synthesis recovers
-> - In both cases, /doctor flags the missing file at next run.
+> - AUTO-SUMMARY.md missing → skip silent save; checkpoint synthesis at next session start recovers
+> - /doctor flags the missing file at next run
 
 ## File Naming Conventions
 
