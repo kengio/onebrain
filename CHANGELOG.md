@@ -23,6 +23,7 @@ Instant startup — replaces blocking Phase 2 background sub-agent with inline t
 - `AUTO-SUMMARY.md`: explicit section list enforced; stale Phase 2 race condition note removed
 - `PHASE2.md`: deleted (dead code); `/doctor` check removed
 - `INSTRUCTIONS.md`: fixed `## Identity & Personality` heading reference (was using wrong section names)
+- `/update`: changelog entry now displayed verbatim before confirmation prompt — cannot be skipped or summarized
 
 ## [1.10.1] — 2026-04-18
 
