@@ -47,7 +47,7 @@ Steps:
       and `05-agent/context/` → `06-archive/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync skill files first: skills/startup/, skills/memory-review/, skills/doctor/,
       skills/learn/, skills/recap/, skills/wrapup/, skills/clone/, skills/onboarding/, skills/update/
-   c. Run vault migration steps 1–7 (using newly-synced skill logic)
+   c. Run vault migration steps 1–8 (using newly-synced skill logic)
    d. Run /doctor verification (newly-synced /doctor with new checks)
    e. Sync remaining repo files: INSTRUCTIONS.md, README.md, CONTRIBUTING.md, CHANGELOG.md
    f. Bump plugin.json version (last — completion signal)
