@@ -9,6 +9,31 @@ Generates a summary of this session and saves it to the logs folder for future r
 
 ---
 
+## Scope
+
+/wrapup writes the session log only. It does NOT promote insights to memory/ — that is
+/recap's responsibility. Do not write to MEMORY.md or memory/ files.
+
+---
+
+## Session Log Frontmatter
+
+Write the session log with this frontmatter (omit `recapped:` and `topics:` — those are
+populated by /recap later):
+
+```yaml
+---
+tags: [session-log]
+date: YYYY-MM-DD
+auto-saved: true                        # only if auto-saved
+synthesized_from_checkpoints: true      # only if synthesized from checkpoints
+---
+```
+
+Absence of `recapped:` field = not yet processed by /recap.
+
+---
+
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
@@ -112,55 +137,45 @@ This prevents /wrapup from re-reading the same checkpoints in future sessions.
 
 ---
 
-## Step 6: Update MEMORY.md (If Warranted)
+## Step 6: Checkpoint Cleanup
 
-If this session produced an insight or pattern that should persist across all future sessions, add it to the "Key Learnings & Patterns" section of `[agent_folder]/MEMORY.md`. Also update the `updated:` field in the frontmatter to today's date.
+After session log is written successfully:
+1. Delete checkpoint files merged into this session's log
+2. Scan `07-logs/**/*-checkpoint-*.md` for any remaining files with `merged: true` → delete them
 
-```markdown
-## Key Learnings & Patterns
-
-- YYYY-MM-DD — [observation about the user's work patterns, preferences, or recurring themes] `[conf:medium]` `[verified:YYYY-MM-DD]`
-```
-
-Use `conf:medium` as the default for wrapup-time insights (single session observation). Use `conf:high` only if the insight was empirically tested or confirmed multiple times during this session. Set `[verified:YYYY-MM-DD]` to today's date.
-
-Only add learnings that are genuinely useful long-term (not every session warrants this).
-
-**Dedup guard:** Before appending, scan the existing `## Key Learnings & Patterns` entries. If an identical or near-identical entry already exists, skip — do not write a duplicate. "Near-identical" means: same behavioral topic, same recommendation, and same conclusion — even if phrased differently. A `/recap` run will handle merging if needed.
+Guard: only delete AFTER confirming session log write succeeded. Never delete before or during write.
 
 ---
 
-## Step 7: Overflow to Agent Memory (Optional)
+## Step 7: Recap Reminder
 
-If a genuinely useful long-term insight emerged this session : a clear behavioral pattern, a strong user preference, or a non-obvious observation about how to work with this user : and it is too detailed for MEMORY.md, write it to `[agent_folder]/memory/YYYY-MM-DD-slug.md`:
+At the end of every /wrapup, compute `unrecapped_count` and `last_recapped`:
 
-- Frontmatter: `tags: [agent-memory]`, `created: YYYY-MM-DD`, `source: /wrapup`
-- File naming: first note of day: `YYYY-MM-DD-slug.md`; if notes already exist today: glob `[agent_folder]/memory/YYYY-MM-DD-*.md`, extract all numeric counters present in filenames (e.g. `02` from `2026-03-23-02-slug.md`). If any counters exist, use `max(counters) + 1`. If files exist but none have a numeric counter (only the first, un-numbered file exists), next is `02`.
-- Keep it to 1-3 sentences
-- Only do this if the insight is genuinely useful long-term : do not overflow routine session details
-- Use this step only when the insight was too detailed to include in `[agent_folder]/MEMORY.md` (Step 6). Do not write the same insight to both `[agent_folder]/MEMORY.md` and agent memory.
+**Fast path:** read `stats.last_recap` from `vault.yml` if available.
+**Fallback:** if `vault.yml` stats missing, glob session logs from last 6 months only
+(`07-logs/YYYY/MM/*.md`) and check `recapped:` field.
+
+Compute:
+- `unrecapped_count` — number of session logs without `recapped:` field
+  (always ≥ 1 after /wrapup runs — the log just written has no `recapped:` yet)
+- `last_recapped` — most recent `recapped:` date found (absent = never)
+
+Display:
+
+| Condition | Message |
+|---|---|
+| unrecapped 1–3, last recap ≤ 7 days ago | `_💾 {N} session logs ยังไม่ได้ recap (ล่าสุด: YYYY-MM-DD)_` |
+| unrecapped > 3 OR last recap > 7 days ago | `_⚠️ {N} session logs ยังไม่ได้ recap — ล่าสุด recap: YYYY-MM-DD_` |
+| never recapped | `_⚠️ {N} session logs ยังไม่ได้ recap — ยังไม่เคย recap_` |
 
 ---
 
-## Step 8: Auto Recap Check
-
-Before confirming, silently check if a recap is overdue:
-
-1. Read `[agent_folder]/MEMORY.md` frontmatter and extract the `updated:` date field
-2. If `[agent_folder]/MEMORY.md` does not exist, or `updated:` is absent or cannot be parsed, set `recap_hint` to nil — no output, no error
-3. Calculate the number of days between the `updated:` date and today (use the same YYYY-MM-DD date established in Step 1)
-4. If days ≥ 7: set `recap_hint` to `📊 MEMORY.md hasn't been updated in N days — consider running /recap` (where N is the actual number of days)
-5. If days < 7: set `recap_hint` to nil
-
----
-
-## Step 9: Confirm
+## Step 8: Confirm
 
 Say:
 > Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
 >
 > [If action items]: I logged N action items : they'll appear in your Tasks view.
-> [If MEMORY.md updated in Step 6]: I also added a learning to `[agent_folder]/MEMORY.md`.
-> [If recap_hint is set]: [recap_hint]
+> [Recap reminder message from Step 7]
 >
 > Good session! See you next time.
