@@ -40,7 +40,8 @@ Display a formatted table with all available commands:
 | `/moc` | Create or refresh vault portal (MOC.md) : a Map of Content with live queries, AI summary, and your pinned links | When you want a bird's-eye view of your entire vault |
 | `/weekly` | Weekly reflection : review sessions, patterns, intentions | At the end of each week for review and planning |
 | `/daily` | Two-phase daily briefing : surfaces tasks and last session context, then saves your stated focus as a daily note | Every morning (or any time you want to reset your focus for the day) |
-| `/recap` | Cross-session synthesis : reads 7 days of session logs + newly /learned context/ and memory/ files, surfaces patterns, updates MEMORY.md Key Learnings | Periodically, when you want to distill recent sessions into long-term memory |
+| `/recap` | Batch-promotes recurring insights from session logs into `memory/` files — does NOT write to MEMORY.md; applies frequency filter so only insights appearing in multiple sessions are kept | Periodically, when you want to distill recent sessions into long-term memory |
+| `/memory-review` | Interactive review of all memory/ files — keep, update, deprecate, or delete entries one by one | When you want to prune stale or inaccurate agent memory |
 | `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
 | `/learn` | Teach the agent something : facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
 | `/clone` | Package your agent context (agent folder including MEMORY.md) for vault transfer | When moving to a new vault and want to preserve your agent's memory |

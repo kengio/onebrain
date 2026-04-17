@@ -176,9 +176,16 @@ If the write or append fails, tell the user: "Could not update CLAUDE.md. Please
 
 ## Step 9: Generate MEMORY.md
 
-Write `[agent_folder_default]/MEMORY.md` with personalized content (using the hardcoded default `05-agent` since vault.yml does not exist yet). If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure the agent folder is writable and try again." Do not proceed to Step 10.
+**Upgrade scenario:** If `05-agent/MEMORY.md` already exists, skip this step entirely and warn the user:
+> MEMORY.md already exists — use /update to migrate to the new structure instead.
+
+Do NOT overwrite existing data.
+
+**Fresh install:** If `05-agent/MEMORY.md` does not exist, write it with personalized content (using the hardcoded default `05-agent` since vault.yml does not exist yet). If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure the agent folder is writable and try again." Do not proceed to Step 9b.
 
 > **Note:** vault.yml is not written until Step 11, so this step hardcodes the default agent folder path. Do not change this to use vault.yml : the file doesn't exist yet at this point.
+
+Write `05-agent/MEMORY.md` with exactly 3 sections:
 
 ```markdown
 ---
@@ -189,34 +196,14 @@ updated: [TODAY'S DATE]
 
 # OneBrain Memory
 
-<!-- Loaded every session. Keep under ~200 lines. -->
+## Identity & Personality
 
-## Agent Identity
-
-**Name:** [agent_name]
-**Personality:** [agent_personality]
-
-## Identity
-
-**Name:** [preferred_name]
-**Role:** [role]
-
-## Communication Style
-
+**Agent name:** [agent_name]
+**Agent personality:** [agent_personality]: [agent_personality_description]
+**User name:** [preferred_name]
+**User role:** [role]
 **Tone:** [tone]
 **Detail level:** [detail_level]
-
-## Goals & Focus Areas
-
-[For each goal:]
-- [goal]
-
-## Values & Working Principles
-
-- Capture everything : if it's not in the vault, it didn't happen
-- Bias toward action
-
-## AI Personality Instructions
 
 You are [agent_name], [preferred_name]'s personal chief of staff inside their Obsidian vault.
 Your personality is [agent_personality]: [agent_personality_description].
@@ -231,20 +218,41 @@ Your personality is [agent_personality]: [agent_personality_description].
 
 ## Active Projects
 
-<!-- Updated by /consolidate and /braindump -->
-
-## Key Learnings & Patterns
-
-<!-- Added by /wrapup over time -->
-<!-- Format: YYYY-MM-DD : [observation] -->
-
-## Recurring Contexts
+[For each goal:]
+- [goal]
 
 [If recurring_contexts provided:]
-[Each item as a bullet]
-[If not provided, leave section empty with the comment]
-<!-- Add recurring context here : e.g., "Tuesday = deep work day" or "Main stack: TypeScript, Next.js" -->
+[Each item as a bullet under a "Context:" label]
+
+## Critical Behaviors
+
+[If no specific behaviors were given during onboarding, leave this section empty with the comment below]
+<!-- Add behavioral preferences here via /learn — e.g., "always show task counts", "skip confirmations on capture" -->
 ```
+
+Do NOT create Key Learnings, Key Decisions, or Recurring Contexts sections.
+
+---
+
+## Step 9b: Create INDEX.md
+
+Write `05-agent/INDEX.md` with an empty table and frontmatter cache fields. If the write fails, report the error and continue to Step 10 (non-blocking).
+
+```markdown
+---
+tags: [agent-index]
+updated: [TODAY'S DATE]
+total_active: 0
+total_needs_review: 0
+---
+
+# Memory Index
+
+| File | Topics | Type | Status | Description |
+|------|--------|------|--------|-------------|
+```
+
+Omit `last_review:` from INDEX.md frontmatter — last review date is tracked in `vault.yml stats.last_memory_review:`, updated by /memory-review on each run.
 
 ---
 
@@ -260,7 +268,6 @@ Create the following folders. For each folder, check if it exists first; if not,
 03-knowledge/
 04-resources/
 05-agent/              ← root folder
-05-agent/context/      ← subfolder only (no README)
 05-agent/memory/       ← subfolder only (no README)
 06-archive/
 07-logs/
@@ -274,7 +281,7 @@ attachments/video/
 
 ## Step 11: Write vault.yml
 
-Write `vault.yml` to the vault root with the folder mapping:
+Write `vault.yml` to the vault root with the folder mapping, plus `stats:` and `recap:` blocks:
 
 ```yaml
 method: onebrain
@@ -293,6 +300,20 @@ folders:
 checkpoint:
   messages: 15    # auto-checkpoint every N message exchanges
   minutes: 30     # auto-checkpoint every N minutes (whichever comes first)
+
+stats:
+  # Fields populate on first run of each skill — leave absent initially
+  # last_recap: YYYY-MM-DD
+  # last_doctor_run: YYYY-MM-DD
+  # last_doctor_fix: YYYY-MM-DD
+  # last_memory_review: YYYY-MM-DD
+
+recap:
+  min_sessions: 6
+  min_frequency: 2
+
+# Update channel (controls which GitHub branch /update pulls from)
+# update_channel: stable    # stable | next | 1.x | 2.x — uncomment to change
 ```
 
 
@@ -470,21 +491,14 @@ For each of `GEMINI.md` and `AGENTS.md`:
 
 Check if `[agent_folder]/MEMORY.md` already exists:
 
-**If it exists:** Use `AskUserQuestion` with:
-- question: "I found an existing MEMORY.md. What would you like to do?"
-- header: "Existing MEMORY.md"
-- multiSelect: false
-- options:
-  - label: "Keep existing", description: "Keep your current identity settings unchanged"
-  - label: "Overwrite", description: "Replace with the new settings from this onboarding"
-
-Fallback (if AskUserQuestion unavailable): ask as plain text "Found existing MEMORY.md - type 1 to keep it or 2 to overwrite." Default to Keep (1) if no clear answer.
-
-If they choose Keep, skip this step. If they choose Overwrite, proceed.
+**If it exists:** Skip this step entirely — do NOT overwrite existing data. Warn the user:
+> MEMORY.md already exists — use /update to migrate to the new structure instead.
 
 **If it does not exist:** Proceed directly.
 
-Write `[agent_folder]/MEMORY.md` using the same template and personalization data as Step 9 in the standard Path A flow.
+Write `[agent_folder]/MEMORY.md` using the same 3-section template and personalization data as Step 9 in the standard Path A flow (Identity & Personality, Active Projects, Critical Behaviors — no other sections).
+
+Also write `[agent_folder]/INDEX.md` using the same template as Step 9b in Path A (empty table, frontmatter cache fields, no `last_review:`).
 
 ---
 
@@ -498,9 +512,9 @@ Identical to Step 10 in the standard flow, with one difference: only create fold
 
 Check if `vault.yml` already exists in the vault root:
 
-**If it exists:** Skip : preserve the existing vault configuration. Tell the user: `Keeping your existing vault.yml.`
+**If it exists:** Check whether it already contains a `stats:` key and a `recap:` key. For any missing block, append it to the end of the file using the same defaults as Step 11 in Path A (`stats:` with commented-out fields; `recap:` with `min_sessions: 6` and `min_frequency: 2`). Tell the user: `Keeping your existing vault.yml` (and mention any blocks added).
 
-**If it does not exist:** Write `vault.yml` using the same template as Step 11 in the standard Path A flow.
+**If it does not exist:** Write `vault.yml` using the same template as Step 11 in the standard Path A flow (including `stats:` and `recap:` blocks).
 
 
 ---

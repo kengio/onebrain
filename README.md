@@ -49,11 +49,14 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 | 🤖 | **Multi-agent** | Works with Claude Code, Gemini CLI, or any agent that reads Markdown |
 | 🔌 | **Zero Config** | Clone, open in Obsidian, run `/onboarding`. Ready in under 2 minutes |
 | 📓 | **Session Logs & Checkpoints** | Every conversation saved with summaries and action items. Auto-checkpoints fire every 15 messages or 30 min so nothing is lost mid-session *(auto-checkpoint requires Claude Code)* |
+| 💾 | **Auto Session Summary** | When you say "bye", the agent silently saves a complete session log — no `/wrapup` needed |
 | 🔗 | **Knowledge Synthesis** | `/consolidate` turns inbox captures into permanent connected knowledge |
 | 🔬 | **Confidence-scored Memory** | Every insight carries `[conf:high/medium/low]` + `[verified:YYYY-MM-DD]` — knowledge that grows more reliable with use |
 | 💎 | **Knowledge Distillation** | `/distill` crystallizes a completed research thread into a permanent structured note in your knowledge base |
 | 🩺 | **Vault Doctor** | `/doctor` audits broken links, orphan notes, stale memory, and inbox backlog; `--fix` auto-repairs confidence scores and wikilinks |
 | 🎓 | **Teachable AI** | `/learn` permanently shapes how your agent thinks and responds |
+| 🪄 | **Smart Memory Review** | `/memory-review` lets you interactively prune, update, or archive memory entries one by one |
+| 🔒 | **Concurrent-session Safe** | Each session generates an isolated 6-char token — multiple parallel sessions never mix checkpoints |
 | 📱 | **Mobile Access** | Send instructions and receive briefings from anywhere via Telegram |
 
 ---
@@ -110,8 +113,54 @@ OneBrain uses a four-tier memory system — each tier is more compressed and lon
 |------|----------|---------------|-------------|
 | **Working** | `00-inbox/` + current session | Raw captures, active conversation | `/consolidate`, `/wrapup` |
 | **Episodic** | `07-logs/YYYY/MM/` | Session summaries, decisions, action items | `/wrapup`, auto-checkpoint |
-| **Semantic** | `05-agent/MEMORY.md` | Key learnings with confidence scores (`[conf:high/medium/low]`) | `/recap`, `/wrapup`, `/learn` |
-| **Knowledge** | `03-knowledge/`, `05-agent/context/` + `memory/` | Permanent notes, domain facts, behavioral patterns | `/distill`, `/learn` |
+| **Semantic** | `05-agent/MEMORY.md` | Identity + Active Projects + Critical Behaviors — no hard limit, ~55 lines target | `/learn` (Critical Behaviors only) |
+| **Knowledge** | `03-knowledge/`, `05-agent/memory/` | Permanent notes, behavioral patterns, domain facts | `/distill`, `/learn`, `/recap` |
+
+---
+
+## Memory Promotion
+
+OneBrain organizes agent memory across three layers. Each layer has specific skills responsible for writing to it.
+
+| Layer | Storage | Written by |
+|---|---|---|
+| Session log | `07-logs/` | `/wrapup` (end of session) |
+| Memory files | `05-agent/memory/` | `/learn` (user-driven, single fact), `/recap` (batch synthesis), `/memory-review` (edits) |
+| Always-loaded — Identity | `05-agent/MEMORY.md` | `/onboarding` (one-time), manual edits |
+| Always-loaded — Active Projects | `05-agent/MEMORY.md` | `/learn` (project lifecycle events), manual edits |
+| Always-loaded — Critical Behaviors | `05-agent/MEMORY.md` | `/learn` only (user explicitly teaches behavior; must meet all 3 threshold conditions) |
+
+**Promotion pipeline:**
+session → session log (`/wrapup`) → `memory/` files (`/recap`) → `MEMORY.md` Critical Behaviors (`/learn`)
+
+**Rules:**
+- `/wrapup` writes session logs only — does not promote to `memory/`
+- `/learn` writes to `memory/` immediately; only skill that writes to MEMORY.md Critical Behaviors
+- `/recap` batch-promotes from session logs → `memory/` only — does NOT write to MEMORY.md
+- Only behaviors applying every session with high-impact failure if missed → MEMORY.md Critical Behaviors
+
+---
+
+## Automatic Session Saving
+
+OneBrain has three automatic behaviors that run without you doing anything:
+
+| Behavior | Trigger | What it does |
+|----------|---------|-------------|
+| **Auto Checkpoint** | Every 15 messages, every 30 min, or before context compression | Writes a checkpoint file to `07-logs/YYYY/MM/` as a safety net |
+| **Auto Session Summary** | You say "bye", "good night", "I'm done for today", etc. — only if `/wrapup` was not already run this session AND ≥ 3 exchanges | Saves a silent session log (marked `auto-saved: true`) without showing any output |
+
+**How they work together:**
+
+- Say "bye" → Auto Session Summary fires silently and saves a session log. No extra steps needed.
+- If you already ran `/wrapup` manually and then say "bye": Auto Session Summary **skips** — the log was already written.
+- If the session ends with no signal (browser closed, terminal killed): Auto Checkpoint files serve as the recovery mechanism. At next session start, Phase 2 automatically synthesizes any orphaned checkpoints into a session log.
+
+**`/wrapup` is manual only.** Run it yourself when you want a visible, full session summary with output shown.
+
+**The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
+
+> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook). Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
 
 ---
 
@@ -186,12 +235,13 @@ Then run `/onboarding`.
 | `/reading-notes` | Turn a book or article into structured notes |
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/daily` | Daily briefing — surfaces tasks and last session context, then saves your focus as a daily note |
-| `/recap` | Cross-session synthesis — surface patterns across sessions and update long-term memory (MEMORY.md) |
+| `/recap` | Cross-session synthesis — batch-promote recurring insights from session logs into `memory/` files (does NOT write to MEMORY.md) |
 | `/distill [topic]` | Crystallize a completed topic thread into a permanent knowledge note in `03-knowledge/` |
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
 | `/wrapup` | Wrap up session — merges any auto-checkpoints and saves full summary to session log |
 | `/learn` | Teach the agent something — facts about your world or behavioral preferences |
+| `/memory-review` | Interactive review of memory files — keep, update, deprecate, or delete entries |
 | `/clone` | Package your agent context for transfer to a new vault |
 | `/reorganize` | Migrate flat notes into organized subfolders |
 | `/qmd` | Set up fast vault search index — enables semantic search across all notes |
@@ -216,9 +266,9 @@ onebrain/
 ├── 03-knowledge/      Your own synthesized thinking and insights
 ├── 04-resources/      External info — research output, summaries, reference
 ├── 05-agent/          AI-specific context and memory
-│   ├── MEMORY.md      Your identity — loaded every session
-│   ├── context/       Domain facts the AI reads when relevant
-│   └── memory/        Behavioral patterns the AI has learned
+│   ├── MEMORY.md      Identity + Active Projects + Critical Behaviors
+│   ├── INDEX.md       Index of all memory files (loaded every session)
+│   └── memory/        All memory files — behavioral patterns, domain context, project facts
 ├── 06-archive/        Completed projects and archived areas
 ├── 07-logs/           Session logs and checkpoints (YYYY/MM/ subfolders)
 ├── attachments/       Copied files from /import --attach
@@ -255,16 +305,16 @@ Examples: `research/Zettelkasten Method.md`, `code-snippets/Go HTTP Middleware.m
 
 **`05-agent/`** — Your agent's portable mind
 Everything the AI knows about you. Copy this folder to move your agent to a new vault.
-- `MEMORY.md` — identity, goals, communication style (loaded every session)
-- `context/` — domain facts: your stack, team, product, terminology
-- `memory/` — behavioral patterns: preferences and observations from past sessions
+- `MEMORY.md` — Identity + Active Projects + Critical Behaviors — loaded every session
+- `INDEX.md` — Index of all memory files — loaded every session alongside MEMORY.md
+- `memory/` — All memory files — behavioral patterns, domain context, project facts
 
 **`06-archive/`** — Completed projects and retired areas
 Organized by date archived: `06-archive/YYYY/MM/`.
 
 **`07-logs/`** — Session logs and checkpoints
 Session logs: `07-logs/YYYY/MM/YYYY-MM-DD-session-NN.md` — generated by `/wrapup` or auto-saved at session end.
-Checkpoints: `07-logs/YYYY/MM/YYYY-MM-DD-checkpoint-NN.md` — auto-generated by hooks every 15 messages or 30 minutes, and before context compression. Merged into the session log by `/wrapup`.
+Checkpoints: `07-logs/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md` — auto-generated by hooks every 15 messages or 30 minutes, and before context compression. Incorporated and deleted by `/wrapup` when wrapping up.
 
 </details>
 
@@ -279,13 +329,13 @@ Everything that hasn't been processed yet. Captures from `/braindump`, `/capture
 
 **Tier 2 — Episodic memory** (`07-logs/`)
 Session logs: `YYYY-MM-DD-session-NN.md` in `YYYY/MM/` subfolders. Contains summaries, decisions, insights, and action items from each session. Generated by `/wrapup`.
-Checkpoints: `YYYY-MM-DD-checkpoint-NN.md` — auto-generated mid-session by hooks. Merged into the session log by `/wrapup`.
+Checkpoints: `YYYY-MM-DD-{session_token}-checkpoint-NN.md` — auto-generated mid-session by hooks. Incorporated and deleted by `/wrapup`.
 
-**Tier 3 — Semantic memory** (`05-agent/MEMORY.md`, ~180 lines max)
-Always loaded at session start. Key learnings with confidence scoring: `[conf:high]` (tested across sessions), `[conf:medium]` (observed once), `[conf:low]` (inferred). Each entry tagged with `[verified:YYYY-MM-DD]`. Updated by `/recap` (bulk, periodic) and `/wrapup` (one insight per session). Use `/doctor --fix` to audit and repair stale confidence scores.
+**Tier 3 — Semantic memory** (`05-agent/MEMORY.md` + `05-agent/INDEX.md`)
+Always loaded at session start. MEMORY.md holds Identity, Active Projects, and Critical Behaviors — no hard limit, ~55 lines target (3 sections only). INDEX.md lists all memory files in `memory/` and is loaded alongside MEMORY.md. Only `/learn` writes to MEMORY.md Critical Behaviors. Use `/doctor --fix` to audit and repair stale entries.
 
-**Tier 4 — Knowledge base** (`03-knowledge/`, `05-agent/context/` + `memory/`)
-Permanent, searchable notes. `/distill` crystallizes a completed topic thread into a structured note in `03-knowledge/`. `/learn` saves domain facts (`context/`) and behavioral patterns (`memory/`). Use `/learn` to promote specific lessons from a distilled note into `MEMORY.md`.
+**Tier 4 — Knowledge base** (`03-knowledge/`, `05-agent/memory/`)
+Permanent, searchable notes. `/distill` crystallizes a completed topic thread into a structured note in `03-knowledge/`. `/learn` saves behavioral patterns and domain facts to `memory/`. `/recap` batch-promotes from session logs to `memory/` — does NOT write to MEMORY.md.
 
 ### Task Syntax
 

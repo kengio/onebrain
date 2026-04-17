@@ -52,7 +52,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **MEMORY.md size:**
 - Count lines in `[agent_folder]/MEMORY.md`
-- Warn if count > 180: suggest running /distill to synthesize older entries into a knowledge note, then trim the condensed entries from MEMORY.md
+- Warn if count > 180: suggest manually pruning Critical Behaviors — remove entries that no longer apply or have been superseded
 
 **Inbox backlog:**
 - Count files in `[inbox_folder]/*.md`
@@ -77,6 +77,12 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **INSTRUCTIONS.md:**
 - Check file exists at `.claude/plugins/onebrain/INSTRUCTIONS.md`
+- Check `skills/startup/PHASE2.md` exists — if missing: 🔴 "PHASE2.md not found — Phase 2 startup will be skipped; run /update to restore"
+- Check `skills/startup/AUTO-SUMMARY.md` exists — if missing: 🔴 "AUTO-SUMMARY.md not found — auto session summary disabled; run /update to restore"
+
+**vault.yml recap block:**
+- Check `recap:` block is present in vault.yml
+- If absent: 🟡 "`recap:` block missing from vault.yml — /recap will use defaults (min_sessions: 6, min_frequency: 2); run /update to add it"
 
 ---
 
@@ -213,3 +219,61 @@ qmd update -c [qmd_collection]
 ```
 
 Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and the files containing broken wikilinks, or restructure vault folders automatically.
+
+---
+
+## Memory Health Checks
+
+| Check | Action |
+|---|---|
+| INDEX.md missing | AskUserQuestion: "INDEX.md not found — create an empty one?" `yes / no` |
+| Files in memory/ not in INDEX.md | Read frontmatter; skip `status: deprecated`; list remaining as orphans |
+| Rows in INDEX.md pointing to missing files | List dead links |
+| Files with `verified` > 90 days | Check active/needs-review only (skip deprecated); auto-set `status: needs-review` in file and INDEX.md |
+| Critical Behaviors section > 15 items | Warn: suggest moving excess to memory/ |
+| Checkpoint files with `merged: true` | Delete them (safety net — /wrapup handles these, /doctor catches stragglers) |
+| Checkpoint files > 14 days old with no session log | AskUserQuestion: "Found {N} checkpoints >14 days old with no session log — delete all?" `delete-all / show-list / skip` |
+| memory/ files with non-compliant names | List offenders (not kebab-case, has date prefix, or >5 words); `--fix` auto-renames |
+| memory/ files with non-default `type` AND not used by 2+ files | Warn possible typo; suggest nearest default via Levenshtein distance ≤2 |
+| `recapped` date in the future (>today) | Warn — likely manual mistake; suggest correcting |
+| `vault.yml` `recap.min_frequency` < 2 or non-integer | Warn invalid config; `--fix` resets to default 2 |
+| `vault.yml` `update_channel` invalid value | Warn: must be `stable`, `next`, or `N.x` pattern (e.g. `1.x`); suggest correcting or removing the field to use default (`stable`) |
+
+---
+
+## /doctor --fix
+
+Ongoing maintenance only (not migration). Fixes issues arising after initial setup:
+
+1. **Rebuild INDEX.md** from scratch:
+   - Read frontmatter of all files in `memory/`
+   - Skip files with `status: deprecated` (not in INDEX by design)
+   - Rebuild table with active and needs-review entries only
+   - Recalculate `total_active`, `total_needs_review`
+   - Set `updated:` to today
+
+2. **Auto-rename non-compliant memory files:**
+   - kebab-case (lowercase, hyphens only)
+   - No date prefix (e.g. `YYYY-MM-DD-topic.md` → `topic.md`)
+   - 3–5 words
+   - Update INDEX.md wikilinks to match renamed files
+
+3. **Reset `recap.min_frequency`** to `2` if invalid value found in vault.yml.
+
+Update `vault.yml` `stats.last_doctor_fix: YYYY-MM-DD` on completion.
+
+---
+
+## Migration Safety Net
+
+If `05-agent/context/` still exists:
+→ warn: "context/ folder found — /update migration may not have run yet"
+→ AskUserQuestion: "Migrate all files into memory/?" `migrate / skip`
+→ This check catches edge cases only — the full migration runs via /update
+
+---
+
+## On Completion
+
+Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`.
+If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.

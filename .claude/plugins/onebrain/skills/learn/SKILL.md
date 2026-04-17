@@ -1,151 +1,100 @@
 ---
 name: learn
-description: "Teach the AI something and save it to the agent folder for future recall : context about your world or behavioral patterns"
+description: "Teach the agent a new fact or behavioral preference and save it to memory/ for future recall"
 ---
 
 # Learn
 
-Explicitly teach the agent something to remember across all future sessions.
+Teach the agent a new fact or behavioral preference. Writes immediately to memory/ — no batch processing.
 
-Usage: `/learn [content]` or `/learn` then describe what to save.
+## One-File-Per-Concept Rule
 
----
+If the user provides multiple facts in one /learn call, create separate files for each concept.
+Do not combine multiple facts into one file.
 
-## Step 1: Get the Content
+## Active Projects Intent Detection
 
-If content was provided after the command, use it directly.
-If not, ask:
-> What do you want me to learn? Share a fact, preference, domain detail, or anything you want me to remember.
+Write to `MEMORY.md ## Active Projects` ONLY when the user message explicitly references
+a project lifecycle event.
 
----
+Triggers Active Projects update (write to MEMORY.md):
+- "starting project X", "project Y is done", "adding project Z", "updating status of project A"
 
-## Step 2: Classify the Input
+Does NOT trigger (write to memory/ file instead):
+- "in project X we use Y", "I worked on project X before"
 
-Apply this rule to determine the destination:
+When unclear → AskUserQuestion:
+"Add to Active Projects in MEMORY.md, or create a memory file?"
+Options: `active-projects / memory-file`
 
-**→ `[agent_folder]/context/`** if the content describes the user's world:
-- Domain, industry, or field knowledge
-- Technical stack, tools, or systems
-- Product, team, customers, or company
-- Terminology, naming conventions, or abbreviations
+## Contradiction Detection
 
-**→ `[agent_folder]/memory/`** if the content is a behavioral preference or pattern:
-- How the user wants to be communicated with
-- Things that help or hinder the AI's responses
-- Recurring preferences or frustrations
+Before writing a new file, grep `memory/` for files with overlapping topics or similar content.
+Scan ONLY files with `status: active` or `status: needs-review` — skip deprecated files.
 
-**Classification examples:**
+If a potential conflict is found, show via AskUserQuestion:
 
-| Input | Destination |
-|---|---|
-| "My stack is Go + Postgres + Redis" | context/ |
-| "When I say 'the app' I mean my SaaS at app.example.com" | context/ |
-| "My target user is small business owners, not enterprises" | context/ |
-| "I prefer async communication and document decisions in notes" | memory/ |
-| "I get frustrated when responses are too long" | memory/ |
+⚠️ Possible conflict: memory/onebrain-development.md
+   "Source repo path, /update workflow"
 
-**Tiebreaker for domain-preference hybrids:** If the input is a preference about how to work within a domain (e.g., "always use Go idioms, not Java-style abstractions" or "keep SQL queries readable, not optimized"), classify it as **`memory/`** : it governs AI behavior, even though it references a technical domain. When in doubt: if you would change how you respond based on this input, it's `memory/`.
+   New fact: "repo moved to ~/projects/onebrain-v2"
+   Existing: "repo at ~/projects/onebrain"
 
-If classification is unclear, ask: "Is this about your world (context) or how you want me to behave (preference)?"
+   1) update   — edit existing file (old content still partially correct)
+   2) supersede — create new file, deprecate old (old content fully outdated)
+   3) separate  — create new file separately (no conflict, keep both)
 
----
+**update** → read existing file, merge new fact in-place, bump `verified` to today.
+No new file created, INDEX.md unchanged.
 
-## Step 3: Determine File Name
+**supersede** → create new file; set old file `status: deprecated` (regardless of previous
+status); remove old file's row from INDEX.md; add `supersedes: old-file.md` to new file's
+frontmatter. Also set `superseded_by: new-file.md` on the old file's frontmatter.
 
-**For `context/` notes:**
-- File name: `Topic Name.md` (Title Case, by topic)
-- Check if a relevant context note already exists in `[agent_folder]/context/`. If so, offer to append to it rather than create a new file.
+**separate** → create new file as normal, no changes to existing file.
 
-**For `memory/` notes:**
-- File name: `YYYY-MM-DD-slug.md` where slug is a short kebab-case description (first note of the day)
-- If memory notes already exist today: glob `[agent_folder]/memory/YYYY-MM-DD-*.md`, extract all numeric counters present in filenames (e.g. `02` from `2026-03-23-02-slug.md`). If any counters exist, use `max(counters) + 1`. If files exist but none have a numeric counter (only the first, un-numbered file exists), next is `02`.
-- Example (first note of day): `2026-03-23-prefers-async-comms.md`
-- Example (second note of day): `2026-03-23-02-no-long-responses.md`
-- Example (third note of day): `2026-03-23-03-another-pref.md`
+## Filename Collision Check
 
----
+Before writing a new file, check if `memory/X.md` already exists (where X is the
+kebab-case name derived from the concept). If yes — even with different topics — surface
+via AskUserQuestion: `overwrite / rename / cancel`
 
-## Step 4: Contradiction Check
+Rename suffix: `-NN`, auto-incrementing until a free slot is found.
+Example: `dev-workflow.md` exists → try `dev-workflow-02.md` → `dev-workflow-03.md`, etc.
 
-Before writing, search for potential conflicts with existing knowledge:
+## After Writing a New File (applies only when creating a new file — not when choosing `update`)
 
-1. Extract 2–3 **specific** keywords or phrases from the new content. Prefer proper nouns, tool names, or multi-word phrases over generic single words. If only generic keywords are available, skip and proceed to Step 5.
-2. Search `[agent_folder]/context/` and `[agent_folder]/memory/` for those keywords (use qmd if available, otherwise Grep).
-3. Read any matching files
-4. Determine if any existing entry **directly contradicts** the new fact — same topic, opposite claim
+1. **Infer `type` from content semantics:**
+   - "always do X" / "use Y when Z" → `behavioral`
+   - "repo path / config / setup" → `context`
+   - "dev workflow / git / PR" → `dev`
+   - "decision about project X" → `project`
+   - "external link / reference" → `reference`
+   - If ambiguous → AskUserQuestion with these 5 options as choices
 
-> **Note:** False positives are common. Only flag when entries clearly contradict each other, not merely when they cover related topics.
+2. Extract `topics` (2–4 keywords from content)
 
-**If a contradiction is found**, present all conflicts in a single AskUserQuestion:
-```
-Found N possible conflict(s) with existing entries:
-> "[existing claim excerpt 1]" — [filename1]
-> "[existing claim excerpt 2]" — [filename2]  (omit if only 1 conflict)
+3. Write memory file frontmatter:
+   ```yaml
+   ---
+   tags: [agent-memory]
+   created: YYYY-MM-DD
+   source: /learn
+   topics: [keyword1, keyword2]
+   type: [inferred type]
+   status: active
+   conf: medium
+   verified: YYYY-MM-DD
+   updated: YYYY-MM-DD
+   ---
+   ```
 
-How do you want to handle this?
-1. Supersede all — mark all conflicting entries as outdated and save the new one
-2. Supersede some — ask me about each conflict individually
-3. Save both — keep all entries (may be valid in different contexts)
-4. Cancel — don't save anything
-```
+4. Add row to INDEX.md table:
+   `| [[memory/filename]] | topic1, topic2 | type | active | description |`
 
-- If **Supersede all** or **Supersede some**: For each conflicting file, apply the strikethrough to the specific contradicted claim. If it spans multiple lines, wrap the entire passage in a single strikethrough block: `~~[passage]~~ _(superseded YYYY-MM-DD)_`. **Do not apply strikethrough inside fenced code blocks (``` ... ``` or 4-space-indented blocks) or to lines beginning with `#` (headings).** For "Supersede some", use a separate AskUserQuestion per file: "Supersede `[filename]`? (yes / no)". Then proceed to write the new entry.
-- If **Save both**: proceed to write the new entry without modifying the old one.
-- If **Cancel**: stop and confirm cancellation to the user.
+5. Update INDEX.md frontmatter:
+   - `updated:` → today
+   - `total_active` → increment by 1
 
-**If no contradiction is found**, proceed directly to Step 5 — no user interaction needed.
-
----
-
-## Step 5: Write the Note
-
-**For `context/` notes:**
-
-```markdown
----
-tags: [agent-context]
-created: YYYY-MM-DD
-source: /learn
----
-
-# [Topic]
-
-[Content as provided, lightly structured if helpful]
-```
-
-**When appending to an existing context note:** Add a new `##` section with a descriptive heading for the additional information. Do not rewrite or restructure existing content.
-
-**For `memory/` notes:**
-
-```markdown
----
-tags: [agent-memory]
-created: YYYY-MM-DD
-source: /learn
----
-
-# [Short description of pattern]
-
-[Pattern or behavioral observation, 1-3 sentences]
-```
-
-After writing, run `qmd update -c [qmd_collection]` if qmd is available (keeps the file searchable for /recap).
-
----
-
-## Step 6: Suggest Links (background)
-
-After writing, dispatch the **Link Suggester** agent (`agents/link-suggester.md`) as a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`), passing `new_note_path`, `new_note_content`, `vault_root`, `knowledge_folder`, `resources_folder`, `areas_folder`, and `projects_folder`. Proceed to Confirm immediately.
-
----
-
-## Step 7: Confirm
-
-Report what was saved:
-> Learned: "[short summary]"
-> Saved to: `[agent_folder]/[context or memory]/[filename]`
->
-> I'll use this in future sessions when relevant.
-
-If a context note was appended rather than created:
-> Updated: `[agent_folder]/context/[filename]` with new information.
+6. If `supersede` was chosen: additionally set `supersedes: old-file.md` in new file's
+   frontmatter and `superseded_by: new-file.md` in old file's frontmatter.
