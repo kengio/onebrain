@@ -152,11 +152,12 @@ Run before responding to any user message.
 Format:
 ```
 ────────────────────────────────────
-**[name]** [emoji] [greeting]
+**[name]** [emoji] [greeting] [user]
 *Ddd · DD Mon YYYY · HH:MM*
 ```
 
-- `[name]` from MEMORY.md `## Identity & Personality` (**Agent:** field)
+- `[name]` = agent name from MEMORY.md `## Identity & Personality` (**Agent:** field)
+- `[user]` = user name from MEMORY.md (**User:** field)
 - `[greeting]`/`[emoji]` from time-of-day:
 
 | Local time | Greeting | Emoji |
@@ -167,6 +168,7 @@ Format:
 | after 21:00 | late night phrase | 🌙 |
 
 - `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`; `HH:MM` = local time
+- When greeting is omitted (09:00–17:00): format is `**[name]** [user]` (no emoji, no greeting phrase)
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
