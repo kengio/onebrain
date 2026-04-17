@@ -231,6 +231,7 @@ Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and t
 | memory/ files with non-default `type` AND not used by 2+ files | Warn possible typo; suggest nearest default via Levenshtein distance ≤2 |
 | `recapped` date in the future (>today) | Warn — likely manual mistake; suggest correcting |
 | `vault.yml` `recap.min_frequency` < 2 or non-integer | Warn invalid config; `--fix` resets to default 2 |
+| `vault.yml` `update_channel` invalid value | Warn: must be `stable`, `next`, or `N.x` pattern (e.g. `1.x`); suggest correcting or removing the field to use default (`stable`) |
 
 ---
 
