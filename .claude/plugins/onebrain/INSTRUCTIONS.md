@@ -108,7 +108,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | explicit `/wrapup` command only — end-of-session signals are handled silently by Auto Session Summary |
 | `/learn` | `learn/SKILL.md` | Teach the agent : facts or behavioral preferences | user tells the agent to remember or learn something |
-| `/memory-review` | `memory-review/SKILL.md` | Interactive memory pruning | user asks to review/clean up memory entries, prune or update memory files |
+| `/memory-review` | `memory-review/SKILL.md` | Interactive memory pruning | (manual only) |
 | `/clone` | `clone/SKILL.md` | Package agent context for vault transfer | (manual only) |
 | `/reorganize` | `reorganize/SKILL.md` | Migrate flat notes into subfolders (one-time) | (manual only, high impact) |
 | `/qmd` | `qmd/SKILL.md` | Set up and manage qmd search index | (manual only) |
