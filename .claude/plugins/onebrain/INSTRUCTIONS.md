@@ -147,15 +147,25 @@ Run before responding to any user message.
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
 - Get current local time in HH:MM format — if unavailable, treat as 09:00–17:00 (no emoji)
 
-**Step 2 — Send greeting immediately:** `[greeting] [name] [emoji]`
-- `[name]` from MEMORY.md `## Identity & Personality` (**Agent:** field); `[greeting]`/`[emoji]` from time-of-day:
+**Step 2 — Send greeting immediately:**
 
-| Local time | Concept | Emoji |
+Format:
+```
+**[name]** [emoji] [greeting]
+*Ddd · DD Mon YYYY*
+```
+
+- `[name]` from MEMORY.md `## Identity & Personality` (**Agent:** field)
+- `[greeting]`/`[emoji]` from time-of-day:
+
+| Local time | Greeting | Emoji |
 |---|---|---|
-| before 09:00 | morning | ☀️ |
-| 09:00–17:00 | (omit) | (none) |
-| 17:00–21:00 | evening | 🌆 |
-| after 21:00 | late night | 🌙 |
+| before 09:00 | morning phrase | ☀️ |
+| 09:00–17:00 | (omit greeting) | (none) |
+| 17:00–21:00 | evening phrase | 🌆 |
+| after 21:00 | late night phrase | 🌙 |
+
+- `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
@@ -169,9 +179,13 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 
 **Step 4 — Send startup status (after Step 3 completes):**
 
-Display inline after the greeting. If any of the following are non-empty, show them:
+If inbox_count = 0 and orphan_count = 0 and no tasks found: show nothing after the greeting.
+
+Otherwise, append after the greeting:
 
 ```
+---
+
 📥 inbox [N]                          ← omit if inbox_count = 0
 📋 [N] checkpoints — /wrapup?         ← omit if orphan_count = 0
 
@@ -180,10 +194,8 @@ Display inline after the greeting. If any of the following are non-empty, show t
 - [ ] task description 📅 YYYY-MM-DD
 ```
 
-If inbox_count > 0, orphan_count > 0, or tasks found: append a hint on its own line, in italics, adapted to the user's language. Example:
+Then append a hint on its own line, in italics, adapted to the user's language. Example:
 `_Run /daily to see all tasks_`
-
-If inbox_count = 0 and orphan_count = 0 and no tasks found: show nothing after the greeting.
 
 ### Per-Turn Relevance Check
 
