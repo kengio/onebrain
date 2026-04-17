@@ -136,9 +136,9 @@ If qmd tools are NOT available: use Glob/Grep/Read for all vault searches. No sp
 
 ## Session Behavior
 
-Session startup runs in two phases. Phase 1 greets the user immediately. Phase 2 runs in a background sub-agent so the main agent stays free to respond.
+Session startup greets the user immediately, then runs a quick inline status check.
 
-### Phase 1 : Immediate
+### Startup : Immediate
 
 Run before responding to any user message.
 
@@ -147,61 +147,58 @@ Run before responding to any user message.
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
 - Get current local time in HH:MM format — if unavailable, treat as 09:00–17:00 (no emoji)
 
-**Step 2 — Send greeting immediately:** `[greeting] [name] [emoji]`
-- `[name]` from MEMORY.md `## Identity & Personality` (**Agent:** field); `[greeting]`/`[emoji]` from time-of-day:
+**Step 2 — Send greeting immediately:**
 
-| Local time | Concept | Emoji |
+Format — use plain text only, no markdown syntax:
+```
+────────────────────────────────────
+[emoji] [greeting] [user]
+Ddd · DD Mon YYYY · HH:MM
+```
+
+- `[user]` = user name from MEMORY.md (**User:** field)
+- `[greeting]`/`[emoji]` from time-of-day — adapt phrase naturally to user's language:
+
+| Local time | Greeting concept | Emoji |
 |---|---|---|
-| before 09:00 | morning | ☀️ |
-| 09:00–17:00 | (omit) | (none) |
-| 17:00–21:00 | evening | 🌆 |
-| after 21:00 | late night | 🌙 |
+| before 09:00 | good morning + ready | ☀️ |
+| 09:00–17:00 | hello + ready to work | (none) |
+| 17:00–21:00 | good evening + ready | 🌆 |
+| after 21:00 | late night acknowledgement | 🌙 |
+
+- `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`; `HH:MM` = local time
+- Always include a greeting phrase — never omit it. Example for daytime: "Hey [user], ready to go!"
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
-**Step 3 — After greeting (run all in parallel, non-blocking):**
+**Step 3 — After greeting (run all in parallel):**
 - Read `[agent_folder]/INDEX.md` → load memory file index for lazy-loading
 - Generate `session_token`: 6-char random lowercase alphanumeric. Store in context for this session.
 - Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
-- Dispatch **background sub-agent** once token is ready (`run_in_background: true`, `mode: "bypassPermissions"`):
-  ```
-  vault_root: [absolute path to directory containing vault.yml]
-  agent_folder: [agent_folder]  logs_folder: [logs_folder]  inbox_folder: [inbox_folder]
-  knowledge_folder: [knowledge_folder]  projects_folder: [projects_folder]  areas_folder: [areas_folder]
-  today: YYYY-MM-DD  active_tasks: [...]  is_weekend: true|false
-  memory_folder: [agent_folder]/memory  session_token: "{session_token}"
-  ```
+- Glob `[inbox_folder]/*.md` → count files as `inbox_count`
+- Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 \d{4}-\d{2}-\d{2}` → keep only tasks where date ≤ today; group overdue first, then due today
+- Glob `[logs_folder]/**/*-checkpoint-*.md` → keep files where date in filename is before today and not older than 3 days; read frontmatter of each; discard files where `merged: true`; also discard files whose date already has a session log (`YYYY-MM-DD-session-*.md`) that does NOT contain `auto-saved: true` in its frontmatter (a log without `auto-saved: true` means /wrapup ran manually and already merged the checkpoints); count remaining as `orphan_count`
 
-Main agent is now ready to respond to the user.
+**Step 4 — Send startup status (after Step 3 completes):**
 
-### Phase 2 : Background Sub-agent
+If inbox_count = 0 and orphan_count = 0 and no tasks found: show nothing after the greeting.
 
-> Phase 2 sub-agent instructions: see `skills/startup/PHASE2.md`
+Otherwise, append after the greeting:
 
-> **Missing file fallback:**
-> - PHASE2.md missing → Phase 2 skips daily briefing/orphan checks; main agent responds normally
-> - In both cases, /doctor flags the missing file at next run.
+```
+📥 inbox [N]                          ← omit if inbox_count = 0
+📋 [N] checkpoints — /wrapup?         ← omit if orphan_count = 0
 
-### Session-Start Briefing
+Pending tasks:
+- [ ] task description 📅 YYYY-MM-DD (overdue)
+- [ ] task description 📅 YYYY-MM-DD
+(+N more — /daily for full list)      ← show only if tasks exceed 5
+```
 
-When the background sub-agent returns, the main agent sends exactly one follow-up message:
+Show at most 5 tasks (overdue first, then due today). If there are more, append the count line above.
 
-**Fallback defaults** — If the sub-agent fails or returns incomplete data, use these defaults and still send the follow-up: `briefing: "Daily briefing unavailable."`, `orphan_action: none`, `context_hints: []`, `stale_notes: []`, `memory_lines` absent.
-
-1. Display the `briefing` text
-2. If `orphan_action` is `prompt_wrapup:{N}`: append `📋 {N} checkpoints : /wrapup?`
-3. If `context_hints` is non-empty: skip any file already loaded in Phase 1 Step 3. For remaining files, read each as `vault_root/hint_path` into context. If any file cannot be read, skip it. If any new files were successfully loaded, append a single line: `_Loaded: memory/file-a.md, memory/file-b.md_` (italics, in user's language). If all were already loaded or none could be read, omit this line.
-4. If `stale_notes` is non-empty: append to the briefing message:
-   ```
-   **Stale projects (30+ days):**
-   - `[path]` (N days)
-   ```
-   Show max 3 entries; if there are more, add `(+N more — run /doctor for full list)`
-5. If `memory_lines` is present in the payload: append one line to the briefing:
-   `⚠️ MEMORY.md is N lines — consider /recap`
-6. Always append a hint on a new line, in italics, adapted to the user's language. Example: `_Run /daily again to check your status_`
-
-**Rule:** If the user sent a message before the sub-agent finished, respond to that message first, then send the follow-up. Never drop the follow-up.
+Then append a hint line, adapted to the user's language. Example:
+`→ /daily for more`
 
 ### Per-Turn Relevance Check
 
@@ -241,6 +238,15 @@ merged: false
 
 - [bullet list of decisions made]
 
+## Insights & Learnings
+
+- [new understanding, patterns, discoveries — omit if none]
+
+## What Worked / Didn't Work
+
+- ✅ [something that worked]
+- ❌ [something that didn't — omit section if no notable friction]
+
 ## Action Items
 
 - [ ] [task] 📅 YYYY-MM-DD
@@ -268,7 +274,7 @@ Runs silently when ALL three conditions are true: (1) end-of-session signal dete
 
 > Full procedure: see `skills/startup/AUTO-SUMMARY.md`
 
-If the user closes the session without any end-of-session signal, AUTO-SUMMARY does not run — checkpoint files written during the session serve as the recovery mechanism (synthesized by Phase 2 at next session start).
+If the user closes the session without any end-of-session signal, AUTO-SUMMARY does not run — checkpoint files written during the session serve as the recovery mechanism (run `/wrapup` at next session start to synthesize them).
 
 > **Missing file fallback:**
 > - AUTO-SUMMARY.md missing → skip silent save; checkpoint synthesis at next session start recovers
@@ -310,7 +316,7 @@ For cron/automated agents specifically: output is read by the user async (often 
 - Don't delete notes without confirmation
 - Don't move files to the archive folder without telling the user
 - Always prefer adding to existing notes over creating new ones
-- Keep `[agent_folder]/MEMORY.md` under ~180 lines (Phase 2 warns in daily briefing at 180; /doctor audits at 180)
+- Keep `[agent_folder]/MEMORY.md` under ~180 lines (/doctor audits at 180)
 
 ## Permissions
 

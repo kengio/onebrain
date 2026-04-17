@@ -17,7 +17,15 @@ Update OneBrain system files from the source repo to the latest version.
    - `N.x` (e.g. `1.x`, `2.x`) → `N.x`
 3. Read new version from repo's `plugin.json` on the mapped branch (not always main)
 4. If equal → "Already up to date vX.X.X" and stop
-5. If newer → read `CHANGELOG.md` from repo; display release notes in user's language
+5. If newer → read `CHANGELOG.md` from repo; display the entry for the new version to the user before proceeding. Format exactly as:
+
+   ```
+   ## What's new in vX.X.X
+
+   [paste the changelog entry for that version verbatim]
+   ```
+
+   Do not skip or summarize — the user must see the full entry before the confirmation prompt.
 
 ### Major Version Bump Guard
 
@@ -43,7 +51,7 @@ Steps:
 2. Read repo's CHANGELOG.md to identify migration steps for current version
 3. Follow the NEW SKILL.md instructions (not the vault's old copy)
 4. Execute migration in this order:
-   a. Pre-migration backup: copy `05-agent/MEMORY.md` → `06-archive/05-agent/MEMORY.md.YYYY-MM-DD.bak`
+   a. Pre-migration backup: copy `05-agent/MEMORY.md` → `06-archive/05-agent/MEMORY-YYYY-MM-DD.md`
       and `05-agent/context/` → `06-archive/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync skill files first: skills/startup/, skills/memory-review/, skills/doctor/,
       skills/learn/, skills/recap/, skills/wrapup/, skills/clone/, skills/onboarding/, skills/update/

@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.1
+latest_version: 1.10.2
 released: 2026-04-18
 ---
 
@@ -9,6 +9,18 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## [1.10.2] — 2026-04-18
+
+Instant startup and greeting redesign.
+
+- Startup: Phase 2 background sub-agent removed; inline tool calls replace it (Glob inbox, Grep tasks, Glob checkpoints) — no UI block
+- Greeting: plain-text card format — Unicode line, time-based phrase + user name, date/time; status block only when content exists
+- `/daily` morning mode: most recent session log (today or earlier) instead of strictly before today
+- Checkpoint template: restored missing `## Insights & Learnings` and `## What Worked / Didn't Work` sections
+- `/update`: changelog entry displayed verbatim before confirmation; backup renamed `MEMORY-YYYY-MM-DD.md`
+- `/wrapup`: `## Related Notes` removed from session log template — all three session files (checkpoint, auto-summary, session log) now share the same 6-section structure
+- `PHASE2.md` deleted; `/doctor` PHASE2 check removed; `AUTO-SUMMARY.md` and `INSTRUCTIONS.md` references cleaned up
 
 ## [1.10.1] — 2026-04-18
 

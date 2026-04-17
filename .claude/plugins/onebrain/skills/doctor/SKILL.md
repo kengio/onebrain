@@ -77,7 +77,6 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **INSTRUCTIONS.md:**
 - Check file exists at `.claude/plugins/onebrain/INSTRUCTIONS.md`
-- Check `skills/startup/PHASE2.md` exists — if missing: 🔴 "PHASE2.md not found — Phase 2 startup will be skipped; run /update to restore"
 - Check `skills/startup/AUTO-SUMMARY.md` exists — if missing: 🔴 "AUTO-SUMMARY.md not found — auto session summary disabled; run /update to restore"
 
 **vault.yml recap block:**

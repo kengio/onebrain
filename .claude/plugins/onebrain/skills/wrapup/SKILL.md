@@ -116,10 +116,6 @@ _Omit this section if the session had no notable friction or technique worth log
 ## Open Questions
 
 - [Question or uncertainty to revisit]
-
-## Related Notes
-
-[[Link to relevant vault notes if applicable]]
 ```
 
 ---
