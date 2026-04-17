@@ -311,6 +311,9 @@ stats:
 recap:
   min_sessions: 6
   min_frequency: 2
+
+# Update channel (v1.9.7+ — controls which GitHub branch /update pulls from)
+# update_channel: stable    # stable | next | 1.x | 2.x — uncomment to change
 ```
 
 

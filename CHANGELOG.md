@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.9.7] — TBD
+
+### Added
+- `update_channel` vault.yml field — controls which GitHub branch /update pulls from (`stable` → main, `next` → next, `N.x` → release/N.x)
+- Major version bump guard in /update — requires explicit confirmation before crossing major version boundary
+- /doctor: validate `update_channel` field value
+- /onboarding: commented-out `update_channel` template in vault.yml init (prepared in v1.9.6)
+
 ## [1.9.6] — 2026-04-17
 
 ### Added
