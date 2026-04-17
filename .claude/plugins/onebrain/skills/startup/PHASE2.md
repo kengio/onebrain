@@ -2,7 +2,9 @@
 
 The sub-agent receives the payload from Phase 1 and performs all work that requires multiple file reads. It does NOT read MEMORY.md for content — `active_tasks` are passed in the prompt. It may count lines in MEMORY.md for the overflow guard (Step 5). All folder values in the payload are relative to `vault_root`; construct full paths as `vault_root/folder_value`.
 
-**Sub-agent steps:**
+**Run all steps in parallel.** They are independent — do not wait for one before starting the next. Return combined results when all complete.
+
+---
 
 1. **Daily briefing** — Gather data for the session-start briefing, using the same logic as `/daily` (always Normal mode; Phase 2 runs after the session has started).
 

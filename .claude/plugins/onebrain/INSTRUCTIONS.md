@@ -140,73 +140,46 @@ Session startup runs in two phases. Phase 1 greets the user immediately. Phase 2
 
 ### Phase 1 : Immediate
 
-Run before responding to any user message:
+Run before responding to any user message.
 
-1. Read `vault.yml`, `.claude/plugins/onebrain/.claude-plugin/plugin.json`, `[agent_folder]/MEMORY.md`,
-   and `[agent_folder]/INDEX.md` **in parallel**. Use Configuration defaults for any variable while `vault.yml` is loading; override with actual values once it resolves.
-   - `vault.yml`: override the **Configuration** variables at the top of this file with actual values
-   - `plugin.json`: get `version` for greeting; if file absent, skip version
-   - `MEMORY.md`: load identity, personality, active projects and their task dates
-   - `INDEX.md`: load memory file index for lazy-loading
+**Step 1 — Critical path (greeting blocks on these):** Run in parallel:
+- Read `vault.yml` → load Configuration variables; override defaults once resolved
+- Read `.claude/plugins/onebrain/.claude-plugin/plugin.json` → get `version` (skip if absent)
+- Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
+- Get current local time: `python3 -c "from datetime import datetime; print(datetime.now().strftime('%H:%M'))" 2>/dev/null || node -e "const d=new Date(); console.log(d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))" 2>/dev/null || date '+%H:%M' 2>/dev/null` — if all fail, treat as 09:00–17:00 (no emoji)
 
-2. Get the current local machine time. Run in parallel with step 1:
-   ```bash
-   python3 -c "from datetime import datetime; print(datetime.now().strftime('%H:%M'))" 2>/dev/null || node -e "const d=new Date(); console.log(d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}))" 2>/dev/null || date '+%H:%M' 2>/dev/null
-   ```
-   If all arms fail, skip the time-of-day greeting modifier and treat as the 09:00–17:00 bucket (no emoji).
+**Step 2 — Send greeting immediately:**
+```
+**OneBrain vX.X.X**
+[greeting] [name] [emoji]
+```
+- `vX.X.X` from plugin.json; `[name]` from MEMORY.md "Agent Identity"; `[greeting]`/`[emoji]` from time-of-day:
 
-3. Send greeting immediately in this format:
+| Local time | Concept | Emoji |
+|---|---|---|
+| before 09:00 | morning | ☀️ |
+| 09:00–17:00 | (omit) | (none) |
+| 17:00–21:00 | evening | 🌆 |
+| after 21:00 | late night | 🌙 |
 
-   ```
-   **OneBrain vX.X.X**
-   [greeting] [name] [emoji]
-   ```
+On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
-   - `vX.X.X` = version from `plugin.json`; omit if file absent
-   - `[name]` = agent name from the "Agent Identity" section of MEMORY.md; omit if not found
-   - `[greeting]` and `[emoji]` come from the time-of-day table below
-
-   Time-of-day mapping (adapt greeting words to user's language at runtime):
-
-   | Local time | Concept | Emoji |
-   |---|---|---|
-   | before 09:00 | morning | ☀️ |
-   | 09:00–17:00 | (omit time word and emoji) | (none) |
-   | 17:00–21:00 | evening | 🌆 |
-   | after 21:00 | late night | 🌙 |
-
-   On weekends: use lighter, less task-focused tone.
-
-   **Command Response Profiles take precedence** : time-of-day tone applies only to greetings and free responses, not skill outputs.
-
-   **No-repeat rule** : do not ask about facts already in loaded context. If the user's message contradicts context, trust their message.
-
-3b. After sending the greeting, load `memory/` files matching active project keywords from INDEX.md (use Topics column). Only load `status: active` and `status: needs-review` files. Deprecated files are never loaded. Load matching files for the user's first message content as well, once it arrives. This step is non-blocking — the main agent is ready to respond while loading.
-
-3c. Generate a **session token**: 6-char random alphanumeric string.
-    Write to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token` (create `.sessions/` dir if absent).
-    Use Python/node/shell for PID and token generation — substitute the resolved absolute logs path and today's date before running:
-    ```bash
-    python3 -c "import random,string,os,sys; logs,d=sys.argv[1],sys.argv[2]; t=''.join(random.choices(string.ascii_lowercase+string.digits,k=6)); os.makedirs(f'{logs}/.sessions',exist_ok=True); open(f'{logs}/.sessions/{d}-{os.getpid()}.token','w').write(t); print(t)" "[logs_folder_abs]" "YYYY-MM-DD"
-    ```
-    Store as `session_token` for use in checkpoint hook and Phase 2 payload.
-
-4. Dispatch a **background sub-agent** (`run_in_background: true`, `mode: "bypassPermissions"`) with this prompt payload:
-
-   ```
-   vault_root: [absolute path to the directory containing vault.yml]
-   agent_folder: [agent_folder]
-   logs_folder: [logs_folder]
-   inbox_folder: [inbox_folder]
-   knowledge_folder: [knowledge_folder]
-   projects_folder: [projects_folder]
-   areas_folder: [areas_folder]
-   today: YYYY-MM-DD
-   active_tasks: [task list with dates extracted from MEMORY.md Active Projects section]
-   is_weekend: true|false
-   memory_folder: [agent_folder]/memory
-   session_token: "{session_token}"
-   ```
+**Step 3 — After greeting (run all in parallel, non-blocking):**
+- Read `[agent_folder]/INDEX.md` → load memory file index for lazy-loading
+- Generate session token (6-char alphanumeric) → write to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token`:
+  ```bash
+  python3 -c "import random,string,os,sys; logs,d=sys.argv[1],sys.argv[2]; t=''.join(random.choices(string.ascii_lowercase+string.digits,k=6)); os.makedirs(f'{logs}/.sessions',exist_ok=True); open(f'{logs}/.sessions/{d}-{os.getpid()}.token','w').write(t); print(t)" "[logs_folder_abs]" "YYYY-MM-DD"
+  ```
+  Store as `session_token`.
+- Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
+- Dispatch **background sub-agent** once token is ready (`run_in_background: true`, `mode: "bypassPermissions"`):
+  ```
+  vault_root: [absolute path to directory containing vault.yml]
+  agent_folder: [agent_folder]  logs_folder: [logs_folder]  inbox_folder: [inbox_folder]
+  knowledge_folder: [knowledge_folder]  projects_folder: [projects_folder]  areas_folder: [areas_folder]
+  today: YYYY-MM-DD  active_tasks: [...]  is_weekend: true|false
+  memory_folder: [agent_folder]/memory  session_token: "{session_token}"
+  ```
 
 Main agent is now ready to respond to the user.
 
