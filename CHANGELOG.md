@@ -1,5 +1,5 @@
 ---
-latest_version: 1.9.6
+latest_version: 1.9.7
 released: 2026-04-17
 ---
 
@@ -13,10 +13,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.9.7] — TBD
 
 ### Added
-- `update_channel` vault.yml field — controls which GitHub branch /update pulls from (`stable` → main, `next` → next, `N.x` → release/N.x)
+- `update_channel` vault.yml field — controls which GitHub branch /update pulls from (`stable` → main, `next` → next, `N.x` → N.x)
 - Major version bump guard in /update — requires explicit confirmation before crossing major version boundary
-- /doctor: validate `update_channel` field value
-- /onboarding: commented-out `update_channel` template in vault.yml init (prepared in v1.9.6)
+- /doctor: validate `update_channel` field value (warn on unrecognized values)
+- /onboarding: commented-out `update_channel` template in vault.yml init (already included in v1.9.6 onboarding)
+- Session token isolation — Phase 1 generates a 6-char random token per session; written to `[logs_folder]/.sessions/YYYY-MM-DD-{PID}.token`
+- Checkpoint filenames now embed session token: `YYYY-MM-DD-{token}-checkpoint-NN.md`
+- Phase 2 orphan detection groups checkpoints by token — each token group produces one session log, preventing content mixing from concurrent sessions
+- /wrapup and AUTO-SUMMARY glob only own-session checkpoints (by token); legacy checkpoints (no token) use backward-compatible fallback
 
 ## [1.9.6] — 2026-04-17
 
