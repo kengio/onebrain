@@ -112,7 +112,7 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
 
 **Step 4: Restructure MEMORY.md** (MUST run after Step 1)
 
-Target structure — exactly 3 sections. If MEMORY.md already has this structure, skip rewrite but still update `updated:` frontmatter.
+Target structure — exactly 3 sections. Skip rewrite only if MEMORY.md already uses the compact Identity labels (`**Agent:**`, `**User:**`, `**Tone:**`). If the old 6-field labels are present (`**Agent name:**`, `**User name:**`, etc.), rewrite even if the 3 section headings already exist. Always update `updated:` frontmatter.
 
 ```markdown
 ## Identity & Personality
@@ -121,7 +121,7 @@ Target structure — exactly 3 sections. If MEMORY.md already has this structure
 **Personality:** [personality description]
 **User:** [user_name] · [role]
 **Tone:** [tone] · [detail_level]
-**Language:** [language rules]
+**Language:** [language rules — omit this line if no language rules are set]
 
 You are [agent_name], [user_name]'s personal chief of staff inside their Obsidian vault.
 
@@ -146,6 +146,15 @@ Old-section mapping (apply when migrating from pre-v1.10.0 structure):
 - `## Active Projects` → keep as-is
 - `## Critical Behaviors` → preserve if present; if absent, create with items from `## Values & Working Principles` plus an empty comment; remove any auto-wrapup trigger entry if present (auto-wrapup is now handled by AUTO-SUMMARY.md)
 - Remove entirely: `## Key Learnings`, `## Key Decisions`, `## Recurring Contexts`
+
+Field extraction hints (for old-section consolidation):
+- **Agent:** → name from `## Agent Identity` or `## Identity`; gender/pronoun rules from `## AI Personality Instructions` if present; omit gender/pronoun suffix if absent
+- **Personality:** → archetype + description from `## AI Personality Instructions` or `## Communication Style`
+- **User:** → name from `## Agent Identity`; role from `## Agent Identity` or `## Goals & Focus Areas`
+- **Tone:** → tone + detail_level from `## Communication Style`
+- **Language:** → language rules from `## Communication Style` or `## Agent Identity` if present; omit line entirely if absent
+- Priority goal bullet → first entry from `## Goals & Focus Areas`
+- `## Values & Working Principles` items → `## Critical Behaviors` (only if Critical Behaviors was absent)
 
 Always: update `updated:` frontmatter to today.
 

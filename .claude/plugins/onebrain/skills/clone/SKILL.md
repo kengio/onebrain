@@ -54,7 +54,7 @@ updated: YYYY-MM-DD
 
 ## Identity
 - Source: [agent_folder]/MEMORY.md
-- Agent name: [read from [agent_folder]/MEMORY.md Agent Identity section]
+- Agent name: [read from [agent_folder]/MEMORY.md `## Identity & Personality` section — value of **Agent:** field]
 - Last updated: [TODAY'S DATE]
 
 ## Index

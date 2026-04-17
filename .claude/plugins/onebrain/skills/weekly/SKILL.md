@@ -106,12 +106,7 @@ Ask where to put these tasks: in a project note, or a new "Weekly Intentions" se
 
 ## Step 7: Update MEMORY.md (If Warranted)
 
-If the weekly review reveals a persistent pattern or learning, add it to `[agent_folder]/MEMORY.md`. Also update the `updated:` field in the frontmatter to today's date.
-
-```
-## Key Learnings & Patterns
-- YYYY-MM-DD : [Weekly pattern observation]
-```
+If the weekly review reveals a persistent pattern or learning, save it via `/learn` — this creates a `memory/` file with proper metadata. Do not append directly to MEMORY.md.
 
 ---
 

@@ -27,7 +27,7 @@ Use qmd if available for content searches; Grep/Glob as fallback.
 
 1. **Session logs**: Search `[logs_folder]/**/*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections
 2. **Inbox**: Search `[inbox_folder]/*.md` for related content
-3. **MEMORY.md**: Grep `[agent_folder]/MEMORY.md` Key Learnings for related entries
+3. **memory/ files**: Search `[agent_folder]/memory/` for related entries — match topic keywords against filename and frontmatter `topics:` field
 4. **Project/knowledge notes**: Search `[projects_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, and `[resources_folder]/**/*.md` — filter by note title or first 100 words
 
 Report to user (N = total matches across all sources; Q = project/knowledge/resource notes combined):
@@ -86,7 +86,7 @@ Suggest a subfolder in `[knowledge_folder]/`:
   > 2. Append — add a `## Update — YYYY-MM-DD` section with new findings
   > 3. Cancel
 
-  If **Append** is chosen: before writing new content, read the existing digest note and check for any `[conf:low]` lessons already there. If any exist, surface them:
+  If **Append** is chosen: before writing new content, read the existing digest note and check for any low-confidence lessons already there (marked `low-confidence` or `[conf:low]`). If any exist, surface them:
   > This note has M low-confidence lessons. Want to re-evaluate any before appending? (list them)
   User may promote or leave them as-is. If none exist, skip this silently and proceed to append.
 

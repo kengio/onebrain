@@ -1,6 +1,6 @@
 ---
 name: doctor
-description: "Diagnose vault and plugin health — checks broken links, orphan notes, stale MEMORY.md entries, inbox backlog, and plugin config validity"
+description: "Diagnose vault and plugin health — checks broken links, orphan notes, stale memory/ files, inbox backlog, and plugin config validity"
 ---
 
 # Doctor
@@ -43,6 +43,8 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Report only — no auto-fix (linking requires semantic judgment; use /connect instead)
 
 **Stale memory/ files:**
+- If `[agent_folder]/MEMORY.md` does not exist, report: `🟡 MEMORY.md: not found — run /onboarding` and skip both this check and the MEMORY.md size check below
+- If `memory/` folder does not exist, skip this check
 - Read all `memory/` files with `status: active` or `status: needs-review`; skip `status: deprecated`
 - Flag files where `verified:` frontmatter is older than 90 days
 - Flag files with no `verified:` field
@@ -95,6 +97,7 @@ Use this format:
 🔴 Broken links (N): [[Missing Note]] in "Source Note"
 🟡 Orphan notes (N): 03-knowledge/topic/Note.md
 🟡 Stale memory/ files (N): not verified in 90+ days
+🟡 MEMORY.md structure: pre-v1.10.1 Identity format — run /doctor --fix or /update
 🟡 MEMORY.md size: N lines — consider /distill to compress
 🟢 MEMORY.md size: OK (N lines)
 🟡 Inbox backlog: N files — consider /consolidate
@@ -220,6 +223,7 @@ Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and t
 | Rows in INDEX.md pointing to missing files | List dead links |
 | Files with `verified` > 90 days | Check active/needs-review only (skip deprecated); auto-set `status: needs-review` in file and INDEX.md |
 | Critical Behaviors section > 15 items | Warn: suggest moving excess to memory/ |
+| MEMORY.md `## Identity & Personality` uses old 6-field labels (`**Agent name:**`, `**User name:**`) | Warn: "MEMORY.md Identity block uses pre-v1.10.1 format — run /doctor --fix or /update to migrate" |
 | Checkpoint files with `merged: true` | Delete them (safety net — /wrapup handles these, /doctor catches stragglers) |
 | Checkpoint files > 14 days old with no session log | AskUserQuestion: "Found {N} checkpoints >14 days old with no session log — delete all?" `delete-all / show-list / skip` |
 | memory/ files with non-compliant names | List offenders (not kebab-case, has date prefix, or >5 words); `--fix` auto-renames |
@@ -248,6 +252,11 @@ Ongoing maintenance only (not migration). Fixes issues arising after initial set
    - Update INDEX.md wikilinks to match renamed files
 
 3. **Reset `recap.min_frequency`** to `2` if invalid value found in vault.yml.
+
+4. **Rewrite MEMORY.md Identity & Personality to compact format:**
+   - Trigger: old 6-field labels detected (`**Agent name:**`, `**User name:**`, etc.)
+   - Confirm with AskUserQuestion: "MEMORY.md has pre-v1.10.1 Identity format. Rewrite to compact format?" Options: `yes / no`
+   - If yes: apply same migration as /update Step 4 — extract field values using extraction hints, write compact block, preserve all other sections unchanged
 
 Update `vault.yml` `stats.last_doctor_fix: YYYY-MM-DD` on completion.
 
