@@ -17,7 +17,15 @@ Update OneBrain system files from the source repo to the latest version.
    - `N.x` (e.g. `1.x`, `2.x`) → `N.x`
 3. Read new version from repo's `plugin.json` on the mapped branch (not always main)
 4. If equal → "Already up to date vX.X.X" and stop
-5. If newer → read `CHANGELOG.md` from repo; display release notes in user's language
+5. If newer → read `CHANGELOG.md` from repo; display the entry for the new version to the user before proceeding. Format exactly as:
+
+   ```
+   ## What's new in vX.X.X
+
+   [paste the changelog entry for that version verbatim]
+   ```
+
+   Do not skip or summarize — the user must see the full entry before the confirmation prompt.
 
 ### Major Version Bump Guard
 
