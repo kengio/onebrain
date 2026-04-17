@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.2
+latest_version: 1.10.3
 released: 2026-04-18
 ---
 
@@ -9,6 +9,10 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## [1.10.3] — 2026-04-18
+
+- `AUTO-SUMMARY.md`: delete merged checkpoint files after session log is written (matches /wrapup Step 6 behavior)
 
 ## [1.10.2] — 2026-04-18
 
