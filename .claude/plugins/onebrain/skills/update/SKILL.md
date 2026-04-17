@@ -21,13 +21,13 @@ Update OneBrain system files from the source repo to the latest version.
 
 ### Major Version Bump Guard
 
-If `new_major > current_major` (e.g. vault is v1.9.7, repo branch has v2.0.0):
+If `new_major > current_major` (e.g. vault is v1.10.0, repo branch has v2.0.0):
 → AskUserQuestion: "ตรวจพบ major version bump (v{current} → v{new}) — นี่อาจมี breaking changes ยืนยันอัปเดตไหมครับ?"
 Options: `update / cancel`
 → If cancel: stop immediately, no changes made
 → If update: proceed with normal confirmation flow below
 
-Minor/patch bumps (1.9.7 → 1.9.8, 1.9.7 → 1.10.0): proceed without major version prompt.
+Minor/patch bumps (1.10.0 → 1.10.1, 1.10.0 → 1.11.0): proceed without major version prompt.
 
 6. AskUserQuestion: "อัปเดตเป็น vX.X.X ไหมครับ?" (Thai) / "Update to vX.X.X?" (English)
    Options: `update / cancel`
