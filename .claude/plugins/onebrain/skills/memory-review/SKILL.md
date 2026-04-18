@@ -26,12 +26,28 @@ If memory/ is empty or has no active/needs-review entries → display
 
 ## Display Per Entry
 
-Show each entry in this format:
+Header before first entry:
+──────────────────────────────────────────────────────────────
+🔬 Memory Review — {N} files to review
+──────────────────────────────────────────────────────────────
 
-[1/8] dev | active | conf:high | verified 45 days ago
-      dev-workflow-superpowers
-      "Superpowers flow + worktree + 3 review rounds"
-      → keep / update / needs-review / deprecate / delete / skip / stop
+Per-entry format:
+[{n}/{N}] {topics} | {status} | conf:{level} | verified {X} days ago
+      `{filename}.md`
+      "{1-line description}"
+
+Then AskUserQuestion:
+- question: "What would you like to do with this entry?"
+- header: "Memory Review [{n}/{N}]"
+- multiSelect: false
+- options:
+  - label: "keep", description: "Bump verified date to today, no other changes"
+  - label: "update", description: "Edit confidence, type, or description"
+  - label: "needs-review", description: "Flag for later review"
+  - label: "deprecate", description: "Mark as deprecated (keeps file, removes from active index)"
+  - label: "delete", description: "Move to archive and remove from index"
+  - label: "skip", description: "Move to next entry, no changes"
+  - label: "stop", description: "Exit review, leave remaining entries unchanged"
 
 ## Option Behaviors
 
@@ -75,6 +91,13 @@ Every skill that modifies INDEX.md must update these frontmatter cache fields:
 
 On /memory-review completion: update `vault.yml` `stats.last_memory_review: YYYY-MM-DD`.
 Update regardless of whether any changes were made — the field tracks when the user last reviewed, not when they last changed something. Only skip the update if the user invoked **stop** before processing any entries.
+
+## Completion
+
+After the review session ends:
+✅ Memory review complete — kept {N}, updated {M}, deprecated {P}, deleted {Q}.
+
+Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via skip/stop).
 
 ## Edge Cases
 

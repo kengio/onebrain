@@ -16,49 +16,58 @@ When this skill is invoked, present all available OneBrain commands to the user.
    - If project plugin: read from `.claude/plugins/onebrain/.claude-plugin/plugin.json`
    - If global plugin: use Glob on `~/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` to find all cached versions. If multiple matches are returned, use the one with the highest version number (compare the version directory name as semver). If no matches are found, skip the version display.
 3. Display as the first line of your response:
-   - If project plugin: **OneBrain v{version}** (project plugin)
-   - If global plugin: **OneBrain v{version}** (global plugin)
-   - If version could not be determined: **OneBrain**
+   - If project plugin: OneBrain v{version} (project plugin)
+   - If global plugin: OneBrain v{version} (global plugin)
+   - If version could not be determined: OneBrain
 
-## Step 1: Present the Command Table
+## Step 1: Present the Command List
 
-Display a formatted table with all available commands:
+Display a grouped plain text output:
 
-| Command | What it does | When to use it |
-|---------|-------------|----------------|
-| `/onboarding` | First-run setup : personalizes your agent, vault structure, and preferences | Use once when setting up a new vault |
-| `/braindump` | Capture a stream of raw thoughts, ideas, and tasks | When your head is full and you need to offload everything |
-| `/capture` | Quick note capture with automatic wikilink suggestions | When you want to save a single idea, reference, or thought |
-| `/bookmark` | Save a URL with AI-generated name, description, and category to Bookmarks.md | When you want to quickly park a link for later without full processing |
-| `/consolidate` | Review and merge inbox items into your knowledge base | When your inbox is getting full and needs processing |
-| `/connect` | Find connections between notes and suggest wikilinks | When you want to strengthen the web of ideas in your vault |
-| `/research` | Web research on a topic → structured knowledge note | When you want to learn about something and save it |
-| `/summarize` | Fetch a URL and create a structured summary note | When you want to deeply process an article or page into a permanent vault note |
-| `/import` | Import local files (PDF, Word, Excel, images, video, scripts) into vault notes | When you have files on disk you want distilled into your knowledge base |
-| `/reading-notes` | Book or article → structured progressive summary | When finishing a book or long article and want to capture it |
-| `/tasks` | Open live task dashboard in Obsidian : creates/updates `TASKS.md` with live query sections | When you want an overview of what needs doing |
-| `/moc` | Create or refresh vault portal (MOC.md) : a Map of Content with live queries, AI summary, and your pinned links | When you want a bird's-eye view of your entire vault |
-| `/weekly` | Weekly reflection : review sessions, patterns, intentions | At the end of each week for review and planning |
-| `/daily` | Two-phase daily briefing : surfaces tasks and last session context, then saves your stated focus as a daily note | Every morning (or any time you want to reset your focus for the day) |
-| `/recap` | Batch-promotes recurring insights from session logs into `memory/` files — does NOT write to MEMORY.md; applies frequency filter so only insights appearing in multiple sessions are kept | Periodically, when you want to distill recent sessions into long-term memory |
-| `/memory-review` | Interactive review of all memory/ files — keep, update, deprecate, or delete entries one by one | When you want to prune stale or inaccurate agent memory |
-| `/wrapup` | Save a session summary to your session log | At the end of a work session to capture what you did |
-| `/learn` | Teach the agent something : facts about your world or behavioral preferences | When you want the agent to remember something across all future sessions |
-| `/clone` | Package your agent context (agent folder including MEMORY.md) for vault transfer | When moving to a new vault and want to preserve your agent's memory |
-| `/reorganize` | Migrate existing flat notes into subfolders : one-time migration | After upgrading to a version with subfolder organization |
-| `/qmd` | Set up and manage qmd search index (setup, embed, status, reindex, uninstall) | When you want faster vault search or need to manage the search index |
-| `/distill` | Aggregate notes from multiple sessions on a topic into a structured knowledge note | When you want to compress a completed research thread or recurring theme into permanent knowledge |
-| `/doctor` | Diagnose vault and plugin health (broken links, orphan notes, stale memory, inbox backlog) | When something feels off, or as periodic vault maintenance |
-| `/update` | Update OneBrain system files from GitHub | When a new version is available |
-| `/help` | List all available commands | You're already here! |
+```
+──────────────────────────────────────────────────────────────
+📖 OneBrain Commands — v{version}
+──────────────────────────────────────────────────────────────
+Capture & Organize
+  /capture        Quick note capture with wikilinks
+  /braindump      Dump raw thoughts, ideas, tasks
+  /bookmark       Save a URL to Bookmarks.md
+  /consolidate    Process inbox into knowledge base
+
+Research & Recall
+  /research       Web research → structured knowledge note
+  /summarize      URL → deep summary note
+  /reading-notes  Book or article → structured notes
+  /connect        Find connections between notes
+
+Review & Reflect
+  /daily          Daily briefing — tasks + last session
+  /weekly         Weekly reflection and planning
+  /recap          Promote session insights to memory
+  /distill        Compress a research thread into knowledge
+
+System
+  /tasks          Open live task dashboard
+  /moc            Refresh vault portal (MOC.md)
+  /doctor         Vault health check
+  /update         Update OneBrain to latest version
+  /learn          Teach the agent something to remember
+  /wrapup         Save session summary to log
+  /memory-review  Interactive memory pruning
+  /clone          Package agent context for vault transfer
+  /reorganize     Migrate flat notes into subfolders
+  /qmd            Manage search index
+  /onboarding     First-run vault setup
+  /help           Show this list
+──────────────────────────────────────────────────────────────
+/help [command] for details on any command
+```
 
 ## Step 2: Add a Usage Note
 
-After the table, add:
+After the command list, add:
 
----
-
-**Tips:**
-- Commands use the `/` prefix : for example, `/braindump`, `/tasks`, `/research`
-- You can also describe what you want in plain language: "I want to dump some thoughts" or "show me my tasks"
-- New to OneBrain? Start with `/onboarding` to set up your vault and personalize your AI assistant
+Tips:
+  • Commands use the `/` prefix — for example, `/braindump`, `/tasks`, `/research`
+  • You can also describe what you want in plain language
+  • New to OneBrain? Start with `/onboarding`

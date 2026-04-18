@@ -111,10 +111,15 @@ sources: [list of key sources]
 ## Step 6: Suggest Follow-Up
 
 After creating the note:
-> Research saved to `[resources_folder]/[subfolder]/[Topic Name].md`.
->
-> Based on what I found, you might also want to explore:
-> - [Related topic 1]
-> - [Related topic 2]
->
-> Or run `/summarize [url]` to go deeper on a specific source.
+──────────────────────────────────────────────────────────────
+🔍 Research — {topic}
+──────────────────────────────────────────────────────────────
+Saved to `[resources_folder]/[subfolder]/[Topic Name].md`
+
+You might also explore:
+  • {related topic 1}
+  • {related topic 2}
+(omit "You might also explore" block if no follow-up suggestions)
+
+→ Run /summarize [url] to go deeper on a specific source.
+→ Run /learn to save key insights to memory.

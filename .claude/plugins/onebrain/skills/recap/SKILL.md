@@ -51,13 +51,23 @@ or `status: needs-review` — skip deprecated files.
 
 Collect ALL conflicts first, then resolve sequentially:
 
-⚠️ 3 conflicts found — resolving one at a time
+──────────────────────────────────────────────────────────────
+⚠️  {N} conflicts found — resolving one at a time
+──────────────────────────────────────────────────────────────
+[{n}/{N}] 💡 insight from session {YYYY-MM-DD}:
+      "{insight text}"
 
-[1/3] 📝 insight from session YYYY-MM-DD:
-      "repo moved to ~/projects/onebrain-v2"
+      Conflicts with `memory/{filename}.md`
 
-      Conflicts with memory/onebrain-development.md
-      → update / supersede / separate / skip
+Then AskUserQuestion:
+- question: "How should I handle this conflict?"
+- header: "Conflict [{n}/{N}]"
+- multiSelect: false
+- options:
+  - label: "update", description: "Merge insight into existing file (old content still partially correct)"
+  - label: "supersede", description: "Create new file, deprecate old (old content fully outdated)"
+  - label: "separate", description: "Create new file separately (no conflict, keep both)"
+  - label: "skip", description: "Discard this insight, move on"
 
 Options:
 - **update** → merge insight into existing file in-place, bump `verified`
@@ -74,12 +84,17 @@ Scan only files whose topics appear in 2+ files — skip deprecated.
 
 Resolve sequentially [1/N]:
 
-🔀 Overlapping topics found [1/2] — merge recommended
+[{n}/{N}] 🔀 Overlapping topics — merge recommended
+  `{file-a}.md`  (topics: {a}, {b})
+  `{file-b}.md`  (topics: {a}, {b}, {c})
 
-memory/dev-workflow.md       (topics: dev, worktree)
-memory/dev-worktree-setup.md (topics: dev, worktree, setup)
-
-→ merge / skip
+Then AskUserQuestion:
+- question: "Merge these overlapping memory files?"
+- header: "Consolidate [{n}/{N}]"
+- multiSelect: false
+- options:
+  - label: "merge", description: "Synthesize into one file (preserves all unique information)"
+  - label: "skip", description: "Leave both files as-is"
 
 **merge:**
 1. Read both files
@@ -122,3 +137,20 @@ Each insight that passes the frequency filter:
 - Update INDEX.md `updated:` and `total_active` counter
 
 Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /learn.
+
+## Output
+
+### No unrecapped logs
+✅ No unrecapped session logs found.
+
+### Completion (after all conflicts + consolidations resolved)
+```
+──────────────────────────────────────────────────────────────
+💡 Recap — {N} sessions processed
+──────────────────────────────────────────────────────────────
+Promoted {N} insights to memory/:
+  • `{filename}.md` — {topic}
+
+{N} session logs marked recapped.
+→ Run /distill to compress a completed thread into a knowledge note.
+```

@@ -12,10 +12,15 @@ Find meaningful connections between your notes and suggest wikilinks to build a 
 ## Step 1: Scope
 
 Ask (or infer from context):
-> Do you want to find connections:
-> - For a **specific note** (name it)
-> - Across your entire **knowledge base** (`[projects_folder]/**/*.md`, `[areas_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`)
-> - For **recently added notes** (last 7 days)
+
+AskUserQuestion:
+- question: "What scope do you want to search for connections?"
+- header: "Connect Scope"
+- multiSelect: false
+- options:
+  - label: "specific note", description: "Find connections for a specific note (you'll name it)"
+  - label: "entire knowledge base", description: "Scan all projects, areas, knowledge, and resources"
+  - label: "recently added", description: "Notes added in the last 7 days"
 
 ---
 
@@ -59,14 +64,25 @@ Look for:
 Group suggestions by note. For each suggestion, show:
 
 ```
-## Note A → Note B
-Type: Conceptual overlap
-Reason: Both discuss [shared concept]
-Suggested addition to "Note A":
-  Near "...existing text..." → add "Note B"
+──────────────────────────────────────────────────────────────
+🔗 Connect — {N} suggestions found
+──────────────────────────────────────────────────────────────
+[{n}/{N}] `{Note A}` → `{Note B}`
+  Type: {connection type}
+  Reason: {reason}
+  Add to `{Note A}`:
+    Near "...{nearby text}..." → add [[{Note B}]]
+```
+
+No suggestions:
+```
+✅ No connections found — notes are already well-linked.
 ```
 
 Maximum 10 suggestions. Ask user to approve each batch before implementing.
+
+If more than 10 suggestions found, show first 10 and add:
+  (showing 10 of {M} — run /connect again to see more)
 
 ---
 
@@ -78,7 +94,7 @@ For each approved suggestion:
 - Add the wikilink inline or in a "## Related" section at the bottom
 
 After implementing:
-> Added "Note B" link to "Note A".
+✅ Added [[{Note B}]] link to `{Note A}`.
 
 ---
 

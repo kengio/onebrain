@@ -16,23 +16,25 @@ List all files in `[inbox_folder]/` (excluding .gitkeep). For each file:
 - Note the date and main topics
 
 Report:
-> You have N items in your inbox:
-> 1. `2026-03-20-braindump.md` : ideas about [topic], 2 tasks
-> 2. `2026-03-19-capture.md` : note about [topic]
-> ...
+──────────────────────────────────────────────────────────────
+📥 Consolidate — {N} inbox items
+──────────────────────────────────────────────────────────────
+  1. `{filename}` — {brief description}, {N tasks} tasks
+  2. `{filename}` — {brief description}
 
 ---
 
 ## Step 2: Let User Choose Scope
 
-Ask:
-> Do you want to:
-> - Process **all** inbox items
-> - Process items from the **last N days**
-> - Process a **specific file** (name it)
-> - Just **review** without moving anything
-
-Wait for response.
+AskUserQuestion:
+- question: "Which items do you want to process?"
+- header: "Consolidate Scope"
+- multiSelect: false
+- options:
+  - label: "all", description: "Process all inbox items"
+  - label: "last N days", description: "Process items from the last N days (specify N)"
+  - label: "specific file", description: "Process a specific file (name it)"
+  - label: "just review", description: "Review without moving anything"
 
 ---
 
@@ -67,7 +69,19 @@ Classify the item and route it to the appropriate folder:
 - **Ongoing responsibility (something you maintain over time, not a one-time insight)** → `[areas_folder]/` : examples: health tracking, finances, career development, relationships
 
 Confirm routing with the user for the first 3 items. After that, proceed autonomously : or if the user says 'stop and confirm', return to confirmation mode for the next item.
-> `[filename]`: This looks like [classification] : I'd route it to `[destination-folder]/`. Does that work, or would you prefer a different folder?
+
+[{n}/{N}] `{filename}` looks like {classification}
+  Route to `{folder}/{subfolder}/`?
+
+Then AskUserQuestion:
+- question: "How should I file this note?"
+- header: "Route [{n}/{N}]"
+- multiSelect: false
+- options:
+  - label: "confirm", description: "File as suggested"
+  - label: "different folder", description: "Choose a different destination"
+  - label: "merge", description: "Merge into an existing note instead"
+  - label: "skip", description: "Leave in inbox for now"
 
 Also show merge options if relevant:
 > I'd merge this into "Existing Note" : it adds context about [topic].
@@ -114,10 +128,20 @@ Ask preference once: "After processing, should I archive originals or delete the
 ## Step 6: Summary
 
 Report:
-> Inbox processed:
-> - Merged N items into existing notes
-> - Created N new knowledge notes: "Note A", "Note B"
-> - Archived N originals
-> - N tasks remain open across your vault
->
-> Your inbox is [clear / down to N items].
+──────────────────────────────────────────────────────────────
+📥 Inbox Processed — {N} notes
+──────────────────────────────────────────────────────────────
+Moved:
+  `{filename}`  →  {folder}/{subfolder}
+
+Kept in inbox ({M}):
+  `{filename}` — {reason}
+(omit "Kept in inbox" block if all items moved)
+
+{P} tasks remain open across your vault.
+(omit if no open tasks)
+──────────────────────────────────────────────────────────────
+{N} moved, {M} kept. Inbox {clear / down to M items}.
+
+Empty state:
+✅ Inbox is empty — nothing to process.

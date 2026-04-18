@@ -139,6 +139,13 @@ Do not proceed to Step 3 if the write failed.
 
 ---
 
-## Step 3: Print confirmation
+## Step 3: Open in Obsidian and confirm
 
-`TASKS.md updated.`
+Run via Bash (fails silently if Obsidian is not installed):
+```bash
+open "obsidian://open?path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)/TASKS.md" 2>/dev/null || true
+```
+
+Then say:
+📋 TASKS.md updated.
+→ Opening in Obsidian...

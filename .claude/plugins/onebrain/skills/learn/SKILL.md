@@ -32,17 +32,19 @@ Options: `active-projects / memory-file`
 Before writing a new file, grep `memory/` for files with overlapping topics or similar content.
 Scan ONLY files with `status: active` or `status: needs-review` — skip deprecated files.
 
-If a potential conflict is found, show via AskUserQuestion:
+If a potential conflict is found, show this display block first:
+⚠️ Possible conflict with `memory/{filename}.md`
+  New: "{new fact}"
+  Existing: "{existing fact}"
 
-⚠️ Possible conflict: memory/onebrain-development.md
-   "Source repo path, /update workflow"
-
-   New fact: "repo moved to ~/projects/onebrain-v2"
-   Existing: "repo at ~/projects/onebrain"
-
-   1) update   — edit existing file (old content still partially correct)
-   2) supersede — create new file, deprecate old (old content fully outdated)
-   3) separate  — create new file separately (no conflict, keep both)
+Then AskUserQuestion:
+- question: "How should I handle this conflict?"
+- header: "Conflict"
+- multiSelect: false
+- options:
+  - label: "update", description: "Merge new fact into existing file (old content still partially correct)"
+  - label: "supersede", description: "Create new file, deprecate old (old content fully outdated)"
+  - label: "separate", description: "Create new file separately (no conflict, keep both)"
 
 **update** → read existing file, merge new fact in-place, bump `verified` to today.
 No new file created, INDEX.md unchanged.
@@ -98,3 +100,8 @@ Example: `dev-workflow.md` exists → try `dev-workflow-02.md` → `dev-workflow
 
 6. If `supersede` was chosen: additionally set `supersedes: old-file.md` in new file's
    frontmatter and `superseded_by: new-file.md` in old file's frontmatter.
+
+## Confirmation
+
+After writing or updating the file, say in one line:
+🧠 Learned: {brief description of what was saved or updated}.

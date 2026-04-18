@@ -69,16 +69,18 @@ Also check `[archive_folder]/*.md` for any flat archive files.
 Exclude `.gitkeep` files.
 
 Report:
-> Found N notes to organize:
-> - `[knowledge_folder]/`: N notes
-> - `[resources_folder]/`: N notes
-> - `[areas_folder]/`: N notes
-> - `[projects_folder]/`: N notes
-> - `[logs_folder]/`: N session logs
-> - `[archive_folder]/`: N archive files
+──────────────────────────────────────────────────────────────
+📁 Proposed Reorganization
+──────────────────────────────────────────────────────────────
+🗂️  [knowledge_folder]/ ({N} notes)
+🗂️  [resources_folder]/ ({N} notes)
+🗂️  [areas_folder]/ ({N} notes)
+🗂️  [projects_folder]/ ({N} notes)
+🗂️  [logs_folder]/ ({N} session logs)
+🗂️  [archive_folder]/ ({N} archive files)
 
-If nothing is found, say:
-> Your vault is already organized into subfolders : nothing to do!
+If nothing is found:
+✅ Nothing to do — vault already organized into subfolders.
 
 ---
 
@@ -99,33 +101,24 @@ For each note, analyze its content and frontmatter to suggest a subfolder:
 - Use today's date for archiving: `YYYY/MM`
 - Or read the note's `created:` frontmatter if present and use that date instead
 
-Present the full migration plan as a table:
+Present the full migration plan:
 
 ```
-## Proposed Reorganization
+──────────────────────────────────────────────────────────────
+📁 Proposed Reorganization
+──────────────────────────────────────────────────────────────
+🗂️  {folder}/ ({N} notes)
+  {Note name}          →  {subfolder}
+  {Note name}          →  {subfolder}
 
-### [knowledge_folder]/ (N notes)
-| Note | → Subfolder |
-|------|------------|
-| Machine Learning.md | → technology/ai |
-| Sleep Optimization.md | → health |
-
-### [resources_folder]/ (N notes)
-| Note | → Subfolder |
-|------|------------|
-| Python Basics.md | → programming/python |
-
-### [projects_folder]/ (N notes)
-| Note | → Subfolder |
-|------|------------|
-| Website Redesign.md | → web-development |
-
-### [logs_folder]/ (N session logs)
-| File | → Subfolder |
-|------|------------|
-| 2026-01-15-session-01.md | → 2026/01 |
-| 2026-02-03-session-01.md | → 2026/02 |
+🗂️  {folder}/ ({N} notes)
+  {Note name}          →  {subfolder}
+──────────────────────────────────────────────────────────────
+{N} notes total · Proceed?
 ```
+
+If more than 40 notes total, show the first 40 and add:
+  (showing 40 of {N} — run /reorganize again to continue)
 
 ---
 
@@ -157,16 +150,16 @@ Process notes by folder (all knowledge, then resources, then areas, then project
 ### Step 5: Summary
 
 Report:
-> Reorganization complete!
->
-> - Moved N notes in `[knowledge_folder]/` into N subfolders
-> - Moved N notes in `[resources_folder]/` into N subfolders
-> - Moved N notes in `[areas_folder]/` into N subfolders
-> - Moved N notes in `[projects_folder]/` into N subfolders
-> - Moved N session logs in `[logs_folder]/` into YYYY/MM folders
-> - Moved N files in `[archive_folder]/` into YYYY/MM folders
-> - Skipped N notes (left in place)
->
-> All existing wikilinks (`[[Note Name]]`) still work : Obsidian resolves links by filename, not path.
->
-> Want to run `/connect` to find new connections between your organized notes?
+✅ Moved {N} notes into subfolders.
+
+- Moved N notes in `[knowledge_folder]/` into N subfolders
+- Moved N notes in `[resources_folder]/` into N subfolders
+- Moved N notes in `[areas_folder]/` into N subfolders
+- Moved N notes in `[projects_folder]/` into N subfolders
+- Moved N session logs in `[logs_folder]/` into YYYY/MM folders
+- Moved N files in `[archive_folder]/` into YYYY/MM folders
+- Skipped N notes (left in place)
+
+All existing wikilinks (`[[Note Name]]`) still work : Obsidian resolves links by filename, not path.
+
+Want to run `/connect` to find new connections between your organized notes?
