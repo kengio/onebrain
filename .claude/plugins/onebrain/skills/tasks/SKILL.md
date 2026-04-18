@@ -146,6 +146,6 @@ Run via Bash (fails silently if Obsidian is not installed):
 open "obsidian://open?path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)/TASKS.md" 2>/dev/null || true
 ```
 
-Then say in one line:
+Then say:
 📋 TASKS.md updated.
 → Opening in Obsidian...

@@ -187,6 +187,6 @@ Run via Bash (fails silently if Obsidian is not installed):
 open "obsidian://open?path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)/MOC.md" 2>/dev/null || true
 ```
 
-Then say in one line:
+Then say:
 🗺️ MOC.md updated.
 → Opening in Obsidian...
