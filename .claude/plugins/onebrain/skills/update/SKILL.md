@@ -208,6 +208,12 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
 
   Replace `[vault]` with the vault's absolute path (the directory containing `vault.yml`). Use the same JSON structure as the existing Stop entry in the file.
 
+**PostToolUse qmd hook (only when `qmd_collection` is set in vault.yml):**
+- If `qmd_collection` is absent in vault.yml: skip
+- If `qmd_collection` is present: read `[vault]/.claude/plugins/onebrain/hooks/hooks.json`
+  - If missing or `PostToolUse` entry does not contain `qmd-reindex.sh`: the file was already synced in Step 4b — re-verify the sync completed successfully and flag the issue
+  - If correct: ✅ PostToolUse qmd hook registered
+
 **Step 8: Verify migration**
 - Run /doctor (newly-synced version) automatically
 - Expected: 0 orphans, 0 dead links, 0 non-compliant names, INDEX.md present
