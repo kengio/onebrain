@@ -32,9 +32,14 @@ Options: `active-projects / memory-file`
 Before writing a new file, grep `memory/` for files with overlapping topics or similar content.
 Scan ONLY files with `status: active` or `status: needs-review` — skip deprecated files.
 
-If a potential conflict is found, show via AskUserQuestion:
-- question: "Possible conflict with `memory/{filename}.md`\n  New: \"{new fact}\"\n  Existing: \"{existing fact}\"\n\n  How should I handle this?"
-- header: "⚠️ Conflict"
+If a potential conflict is found, show this display block first:
+⚠️ Possible conflict with `memory/{filename}.md`
+  New: "{new fact}"
+  Existing: "{existing fact}"
+
+Then AskUserQuestion:
+- question: "How should I handle this conflict?"
+- header: "Conflict"
 - multiSelect: false
 - options:
   - label: "update", description: "Merge new fact into existing file (old content still partially correct)"
