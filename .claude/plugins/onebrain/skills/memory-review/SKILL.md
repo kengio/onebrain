@@ -97,6 +97,8 @@ Update regardless of whether any changes were made — the field tracks when the
 After the review session ends:
 ✅ Memory review complete — kept {N}, updated {M}, deprecated {P}, deleted {Q}.
 
+Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via skip/stop).
+
 ## Edge Cases
 
 - If entry's row is missing from INDEX.md but file exists in memory/ (out of sync) →

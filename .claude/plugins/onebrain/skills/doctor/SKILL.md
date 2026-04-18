@@ -214,8 +214,9 @@ For each unique broken link name:
 4. **Never auto-replace without user confirmation.** Every substitution requires an explicit yes or number.
 
 After Pass B, report:
-> Fixed N broken links across M files. P links could not be matched automatically — fix manually.
-> Modified files: [list of file paths that were changed]
+✅ Fixed {N} broken links across {M} files.
+🟡 {N} links could not be auto-matched — manual review needed.
+Modified files: [list of file paths that were changed]
 
 ### Pass C: Deprecated vault.yml keys
 

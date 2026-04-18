@@ -96,9 +96,11 @@ Ask:
 > What are the 3 most important things to accomplish next week?
 
 Then help them create tasks:
+```markdown
 - [ ] [Intention 1] 📅 [Next Friday as default deadline]
 - [ ] [Intention 2] 📅 [Next Friday]
 - [ ] [Intention 3] 📅 [Next Friday]
+```
 
 Ask where to put these tasks: in a project note, or a new "Weekly Intentions" section in a project note.
 

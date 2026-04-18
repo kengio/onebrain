@@ -101,36 +101,24 @@ For each note, analyze its content and frontmatter to suggest a subfolder:
 - Use today's date for archiving: `YYYY/MM`
 - Or read the note's `created:` frontmatter if present and use that date instead
 
-Present the full migration plan as a table:
+Present the full migration plan:
 
 ```
-## Proposed Reorganization
+──────────────────────────────────────────────────────────────
+📁 Proposed Reorganization
+──────────────────────────────────────────────────────────────
+🗂️  {folder}/ ({N} notes)
+  {Note name}          →  {subfolder}
+  {Note name}          →  {subfolder}
 
-### [knowledge_folder]/ (N notes)
-| Note | → Subfolder |
-|------|------------|
-| Machine Learning.md | → technology/ai |
-| Sleep Optimization.md | → health |
-
-### [resources_folder]/ (N notes)
-| Note | → Subfolder |
-|------|------------|
-| Python Basics.md | → programming/python |
-
-### [projects_folder]/ (N notes)
-| Note | → Subfolder |
-|------|------------|
-| Website Redesign.md | → web-development |
-
-### [logs_folder]/ (N session logs)
-| File | → Subfolder |
-|------|------------|
-| 2026-01-15-session-01.md | → 2026/01 |
-| 2026-02-03-session-01.md | → 2026/02 |
-
+🗂️  {folder}/ ({N} notes)
+  {Note name}          →  {subfolder}
 ──────────────────────────────────────────────────────────────
 {N} notes total · Proceed?
 ```
+
+If more than 40 notes total, show the first 40 and add:
+  (showing 40 of {N} — run /reorganize again to continue)
 
 ---
 

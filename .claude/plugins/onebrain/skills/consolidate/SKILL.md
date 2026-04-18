@@ -26,14 +26,15 @@ Report:
 
 ## Step 2: Let User Choose Scope
 
-Ask:
-> Do you want to:
-> - Process **all** inbox items
-> - Process items from the **last N days**
-> - Process a **specific file** (name it)
-> - Just **review** without moving anything
-
-Wait for response.
+AskUserQuestion:
+- question: "Which items do you want to process?"
+- header: "Consolidate Scope"
+- multiSelect: false
+- options:
+  - label: "all", description: "Process all inbox items"
+  - label: "last N days", description: "Process items from the last N days (specify N)"
+  - label: "specific file", description: "Process a specific file (name it)"
+  - label: "just review", description: "Review without moving anything"
 
 ---
 
