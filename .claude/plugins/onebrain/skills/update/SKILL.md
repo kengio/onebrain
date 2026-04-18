@@ -122,7 +122,7 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
   - A numeric segment prefix (e.g. `2026-04-05-02-superpowers-docs-in-vault.md` → `superpowers-docs-vault.md`)
   - Title-Case or spaces in the filename
   - More than 5 words (strip stop words; keep the meaningful 3–5)
-- After renaming: update all `[[wikilinks]]` in INDEX.md and any `supersedes:`/`superseded_by:` references to use the new filename
+- After renaming: update all `[[wikilinks]]` in `[agent_folder]/INDEX.md` and any `supersedes:`/`superseded_by:` references to use the new filename
 - Compliant example: `bump-version-pr.md`, `dev-workflow-worktree.md`, `telegram-format.md`
 
 **Step 4: Restructure MEMORY.md** (MUST run after Step 1)
