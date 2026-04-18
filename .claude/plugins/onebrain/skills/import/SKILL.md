@@ -48,7 +48,7 @@ Parse arguments:
    > Import inbox not found at `[inbox path]`. Run `/onboarding` to set up your vault, or use `/import /path/to/file` to import a specific file.
    Then stop.
 4. If inbox is empty, report:
-   > Inbox is empty (`[inbox path]`). Add files there and run `/import` again, or run `/import /path/to/file`.
+   🔴 Inbox is empty (`[inbox path]`). Add files or use `/import /path/to/file`.
    Then stop.
 
 ### Step 2: Group and display (batch mode only)
@@ -96,33 +96,33 @@ Each subagent runs the appropriate handler section from this skill (see below).
 After all subagents complete, show a summary:
 
 ```
-Import complete : 4 notes created:
+──────────────────────────────────────────────────────────────
+📂 Import Complete — {N} notes
+──────────────────────────────────────────────────────────────
+  `[resources_folder]/research/report.md`         (from report.pdf)
+  `[resources_folder]/finance/budget-summary.md`  (from budget.xlsx)
+  `[resources_folder]/media/hero-image.md`        (from hero-image.png)
+  `[resources_folder]/scripts/cleanup.md`         (from cleanup.sh)
 
-  [resources_folder]/research/report.md         (from report.pdf)
-  [resources_folder]/finance/budget-summary.md  (from budget.xlsx)
-  [resources_folder]/media/hero-image.md        (from hero-image.png)
-  [resources_folder]/scripts/cleanup.md         (from cleanup.sh)
-
-4 files removed from inbox.
+{N} files removed from inbox.
 ```
 
 If any subagent failed:
 ```
-⚠ 1 file failed:
-  deck.pptx : markitdown not installed. File left in inbox. Install with: pipx install markitdown
+⚠️ {N} file(s) failed:
+  `{filename}` — {reason}
 ```
 
 If any files were skipped due to unsupported type:
 ```
-⏭ 2 files skipped (unsupported : left in inbox):
-  unknown.xyz
-  notes.txt
+⏭ {N} file(s) skipped (unsupported — left in inbox):
+  `{filename}`
 ```
 
 If a note was created but the inbox delete failed (partial success):
 ```
-⚠ 1 partial success:
-  report.pdf : note created at [resources_folder]/research/report.md, but inbox file could not be deleted. Delete manually.
+⚠️ {N} partial success:
+  `{filename}` — note created at `{vault path}`, but inbox file could not be deleted. Delete manually.
 ```
 
 ### Supported File Types
