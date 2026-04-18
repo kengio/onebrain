@@ -151,9 +151,10 @@ Run before responding to any user message.
 
 Format — use plain text only, no markdown syntax:
 ```
-────────────────────────────────────
+────────────────────────────────
 [emoji] [greeting] [user]
 Ddd · DD Mon YYYY · HH:MM
+────────────────────────────────
 ```
 
 - `[user]` = user name from MEMORY.md (**User:** field)
@@ -190,8 +191,8 @@ Otherwise, append after the greeting:
 📋 [N] checkpoints — /wrapup?         ← omit if orphan_count = 0
 
 Pending tasks:
-- [ ] task description 📅 YYYY-MM-DD (overdue)
-- [ ] task description 📅 YYYY-MM-DD
+⬜ task description 📅 YYYY-MM-DD (overdue)
+⬜ task description 📅 YYYY-MM-DD
 (+N more — /daily for full list)      ← show only if tasks exceed 5
 ```
 
