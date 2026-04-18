@@ -180,6 +180,13 @@ PINNED_CONTENT
 
 ---
 
-## Step 5: Confirm
+## Step 5: Open in Obsidian and confirm
 
-`MOC.md updated.`
+Run via Bash (fails silently if Obsidian is not installed):
+```bash
+open "obsidian://open?path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)/MOC.md" 2>/dev/null || true
+```
+
+Then say in one line:
+🗺️ MOC.md updated.
+→ Opening in Obsidian...

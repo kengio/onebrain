@@ -107,4 +107,4 @@ After writing, dispatch the **Tag Suggester** agent (`agents/tag-suggester.md`) 
 ## Step 6: Confirm
 
 Say in one line:
-> Captured to `[file path]`.
+📝 Captured to `[file path]`.

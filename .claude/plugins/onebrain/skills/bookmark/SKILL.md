@@ -84,7 +84,7 @@ Append under the correct `##` / `###` section (alphabetical order). Create missi
 ## Step 6: Confirm
 
 Say in one line:
-> Saved to **Bookmarks.md** under `## [Category]`. [If subcategory: `/ ### [Subcategory]`]
+🔖 Saved to `Bookmarks.md` under {Category}. [If subcategory: / {Subcategory}]
 
 ---
 
@@ -97,4 +97,4 @@ If the user asks to move or recategorize a bookmark:
 3. Remove from current section; append to target section (create `##` / `###` as needed)
 4. Refresh `updated` in frontmatter
 5. Confirm in one line:
-   > Moved **[Name]** from `## [Old]` → `## [New]`. [If subcategory: `/ ### [Sub]`]
+   🔖 Moved {Name} from {Old} → {New}. [If subcategory: / {Sub}]

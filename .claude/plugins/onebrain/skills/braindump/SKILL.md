@@ -88,4 +88,4 @@ After writing, dispatch the **Task Extractor** agent (`agents/task-extractor.md`
 ## Step 6: Confirm
 
 Say in one line:
-> Filed to `[inbox_folder]/YYYY-MM-DD-braindump.md`. [If project link: Added note to "Project".]
+💭 Filed to `[inbox_folder]/YYYY-MM-DD-braindump.md`. [If project link: Added note to "Project Name".]
