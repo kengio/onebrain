@@ -216,6 +216,8 @@ Note inline: `[Loading memory: filename]`
 
 ### Auto Checkpoint
 
+> **What is PPID?** `$PPID` is the process parent ID — the PID of the shell that launched Claude Code. Each Claude Code window is a child of a unique shell process, so every session gets a different PPID automatically. Multiple windows open on the same day never collide. No storage or generation required — always available from the OS.
+
 When the stop hook sends a message matching `YYYY-MM-DD-{PPID}-checkpoint-NN.md` (no slashes — a date, a numeric PPID, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse PPID and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
 
 Write:

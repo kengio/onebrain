@@ -38,7 +38,7 @@ Absence of `recapped:` field = not yet processed by /recap.
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
-2. Get PPID via Bash: `echo $PPID` — this is the session token, unique per Claude Code window.
+2. Get PPID via Bash: `echo $PPID` — this is the session token. PPID is the process parent ID (the PID of the shell that launched Claude Code). Each Claude Code window is a child of a unique shell process, so every session gets a different PPID — guaranteed unique per window, even with multiple windows open on the same day.
 3. Glob checkpoint files:
    - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-*.md`
    - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{PPID}-checkpoint-*.md`
