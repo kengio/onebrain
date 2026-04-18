@@ -47,11 +47,13 @@ For steps that present a fixed set of choices (personality archetype, communicat
 
 Say:
 
-> Welcome to OneBrain : where human and AI thinking become one.
->
-> I'm going to ask you a few quick questions to personalize your vault. This takes about 2 minutes, and you can always update your settings later by editing `[agent_folder]/MEMORY.md` directly.
->
-> Let's start!
+👋 Welcome to OneBrain — where human and AI thinking become one.
+
+I'm going to ask you a few quick questions to personalize your vault.
+This takes about 2 minutes. You can update settings later by editing
+`[agent_folder]/MEMORY.md` directly.
+
+Let's start!
 
 ---
 
@@ -332,31 +334,17 @@ If user selects "Skip for now": continue to Step 12.
 
 Say:
 
-> You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help. Here's what's set up:
->
-> - Your identity and personality are saved in `05-agent/MEMORY.md`
-> - Your vault is set up with these folders:
->   - `00-inbox/` : raw captures (process regularly); `imports/` subfolder for `/import` staging
->   - `01-projects/` : active projects with tasks
->   - `02-areas/` : ongoing responsibilities (health, finances, career...)
->   - `03-knowledge/` : your own synthesized thinking
->   - `04-resources/` : external info, research output, reference
->   - `05-agent/` : AI context and memory
->   - `06-archive/` : completed and archived items
->   - `07-logs/` : session logs
->
-> [If qmd was set up in Step 11b:] qmd search index active (collection: `<name>`) : the agent will use qmd automatically
->
-> **First things to try:**
-> - `/braindump` : dump anything on your mind right now
-> - `/capture` : add a quick note or idea
-> - `/research [topic]` : research something and save it to your vault
->
-> **How notes are organized:** Project and area notes go into kebab-case subfolders (e.g. `01-projects/work/Website Redesign.md`). I'll suggest a subfolder whenever you create a note : just confirm or adjust. Research and summary output goes to `04-resources/` : use `/consolidate` to turn it into your own thinking in `03-knowledge/`. Use `/learn` to teach me things about your world (domain, tools, terminology) and I'll save them to `05-agent/`. Session logs go into `07-logs/YYYY/MM/` and archive items go into `06-archive/YYYY/MM/`.
->
-> When you're done working, run `/wrapup` to save a session summary.
->
-> What would you like to do first?
+──────────────────────────────────────────────────────────────
+👋 Onboarding Complete
+──────────────────────────────────────────────────────────────
+  `[agent_folder]/MEMORY.md`   identity and personality saved
+  `vault.yml`                  vault configuration saved
+  Folders created:             {list of folders created}
+  Plugin hooks:                registered ✅
+  [If qmd set up:] qmd search: `{collection-name}` ✅
+
+→ Run /daily to see your first briefing.
+→ Run /help to see all available commands.
 
 ---
 
@@ -521,18 +509,15 @@ Identical to Step 11b in Path A. Ask the user whether to set up qmd, and if yes,
 ## Path B : Step 13: Completion message
 
 Say:
-> You're all set, [preferred_name]! I'm [agent_name] and I'm ready to help.
->
-> OneBrain is now bundled inside your vault:
-> - Plugin files copied to `.claude/plugins/onebrain/`
-> - [If Step 9 appended: "OneBrain instructions added to `CLAUDE.md`"] [If Step 9 created: "`CLAUDE.md` created with OneBrain instructions"] [If Step 9 skipped: "OneBrain instructions already present in `CLAUDE.md`"]
-> - [If Step 10 wrote: "Your identity saved in `[agent_folder]/MEMORY.md`"] [If Step 10 kept: "Existing identity in `[agent_folder]/MEMORY.md` preserved"]
-> - Vault folders created (existing folders untouched)
->
-> Use `/update` to keep OneBrain current : it works the same as a fresh vault install.
->
-> The global plugin install is no longer needed for this vault. You can remove it with `/plugin uninstall onebrain@onebrain` if you like, but it's safe to leave as-is.
->
-> [If qmd was set up in Step 12b:] qmd search index active (collection: `<name>`)
->
-> What would you like to do first?
+
+──────────────────────────────────────────────────────────────
+👋 Onboarding Complete
+──────────────────────────────────────────────────────────────
+  `[agent_folder]/MEMORY.md`   identity and personality saved
+  `vault.yml`                  vault configuration saved
+  Folders created:             {list of folders created}
+  Plugin hooks:                registered ✅
+  [If qmd set up:] qmd search: `{collection-name}` ✅
+
+→ Run /daily to see your first briefing.
+→ Run /help to see all available commands.
