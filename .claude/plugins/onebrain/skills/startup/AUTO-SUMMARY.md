@@ -26,7 +26,10 @@ If conditions are met:
 - After confirming the session log was written, reset the checkpoint hook counter to prevent spurious post-summary checkpoints:
   ```bash
   TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
-  echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${PPID}.state"
+  _ppid="${PPID:-$(echo $PPID)}"
+  if [ -n "$_ppid" ] && [ "$_ppid" -gt 0 ] 2>/dev/null; then
+    echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${_ppid}.state" 2>/dev/null
+  fi
   ```
 - Delete the checkpoint files from the glob above that were marked `merged: true`. Do not delete checkpoint files outside this session's glob result.
 - Safety-net: glob `[logs_folder]/YYYY/MM/*-checkpoint-*.md` (current month only) for any remaining files with `merged: true` — delete them. Scoped to current month to avoid vault-wide glob on large vaults.

@@ -65,11 +65,12 @@ For each of those two paths, glob `*-checkpoint-*.md`.
 ### Identify Orphans
 
 From all found checkpoint files:
-1. Exclude files whose filename contains the current PPID (those belong to the current session, already handled in Step 1) — filter by filename only, no reads needed
-2. Read frontmatter of the remaining files
-3. Keep only files where `merged` is absent or not `true`
-4. Parse PPID from each remaining filename using the pattern `YYYY-MM-DD-{PPID}-checkpoint-NN.md` (the numeric segment between the date and the literal word "checkpoint")
-5. Group files by their parsed PPID
+1. Read frontmatter of all found files; keep only where `merged` is absent or not `true`
+2. Parse PPID-segment from each filename: the numeric segment between the date and the literal word "checkpoint" in pattern `YYYY-MM-DD-{PPID}-checkpoint-NN.md`. Validate it is numeric; if non-numeric or empty, apply Legacy token handling (see below) rather than skipping.
+3. Exclude files where the parsed PPID exactly equals the current session PPID (those belong to the current session, already handled in Step 1). Do not use substring/contains matching — only exact equality.
+4. Group remaining files by their parsed PPID
+
+**Legacy token handling:** If the parsed segment is non-numeric (e.g., `abc123` — a legacy random-6 token from pre-v1.10.4), still include the file in orphan recovery. Group these files under a synthetic key `legacy-{segment}` and process them the same way as PPID groups. This ensures migration from v1.10.3 and earlier does not lose checkpoints. Note each legacy file in the Step 8 report as a warning.
 
 If no orphan groups found: skip to Step 2.
 
@@ -124,11 +125,13 @@ auto-recovered: true
 - [Open questions from checkpoints]
 ```
 
-**e. Mark checkpoints as merged:** for each checkpoint file in this group, set `merged: true` (same rules as Step 5).
+**e. Write the session log** (per the template above). Verify the file exists and is non-empty before continuing.
 
-**f. Delete checkpoint files** for this group after confirming session log write succeeded.
+**f. Mark checkpoints as merged:** only after step e succeeds — for each checkpoint file in this group, set `merged: true` (same rules as Step 5).
 
-**g. Track recovered sessions:** append `{date} → session-NN.md ({C} checkpoints)` to a `recovered_sessions` list for the final report, where `{C}` is the number of checkpoint files merged for this group.
+**g. Delete checkpoint files** for this group after confirming both e and f succeeded. Guard: only delete AFTER step e AND f are confirmed. Never delete before.
+
+**h. Track recovered sessions:** append `{date} → session-NN.md ({C} checkpoints)` to a `recovered_sessions` list for the final report, where `{C}` is the number of checkpoint files merged for this group.
 
 ---
 
@@ -205,7 +208,10 @@ After writing the session log, reset the checkpoint hook counter to prevent spur
 
 ```bash
 TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
-echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${PPID}.state"
+_ppid="${PPID:-$(echo $PPID)}"
+if [ -n "$_ppid" ] && [ "$_ppid" -gt 0 ] 2>/dev/null; then
+  echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${_ppid}.state" 2>/dev/null
+fi
 ```
 
 This writes `COUNT=0` with a fresh timestamp, triggering a 60-second skip window and resetting the message counter.
@@ -232,7 +238,7 @@ This prevents /wrapup from re-reading the same checkpoints in future sessions.
 
 After session log is written successfully:
 1. Delete checkpoint files merged into this session's log
-2. Safety-net scan: use the same two month paths computed in Step 1b (current month and previous month); glob `*-checkpoint-*.md` in each path; delete any files with `merged: true` that were not already deleted in bullet 1 above.
+2. Safety-net scan: collect the union of (a) the two month paths from Step 1b (current month and previous month), and (b) the unique YYYY/MM directories that any recovered orphan group lived in. For each path in this union, glob `*-checkpoint-*.md` and delete any with `merged: true` that were not already deleted above.
 
 Guard: only delete AFTER confirming session log write succeeded. Never delete before or during write.
 
