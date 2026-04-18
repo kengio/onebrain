@@ -153,7 +153,7 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 
 Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
 
-**Example — checkpoint system:** OneBrain's built-in `checkpoint-hook.sh` uses the `Stop` hook to auto-save session snapshots. It fires after every response, tracks message count + elapsed time against configurable thresholds, and writes a checkpoint file when either threshold is reached. State is kept in `/tmp/onebrain-{PPID}.state` (format: `COUNT:LAST_TS:CHKPT_NN`) so the hook can accumulate counts across responses without forking a long-running process.
+**Example — checkpoint system:** OneBrain's built-in `checkpoint-hook.sh` uses the `Stop` hook to auto-save session snapshots. It fires after every response, tracks message count + elapsed time against configurable thresholds, and writes a checkpoint file when either threshold is reached. State is kept in `/tmp/onebrain-{PPID}.state` (format: `COUNT:LAST_TS`) so the hook can accumulate counts across responses without forking a long-running process.
 
 **To add a hook:**
 
@@ -184,7 +184,7 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection. PreCompact hooks do not support `decision:block` and cannot inject prompts.
 
-5. **Stop and PreCompact hooks cannot be registered in `hooks.json`** — Claude Code does not fire them from plugin hook files. Register Stop/PreCompact hooks directly in the user's `~/.claude/settings.json` instead. Only `PostToolUse`, `UserPromptSubmit`, and similar event hooks work from `hooks.json`.
+5. **Stop, PreCompact, and PostCompact hooks cannot be registered in `hooks.json`** — Claude Code does not fire them from plugin hook files. Register them in the **vault's** `.claude/settings.json` (the `.claude/` folder inside the vault, not `~/.claude/settings.json`). Hook commands must use absolute paths — `${CLAUDE_PLUGIN_ROOT}` is only available in `hooks.json`, not `settings.json`. Use `/update` to register or repair these hooks automatically.
 
 ## Install Scripts
 
