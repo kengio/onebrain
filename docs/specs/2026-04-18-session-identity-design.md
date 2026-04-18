@@ -75,6 +75,34 @@ This writes `COUNT=0` with fresh timestamp, triggering SKIP_WINDOW (60s) and res
 - File disappears mid-session: hook re-inits to `COUNT=0, LAST_TS=NOW` — only consequence is delayed next checkpoint
 - OS clears temp on restart: hook starts fresh — expected behavior
 
+### PreCompact Hook — Force Checkpoint Before Compact
+
+Fires before every compaction. Writes a checkpoint immediately without checking COUNT/TIME thresholds — compact is about to compress context so we always want to save state first.
+
+New mode in `checkpoint-hook.sh precompact`:
+```bash
+# No threshold check — always write
+SESSION_TOKEN="${PPID}"
+EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${PPID}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
+NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
+PROMPT="${TODAY_DATE}-${PPID}-checkpoint-${NN_CP}.md"
+# emit block JSON same as stop mode
+```
+
+Registered in `~/.claude/settings.json` under `PreCompact` event (same as Stop — plugin hooks.json does not support these event types).
+
+### PostCompact Hook — Reset Counter After Compact
+
+Fires after compaction completes. Resets COUNT so the hook starts accumulating fresh after compact rather than carrying over the old count.
+
+New mode in `checkpoint-hook.sh postcompact`:
+```bash
+TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
+echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${PPID}.state"
+```
+
+Registered in `~/.claude/settings.json` under `PostCompact` event.
+
 ### /update Full Plugin Sync
 
 Change from hardcoded file list to full folder sync:
@@ -96,7 +124,7 @@ No new session-related checks needed. Remove any existing `.sessions/` checks if
 
 | File | Change |
 |------|--------|
-| `hooks/checkpoint-hook.sh` | Use PPID as token; glob-based NN; remove `.sessions/` lookup |
+| `hooks/checkpoint-hook.sh` | Use PPID as token; glob-based NN; remove `.sessions/` lookup; add `precompact` and `postcompact` modes |
 | `skills/wrapup/SKILL.md` | Add hook state reset after write; update checkpoint glob pattern |
 | `skills/startup/AUTO-SUMMARY.md` | Add hook state reset after write |
 | `skills/update/SKILL.md` | Change to full plugin folder sync |
