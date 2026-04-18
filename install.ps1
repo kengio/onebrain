@@ -243,6 +243,51 @@ function Install-Plugins {
   return ,@($failedPlugins)
 }
 
+# ─── Hook registration ────────────────────────────────────────────────────────
+# Register-OnebrainHooks <VaultPath>
+# Writes Stop, PreCompact, and PostCompact hook entries into .claude/settings.json
+# using the vault's absolute path. settings.json does not support ${CLAUDE_PLUGIN_ROOT}
+# (only hooks.json does), so absolute paths are required.
+function Register-OnebrainHooks {
+  param([string]$VaultPath)
+
+  $settingsPath = Join-Path $VaultPath ".claude\settings.json"
+  $hookScript   = Join-Path $VaultPath ".claude\plugins\onebrain\hooks\checkpoint-hook.sh"
+
+  if (-not (Test-Path $settingsPath)) {
+    Print-Info "Warning: .claude/settings.json not found — hooks not registered"
+    return
+  }
+
+  try {
+    $cfg = Get-Content $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+
+    # ConvertFrom-Json returns PSCustomObject; add hooks property if absent
+    if (-not ($cfg.PSObject.Properties.Name -contains "hooks")) {
+      $cfg | Add-Member -NotePropertyName "hooks" -NotePropertyValue ([PSCustomObject]@{})
+    }
+
+    $makeHook = {
+      param([string]$mode)
+      @(@{
+        matcher = ""
+        hooks   = @(@{
+          type    = "command"
+          command = "bash `"$hookScript`" $mode"
+        })
+      })
+    }
+
+    $cfg.hooks | Add-Member -NotePropertyName "Stop"        -NotePropertyValue (& $makeHook "stop")        -Force
+    $cfg.hooks | Add-Member -NotePropertyName "PreCompact"  -NotePropertyValue (& $makeHook "precompact")  -Force
+    $cfg.hooks | Add-Member -NotePropertyName "PostCompact" -NotePropertyValue (& $makeHook "postcompact") -Force
+
+    $cfg | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+    Print-Info "Registered Stop, PreCompact, PostCompact hooks in .claude/settings.json"
+  } catch {
+    Print-Info "Warning: could not register hooks: $($_.Exception.Message). Run /update after first session."
+  }
+}
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 $script:FailedPlugins = @()
@@ -393,7 +438,10 @@ function Main {
       }
     }
 
-    # ── Step 4: Install community plugins ───────────────────────────────────
+    # ── Step 4b: Register OneBrain hooks in .claude/settings.json ───────────
+    Register-OnebrainHooks $vaultPath
+
+    # ── Step 4c: Install community plugins ───────────────────────────────────
     $script:FailedPlugins = @(Install-Plugins $vaultPath)
 
   } catch {
