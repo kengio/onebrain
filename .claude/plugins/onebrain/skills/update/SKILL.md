@@ -53,12 +53,18 @@ Steps:
 4. Execute migration in this order:
    a. Pre-migration backup: copy `05-agent/MEMORY.md` → `06-archive/05-agent/MEMORY-YYYY-MM-DD.md`
       and `05-agent/context/` → `06-archive/05-agent/context.YYYY-MM-DD/` (if context/ exists)
-   b. Sync skill files first: skills/startup/, skills/memory-review/, skills/doctor/,
-      skills/learn/, skills/recap/, skills/wrapup/, skills/clone/, skills/onboarding/, skills/update/
-   c. Run vault migration steps 1–8 (using newly-synced skill logic)
-   d. Run /doctor verification (newly-synced /doctor with new checks)
-   e. Sync remaining repo files: INSTRUCTIONS.md, README.md, CONTRIBUTING.md, CHANGELOG.md
-   f. Bump plugin.json version (last — completion signal)
+   b. Sync plugin folder: copy everything under `.claude/plugins/onebrain/` from source repo to vault, overwriting existing files. Skip `plugin.json` — it is written last as the completion signal. The plugin folder is source of truth; user customizations belong at project or user level.
+
+   c. Merge `[vault]/.claude/settings.json` from repo's `.claude/settings.json` — the repo is the source of truth for base permissions and plugin config. Merge strategy (never overwrite, always additive):
+      - `permissions.allow`: union — add any entries from repo not already in vault's list
+      - `enabledPlugins`: merge — add any keys from repo not already in vault's object
+      - `extraKnownMarketplaces`: merge — add any keys from repo not already in vault's object
+      - `hooks`: skip — handled separately by Step 7
+
+   d. Run vault migration steps 1–9 (using newly-synced skill logic)
+   e. Run /doctor verification (newly-synced /doctor with new checks)
+   f. Sync remaining repo files: INSTRUCTIONS.md, README.md, CONTRIBUTING.md, CHANGELOG.md
+   g. Bump plugin.json version (last — completion signal)
 5. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
 
    ```markdown
@@ -79,8 +85,9 @@ Steps:
    - [x] Step 4: Restructured MEMORY.md → 3 sections
    - [x] Step 5: Created INDEX.md (N active entries)
    - [x] Step 6: Backfilled recapped: on N session logs
-   - [x] Step 7: /doctor — N issues
-   - [x] Step 8: Initialized vault.yml stats + recap block
+   - [x] Step 7: Registered Stop/PreCompact/PostCompact hooks in [vault]/.claude/settings.json
+   - [x] Step 8: /doctor — N issues
+   - [x] Step 9: Initialized vault.yml stats + recap block
 
    ## Summary
 
@@ -89,7 +96,7 @@ Steps:
 
    - Mark each step `[x]` on completion; leave `[ ]` if skipped (with reason)
    - If a step had nothing to do (e.g. context/ already absent), write `[x] Step 2: Skipped — context/ not present`
-   - If /doctor found issues in Step 7, list them under the step line
+   - If /doctor found issues in Step 8, list them under the step line
 
 6. Report summary to user
 
@@ -186,12 +193,27 @@ Always: update `updated:` frontmatter to today.
 - Fallback: if date: missing, parse YYYY-MM-DD prefix from filename
 - **Note:** This marks all pre-migration logs as recapped so /recap does not reprocess them. Historical patterns were already in MEMORY.md Key Learnings (now migrated to memory/ in Step 1). If the user wishes to retroactively promote insights from a specific old log, they can clear its `recapped:` field before running /recap.
 
-**Step 7: Verify migration**
+**Step 7: Register OneBrain hooks in `[vault]/.claude/settings.json`**
+
+Runs every /update — idempotent. Ensures all 3 hooks point to the correct script.
+
+- Read `[vault]/.claude/settings.json` (vault-level file, not `~/.claude/settings.json`)
+- For each hook below: check if the entry exists under that event key AND its command contains `checkpoint-hook.sh` with the correct mode. Add or replace if absent or wrong. Leave all other hook entries (PreToolUse, PostToolUse, etc.) untouched.
+
+  | Event | Command |
+  |-------|---------|
+  | `Stop` | `bash "[vault]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh" stop` |
+  | `PreCompact` | `bash "[vault]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh" precompact` |
+  | `PostCompact` | `bash "[vault]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh" postcompact` |
+
+  Replace `[vault]` with the vault's absolute path (the directory containing `vault.yml`). Use the same JSON structure as the existing Stop entry in the file.
+
+**Step 8: Verify migration**
 - Run /doctor (newly-synced version) automatically
 - Expected: 0 orphans, 0 dead links, 0 non-compliant names, INDEX.md present
 - If any check fails: surface to user with suggestion to run /doctor --fix
 
-**Step 8: Initialize vault.yml stats + recap block**
+**Step 9: Initialize vault.yml stats + recap block**
 - Add stats: block: set last_doctor_run to today; leave last_memory_review and last_recap absent (written on first use)
 - Add recap: block: min_sessions: 6, min_frequency: 2
 - Skip if vault.yml doesn't exist or user opted out via --skip-stats
@@ -209,6 +231,6 @@ The version check, changelog display, and AskUserQuestion confirmation still hap
 
 ## Failure Recovery
 
-- Version stays old until plugin.json bump (step 4f) — re-running /update retries from start
+- Version stays old until plugin.json bump (step 4g) — re-running /update retries from start
 - Already-synced files are idempotent (compare content before overwriting)
 - If vault in unrecoverable state: restore from backup in 06-archive/, then re-run /update
