@@ -41,21 +41,31 @@ If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log (
 ### Display the Briefing
 
 ```
-## Daily Briefing · Ddd DD Mon YYYY [morning / afternoon / evening] · inbox N
-
-**Last session (DD Mon):** [1–2 sentence recap of topics + open items]
+──────────────────────────────────────────────────────────────
+📅 Daily Briefing · Ddd DD Mon YYYY {period} · inbox N
+──────────────────────────────────────────────────────────────
+Last session (Ddd DD Mon): [1–2 sentence recap of topics + open items]
 (morning mode only — skip if no prior session found)
 
-**Tasks due today:**
-- [ ] Task description 📅 YYYY-MM-DD (from "Note Name")
-- [ ] Overdue task 📅 YYYY-MM-DD (overdue - from "Note Name")
+Tasks due today:
+  ⬜ Task description 📅 YYYY-MM-DD (from "Note Name")
+  ⬜ Overdue task 📅 YYYY-MM-DD (overdue - from "Note Name")
+  (+N more — /daily for full list)
 
-**Open from last session:**
-- [ ] Action item text
+Open from last session:
+  ⬜ Action item text
 ```
 
-- `Ddd` is the abbreviated day of week (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
+Rules:
+- `{period}` = morning / afternoon / evening
 - Omit `· inbox N` if inbox count is 0
+- Omit `(+N more)` line if 5 or fewer tasks
+- Omit "Last session" block if not morning mode or no prior session exists
 
 If both task sources are empty:
-> No tasks or open items for today.
+```
+──────────────────────────────────────────────────────────────
+📅 Daily Briefing · Ddd DD Mon YYYY {period}
+──────────────────────────────────────────────────────────────
+✅ Nothing on your plate today — clear!
+```
