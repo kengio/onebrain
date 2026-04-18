@@ -69,15 +69,17 @@ updated: YYYY-MM-DD
 ## Step 2: Display Clone Summary
 
 Show the user what will be cloned:
-> **Ready to clone:**
-> - `[agent_folder]/MEMORY.md` : identity and personality
-> - `[agent_folder]/INDEX.md` : memory index
-> - `[agent_folder]/CLONE.md` : this manifest
-> - `[agent_folder]/memory/` : N files
-> - `vault.yml` : vault configuration
-> - `.claude/plugins/onebrain/` : OneBrain plugin
->
-> **Not cloned:** your notes, projects, areas, knowledge, resources, archive, logs.
+──────────────────────────────────────────────────────────────
+📦 Ready to Clone
+──────────────────────────────────────────────────────────────
+✅  `[agent_folder]/MEMORY.md`      identity and personality
+✅  `[agent_folder]/INDEX.md`       memory index
+✅  `[agent_folder]/CLONE.md`       this manifest
+✅  `[agent_folder]/memory/`        {N} files
+✅  `vault.yml`                     vault configuration
+✅  `.claude/plugins/onebrain/`     OneBrain plugin
+
+❌  notes, projects, areas, knowledge, resources, archive, logs
 
 ---
 
@@ -103,10 +105,10 @@ If the user chose option 1:
    - `.claude/plugins/onebrain/` to `[output_folder]/.claude/plugins/onebrain/`
    - If archive included: `[archive_folder]/[agent_folder]/memory/` to `[output_folder]/[archive_folder]/[agent_folder]/memory/`
 5. Confirm:
-   > Your agent context is ready at `[output_folder]/`.
-   > Copy its contents to your new vault root to restore context.
-   > **Prerequisite:** Your new vault must have OneBrain installed before importing.
-   > To import: place `[agent_folder]/` at the vault root : MEMORY.md is inside.
+   ✅ Agent context ready at `{output_folder}/`.
+   Copy its contents to your new vault root to restore context.
+   Prerequisite: new vault must have OneBrain installed before importing.
+   → To import: place `[agent_folder]/` at the vault root — MEMORY.md is inside.
 
 ---
 

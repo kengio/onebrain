@@ -59,11 +59,19 @@ Look for:
 Group suggestions by note. For each suggestion, show:
 
 ```
-## Note A → Note B
-Type: Conceptual overlap
-Reason: Both discuss [shared concept]
-Suggested addition to "Note A":
-  Near "...existing text..." → add "Note B"
+──────────────────────────────────────────────────────────────
+🔗 Connect — {N} suggestions found
+──────────────────────────────────────────────────────────────
+[{n}/{N}] `{Note A}` → `{Note B}`
+  Type: {connection type}
+  Reason: {reason}
+  Add to `{Note A}`:
+    Near "...{nearby text}..." → add [[{Note B}]]
+```
+
+No suggestions:
+```
+✅ No connections found — notes are already well-linked.
 ```
 
 Maximum 10 suggestions. Ask user to approve each batch before implementing.
@@ -78,7 +86,7 @@ For each approved suggestion:
 - Add the wikilink inline or in a "## Related" section at the bottom
 
 After implementing:
-> Added "Note B" link to "Note A".
+✅ Added [[{Note B}]] link to `{Note A}`.
 
 ---
 
