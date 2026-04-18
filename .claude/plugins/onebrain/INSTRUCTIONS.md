@@ -172,6 +172,7 @@ Ddd · DD Mon YYYY · HH:MM
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
 **Step 3 — After greeting (run all in parallel):**
+- Run `echo $PPID` via Bash → store result as `PPID` in context (all skills use this; never re-run if already in context)
 - Read `[agent_folder]/INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`

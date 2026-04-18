@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.3
+latest_version: 1.10.4
 released: 2026-04-18
 ---
 
@@ -10,27 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v1.10.5 — PPID Session Identity + PreCompact/PostCompact Hooks
+## v1.10.4 — PPID Session Identity + PreCompact/PostCompact Hooks + Orphan Recovery
 
-**Breaking:** Checkpoints now use `$PPID` (process parent ID) as session token. Checkpoint filenames change from `YYYY-MM-DD-{random6}-checkpoint-NN.md` to `YYYY-MM-DD-{PPID}-checkpoint-NN.md`. Old checkpoint files using random 6-char tokens will appear as orphans on the next `/wrapup` — run `/wrapup` to recover and merge them automatically.
+**Breaking:** Checkpoint filenames change from `YYYY-MM-DD-{random6}-checkpoint-NN.md` to `YYYY-MM-DD-{PPID}-checkpoint-NN.md`. Old files appear as orphans on first `/wrapup` — recovered automatically.
 
-### Added
-- `precompact` hook mode: forces a checkpoint before every compaction
-- `postcompact` hook mode: resets message counter after compaction for fresh accumulation
-- `/update` now registers all 3 hooks (Stop, PreCompact, PostCompact) in vault `settings.json` — idempotent, runs every update
-- `/doctor` now checks all 3 hooks for correct registration
-- `install.sh` / `install.ps1`: fresh installs register all 3 hooks automatically
-
-### Changed
-- Session token is now `$PPID` instead of a random 6-char string — survives compact, unique per Claude Code window, zero storage required
-- Checkpoint trigger filename now includes PPID: `YYYY-MM-DD-{PPID}-checkpoint-NN.md` — LLM parses PPID and NN directly from trigger, zero extra Bash calls
-- `/update` syncs entire `.claude/plugins/onebrain/` folder instead of a hardcoded file list
-- `/wrapup` and auto session summary reset the hook counter after writing the session log
-- Hook state file format unchanged: `COUNT:LAST_TS` (2-field)
-
-### Removed
-- `.sessions/` folder and `.token` files — no longer needed
-- `session_token` generation in INSTRUCTIONS.md Phase 1 Step 3
+- Session token is now `$PPID` — loaded once at startup, cached in context, survives compact
+- `precompact` / `postcompact` hook modes: checkpoint before compaction, reset counter after
+- `/wrapup` auto-detects and merges orphan checkpoints from previous sessions
+- `/update` / `/doctor` / `install.sh` / `install.ps1` register all 3 hooks (Stop, PreCompact, PostCompact)
 
 ## [1.10.3] — 2026-04-18
 

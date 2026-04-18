@@ -173,8 +173,8 @@ Field extraction hints (for old-section consolidation):
 
 Always: update `updated:` frontmatter to today.
 
-**Step 5: Create INDEX.md**
-- Read frontmatter of all files in memory/ (batch 20 at a time if >50 files)
+**Step 5: Create `[agent_folder]/INDEX.md`**
+- Read frontmatter of all files in `[agent_folder]/memory/` (batch 20 at a time if >50 files)
 - Include only status: active and status: needs-review in table
 - Column format (exact order): `| File | Topics | Type | Status | Description |`
   - **File**: wikilink `[[filename-without-extension]]`
