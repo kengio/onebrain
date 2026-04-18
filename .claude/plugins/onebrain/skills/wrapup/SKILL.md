@@ -257,28 +257,31 @@ Compute:
   (always ≥ 1 after /wrapup runs — the log just written has no `recapped:` yet)
 - `last_recapped` — most recent `recapped:` date found (absent = never)
 
-Display:
-
-| Condition | Message |
-|---|---|
-| unrecapped 1–3, last recap ≤ 7 days ago | `_💾 {N} session logs not yet recapped (last: YYYY-MM-DD)_` |
-| unrecapped > 3 OR last recap > 7 days ago | `_⚠️ {N} session logs not yet recapped — last recap: YYYY-MM-DD_` |
-| never recapped | `_⚠️ {N} session logs not yet recapped — never recapped_` |
+Display based on condition:
+- unrecapped 1–3, last recap ≤ 7 days ago:
+    💾 {N} session logs not yet recapped (last: YYYY-MM-DD)
+- unrecapped > 3 OR last recap > 7 days ago:
+    ⚠️ {N} session logs not yet recapped — last recap: YYYY-MM-DD
+- never recapped:
+    ⚠️ {N} session logs not yet recapped — never recapped
 
 ---
 
 ## Step 8: Confirm
 
 Say:
-> Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
->
-> [If action items]: I logged N action items : they'll appear in your Tasks view.
->
-> [If recovered_sessions is non-empty]:
-> **Auto-recovered {S} orphan session(s):**
-> - YYYY-MM-DD → session-NN.md ({C} checkpoints)
-> - YYYY-MM-DD → session-NN.md ({C} checkpoints)
->
-> [Recap reminder message from Step 7]
->
-> Good session! See you next time.
+──────────────────────────────────────────────────────────────
+💾 Session Saved
+──────────────────────────────────────────────────────────────
+`[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
+
+I logged {N} action items — they'll appear in your Tasks view.
+(omit this line if no action items)
+
+Auto-recovered {S} orphan session(s):
+  {YYYY-MM-DD} → `session-NN.md` ({C} checkpoints)
+(omit this block if none recovered)
+
+{Recap reminder message from Step 7}
+
+Good session! See you next time.
