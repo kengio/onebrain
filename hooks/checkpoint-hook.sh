@@ -90,6 +90,7 @@ LOGS_FOLDER_ABS="${VAULT_ROOT:+${VAULT_ROOT}/}${LOGS_FOLDER}"
 # --- Session identity (top-level — all modes use these) ---
 SESSION_TOKEN="${PPID}"
 TODAY_DATE=$(date '+%Y-%m-%d' 2>/dev/null || python3 -c "from datetime import date; print(date.today())" 2>/dev/null)
+[ -z "$TODAY_DATE" ] && exit 0
 CHECKPOINT_DIR="${LOGS_FOLDER_ABS}/${TODAY_DATE%%-*}/$(echo "$TODAY_DATE" | cut -d'-' -f2)"
 
 # --- PostCompact: reset counter so fresh accumulation begins after compact ---
@@ -146,8 +147,9 @@ ELAPSED=$(( NOW - LAST_TS ))
 
 if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; then
   if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
-    # Threshold fired on time but not enough activity — reset and wait next round
-    echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null
+    # Threshold fired but not enough activity — preserve original LAST_TS so the
+    # time clock doesn't restart; checkpoint fires on the next message instead.
+    echo "${COUNT}:${LAST_TS}" > "$STATE_FILE" 2>/dev/null
     exit 0
   fi
   EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${PPID}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
