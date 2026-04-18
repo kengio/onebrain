@@ -68,7 +68,7 @@ From all found checkpoint files:
 1. Exclude files whose filename contains the current `session_token` (those belong to the current session, already handled in Step 1) — filter by filename only, no reads needed
 2. Read frontmatter of the remaining files
 3. Keep only files where `merged` is absent or not `true`
-4. Parse `session_token` from each remaining filename using the pattern `YYYY-MM-DD-{token}-checkpoint-NN.md`
+4. Parse `session_token` from each remaining filename using the pattern `YYYY-MM-DD-{session_token}-checkpoint-NN.md`
 5. Group files by their parsed `session_token`
 
 If no orphan groups found: skip to Step 2.
