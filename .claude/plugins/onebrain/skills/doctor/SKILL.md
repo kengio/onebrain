@@ -104,35 +104,37 @@ Run all applicable checks based on flags (default: all). Collect findings before
 Use this format:
 
 ```
-## OneBrain Doctor · YYYY-MM-DD
+──────────────────────────────────────────────────────────────
+🏥 OneBrain Doctor · YYYY-MM-DD
+──────────────────────────────────────────────────────────────
+📁 Vault
+  🔴 Broken links (N): [[Missing Note]] in "Source Note"
+  🟡 Orphan notes (N): 03-knowledge/topic/Note.md
+  🟡 Inbox backlog: N files — consider /consolidate
+  🟢 Checkpoints: all merged
 
-### Vault
-🔴 Broken links (N): [[Missing Note]] in "Source Note"
-🟡 Orphan notes (N): 03-knowledge/topic/Note.md
-🟡 Stale memory/ files (N): not verified in 90+ days
-🟡 MEMORY.md structure: pre-v1.10.1 Identity format — run /doctor --fix or /update
-🟡 MEMORY.md size: N lines — consider /distill to compress
-🟢 MEMORY.md size: OK (N lines)
-🟡 Inbox backlog: N files — consider /consolidate
-🟢 Checkpoints: all merged
+⚙️ Config
+  🟢 vault.yml: OK
+  🟢 plugin.json: OK (vX.X.X)
+  🔴 qmd_collection: missing — qmd search will not work
+  🟡 vault.yml: `timezone` key found — no longer used, safe to remove
+  🔴 OneBrain hooks: Stop missing or wrong — run /update to register
+  🔴 OneBrain hooks: PreCompact missing or wrong — run /update to register
+  🔴 OneBrain hooks: PostCompact missing or wrong — run /update to register
+  🟢 OneBrain hooks: all 3 registered correctly
+  🔴 qmd: binary not installed — run /qmd setup
+  🔴 qmd: hooks.json missing — run /update to restore
+  🔴 qmd: PostToolUse hook missing or wrong — run /update to restore
+  🟢 qmd: PostToolUse hook registered correctly
 
-### Config
-🟢 vault.yml: OK
-🟢 plugin.json: OK (vX.X.X)
-🔴 qmd_collection: missing — qmd search will not work
-🟡 vault.yml: `timezone` key found — no longer used, safe to remove
-🔴 OneBrain hooks: Stop missing or wrong — run /update to register
-🔴 OneBrain hooks: PreCompact missing or wrong — run /update to register
-🔴 OneBrain hooks: PostCompact missing or wrong — run /update to register
-🟢 OneBrain hooks: all 3 registered correctly
-🔴 qmd: binary not installed — run /qmd setup
-🔴 qmd: hooks.json missing — run /update to restore
-🔴 qmd: PostToolUse hook missing or wrong — run /update to restore
-🟢 qmd: PostToolUse hook registered correctly
-
----
-N issues found (M critical 🔴, P warnings 🟡)
-Run /doctor --fix to repair broken wikilinks and stale memory entries.
+🧠 Memory
+  🟡 Stale memory/ files (N): not verified in 90+ days
+  🟡 MEMORY.md structure: pre-v1.10.1 Identity format — run /doctor --fix or /update
+  🟡 MEMORY.md size: N lines — consider /distill to compress
+  🟢 MEMORY.md size: OK (N lines)
+──────────────────────────────────────────────────────────────
+🔴 N issues found (M critical 🔴, P warnings 🟡)
+Run `/doctor --fix` to repair.
 ```
 
 If no issues:
