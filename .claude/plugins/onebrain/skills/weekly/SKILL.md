@@ -55,24 +55,25 @@ Look for:
 
 Say:
 
-> ## Week of [Mon date] : [Sun date]
->
-> **Sessions:** N total
-> **Main focus:** [primary topic]
->
-> **What you worked on:**
-> - [Project/topic 1] : [brief status]
-> - [Project/topic 2] : [brief status]
->
-> **Wins this week:**
-> - [Something completed or progressed]
->
-> **Patterns I noticed:**
-> - [Pattern 1]
-> - [Pattern 2]
->
-> **Open threads to pick up:**
-> - [Unresolved item from sessions]
+──────────────────────────────────────────────────────────────
+📅 Week of {Mon DD Mon} : {Sun DD Mon YYYY}
+──────────────────────────────────────────────────────────────
+Sessions: {N} total
+Main focus: {primary topic}
+
+What you worked on:
+  • {Project/topic 1} : {brief status}
+  • {Project/topic 2} : {brief status}
+
+Wins this week:
+  • {Something completed or progressed}
+
+Patterns I noticed:
+  • {Pattern 1}
+  • {Pattern 2}
+
+Open threads:
+  • {Unresolved item}
 
 ---
 
@@ -80,11 +81,10 @@ Say:
 
 Ask (pick 2-3 based on context):
 
-> Before we plan ahead : a few reflection questions:
->
-> 1. What went well this week that you want to keep doing?
-> 2. What felt stuck or draining?
-> 3. What did you leave unfinished that's still important?
+Before we plan ahead — a few questions:
+  1. What went well this week that you want to keep doing?
+  2. What felt stuck or draining?
+  3. What did you leave unfinished that's still important?
 
 Wait for their answers. Take brief notes.
 
@@ -112,9 +112,8 @@ If the weekly review reveals a persistent pattern or learning, save it via `/lea
 
 ## Step 8: Close Out
 
-> Great week review, [Name]!
->
-> [If tasks created]: I logged your 3 intentions for next week.
-> [If insights saved]: Added a pattern to your `[agent_folder]/MEMORY.md`.
->
-> Enjoy your [weekend/time off]. See you next week!
+✅ Weekly note saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-weekly.md`.
+[If tasks created]: I logged your 3 intentions for next week.
+[If insights saved]: Added a pattern to your memory.
+
+Enjoy your {weekend/time off}. See you next week!
