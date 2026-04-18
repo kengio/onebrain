@@ -116,9 +116,29 @@ Change from hardcoded file list to full folder sync:
 
 **Eliminated.** No `.sessions/` folder, no `.session` temp files. Nothing to clean up.
 
-### /doctor
+### /update — Hook Registration Migration
 
-No new session-related checks needed. Remove any existing `.sessions/` checks if present.
+/update must ensure PreCompact and PostCompact hooks are registered in `~/.claude/settings.json` after syncing the plugin folder. Migration steps:
+
+1. Read current `~/.claude/settings.json`
+2. If `PreCompact` entry is absent or points to GitKraken → replace with OneBrain checkpoint-hook entry:
+   ```json
+   "PreCompact": [{ "hooks": [{ "type": "command", "command": "bash \"<vault>/.claude/plugins/onebrain/hooks/checkpoint-hook.sh\" precompact" }], "matcher": "" }]
+   ```
+3. Same for `PostCompact` → replace/add with `postcompact` mode
+4. If existing entry has both GitKraken AND OneBrain → remove GitKraken, keep OneBrain
+5. Leave all other hook entries (Stop, PreToolUse, etc.) untouched
+
+### /doctor — Hook Checks
+
+Add to /doctor checks:
+- `PreCompact` entry in `~/.claude/settings.json` exists and points to `checkpoint-hook.sh precompact` → ✅ / ❌ missing or wrong
+- `PostCompact` entry exists and points to `checkpoint-hook.sh postcompact` → ✅ / ❌ missing or wrong
+- GitKraken command present in `PreCompact` or `PostCompact` → ⚠️ suggest removal (may interfere)
+
+### /doctor — Session File Cleanup Check
+
+No new session-related checks needed. Remove any existing `.sessions/` folder checks if present.
 
 ## Files Changed
 
@@ -127,7 +147,8 @@ No new session-related checks needed. Remove any existing `.sessions/` checks if
 | `hooks/checkpoint-hook.sh` | Use PPID as token; glob-based NN; remove `.sessions/` lookup; add `precompact` and `postcompact` modes |
 | `skills/wrapup/SKILL.md` | Add hook state reset after write; update checkpoint glob pattern |
 | `skills/startup/AUTO-SUMMARY.md` | Add hook state reset after write |
-| `skills/update/SKILL.md` | Change to full plugin folder sync |
+| `skills/update/SKILL.md` | Change to full plugin folder sync; add PreCompact+PostCompact hook registration to migration steps |
+| `skills/doctor/SKILL.md` | Add PreCompact+PostCompact hook checks |
 | `INSTRUCTIONS.md` | Update session_token reference to PPID; update checkpoint glob pattern |
 
 ### INSTRUCTIONS.md — Auto Checkpoint Section
