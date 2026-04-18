@@ -113,13 +113,17 @@ Report progress. If it fails, show the error : the collection is created but not
 ### Step 9: Confirm completion
 
 Say:
-> qmd is set up! Collection `<collection-name>` is indexed and ready.
->
-> - The agent will now use qmd for vault-wide searches automatically
-> - The index updates whenever Claude writes or edits files in this vault (via hook)
-> - Run `/qmd embed` to enable semantic/similarity search (optional, slower first run)
-> - Run `/qmd status` to check index health
-> - Run `/qmd uninstall` to remove qmd integration from this vault
+──────────────────────────────────────────────────────────────
+🗄️ qmd — Search Index Ready
+──────────────────────────────────────────────────────────────
+Collection: `{collection-name}`
+Documents indexed: {N}
+Embeddings: {ready / not yet — run /qmd embed to enable semantic search}
+
+→ qmd will auto-update whenever files change in this vault
+→ Run /qmd embed for semantic/similarity search (optional)
+→ Run /qmd status to check index health
+→ Run /qmd uninstall to remove qmd integration
 
 ---
 
@@ -130,7 +134,7 @@ Generate vector embeddings for semantic search.
 ### Step 1: Check prerequisites
 
 Read vault.yml. If `qmd_collection` key is missing:
-> qmd is not configured for this vault. Run `/qmd setup` first.
+🔴 qmd not configured — run /qmd setup to enable vault search.
 
 Stop.
 
@@ -165,7 +169,7 @@ Report completion or any errors.
 ### Step 4: Confirm
 
 Say:
-> Embeddings generated. Semantic search is now active : use natural language queries like "find notes about project planning" and qmd will find conceptually related notes.
+✅ Embeddings generated. Semantic search now active — use natural language queries.
 
 ---
 
@@ -176,12 +180,12 @@ Show collection info and index health.
 ### Step 1: Check prerequisites
 
 Read vault.yml for `qmd_collection`. If missing:
-> qmd is not configured for this vault. Run `/qmd setup` to enable it.
+🔴 qmd not configured — run /qmd setup to enable vault search.
 
 Stop.
 
 Check `which qmd`. If not found:
-> qmd binary not found. It may have been uninstalled. Run `/qmd setup` to reinstall and reconfigure.
+🔴 qmd binary not found — run /qmd setup to reinstall.
 
 Stop.
 
@@ -203,7 +207,7 @@ Force a full BM25 reindex of the vault collection.
 ### Step 1: Check prerequisites
 
 Read vault.yml for `qmd_collection`. If missing:
-> qmd is not configured for this vault. Run `/qmd setup` first.
+🔴 qmd not configured — run /qmd setup to enable vault search.
 
 Stop.
 

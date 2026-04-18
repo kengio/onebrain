@@ -31,10 +31,10 @@ Use qmd if available for content searches; Grep/Glob as fallback.
 4. **Project/knowledge notes**: Search `[projects_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, and `[resources_folder]/**/*.md` — filter by note title or first 100 words
 
 Report to user (N = total matches across all sources; Q = project/knowledge/resource notes combined):
-> Found N sources: M session logs, P inbox notes, Q knowledge notes
+Found {N} sources: {M} session logs, {P} inbox notes, {Q} knowledge notes
 
 **If N = 0:** Stop and inform the user:
-> No notes found matching '[topic]'. Try a broader keyword or check the topic name.
+🔴 No notes found matching '{topic}'. Try a broader keyword or check the topic name.
 
 Exit — do not proceed to Step 3.
 
@@ -135,11 +135,13 @@ sources_span: YYYY-MM-DD to YYYY-MM-DD
 
 ---
 
-Report:
-> Distilled into `[path]`.
+Say:
+──────────────────────────────────────────────────────────────
+🧪 Distilled
+──────────────────────────────────────────────────────────────
+`{knowledge_folder}/{subfolder}/{Title}.md`
 
-If you want any lesson to persist in long-term memory, promote it manually:
-> To promote a lesson: `/learn [lesson text]`
+→ To promote a lesson to long-term memory: /learn [lesson text]
 
 ---
 

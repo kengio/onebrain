@@ -16,16 +16,14 @@ Update OneBrain system files from the source repo to the latest version.
    - `next` → `next`
    - `N.x` (e.g. `1.x`, `2.x`) → `N.x`
 3. Read new version from repo's `plugin.json` on the mapped branch (not always main)
-4. If equal → "Already up to date vX.X.X" and stop
-5. If newer → read `CHANGELOG.md` from repo; display the entry for the new version to the user before proceeding. Format exactly as:
+4. If equal → say: ✅ Already up to date — v{X.X.X}. and stop
+5. If newer → read `CHANGELOG.md` from repo; display before proceeding (do not skip or summarize):
+   ──────────────────────────────────────────────────────────────
+   🔄 Update Available — v{current} → v{new}
+   ──────────────────────────────────────────────────────────────
+   {changelog entry verbatim}
 
-   ```
-   ## What's new in vX.X.X
-
-   [paste the changelog entry for that version verbatim]
-   ```
-
-   Do not skip or summarize — the user must see the full entry before the confirmation prompt.
+   Then AskUserQuestion: "Update to v{new}?" Options: update / cancel
 
 ### Major Version Bump Guard
 
@@ -98,7 +96,15 @@ Steps:
    - If a step had nothing to do (e.g. context/ already absent), write `[x] Step 2: Skipped — context/ not present`
    - If /doctor found issues in Step 8, list them under the step line
 
-6. Report summary to user
+6. Report summary to user:
+
+   For each migration step (one line per step):
+   ✅ Step {N}: {description} ({N} files)
+   ✅ Step {N}: Skipped — {reason}
+   🟡 Step {N}: {description} — {N} issues (see above)
+
+   Completion:
+   ✅ OneBrain updated to v{new}. {N} files created, {M} modified.
 
 ## Vault Migration Steps
 
@@ -233,14 +239,18 @@ Never replace the entire array — user-added hooks in the same event key must b
 
 ## --dry-run Mode
 
-`/update --dry-run` → run all steps WITHOUT writing. For each migration step, output:
+`/update --dry-run` → run all steps WITHOUT writing. Display for each step:
 ```
-[Step N] Would create: [logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md
-[Step N] Would modify: [agent_folder]/MEMORY.md — remove Key Learnings section
-[Step N] Would create: [agent_folder]/memory/kebab-topic.md
-[Step N] Would delete: [agent_folder]/context/
+──────────────────────────────────────────────────────────────
+🔄 Dry Run — v{current} → v{new}
+──────────────────────────────────────────────────────────────
+Would create: `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`
+Would modify: `[agent_folder]/MEMORY.md` — remove Key Learnings section
+Would create: `[agent_folder]/memory/kebab-topic.md`
+Would delete: `[agent_folder]/context/`
 ```
-The version check, changelog display, and AskUserQuestion confirmation still happen normally in dry-run mode. No files are written, moved, or deleted. At the end, print a summary: "Dry run complete — N files would be created, M modified, P deleted."
+The version check, changelog display, and AskUserQuestion confirmation still happen normally in dry-run mode. No files are written, moved, or deleted. At the end say:
+Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 
 ## Failure Recovery
 
