@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.4
+latest_version: 1.10.5
 released: 2026-04-18
 ---
 
@@ -9,6 +9,10 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.5 — Terminal Output Formatting
+
+All 25 skill outputs now use terminal-safe formatting: 62-char `─` separators, emoji section headers, `⬜` task checkboxes, and `→` hints replace `**bold**`, `> blockquotes`, `## headers`, `- [ ]`, and `| tables |` that rendered as literal characters in Claude Code CLI. `/tasks` and `/moc` now open the file in Obsidian after writing. Interactive conflict flows in `/learn` and `/recap` use `AskUserQuestion`. `/help` output replaced with grouped plain-text command list.
 
 ## v1.10.4 — PPID Session Identity + PreCompact/PostCompact Hooks + Orphan Recovery
 
