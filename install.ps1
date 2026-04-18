@@ -269,18 +269,53 @@ function Register-OnebrainHooks {
 
     $makeHook = {
       param([string]$mode)
-      @(@{
+      @{
         matcher = ""
         hooks   = @(@{
           type    = "command"
           command = "bash `"$hookScript`" $mode"
         })
-      })
+      }
     }
 
-    $cfg.hooks | Add-Member -NotePropertyName "Stop"        -NotePropertyValue (& $makeHook "stop")        -Force
-    $cfg.hooks | Add-Member -NotePropertyName "PreCompact"  -NotePropertyValue (& $makeHook "precompact")  -Force
-    $cfg.hooks | Add-Member -NotePropertyName "PostCompact" -NotePropertyValue (& $makeHook "postcompact") -Force
+    function Register-Hook {
+      param($hooksObj, [string]$event, $entry)
+      # Read current value; normalise to array
+      $existing = $hooksObj.PSObject.Properties[$event]
+      $arr = if ($null -eq $existing) { @() }
+             elseif ($existing.Value -is [array]) { [object[]]$existing.Value }
+             elseif ($null -ne $existing.Value)   { @($existing.Value) }
+             else                                  { @() }
+      $found = $false
+      for ($i = 0; $i -lt $arr.Count; $i++) {
+        $e = $arr[$i]
+        $isMatch = $false
+        if ($e -is [hashtable] -and $e.ContainsKey('hooks')) {
+          foreach ($h in $e['hooks']) {
+            if ($h -is [hashtable] -and $h['command'] -like '*checkpoint-hook.sh*') {
+              $isMatch = $true; break
+            }
+          }
+        } elseif ($e -is [PSCustomObject]) {
+          foreach ($h in $e.hooks) {
+            if ($h -is [PSCustomObject] -and $h.command -like '*checkpoint-hook.sh*') {
+              $isMatch = $true; break
+            }
+          }
+        }
+        if ($isMatch) { $arr[$i] = $entry; $found = $true; break }
+      }
+      if (-not $found) { $arr += $entry }
+      if ($null -eq $existing) {
+        $hooksObj | Add-Member -NotePropertyName $event -NotePropertyValue $arr -Force
+      } else {
+        $hooksObj.PSObject.Properties[$event].Value = $arr
+      }
+    }
+
+    Register-Hook $cfg.hooks "Stop"        (& $makeHook "stop")
+    Register-Hook $cfg.hooks "PreCompact"  (& $makeHook "precompact")
+    Register-Hook $cfg.hooks "PostCompact" (& $makeHook "postcompact")
 
     $cfg | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
     Print-Info "Registered Stop, PreCompact, PostCompact hooks in .claude/settings.json"

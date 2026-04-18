@@ -208,6 +208,13 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
 
   Replace `[vault]` with the vault's absolute path (the directory containing `vault.yml`). Use the same JSON structure as the existing Stop entry in the file.
 
+**Hook registration algorithm (additive):** For each event key in the table above:
+1. Read the existing array under that key (treat missing or null as empty array)
+2. Scan for an entry whose `command` contains `checkpoint-hook.sh` (the command is nested: `entry.hooks[N].command`)
+3. If found: replace just that entry with the correct command; leave all other entries in the array untouched
+4. If not found: append the new entry to the array
+Never replace the entire array — user-added hooks in the same event key must be preserved.
+
 **PostToolUse qmd hook (only when `qmd_collection` is set in vault.yml):**
 - If `qmd_collection` is absent in vault.yml: skip
 - If `qmd_collection` is present: read `[vault]/.claude/plugins/onebrain/hooks/hooks.json`

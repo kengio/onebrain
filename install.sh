@@ -425,10 +425,32 @@ with open(settings_path) as f:
     cfg = json.load(f)
 def hook_entry(mode):
     return [{"matcher": "", "hooks": [{"type": "command", "command": f'bash "{hook_script}" {mode}'}]}]
-cfg.setdefault("hooks", {})
-cfg["hooks"]["Stop"]        = hook_entry("stop")
-cfg["hooks"]["PreCompact"]  = hook_entry("precompact")
-cfg["hooks"]["PostCompact"] = hook_entry("postcompact")
+def register_hook(cfg, event, entry):
+    # entry is a list containing one matcher-object; extract it for insertion
+    new_entry = entry[0]
+    hooks = cfg.setdefault("hooks", {})
+    entries = hooks.get(event, [])
+    if not isinstance(entries, list):
+        entries = [entries] if entries else []
+    found = False
+    for i, e in enumerate(entries):
+        if not isinstance(e, dict):
+            continue
+        # The command is nested: e["hooks"][N]["command"]
+        inner = e.get("hooks", [])
+        if isinstance(inner, list) and any(
+            isinstance(h, dict) and "checkpoint-hook.sh" in h.get("command", "")
+            for h in inner
+        ):
+            entries[i] = new_entry
+            found = True
+            break
+    if not found:
+        entries.append(new_entry)
+    hooks[event] = entries
+register_hook(cfg, "Stop",        hook_entry("stop"))
+register_hook(cfg, "PreCompact",  hook_entry("precompact"))
+register_hook(cfg, "PostCompact", hook_entry("postcompact"))
 with open(settings_path, "w") as f:
     json.dump(cfg, f, indent=2)
     f.write("\n")
@@ -440,11 +462,26 @@ PYEOF
 const fs = require('fs');
 const [,, settingsPath, hookScript] = process.argv;
 const cfg = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-const hookEntry = mode => [{"matcher":"","hooks":[{"type":"command","command":`bash "${hookScript}" ${mode}`}]}];
+const hookEntry = mode => ({"matcher":"","hooks":[{"type":"command","command":`bash "${hookScript}" ${mode}`}]});
 cfg.hooks = cfg.hooks || {};
-cfg.hooks.Stop        = hookEntry('stop');
-cfg.hooks.PreCompact  = hookEntry('precompact');
-cfg.hooks.PostCompact = hookEntry('postcompact');
+function registerHook(cfg, event, entry) {
+  let entries = cfg.hooks[event];
+  if (!Array.isArray(entries)) entries = entries ? [entries] : [];
+  let found = false;
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    if (e && Array.isArray(e.hooks) && e.hooks.some(h => h && typeof h.command === 'string' && h.command.includes('checkpoint-hook.sh'))) {
+      entries[i] = entry;
+      found = true;
+      break;
+    }
+  }
+  if (!found) entries.push(entry);
+  cfg.hooks[event] = entries;
+}
+registerHook(cfg, 'Stop',        hookEntry('stop'));
+registerHook(cfg, 'PreCompact',  hookEntry('precompact'));
+registerHook(cfg, 'PostCompact', hookEntry('postcompact'));
 fs.writeFileSync(settingsPath, JSON.stringify(cfg, null, 2) + '\n');
 process.stdout.write('ok\n');
 JSEOF
