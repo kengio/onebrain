@@ -1,26 +1,34 @@
 #!/usr/bin/env bash
-# OneBrain — Checkpoint Hook (Stop)
-# Usage: checkpoint-hook.sh stop
+# OneBrain — Checkpoint Hook
+# Usage: checkpoint-hook.sh stop|precompact|postcompact
 #
-# stop — fires after every response; checkpoints on message/time threshold
-#         Uses JSON {"decision":"block","reason":"..."} to inject prompt back to Claude.
+# stop        — fires after every response; checkpoints on message/time threshold
+# precompact  — fires before compact; forces checkpoint unconditionally
+# postcompact — fires after compact; resets message counter only
 #
-# State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS:CHKPT_NN) — uses $TMPDIR/$TEMP/$TMP for Windows compat
-# Legacy 2-field format (COUNT:LAST_TS) is tolerated: CHKPT_NN defaults to 0, so NN restarts at 01.
+# State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS)
 # COUNT=0 with fresh timestamp in an *existing* state file signals post-checkpoint reset;
 # absence of state file = first run.
 # SKIP_WINDOW=60: prevents re-trigger immediately after a checkpoint resets COUNT to 0.
-# MIN_ACTIVITY guard: if fewer than 2 messages since last checkpoint, reset and skip —
-# no file is created for sessions with no meaningful activity.
+# MIN_ACTIVITY guard: if fewer than 2 messages since last checkpoint, reset and skip.
+#
+# Race condition (precompact + stop same turn): both may compute identical checkpoint NN
+# before any file is written. Claude receives both JSON blocks; second write overwrites first.
+# Impact: last response wins. Accepted as low-probability, non-data-loss outcome.
 
 MODE="${1:-stop}"
-if [ "$MODE" != "stop" ]; then
-  echo "checkpoint-hook.sh: unknown mode '${MODE}' — only 'stop' is supported" >&2
-  exit 1
-fi
+case "$MODE" in
+  stop|precompact|postcompact) ;;
+  *) echo "checkpoint-hook.sh: unknown mode '${MODE}'" >&2; exit 1 ;;
+esac
+
 # Windows-compatible temp dir
 TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
 STATE_FILE="${TMPDIR_SAFE}/onebrain-${PPID}.state"
+if [ -z "${PPID}" ] || [ "${PPID}" -eq 0 ] 2>/dev/null; then
+  echo "checkpoint-hook.sh: PPID is zero or unset — cannot create session-scoped checkpoint" >&2
+  exit 0
+fi
 SKIP_WINDOW=60
 MIN_ACTIVITY=2  # minimum messages since last checkpoint to warrant a new one
 
@@ -36,32 +44,19 @@ fi
 # If epoch is unavailable, skip entirely — writing "0:0" would lock future runs via SKIP_WINDOW
 if [ "$NOW" -eq 0 ]; then exit 0; fi
 
-# --- Read or initialize state ---
-if [ -f "$STATE_FILE" ]; then
-  IFS=':' read -r COUNT LAST_TS < "$STATE_FILE"
-  if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || ! [[ "$LAST_TS" =~ ^[0-9]+$ ]]; then
-    # Malformed — reset cleanly; COUNT=0 so increment will bring it to 1
-    COUNT=0
-    LAST_TS=$(stat -f %m "$STATE_FILE" 2>/dev/null || stat -c %Y "$STATE_FILE" 2>/dev/null || node -e "const fs=require('fs');console.log(Math.floor(fs.statSync(process.argv[1]).mtimeMs/1000))" "$STATE_FILE" 2>/dev/null || echo "$NOW")
-  elif [ "$COUNT" -eq 0 ] && [ $(( NOW - LAST_TS )) -lt $SKIP_WINDOW ]; then
-    exit 0  # another checkpoint just fired — skip
-  fi
-else
-  COUNT=0; LAST_TS=$NOW
-fi
-
-# --- Stop mode: check thresholds against vault.yml config ---
-# Stop hooks cannot be registered in plugin hooks.json — Claude Code does not fire them there.
-# This script must be registered in the user's ~/.claude/settings.json directly.
-# CLAUDE_PLUGIN_ROOT is set by Claude Code when the plugin is active; absent = called from
+# --- Vault root detection ---
+# CLAUDE_PLUGIN_ROOT is set by Claude Code when plugin is active; absent = called from
 # settings.json with a hardcoded path. hooks/ is one level below plugin root, so the fallback
 # walks up 4 levels from the script's own directory to reach the vault root.
 if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   VAULT_ROOT=$(cd "${CLAUDE_PLUGIN_ROOT}/../../.." 2>/dev/null && pwd)
 else
-  # Fallback: derive from script path (used when called from settings.json)
   SCRIPT_DIR=$(cd "$(dirname "$0")" 2>/dev/null && pwd)
   VAULT_ROOT=$(cd "${SCRIPT_DIR}/../../../.." 2>/dev/null && pwd)
+fi
+if [ -z "$VAULT_ROOT" ]; then
+  echo "checkpoint-hook.sh: could not determine vault root — aborting checkpoint" >&2
+  exit 0
 fi
 VAULT_YML="${VAULT_ROOT:+${VAULT_ROOT}/vault.yml}"
 
@@ -104,15 +99,73 @@ TIME_THRESHOLD=$(( $(get_checkpoint_value "minutes" 30) * 60 ))
 LOGS_FOLDER=$(get_folder_value "logs" "07-logs")
 LOGS_FOLDER_ABS="${VAULT_ROOT:+${VAULT_ROOT}/}${LOGS_FOLDER}"
 
-# --- Session token lookup ---
-SESSIONS_DIR="${LOGS_FOLDER_ABS}/.sessions"
-SESSION_TOKEN=""
+# --- Session identity (top-level — all modes use these) ---
+SESSION_TOKEN="${PPID}"
 TODAY_DATE=$(date '+%Y-%m-%d' 2>/dev/null || python3 -c "from datetime import date; print(date.today())" 2>/dev/null)
-if [ -n "$TODAY_DATE" ] && [ -d "$SESSIONS_DIR" ]; then
-  TOKEN_FILE=$(ls -t "${SESSIONS_DIR}/${TODAY_DATE}-"*.token 2>/dev/null | head -1)
-  if [ -n "$TOKEN_FILE" ] && [ -f "$TOKEN_FILE" ]; then
-    SESSION_TOKEN=$(cat "$TOKEN_FILE" 2>/dev/null | tr -d '[:space:]')
+[ -z "$TODAY_DATE" ] && exit 0
+if ! [[ "$TODAY_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+  echo "checkpoint-hook.sh: invalid date '${TODAY_DATE}' — cannot construct checkpoint path" >&2
+  exit 0
+fi
+CHECKPOINT_DIR="${LOGS_FOLDER_ABS}/${TODAY_DATE%%-*}/$(echo "$TODAY_DATE" | cut -d'-' -f2)"
+
+# --- PostCompact: reset counter so fresh accumulation begins after compact ---
+if [ "$MODE" = "postcompact" ]; then
+  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+    echo "checkpoint-hook.sh: postcompact state reset failed for ${STATE_FILE}" >&2
   fi
+  exit 0
+fi
+
+# --- JSON builder (shared by stop + precompact) ---
+build_json() {
+  local prompt="$1"
+  if command -v python3 &>/dev/null; then
+    python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$prompt" 2>/dev/null
+  elif command -v python &>/dev/null; then
+    python -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$prompt" 2>/dev/null
+  elif command -v node &>/dev/null; then
+    node -e "process.stdout.write(JSON.stringify({decision:'block',reason:process.argv[1]})+'\n')" "$prompt" 2>/dev/null
+  else
+    local escaped
+    escaped=$(printf '%s' "$prompt" | tr -d '\r' | sed 's/\\/\\\\/g; s/"/\\"/g')
+    printf '{"decision":"block","reason":"%s"}\n' "$escaped"
+  fi
+}
+
+# --- PreCompact: force checkpoint before compact (no threshold check) ---
+if [ "$MODE" = "precompact" ]; then
+  # PreCompact always checkpoints regardless of activity — even sparse checkpoints preserve
+  # pre-compaction context. Use postcompact reset to avoid duplicate stop-hook triggers.
+  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${PPID}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
+  NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
+  PROMPT="${TODAY_DATE}-${PPID}-checkpoint-${NN_CP}.md"
+  JSON=$(build_json "$PROMPT")
+  if [ -z "$JSON" ]; then
+    echo "checkpoint-hook.sh: build_json failed for '${PROMPT}' — no python/node available?" >&2
+    exit 0
+  fi
+  # Reset state as safety net in case postcompact hook does not fire
+  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+    echo "checkpoint-hook.sh: precompact state reset failed for ${STATE_FILE}" >&2
+  fi
+  printf '%s\n' "$JSON"
+  exit 0
+fi
+
+# --- Stop mode: check thresholds ---
+if [ -f "$STATE_FILE" ]; then
+  IFS=':' read -r COUNT LAST_TS < "$STATE_FILE"
+  if ! [[ "$COUNT" =~ ^[0-9]+$ ]] || ! [[ "$LAST_TS" =~ ^[0-9]+$ ]]; then
+    # Malformed — reset cleanly; COUNT=0 so increment will bring it to 1
+    echo "checkpoint-hook.sh: malformed state in ${STATE_FILE} — resetting" >&2
+    COUNT=0
+    LAST_TS=$(stat -f %m "$STATE_FILE" 2>/dev/null || stat -c %Y "$STATE_FILE" 2>/dev/null || node -e "const fs=require('fs');console.log(Math.floor(fs.statSync(process.argv[1]).mtimeMs/1000))" "$STATE_FILE" 2>/dev/null || echo "$NOW")
+  elif [ "$COUNT" -eq 0 ] && [ $(( NOW - LAST_TS )) -lt $SKIP_WINDOW ]; then
+    exit 0  # another checkpoint just fired — skip
+  fi
+else
+  COUNT=0; LAST_TS=$NOW
 fi
 
 COUNT=$(( COUNT + 1 ))
@@ -120,40 +173,17 @@ ELAPSED=$(( NOW - LAST_TS ))
 
 if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; then
   if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
-    # Threshold fired on time but not enough activity — reset and wait next round
-    echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null
+    # Threshold fired but not enough activity — preserve original LAST_TS so the
+    # time clock doesn't restart; checkpoint fires on the next message instead.
+    echo "${COUNT}:${LAST_TS}" > "$STATE_FILE" 2>/dev/null
     exit 0
   fi
-  if [ "$COUNT" -ge "$MSG_THRESHOLD" ]; then
-    TRIGGER_LABEL="auto (${COUNT} messages)"
-  else
-    TRIGGER_LABEL="auto ($(( ELAPSED / 60 ))m elapsed)"
-  fi
-  # Determine token suffix for checkpoint filenames
-  if [ -n "$SESSION_TOKEN" ]; then
-    TOKEN_PART="-${SESSION_TOKEN}"
-  else
-    TOKEN_PART=""
-  fi
-  # Pre-compute checkpoint filename (TODAY_DATE already set by session token lookup above)
-  CHECKPOINT_DIR="${LOGS_FOLDER_ABS}/${TODAY_DATE%%-*}/$(echo "$TODAY_DATE" | cut -d'-' -f2)"
-  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}${TOKEN_PART}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
+  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${PPID}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
   NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
-  PROMPT="${TODAY_DATE}${TOKEN_PART}-checkpoint-${NN_CP}.md"
-  # Build JSON — send filename as reason; INSTRUCTIONS.md handles the write logic
-  # Try python3, python, node in order — Windows may only have 'python' or 'node'
-  if command -v python3 &>/dev/null; then
-    JSON=$(python3 -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
-  elif command -v python &>/dev/null; then
-    JSON=$(python -c "import json,sys; print(json.dumps({'decision':'block','reason':sys.argv[1]}))" "$PROMPT" 2>/dev/null)
-  elif command -v node &>/dev/null; then
-    JSON=$(node -e "process.stdout.write(JSON.stringify({decision:'block',reason:process.argv[1]})+'\n')" "$PROMPT" 2>/dev/null)
-  else
-    ESCAPED=$(printf '%s' "$PROMPT" | tr -d '\r' | sed 's/\\/\\\\/g; s/"/\\"/g')
-    JSON="{\"decision\":\"block\",\"reason\":\"${ESCAPED}\"}"
-  fi
+  PROMPT="${TODAY_DATE}-${PPID}-checkpoint-${NN_CP}.md"
+  JSON=$(build_json "$PROMPT")
   if [ -z "$JSON" ]; then
-    # all builders failed — skip checkpoint silently (exit 0 avoids Claude Code error warning)
+    echo "checkpoint-hook.sh: build_json failed for '${PROMPT}' — no python/node available?" >&2
     exit 0
   fi
   if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
@@ -162,6 +192,6 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
   fi
   printf '%s\n' "$JSON"
 else
-  echo "${COUNT}:${LAST_TS}" > "$STATE_FILE"
+  echo "${COUNT}:${LAST_TS}" > "$STATE_FILE" 2>/dev/null
 fi
 exit 0

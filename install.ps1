@@ -243,6 +243,86 @@ function Install-Plugins {
   return ,@($failedPlugins)
 }
 
+# ─── Hook registration ────────────────────────────────────────────────────────
+# Register-OnebrainHooks <VaultPath>
+# Writes Stop, PreCompact, and PostCompact hook entries into .claude/settings.json
+# using the vault's absolute path. settings.json does not support ${CLAUDE_PLUGIN_ROOT}
+# (only hooks.json does), so absolute paths are required.
+function Register-OnebrainHooks {
+  param([string]$VaultPath)
+
+  $settingsPath = Join-Path $VaultPath ".claude\settings.json"
+  $hookScript   = Join-Path $VaultPath ".claude\plugins\onebrain\hooks\checkpoint-hook.sh"
+
+  if (-not (Test-Path $settingsPath)) {
+    Print-Info "Warning: .claude/settings.json not found — hooks not registered"
+    return
+  }
+
+  try {
+    $cfg = Get-Content $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+
+    # ConvertFrom-Json returns PSCustomObject; add hooks property if absent
+    if (-not ($cfg.PSObject.Properties.Name -contains "hooks")) {
+      $cfg | Add-Member -NotePropertyName "hooks" -NotePropertyValue ([PSCustomObject]@{})
+    }
+
+    $makeHook = {
+      param([string]$mode)
+      @{
+        matcher = ""
+        hooks   = @(@{
+          type    = "command"
+          command = "bash `"$hookScript`" $mode"
+        })
+      }
+    }
+
+    function Register-Hook {
+      param($hooksObj, [string]$event, $entry)
+      # Read current value; normalise to array
+      $existing = $hooksObj.PSObject.Properties[$event]
+      $arr = if ($null -eq $existing) { @() }
+             elseif ($existing.Value -is [array]) { [object[]]$existing.Value }
+             elseif ($null -ne $existing.Value)   { @($existing.Value) }
+             else                                  { @() }
+      $found = $false
+      for ($i = 0; $i -lt $arr.Count; $i++) {
+        $e = $arr[$i]
+        $isMatch = $false
+        if ($e -is [hashtable] -and $e.ContainsKey('hooks')) {
+          foreach ($h in $e['hooks']) {
+            if ($h -is [hashtable] -and $h['command'] -like '*checkpoint-hook.sh*') {
+              $isMatch = $true; break
+            }
+          }
+        } elseif ($e -is [PSCustomObject]) {
+          foreach ($h in $e.hooks) {
+            if ($h -is [PSCustomObject] -and $h.command -like '*checkpoint-hook.sh*') {
+              $isMatch = $true; break
+            }
+          }
+        }
+        if ($isMatch) { $arr[$i] = $entry; $found = $true; break }
+      }
+      if (-not $found) { $arr += $entry }
+      if ($null -eq $existing) {
+        $hooksObj | Add-Member -NotePropertyName $event -NotePropertyValue $arr -Force
+      } else {
+        $hooksObj.PSObject.Properties[$event].Value = $arr
+      }
+    }
+
+    Register-Hook $cfg.hooks "Stop"        (& $makeHook "stop")
+    Register-Hook $cfg.hooks "PreCompact"  (& $makeHook "precompact")
+    Register-Hook $cfg.hooks "PostCompact" (& $makeHook "postcompact")
+
+    $cfg | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+    Print-Info "Registered Stop, PreCompact, PostCompact hooks in .claude/settings.json"
+  } catch {
+    Print-Info "Warning: could not register hooks: $($_.Exception.Message). Run /update after first session."
+  }
+}
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 $script:FailedPlugins = @()
@@ -393,7 +473,10 @@ function Main {
       }
     }
 
-    # ── Step 4: Install community plugins ───────────────────────────────────
+    # ── Step 4b: Register OneBrain hooks in .claude/settings.json ───────────
+    Register-OnebrainHooks $vaultPath
+
+    # ── Step 4c: Install community plugins ───────────────────────────────────
     $script:FailedPlugins = @(Install-Plugins $vaultPath)
 
   } catch {

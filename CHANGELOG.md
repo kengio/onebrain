@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.3
+latest_version: 1.10.4
 released: 2026-04-18
 ---
 
@@ -9,6 +9,15 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.4 — PPID Session Identity + PreCompact/PostCompact Hooks + Orphan Recovery
+
+**Breaking:** Checkpoint filenames change from `YYYY-MM-DD-{random6}-checkpoint-NN.md` to `YYYY-MM-DD-{PPID}-checkpoint-NN.md`. Old files appear as orphans on first `/wrapup` — recovered automatically.
+
+- Session token is now `$PPID` — loaded once at startup, cached in context, survives compact
+- `precompact` / `postcompact` hook modes: checkpoint before compaction, reset counter after
+- `/wrapup` auto-detects and merges orphan checkpoints from previous sessions
+- `/update` / `/doctor` / `install.sh` / `install.ps1` register all 3 hooks (Stop, PreCompact, PostCompact)
 
 ## [1.10.3] — 2026-04-18
 

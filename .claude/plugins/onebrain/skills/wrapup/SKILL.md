@@ -25,6 +25,7 @@ populated by /recap later):
 ---
 tags: [session-log]
 date: YYYY-MM-DD
+session: NN
 auto-saved: true                        # only if auto-saved
 synthesized_from_checkpoints: true      # only if synthesized from checkpoints
 ---
@@ -37,15 +38,100 @@ Absence of `recapped:` field = not yet processed by /recap.
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
-2. Read `session_token` from context (set during Phase 1 Step 3).
+2. Use `PPID` from context if already loaded; if absent, run `echo $PPID` via Bash and save to context. PPID is the process parent ID — unique per Claude Code window, guaranteed collision-free even with multiple windows open on the same day.
 3. Glob checkpoint files:
-   - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`
-   - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`
+   - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-*.md`
+   - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{PPID}-checkpoint-*.md`
 4. Filter: keep only files where frontmatter field `merged` is absent or not `true`
 5. If any found: **read every file in the filtered list** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 : not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
 6. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
 
 If none found: continue normally.
+
+---
+
+## Step 1b: Orphan Recovery Scan
+
+After Step 1, scan for unmerged checkpoints belonging to **other** sessions (orphans).
+
+### Scan Scope
+
+Glob checkpoint files across current month and the previous month to handle cross-month sessions. Compute the two month paths:
+- Current month: `[logs_folder]/YYYY/MM/`
+- Previous month: decrement MM by 1 (with year rollover if MM=01)
+
+For each of those two paths, glob `*-checkpoint-*.md`.
+
+### Identify Orphans
+
+From all found checkpoint files:
+1. Read frontmatter of all found files; keep only where `merged` is absent or not `true`
+2. Parse PPID-segment from each filename: the numeric segment between the date and the literal word "checkpoint" in pattern `YYYY-MM-DD-{PPID}-checkpoint-NN.md`. Validate it is numeric; if non-numeric or empty, apply Legacy token handling (see below) rather than skipping.
+3. Exclude files where the parsed PPID exactly equals the current session PPID (those belong to the current session, already handled in Step 1). Do not use substring/contains matching — only exact equality.
+4. Group remaining files by their parsed PPID
+
+**Legacy token handling:** If the parsed segment is non-numeric (e.g., `abc123` — a legacy random-6 token from pre-v1.10.4), still include the file in orphan recovery. Group these files under a synthetic key `legacy-{segment}` and process them the same way as PPID groups. This ensures migration from v1.10.3 and earlier does not lose checkpoints. Note each legacy file in the Step 8 report as a warning.
+
+If no orphan groups found: skip to Step 2.
+
+### Auto-Recover Each Orphan Group
+
+For each orphan group (process in chronological order by date in filename):
+
+**a. Read all checkpoint files** in the group. Extract content from each.
+
+**b. Determine the session date** from the filename (`YYYY-MM-DD` prefix of the checkpoint files). If files in the group have different date prefixes (cross-midnight session), use the earliest date.
+
+**c. Determine the session file name** for that date:
+   - List files in `[logs_folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md` (using the orphan date's YYYY/MM)
+   - Next session number = count of matches + 1 (zero-padded to 2 digits)
+   - Verify the slot is free; increment NN until free
+
+**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist.
+
+```markdown
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+synthesized_from_checkpoints: true
+auto-recovered: true
+---
+
+# Session Summary : [Month DD, YYYY] (Session N)
+
+## What We Worked On
+
+[1-3 sentences synthesized from checkpoint content]
+
+## Key Decisions
+
+- [All key decisions from checkpoints — list explicitly, do not collapse into one line]
+
+## Insights & Learnings
+
+- [Insights from checkpoints]
+
+## What Worked / Didn't Work
+
+- ✅ / ❌ [From checkpoints — omit section if none noted]
+
+## Action Items
+
+- [ ] [Action items from checkpoints] 📅 YYYY-MM-DD
+
+## Open Questions
+
+- [Open questions from checkpoints]
+```
+
+**e. Write the session log** (per the template above). Verify the file exists and is non-empty before continuing.
+
+**f. Mark checkpoints as merged:** only after step e succeeds — for each checkpoint file in this group, set `merged: true` (same rules as Step 5).
+
+**g. Delete checkpoint files** for this group after confirming both e and f succeeded. Guard: only delete AFTER step e AND f are confirmed. Never delete before.
+
+**h. Track recovered sessions:** append `{date} → session-NN.md ({C} checkpoints)` to a `recovered_sessions` list for the final report, where `{C}` is the number of checkpoint files merged for this group.
 
 ---
 
@@ -118,6 +204,18 @@ _Omit this section if the session had no notable friction or technique worth log
 - [Question or uncertainty to revisit]
 ```
 
+After writing the session log, reset the checkpoint hook counter to prevent spurious post-wrapup checkpoints:
+
+```bash
+TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
+_ppid="${PPID:-$(echo $PPID)}"
+if [ -n "$_ppid" ] && [ "$_ppid" -gt 0 ] 2>/dev/null; then
+  echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${_ppid}.state" 2>/dev/null
+fi
+```
+
+This writes `COUNT=0` with a fresh timestamp, triggering a 60-second skip window and resetting the message counter.
+
 ---
 
 ## Step 5: Mark Checkpoints as Merged
@@ -140,7 +238,7 @@ This prevents /wrapup from re-reading the same checkpoints in future sessions.
 
 After session log is written successfully:
 1. Delete checkpoint files merged into this session's log
-2. Safety-net scan (current month only): glob `[logs_folder]/YYYY/MM/*-checkpoint-*.md` for files with `merged: true` → delete them. Scoped to current month to avoid expensive vault-wide glob on large vaults.
+2. Safety-net scan: collect the union of (a) the two month paths from Step 1b (current month and previous month), and (b) the unique YYYY/MM directories that any recovered orphan group lived in. For each path in this union, glob `*-checkpoint-*.md` and delete any with `merged: true` that were not already deleted above.
 
 Guard: only delete AFTER confirming session log write succeeded. Never delete before or during write.
 
@@ -175,6 +273,12 @@ Say:
 > Session saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`.
 >
 > [If action items]: I logged N action items : they'll appear in your Tasks view.
+>
+> [If recovered_sessions is non-empty]:
+> **Auto-recovered {S} orphan session(s):**
+> - YYYY-MM-DD → session-NN.md ({C} checkpoints)
+> - YYYY-MM-DD → session-NN.md ({C} checkpoints)
+>
 > [Recap reminder message from Step 7]
 >
 > Good session! See you next time.

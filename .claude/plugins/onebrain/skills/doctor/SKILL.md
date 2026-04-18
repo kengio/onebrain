@@ -83,6 +83,20 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Check `recap:` block is present in vault.yml
 - If absent: 🟡 "`recap:` block missing from vault.yml — /recap will use defaults (min_sessions: 6, min_frequency: 2); run /update to add it"
 
+**OneBrain hooks:**
+- Read `[vault]/.claude/settings.json` (vault-level settings — the `.claude/` folder inside the vault, not `~/.claude/settings.json`)
+- Check `Stop` hook: entry exists under `hooks.Stop` and command contains `checkpoint-hook.sh stop` → ✅ / 🔴 missing or wrong
+- Check `PreCompact` hook: entry exists under `hooks.PreCompact` and command contains `checkpoint-hook.sh precompact` → ✅ / 🔴 missing or wrong
+- Check `PostCompact` hook: entry exists under `hooks.PostCompact` and command contains `checkpoint-hook.sh postcompact` → ✅ / 🔴 missing or wrong
+- Any missing or wrong entry: include in issue count, suggest running /update to fix
+
+**qmd PostToolUse hook (only when `qmd_collection` is set in vault.yml):**
+- If `qmd_collection` is absent in vault.yml: skip this entire check
+- If `qmd_collection` is present:
+  - Check `which qmd` (macOS/Linux) or `where qmd` (Windows): qmd binary must be installed → ✅ / 🔴 "qmd not installed — qmd_collection is set but binary is missing; run `/qmd setup` to reinstall"
+  - Read `[vault]/.claude/plugins/onebrain/hooks/hooks.json`; if missing → 🔴 "hooks.json not found — run /update to restore"
+  - Check that `hooks.PostToolUse` contains an entry whose `command` contains `qmd-reindex.sh` → ✅ / 🔴 "PostToolUse qmd hook missing or wrong — run /update to restore"
+
 ---
 
 ## Step 3: Report Findings
@@ -107,6 +121,14 @@ Use this format:
 🟢 plugin.json: OK (vX.X.X)
 🔴 qmd_collection: missing — qmd search will not work
 🟡 vault.yml: `timezone` key found — no longer used, safe to remove
+🔴 OneBrain hooks: Stop missing or wrong — run /update to register
+🔴 OneBrain hooks: PreCompact missing or wrong — run /update to register
+🔴 OneBrain hooks: PostCompact missing or wrong — run /update to register
+🟢 OneBrain hooks: all 3 registered correctly
+🔴 qmd: binary not installed — run /qmd setup
+🔴 qmd: hooks.json missing — run /update to restore
+🔴 qmd: PostToolUse hook missing or wrong — run /update to restore
+🟢 qmd: PostToolUse hook registered correctly
 
 ---
 N issues found (M critical 🔴, P warnings 🟡)
