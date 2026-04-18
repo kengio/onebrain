@@ -38,10 +38,10 @@ Absence of `recapped:` field = not yet processed by /recap.
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
-2. Read `session_token` from context (set during Phase 1 Step 3).
+2. Get PPID via Bash: `echo $PPID` — this is the session token, unique per Claude Code window.
 3. Glob checkpoint files:
-   - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`
-   - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`
+   - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-*.md`
+   - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{PPID}-checkpoint-*.md`
 4. Filter: keep only files where frontmatter field `merged` is absent or not `true`
 5. If any found: **read every file in the filtered list** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 : not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
 6. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
@@ -65,11 +65,11 @@ For each of those two paths, glob `*-checkpoint-*.md`.
 ### Identify Orphans
 
 From all found checkpoint files:
-1. Exclude files whose filename contains the current `session_token` (those belong to the current session, already handled in Step 1) — filter by filename only, no reads needed
+1. Exclude files whose filename contains the current PPID (those belong to the current session, already handled in Step 1) — filter by filename only, no reads needed
 2. Read frontmatter of the remaining files
 3. Keep only files where `merged` is absent or not `true`
-4. Parse `session_token` from each remaining filename using the pattern `YYYY-MM-DD-{session_token}-checkpoint-NN.md`
-5. Group files by their parsed `session_token`
+4. Parse PPID from each remaining filename using the pattern `YYYY-MM-DD-{PPID}-checkpoint-NN.md` (the numeric segment between the date and the literal word "checkpoint")
+5. Group files by their parsed PPID
 
 If no orphan groups found: skip to Step 2.
 
@@ -200,6 +200,15 @@ _Omit this section if the session had no notable friction or technique worth log
 
 - [Question or uncertainty to revisit]
 ```
+
+After writing the session log, reset the checkpoint hook counter to prevent spurious post-wrapup checkpoints:
+
+```bash
+TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
+echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${PPID}.state"
+```
+
+This writes `COUNT=0` with a fresh timestamp, triggering a 60-second skip window and resetting the message counter.
 
 ---
 
