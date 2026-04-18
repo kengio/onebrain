@@ -116,13 +116,18 @@ published: [Publication date if known]
 
 **Suggest links:** Search for related vault notes (use qmd if available, otherwise Glob `[resources_folder]/**/*.md` and `[knowledge_folder]/**/*.md`).
 
-> Summary saved to `[resources_folder]/[subfolder]/[Title].md`.
->
-> This looks related to:
-> - "Related Note 1" : [why]
-> - "Related Note 2" : [why]
->
-> Want me to add links?
+──────────────────────────────────────────────────────────────
+📄 Summary — {Title}
+──────────────────────────────────────────────────────────────
+Saved to `[resources_folder]/[subfolder]/[Title].md`
+
+Related:
+  • "{Note 1}" — {reason}
+  • "{Note 2}" — {reason}
+(omit "Related" block if no related notes found)
+
+→ Add links? (say yes to link them)
+→ Run /learn to save key insights to memory.
 
 **Update bookmark with wikilink:** If the URL was found in `Bookmarks.md` in Step 2, append a wikilink to the existing bookmark entry so it points to the new summary note:
 
@@ -134,8 +139,16 @@ Find the line in `Bookmarks.md` containing the URL and append ` → [[Article Ti
 
 Refresh `updated` in the Bookmarks.md frontmatter. Do this silently : no confirmation needed.
 
-**Clean up bookmark:** After adding the wikilink, ask:
+**Clean up bookmark:** After adding the wikilink, show:
 
-> This URL was in your Bookmarks.md : I've linked it to "Article Title". Want me to remove the bookmark entry now that you have a full summary note?
+🔖 Linked `Bookmarks.md` → [[{Title}]].
 
-If the user confirms, remove the bookmark entry from `Bookmarks.md` and refresh `updated` in its frontmatter.
+Then AskUserQuestion:
+- question: "Remove the bookmark entry now that you have a full summary note?"
+- header: "Bookmark Cleanup"
+- multiSelect: false
+- options:
+  - label: "Remove", description: "Delete the bookmark entry — you have a full summary note now"
+  - label: "Keep both", description: "Keep the bookmark and the summary note"
+
+If the user selects "Remove", remove the bookmark entry from `Bookmarks.md` and refresh `updated` in its frontmatter.

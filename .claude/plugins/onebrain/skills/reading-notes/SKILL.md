@@ -137,9 +137,12 @@ After writing, dispatch the **Tag Suggester** agent (`agents/tag-suggester.md`) 
 
 ## Step 7: Follow Up
 
-> Notes saved to `[resources_folder]/[subfolder]/[Title] : Notes.md`.
->
-> Want to:
-> - Add this to your reading list in a project note?
-> - Run `/connect` to find vault notes this connects to?
-> - Set a reminder to revisit these notes? (I can add a task)
+──────────────────────────────────────────────────────────────
+📚 Reading Notes — {Title}
+──────────────────────────────────────────────────────────────
+Author: {Author}
+Saved to `[resources_folder]/[subfolder]/[Title] : Notes.md`
+
+→ Add to a reading list in a project note?
+→ Run /connect to find related vault notes.
+→ Set a revisit reminder? (I'll add a task)
