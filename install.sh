@@ -401,6 +401,62 @@ install_plugins() {
   FAILED_PLUGINS=("${failed_plugins[@]}")
 }
 
+# ─── Hook registration ────────────────────────────────────────────────────────
+# register_onebrain_hooks <vault_path>
+# Writes Stop, PreCompact, and PostCompact hook entries into .claude/settings.json
+# using the vault's absolute path. settings.json does not support ${CLAUDE_PLUGIN_ROOT}
+# (only hooks.json does), so absolute paths are required.
+register_onebrain_hooks() {
+  local vault="$1"
+  local settings="$vault/.claude/settings.json"
+  local hook_script="$vault/.claude/plugins/onebrain/hooks/checkpoint-hook.sh"
+
+  if [ ! -f "$settings" ]; then
+    print_info "Warning: .claude/settings.json not found — hooks not registered"
+    return 0
+  fi
+
+  local result=""
+  if command -v python3 &>/dev/null; then
+    result=$(python3 - "$settings" "$hook_script" <<'PYEOF'
+import json, sys
+settings_path, hook_script = sys.argv[1], sys.argv[2]
+with open(settings_path) as f:
+    cfg = json.load(f)
+def hook_entry(mode):
+    return [{"matcher": "", "hooks": [{"type": "command", "command": f'bash "{hook_script}" {mode}'}]}]
+cfg.setdefault("hooks", {})
+cfg["hooks"]["Stop"]        = hook_entry("stop")
+cfg["hooks"]["PreCompact"]  = hook_entry("precompact")
+cfg["hooks"]["PostCompact"] = hook_entry("postcompact")
+with open(settings_path, "w") as f:
+    json.dump(cfg, f, indent=2)
+    f.write("\n")
+print("ok")
+PYEOF
+    2>/dev/null || true)
+  elif command -v node &>/dev/null; then
+    result=$(node - "$settings" "$hook_script" <<'JSEOF'
+const fs = require('fs');
+const [,, settingsPath, hookScript] = process.argv;
+const cfg = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+const hookEntry = mode => [{"matcher":"","hooks":[{"type":"command","command":`bash "${hookScript}" ${mode}`}]}];
+cfg.hooks = cfg.hooks || {};
+cfg.hooks.Stop        = hookEntry('stop');
+cfg.hooks.PreCompact  = hookEntry('precompact');
+cfg.hooks.PostCompact = hookEntry('postcompact');
+fs.writeFileSync(settingsPath, JSON.stringify(cfg, null, 2) + '\n');
+process.stdout.write('ok\n');
+JSEOF
+    2>/dev/null || true)
+  fi
+
+  if [ "${result:-}" = "ok" ]; then
+    print_info "Registered Stop, PreCompact, PostCompact hooks in .claude/settings.json"
+  else
+    print_info "Warning: could not register hooks (python3/node not found). Run /update after first session."
+  fi
+}
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 FAILED_PLUGINS=()
@@ -557,7 +613,10 @@ main() {
     exit 1
   fi
 
-  # ── Step 4: Install community plugins ───────────────────────────────────
+  # ── Step 4b: Register OneBrain hooks in .claude/settings.json ───────────
+  register_onebrain_hooks "$vault_path"
+
+  # ── Step 4c: Install community plugins ───────────────────────────────────
   install_plugins "$vault_path"
 
   # ── Step 5: Success ──────────────────────────────────────────────────────────
