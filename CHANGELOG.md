@@ -30,7 +30,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v1.10.5 — Terminal Output Formatting
 
-- All 25 skill outputs use terminal-safe formatting: `─` separators, emoji headers, `⬜` checkboxes, `→` hints
+- All 24 skill outputs use terminal-safe formatting: `─` separators, emoji headers, `⬜` checkboxes, `→` hints
 - Replaces `**bold**`, `## headers`, `> blockquotes`, `- [ ]`, `| tables |` that rendered as literal text in CLI
 - `/tasks` and `/moc` open the file in Obsidian after writing
 - Interactive conflict flows in `/learn` and `/recap` use `AskUserQuestion`
