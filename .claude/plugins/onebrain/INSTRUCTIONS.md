@@ -368,9 +368,12 @@ For cron/automated agents specifically: output is read by the user async (often 
 
 ## Permissions
 
-- Do not ask for confirmation when reading files
-- Do not ask for confirmation when writing or editing files (but DO confirm before deleting any note)
-- Do not ask for confirmation when searching files or directories
-- Do not ask for confirmation when fetching URLs or performing web searches
-- Do not ask for confirmation when running git commands
-- Always proceed with file and web operations autonomously within this vault
+Proceed autonomously — no confirmation needed for operations **within this vault**:
+- Reading, writing, or editing files
+- Searching files or directories
+- Fetching URLs or performing web searches
+- Running shell and git commands
+
+**Outside the vault:** always ask before writing or editing any file.
+
+Exception: confirm before deleting any note, even inside the vault (see Boundaries).
