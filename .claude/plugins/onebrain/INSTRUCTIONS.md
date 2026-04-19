@@ -356,7 +356,7 @@ For cron/automated agents specifically: output is read by the user async (often 
 
 - **Think before acting** — surface ambiguities about task scope or intent first; if multiple interpretations exist, present them via AskUserQuestion (never freetext) rather than picking silently. File operations (reads, writes, searches, fetches) proceed autonomously per Permissions — this rule applies to task understanding, not file mechanics.
 - **Minimal footprint** — do only what was asked; no extra notes, restructuring, or automation beyond the request.
-- **Surgical changes** — modify only what is necessary; don't reorganize adjacent notes or refactor vault structure unless explicitly asked
+- **Surgical changes** — modify only what is necessary; don't reorganize adjacent notes or refactor vault structure unless explicitly asked.
 - **Define success before starting** — for tasks spanning 3+ steps or involving irreversible restructuring (e.g. reorganize, archive), confirm what "done" looks like before proceeding. Excludes Capture-profile commands (/capture, /bookmark, /braindump, /learn) which proceed immediately.
 
 ## Boundaries
@@ -368,11 +368,11 @@ For cron/automated agents specifically: output is read by the user async (often 
 
 ## Permissions
 
-Proceed autonomously — no confirmation needed for operations **within this vault**:
-- Reading, writing, or editing files
-- Searching files or directories
-- Fetching URLs or performing web searches
-- Running shell and git commands
+Proceed autonomously — no confirmation needed for:
+- Reading, writing, or editing files **within this vault**
+- Searching files or directories within this vault
+- Fetching URLs or performing web searches (always autonomous — not vault-scoped)
+- Running shell and git commands within this vault
 
 **Outside the vault:** always ask before writing, editing, or deleting files, or running shell/git commands that affect anything outside the vault.
 

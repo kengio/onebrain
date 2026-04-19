@@ -22,7 +22,7 @@ Good contributions include:
 ├── .claude-plugin/
 │   └── plugin.json                      Plugin manifest (name, version, description)
 ├── INSTRUCTIONS.md                      Agent instructions — loaded by CLAUDE.md/GEMINI.md/AGENTS.md
-├── skills/                              One directory per slash command (24 skills)
+├── skills/                              One directory per slash command (25 skills)
 │   └── [name]/
 │       └── SKILL.md                     The skill prompt — what the AI follows when invoked
 ├── hooks/
@@ -239,7 +239,7 @@ Both scripts download the repo tarball, extract it, remove themselves from the v
 - Include a brief description of what changed and why
 - If adding a skill, show an example interaction in the PR description
 - Keep skill files readable — they're prompts, not code
-- Bump `plugin.json` version for every PR that adds or changes a skill or agent
+- Bump `plugin.json` version for every PR — use patch for docs/fixes, minor for new skills/agents/hooks
 
 ## Reporting Issues
 
