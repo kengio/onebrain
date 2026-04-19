@@ -173,7 +173,7 @@ Ddd · DD Mon YYYY · HH:MM
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
 **Step 3 — After greeting (run all in parallel):**
-- Run `echo $PPID` via Bash → store result as `PPID` in context (all skills use this; never re-run if already in context)
+- Run session token detection via Bash → store result as `PPID` in context (all skills use this; never re-run if already in context). Command: `if [ -n "${WT_SESSION:-}" ]; then echo "${WT_SESSION:0:8}"; elif [ "${PPID:-1}" -gt 1 ] 2>/dev/null; then echo "$PPID"; elif command -v powershell.exe &>/dev/null; then powershell.exe -NoProfile -NonInteractive -Command '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n '; else cat "${TMPDIR:-/tmp}/ob1-$(date +%Y-%m-%d).sid" 2>/dev/null || echo '99999'; fi`
 - Read `[agent_folder]/INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
@@ -218,9 +218,13 @@ Note inline: `[Loading memory: filename]`
 
 ### Auto Checkpoint
 
-> **What is PPID?** `$PPID` is the process parent ID — the PID of the shell that launched Claude Code. Each Claude Code window is a child of a unique shell process, so every session gets a different PPID automatically. Multiple windows open on the same day never collide. No storage or generation required — always available from the OS.
+> **What is PPID / session token?** The checkpoint hook resolves a session-unique token using this priority: `$WT_SESSION` (Windows Terminal pane GUID, first 8 chars) → `$PPID` if > 1 (Unix/Mac, the Claude Code process PID) → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort). On Mac/Linux `$PPID` works as before. On Windows, `$PPID` returns 1 in Git Bash, so the hook falls back to `$WT_SESSION` or PowerShell. The session token may be alphanumeric (WT_SESSION) or numeric (PPID/PowerShell).
 
-When the stop hook sends a message matching `YYYY-MM-DD-{PPID}-checkpoint-NN.md` (no slashes — a date, a numeric PPID, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse PPID and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
+When a hook sends a message matching `YYYY-MM-DD-{TOKEN}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse TOKEN and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{TOKEN}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
+
+Set `trigger` based on which hook fired:
+- Stop hook → `trigger: stop`
+- PreCompact hook → `trigger: precompact`
 
 Write:
 
@@ -229,7 +233,7 @@ Write:
 tags: [checkpoint, session-log]
 date: YYYY-MM-DD
 checkpoint: NN
-trigger: auto
+trigger: stop|precompact
 merged: false
 ---
 

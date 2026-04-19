@@ -404,12 +404,12 @@ install_plugins() {
 # ─── Hook registration ────────────────────────────────────────────────────────
 # register_onebrain_hooks <vault_path>
 # Writes Stop, PreCompact, and PostCompact hook entries into .claude/settings.json
-# using the vault's absolute path. settings.json does not support ${CLAUDE_PLUGIN_ROOT}
-# (only hooks.json does), so absolute paths are required.
+# using a relative path. Claude Code uses vault root as cwd for hooks, so relative
+# paths work and avoid issues with spaces in absolute paths (e.g. iCloud paths).
 register_onebrain_hooks() {
   local vault="$1"
   local settings="$vault/.claude/settings.json"
-  local hook_script="$vault/.claude/plugins/onebrain/hooks/checkpoint-hook.sh"
+  local hook_script=".claude/plugins/onebrain/hooks/checkpoint-hook.sh"
 
   if [ ! -f "$settings" ]; then
     print_info "Warning: .claude/settings.json not found — hooks not registered"

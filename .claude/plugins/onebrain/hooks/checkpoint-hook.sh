@@ -22,11 +22,45 @@ case "$MODE" in
   *) echo "checkpoint-hook.sh: unknown mode '${MODE}'" >&2; exit 1 ;;
 esac
 
+# Debug tracing: always logs when /tmp/ob1-hook-trace.enabled exists; or set OB1_HOOK_DEBUG=1
+_HOOK_LOG_FILE="${OB1_HOOK_DEBUG_LOG:-/tmp/ob1-hook.log}"
+if [ -n "${OB1_HOOK_DEBUG:-}" ] || [ -f "/tmp/ob1-hook-trace.enabled" ]; then
+  printf '%s: checkpoint-hook.sh mode=%s PPID=%s WT_SESSION=%s\n' \
+    "$(date '+%Y-%m-%d %H:%M:%S')" "$MODE" "${PPID:-unset}" "${WT_SESSION:-unset}" \
+    >> "$_HOOK_LOG_FILE" 2>/dev/null
+fi
+
 # Windows-compatible temp dir
 TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
-STATE_FILE="${TMPDIR_SAFE}/onebrain-${PPID}.state"
-if [ -z "${PPID}" ] || [ "${PPID}" -eq 0 ] 2>/dev/null; then
-  echo "checkpoint-hook.sh: PPID is zero or unset — cannot create session-scoped checkpoint" >&2
+
+# Cross-platform session token: avoids $PPID=1 on Windows Git Bash
+# Priority: WT_SESSION (Windows Terminal) > PPID>1 (Unix/Mac) > PowerShell PPID > day-cache
+_resolve_session_token() {
+  # 1. Windows Terminal: each pane/tab gets a unique GUID
+  if [ -n "${WT_SESSION:-}" ]; then
+    printf '%s' "${WT_SESSION:0:8}"; return
+  fi
+  # 2. Unix/Mac: PPID is the Claude Code process PID, unique per window
+  if [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
+    printf '%s' "${PPID}"; return
+  fi
+  # 3. Windows Git Bash: ask PowerShell for the real parent PID
+  if command -v powershell.exe &>/dev/null; then
+    local _p
+    _p=$(powershell.exe -NoProfile -NonInteractive -Command \
+      '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n ')
+    [ -n "${_p:-}" ] && [ "${_p}" -gt 1 ] 2>/dev/null && { printf '%s' "${_p}"; return; }
+  fi
+  # 4. Day-scoped cache: stable within a day, shared across windows on this platform
+  local _f="${TMPDIR_SAFE}/ob1-$(date +%Y-%m-%d 2>/dev/null || echo fallback).sid"
+  [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null
+  cat "$_f" 2>/dev/null || printf '99999'
+}
+SESSION_TOKEN="$(_resolve_session_token)"
+
+STATE_FILE="${TMPDIR_SAFE}/onebrain-${SESSION_TOKEN}.state"
+if [ -z "${SESSION_TOKEN}" ]; then
+  echo "checkpoint-hook.sh: could not resolve session token — aborting checkpoint" >&2
   exit 0
 fi
 SKIP_WINDOW=60
@@ -100,7 +134,6 @@ LOGS_FOLDER=$(get_folder_value "logs" "07-logs")
 LOGS_FOLDER_ABS="${VAULT_ROOT:+${VAULT_ROOT}/}${LOGS_FOLDER}"
 
 # --- Session identity (top-level — all modes use these) ---
-SESSION_TOKEN="${PPID}"
 TODAY_DATE=$(date '+%Y-%m-%d' 2>/dev/null || python3 -c "from datetime import date; print(date.today())" 2>/dev/null)
 [ -z "$TODAY_DATE" ] && exit 0
 if ! [[ "$TODAY_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
@@ -133,19 +166,27 @@ build_json() {
   fi
 }
 
-# --- PreCompact: force checkpoint before compact (no threshold check) ---
+# --- PreCompact: force checkpoint before compact, then allow on retry ---
 if [ "$MODE" = "precompact" ]; then
-  # PreCompact always checkpoints regardless of activity — even sparse checkpoints preserve
-  # pre-compaction context. Use postcompact reset to avoid duplicate stop-hook triggers.
-  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${PPID}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
+  # If a checkpoint file was written within the last 5 minutes, allow compact to proceed.
+  # This is more reliable than checking the state file, which Stop hooks modify independently.
+  _LATEST_CP=$(ls -t "${CHECKPOINT_DIR}/${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-"*.md 2>/dev/null | head -1)
+  if [ -n "$_LATEST_CP" ]; then
+    _CP_TS=$(stat -f %m "$_LATEST_CP" 2>/dev/null || stat -c %Y "$_LATEST_CP" 2>/dev/null || echo 0)
+    if [ "${_CP_TS:-0}" -gt 0 ] && [ $(( NOW - _CP_TS )) -lt 300 ]; then
+      exit 0  # checkpoint written within last 5 min — let compact proceed
+    fi
+  fi
+  # No recent checkpoint — trigger one before allowing compact.
+  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
   NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
-  PROMPT="${TODAY_DATE}-${PPID}-checkpoint-${NN_CP}.md"
+  PROMPT="${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-${NN_CP}.md"
   JSON=$(build_json "$PROMPT")
   if [ -z "$JSON" ]; then
     echo "checkpoint-hook.sh: build_json failed for '${PROMPT}' — no python/node available?" >&2
     exit 0
   fi
-  # Reset state as safety net in case postcompact hook does not fire
+  # Reset state: signals "checkpoint just triggered" to the next PreCompact call
   if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
     echo "checkpoint-hook.sh: precompact state reset failed for ${STATE_FILE}" >&2
   fi
@@ -178,9 +219,9 @@ if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; th
     echo "${COUNT}:${LAST_TS}" > "$STATE_FILE" 2>/dev/null
     exit 0
   fi
-  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${PPID}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
+  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
   NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
-  PROMPT="${TODAY_DATE}-${PPID}-checkpoint-${NN_CP}.md"
+  PROMPT="${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-${NN_CP}.md"
   JSON=$(build_json "$PROMPT")
   if [ -z "$JSON" ]; then
     echo "checkpoint-hook.sh: build_json failed for '${PROMPT}' — no python/node available?" >&2
