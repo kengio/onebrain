@@ -106,7 +106,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    - `run_in_background: true` — for fire-and-forget tasks (link suggestion, tagging). The skill proceeds immediately; the agent notifies the user when done.
    - `run_in_background: false` — for tasks whose results the skill needs before continuing (classification, analysis). Launch multiple in parallel when processing a batch.
 
-5. Register the agent in the **Agents** table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and add the filename to the `agents/` tree in the **Project Structure** section above. Note: the INSTRUCTIONS.md Agents table includes a Mode column — keep it accurate.
+5. Register the agent in the **Agents** table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and add the filename to the `agents/` tree in the **Project Structure** section above. The Agents table has four columns — fill all of them: **Agent File**, **Dispatched by**, **Mode**, and **Purpose**.
 
 Agents are stateless — they receive all context in the prompt payload and do not retain memory between invocations. Keep them focused on a single task.
 
@@ -205,6 +205,14 @@ If any condition fails → write to `memory/` with `type: behavioral` instead.
 - Length: 3–5 words (e.g. `dev-workflow-superpowers.md`)
 - No date prefix — creation date tracked in `created:` frontmatter
 - One concept per file
+
+### Recall Order
+
+Skills that surface past information must search memory layers in this priority order — stop as soon as a confident answer is found:
+
+1. `05-agent/MEMORY.md` — always in context; check here first
+2. `05-agent/memory/` — match query keywords against INDEX.md Topics column to find relevant files, then read them; fall back to direct grep if no topic match
+3. `07-logs/` — grep session logs for past decisions and discussions
 
 ### INDEX.md Sync Rules
 

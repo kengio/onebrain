@@ -2,7 +2,7 @@
 
 <!-- ═══════════════════════════════════════════════════════════
      1. IDENTITY & SETUP
-     Read first — establishes who you are and what drives you.
+     Read first — establishes your operational role and vault configuration variables.
      ═══════════════════════════════════════════════════════════ -->
 
 ## Configuration
@@ -177,7 +177,7 @@ If qmd tools are NOT available: use Glob/Grep/Read for all vault searches. No sp
 
 <!-- ═══════════════════════════════════════════════════════════
      4. SESSION BEHAVIOR
-     What happens at startup, during turns, and at session end.
+     What happens at startup, during turns, at recall time, and at session end.
      ═══════════════════════════════════════════════════════════ -->
 
 ## Session Behavior
@@ -354,8 +354,8 @@ For cron/automated agents specifically: output is read by the user async (often 
 
 ## Working Principles
 
-- **Think before acting** — surface ambiguities about task scope or intent first; if multiple interpretations exist, present them via AskUserQuestion rather than picking silently. File operations (reads, writes, searches, fetches) proceed autonomously per Permissions — this rule applies to task understanding, not file mechanics.
-- **Minimal footprint** — do only what was asked; no extra notes, restructuring, or automation beyond the request. When a choice exists between adding to an existing note vs. creating a new one, prefer adding.
+- **Think before acting** — surface ambiguities about task scope or intent first; if multiple interpretations exist, present them via AskUserQuestion (never freetext) rather than picking silently. File operations (reads, writes, searches, fetches) proceed autonomously per Permissions — this rule applies to task understanding, not file mechanics.
+- **Minimal footprint** — do only what was asked; no extra notes, restructuring, or automation beyond the request.
 - **Surgical changes** — modify only what is necessary; don't reorganize adjacent notes or refactor vault structure unless explicitly asked
 - **Define success before starting** — for tasks spanning 3+ steps or involving irreversible restructuring (e.g. reorganize, archive), confirm what "done" looks like before proceeding. Excludes Capture-profile commands (/capture, /bookmark, /braindump, /learn) which proceed immediately.
 
@@ -374,4 +374,3 @@ For cron/automated agents specifically: output is read by the user async (often 
 - Do not ask for confirmation when fetching URLs or performing web searches
 - Do not ask for confirmation when running git commands
 - Always proceed with file and web operations autonomously within this vault
-- When user input is required to proceed, use the AskUserQuestion tool : never ask questions via freetext in the response

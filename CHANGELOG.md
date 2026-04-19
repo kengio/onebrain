@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.6
+latest_version: 1.10.7
 released: 2026-04-19
 ---
 
@@ -9,6 +9,13 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.7 — Documentation Reorganization
+
+- INSTRUCTIONS.md restructured into 5 logical groups with section comment headers for human readability
+- Added Working Principles section (think before acting, minimal footprint, surgical changes, define success first)
+- Reordered Session Behavior subsections to match runtime execution order; Auto Checkpoint labeled as Hook-Triggered
+- CONTRIBUTING.md sections reordered for top-to-bottom contributor flow; added Recall Order subsection to Memory System; removed duplicate agent table; added version bump requirement to PR Guidelines
 
 ## v1.10.6 — Cross-Platform Session Token + Hook Fixes
 
