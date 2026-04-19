@@ -197,8 +197,6 @@ install_plugins() {
   local vault="$1"
   local plugins_json="$vault/.obsidian/community-plugins.json"
   local registry_url="https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
-  local failed_plugins=()
-
   # Read plugin IDs from the flat JSON array (no jq needed — one string per line after grep)
   if [ ! -f "$plugins_json" ]; then
     return 0
@@ -224,7 +222,6 @@ install_plugins() {
       [ -z "$_pid" ] && continue
       failed_plugins+=("$_pid")
     done <<< "$plugin_ids"
-    failed_plugins=("${failed_plugins[@]}")
     return 0
   fi
   if [ -n "${spinner_pid:-}" ]; then
@@ -241,7 +238,6 @@ install_plugins() {
       [ -z "$_pid" ] && continue
       failed_plugins+=("$_pid")
     done <<< "$plugin_ids"
-    failed_plugins=("${failed_plugins[@]}")
     return 0
   fi
 
@@ -397,8 +393,6 @@ install_plugins() {
     print_info "Install them manually: Settings → Community plugins → Browse"
   fi
 
-  # Populate global for use in the success message
-  failed_plugins=("${failed_plugins[@]}")
 }
 
 # ─── Hook registration ────────────────────────────────────────────────────────
