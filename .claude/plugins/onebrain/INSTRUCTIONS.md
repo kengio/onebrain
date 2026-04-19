@@ -218,7 +218,7 @@ Note inline: `[Loading memory: filename]`
 
 ### Auto Checkpoint
 
-> **What is PPID / session token?** The checkpoint hook resolves a session-unique token using this priority: `$WT_SESSION` (Windows Terminal pane GUID, first 8 chars, non-alphanumeric characters stripped) → `$PPID` if > 1 (Unix/Mac, the Claude Code process PID) → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows in this fallback environment). On Mac/Linux `$PPID` works reliably. On Windows Git Bash, `$PPID` returns 1, so the hook falls back to `$WT_SESSION` or PowerShell. The session token contains only `[a-zA-Z0-9]` characters — numeric on Mac/Linux, alphanumeric on Windows Terminal.
+> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal pane GUID, non-alphanumeric stripped, first 8 chars) → `$PPID` if > 1 (Mac/Linux only) → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
 
 When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse session_token and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
 
