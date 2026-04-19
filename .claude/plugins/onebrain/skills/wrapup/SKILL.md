@@ -222,7 +222,7 @@ fi
 [ -n "${_token:-}" ] && echo "0:$(date +%s)" > "${tmpdir_safe}/onebrain-${_token}.state" 2>/dev/null
 ```
 
-This writes `COUNT=0` with a fresh timestamp, triggering a 60-second skip window and resetting the message counter.
+This writes `0:<epoch>` into the state file, triggering a 60-second skip window and resetting the message counter.
 
 ---
 

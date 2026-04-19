@@ -46,17 +46,17 @@ _resolve_session_token() {
   fi
   # 4. Day-scoped cache (last resort): shared across all windows in this environment.
   #    Known limitation: simultaneous windows will share the same token here.
+  #    If write fails, '99999' is intentional — all sessions share a single known fallback token.
   local _f="${tmpdir_safe}/ob1-$(date +%Y-%m-%d 2>/dev/null || echo fallback).sid"
   [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null
   cat "$_f" 2>/dev/null || printf '99999'
 }
 session_token="$(_resolve_session_token)"
-
-state_file="${tmpdir_safe}/onebrain-${session_token}.state"
 if [ -z "${session_token}" ]; then
   echo "checkpoint-hook.sh: could not resolve session token — aborting checkpoint" >&2
   exit 0
 fi
+state_file="${tmpdir_safe}/onebrain-${session_token}.state"
 readonly SKIP_WINDOW=60
 readonly MIN_ACTIVITY=2  # minimum messages since last checkpoint to warrant a new one
 
@@ -165,14 +165,14 @@ build_json() {
 # --- PreCompact: force checkpoint before compact, then allow on retry ---
 if [ "$mode" = "precompact" ]; then
   # Single ls call sorted by mtime: check recency of newest file and derive count in one pass.
-  _all_cps=$(ls -t "${checkpoint_dir}/${today_date}-${session_token}-checkpoint-"*.md 2>/dev/null)
-  if [ -n "$_all_cps" ]; then
-    _latest_cp=$(printf '%s\n' "$_all_cps" | head -1)
-    _cp_ts=$(stat -f %m "$_latest_cp" 2>/dev/null || stat -c %Y "$_latest_cp" 2>/dev/null || echo 0)
-    if [ "${_cp_ts:-0}" -gt 0 ] && [ $(( now - _cp_ts )) -lt 300 ]; then
+  all_cps=$(ls -t "${checkpoint_dir}/${today_date}-${session_token}-checkpoint-"*.md 2>/dev/null)
+  if [ -n "$all_cps" ]; then
+    latest_cp=$(printf '%s\n' "$all_cps" | head -1)
+    cp_ts=$(stat -f %m "$latest_cp" 2>/dev/null || stat -c %Y "$latest_cp" 2>/dev/null || echo 0)
+    if [ "${cp_ts:-0}" -gt 0 ] && [ $(( now - cp_ts )) -lt 300 ]; then
       exit 0  # checkpoint written within last 5 min — let compact proceed
     fi
-    existing=$(printf '%s\n' "$_all_cps" | wc -l | tr -d ' ')
+    existing=$(printf '%s\n' "$all_cps" | wc -l | tr -d ' ')
   else
     existing=0
   fi
@@ -228,8 +228,7 @@ if [ "$count" -ge "$msg_threshold" ] || [ "$elapsed" -ge "$time_threshold" ]; th
     exit 0
   fi
   if ! echo "0:${now}" > "$state_file" 2>/dev/null; then
-    # state file not writable — still emit JSON so checkpoint is saved, but count won't reset
-    :
+    echo "checkpoint-hook.sh: state write failed for ${state_file} — count will not reset, checkpoint may repeat" >&2
   fi
   printf '%s\n' "$json"
 else

@@ -220,9 +220,9 @@ Note inline: `[Loading memory: filename]`
 
 > **What is PPID / session token?** The checkpoint hook resolves a session-unique token using this priority: `$WT_SESSION` (Windows Terminal pane GUID, first 8 chars, non-alphanumeric characters stripped) → `$PPID` if > 1 (Unix/Mac, the Claude Code process PID) → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows in this fallback environment). On Mac/Linux `$PPID` works reliably. On Windows Git Bash, `$PPID` returns 1, so the hook falls back to `$WT_SESSION` or PowerShell. The session token is always alphanumeric.
 
-When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse TOKEN and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
+When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse session_token and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
 
-Write the checkpoint below. Use `trigger: precompact` instead of `trigger: stop` when triggered by the PreCompact hook.
+Both Stop and PreCompact hooks produce the same filename pattern. Determine `trigger` from the system-reminder header: `Stop hook blocking error` → `trigger: stop`; `PreCompact` → `trigger: precompact`. If the header is ambiguous, default to `trigger: stop`.
 
 Write:
 
