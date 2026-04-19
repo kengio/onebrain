@@ -3,7 +3,7 @@
 # Usage: checkpoint-hook.sh stop|precompact|postcompact
 #
 # stop        — fires after every response; checkpoints on message/time threshold
-# precompact  — fires before compact; forces checkpoint unconditionally
+# precompact  — fires before compact; checkpoints unless one was written in the last 5 minutes
 # postcompact — fires after compact; resets message counter only
 #
 # State file: $TMPDIR/onebrain-{session_token}.state (count:last_ts)
@@ -29,9 +29,10 @@ tmpdir_safe="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
 # Cross-platform session token: avoids $PPID=1 on Windows Git Bash
 # Priority: WT_SESSION (Windows Terminal) > PPID>1 (Unix/Mac) > PowerShell PPID > day-cache
 _resolve_session_token() {
-  # 1. Windows Terminal: each pane/tab gets a unique GUID; strip non-alphanumeric (e.g. leading '{')
+  # 1. Windows Terminal: each pane/tab gets a unique GUID; strip non-alphanumeric first (e.g. leading
+  #    '{'), then take 8 chars — ensures full 8-char token regardless of punctuation position.
   if [ -n "${WT_SESSION:-}" ]; then
-    printf '%s' "${WT_SESSION:0:8}" | tr -cd 'a-zA-Z0-9'; return
+    printf '%s' "$WT_SESSION" | tr -cd 'a-zA-Z0-9' | cut -c1-8; return
   fi
   # 2. Unix/Mac: PPID is the Claude Code process PID, unique per window
   if [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
@@ -42,7 +43,10 @@ _resolve_session_token() {
     local _p
     _p=$(powershell.exe -NoProfile -NonInteractive -Command \
       '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n ')
-    [ -n "${_p:-}" ] && [ "${_p}" -gt 1 ] 2>/dev/null && { printf '%s' "${_p}"; return; }
+    if [ -n "${_p:-}" ] && [ "${_p}" -gt 1 ] 2>/dev/null; then
+      printf '%s' "${_p}"; return
+    fi
+    echo "checkpoint-hook.sh: PowerShell PID lookup failed — falling back to day-cache (collision risk)" >&2
   fi
   # 4. Day-scoped cache (last resort): shared across all windows in this environment.
   #    Known limitation: simultaneous windows will share the same token here.
@@ -69,7 +73,7 @@ if [ -z "$now" ] || [ "$now" = "0" ]; then
   now=$(python3 -c "import time; print(int(time.time()))" 2>/dev/null || python -c "import time; print(int(time.time()))" 2>/dev/null)
 fi
 [ -z "$now" ] && now=0
-# If epoch is unavailable, skip entirely — writing "0:0" would lock future runs via SKIP_WINDOW
+# If epoch is unavailable, skip entirely — a zero timestamp cannot be used for threshold calculations
 if [ "$now" -eq 0 ]; then exit 0; fi
 
 # --- Vault root detection ---

@@ -27,7 +27,7 @@ If conditions are met:
   ```bash
   tmpdir_safe="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
   if [ -n "${WT_SESSION:-}" ]; then
-    _token=$(printf '%s' "${WT_SESSION:0:8}" | tr -cd 'a-zA-Z0-9')
+    _token=$(printf '%s' "$WT_SESSION" | tr -cd 'a-zA-Z0-9' | cut -c1-8)
   elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
     _token="${PPID}"
   elif command -v powershell.exe &>/dev/null; then
