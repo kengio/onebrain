@@ -6,47 +6,47 @@ set -euo pipefail
 # stdout is the pipe and is not a TTY, so all colors are disabled — including stderr-bound
 # functions — to avoid escape sequences in captured output or pipe buffers.
 if [ -t 1 ] && command -v tput &>/dev/null && tput colors &>/dev/null; then
-  RED=$(tput setaf 1 2>/dev/null || true)
-  GREEN=$(tput setaf 2 2>/dev/null || true)
-  YELLOW=$(tput setaf 3 2>/dev/null || true)
-  BLUE=$(tput setaf 4 2>/dev/null || true)
-  CYAN=$(tput setaf 6 2>/dev/null || true)
-  BOLD=$(tput bold 2>/dev/null || true)
-  RESET=$(tput sgr0 2>/dev/null || true)
+  red=$(tput setaf 1 2>/dev/null || true)
+  green=$(tput setaf 2 2>/dev/null || true)
+  yellow=$(tput setaf 3 2>/dev/null || true)
+  blue=$(tput setaf 4 2>/dev/null || true)
+  cyan=$(tput setaf 6 2>/dev/null || true)
+  bold=$(tput bold 2>/dev/null || true)
+  reset=$(tput sgr0 2>/dev/null || true)
 else
-  RED="" GREEN="" YELLOW="" BLUE="" CYAN="" BOLD="" RESET=""
+  red="" green="" yellow="" blue="" cyan="" bold="" reset=""
 fi
 
 # ─── Print helpers ────────────────────────────────────────────────────────────
-print_info()    { echo "${CYAN}  $*${RESET}"; }
-print_success() { echo "${GREEN}  $*${RESET}"; }
-print_error()   { echo "${RED}  error: $*${RESET}" >&2; }
-print_prompt()  { printf "${YELLOW}  ? ${RESET}${BOLD}%s${RESET} " "$*" >&2; }
-print_header()  { echo; echo "${BOLD}${CYAN}$*${RESET}"; echo; }
+print_info()    { echo "${cyan}  $*${reset}"; }
+print_success() { echo "${green}  $*${reset}"; }
+print_error()   { echo "${red}  error: $*${reset}" >&2; }
+print_prompt()  { printf "${yellow}  ? ${reset}${bold}%s${reset} " "$*" >&2; }
+print_header()  { echo; echo "${bold}${cyan}$*${reset}"; echo; }
 
 # ─── Unicode / emoji detection ────────────────────────────────────────────────
 if locale charmap 2>/dev/null | grep -qi 'utf-8'; then
-  ICON_DL="📦" ICON_EXTRACT="🔧" ICON_OK="✅" ICON_FAIL="❌" ICON_DONE="🎉"
+  icon_dl="📦" icon_extract="🔧" icon_ok="✅" icon_fail="❌" icon_done="🎉"
 else
-  ICON_DL="[DL]" ICON_EXTRACT="[EX]" ICON_OK="[OK]" ICON_FAIL="[FAIL]" ICON_DONE="[DONE]"
+  icon_dl="[DL]" icon_extract="[EX]" icon_ok="[OK]" icon_fail="[FAIL]" icon_done="[DONE]"
 fi
 
 # ─── Banner ───────────────────────────────────────────────────────────────────
 print_banner() {
   echo
-  echo "${CYAN}${BOLD}  ___             ____            _       ${RESET}"
-  echo "${CYAN}${BOLD} / _ \\ _ __   ___| __ ) _ __ __ _(_)_ __  ${RESET}"
-  echo "${CYAN}${BOLD}| | | | '_ \\ / _ \\  _ \\| '__/ _\` | | '_ \\ ${RESET}"
-  echo "${CYAN}${BOLD}| |_| | | | |  __/ |_) | | | (_| | | | | |${RESET}"
-  echo "${CYAN}${BOLD} \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|${RESET}"
+  echo "${cyan}${bold}  ___             ____            _       ${reset}"
+  echo "${cyan}${bold} / _ \\ _ __   ___| __ ) _ __ __ _(_)_ __  ${reset}"
+  echo "${cyan}${bold}| | | | '_ \\ / _ \\  _ \\| '__/ _\` | | '_ \\ ${reset}"
+  echo "${cyan}${bold}| |_| | | | |  __/ |_) | | | (_| | | | | |${reset}"
+  echo "${cyan}${bold} \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|${reset}"
   echo
-  echo "${YELLOW} > Two Minds, Think as One, in OneBrain${RESET}"
+  echo "${yellow} > Two Minds, Think as One, in OneBrain${reset}"
   echo
 }
 
 # ─── Spinner ──────────────────────────────────────────────────────────────────
-SPINNER_PID=""
-_INSTALL_TMPDIR=""
+spinner_pid=""
+_install_tmpdir=""
 
 spinner_start() {
   local msg="$1"
@@ -65,33 +65,33 @@ spinner_start() {
       sleep 0.08
     done
   ) &
-  SPINNER_PID=$!
+  spinner_pid=$!
 }
 
 spinner_stop() {
   local emoji="${1:-}"
   local msg="${2:-}"
-  if [ -n "${SPINNER_PID:-}" ]; then
-    kill "$SPINNER_PID" 2>/dev/null || true
-    wait "$SPINNER_PID" 2>/dev/null || true
-    SPINNER_PID=""
+  if [ -n "${spinner_pid:-}" ]; then
+    kill "$spinner_pid" 2>/dev/null || true
+    wait "$spinner_pid" 2>/dev/null || true
+    spinner_pid=""
   fi
   printf "\r\033[K  %s %s\n" "$emoji" "$msg" >&2
 }
 
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
 cleanup() {
-  if [ -n "${SPINNER_PID:-}" ]; then
-    kill "$SPINNER_PID" 2>/dev/null || true
-    wait "$SPINNER_PID" 2>/dev/null || true
-    SPINNER_PID=""
+  if [ -n "${spinner_pid:-}" ]; then
+    kill "$spinner_pid" 2>/dev/null || true
+    wait "$spinner_pid" 2>/dev/null || true
+    spinner_pid=""
     printf "\r\033[K" >&2
   fi
-  if [ -n "${_INSTALL_TMPDIR:-}" ]; then
-    if ! rm -rf "$_INSTALL_TMPDIR"; then
-      print_info "Warning: could not remove temporary directory '$_INSTALL_TMPDIR'. You may remove it manually."
+  if [ -n "${_install_tmpdir:-}" ]; then
+    if ! rm -rf "$_install_tmpdir"; then
+      print_info "Warning: could not remove temporary directory '$_install_tmpdir'. You may remove it manually."
     fi
-    _INSTALL_TMPDIR=""
+    _install_tmpdir=""
   fi
 }
 
@@ -104,16 +104,16 @@ print_install_hint() {
   case "$cmd" in
     git)
       echo >&2
-      echo "${BOLD}  Install git:${RESET}" >&2
+      echo "${bold}  Install git:${reset}" >&2
       case "$os" in
         Darwin)
-          echo "    • Homebrew:  ${CYAN}brew install git${RESET}" >&2
-          echo "    • Xcode CLT: ${CYAN}xcode-select --install${RESET}" >&2
+          echo "    • Homebrew:  ${cyan}brew install git${reset}" >&2
+          echo "    • Xcode CLT: ${cyan}xcode-select --install${reset}" >&2
           ;;
         Linux)
-          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install git${RESET}" >&2
-          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install git${RESET}" >&2
-          echo "    • Arch:          ${CYAN}sudo pacman -S git${RESET}" >&2
+          echo "    • Debian/Ubuntu: ${cyan}sudo apt install git${reset}" >&2
+          echo "    • Fedora/RHEL:   ${cyan}sudo dnf install git${reset}" >&2
+          echo "    • Arch:          ${cyan}sudo pacman -S git${reset}" >&2
           ;;
         *)
           echo "    • https://git-scm.com/downloads" >&2
@@ -122,14 +122,14 @@ print_install_hint() {
       ;;
     curl)
       echo >&2
-      echo "${BOLD}  Install curl:${RESET}" >&2
+      echo "${bold}  Install curl:${reset}" >&2
       case "$os" in
         Darwin)
-          echo "    • Homebrew: ${CYAN}brew install curl${RESET}" >&2
+          echo "    • Homebrew: ${cyan}brew install curl${reset}" >&2
           ;;
         Linux)
-          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install curl${RESET}" >&2
-          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install curl${RESET}" >&2
+          echo "    • Debian/Ubuntu: ${cyan}sudo apt install curl${reset}" >&2
+          echo "    • Fedora/RHEL:   ${cyan}sudo dnf install curl${reset}" >&2
           ;;
         *)
           echo "    • https://curl.se/download.html" >&2
@@ -138,14 +138,14 @@ print_install_hint() {
       ;;
     tar)
       echo >&2
-      echo "${BOLD}  Install tar:${RESET}" >&2
+      echo "${bold}  Install tar:${reset}" >&2
       case "$os" in
         Darwin)
-          echo "    • Homebrew: ${CYAN}brew install gnu-tar${RESET}" >&2
+          echo "    • Homebrew: ${cyan}brew install gnu-tar${reset}" >&2
           ;;
         Linux)
-          echo "    • Debian/Ubuntu: ${CYAN}sudo apt install tar${RESET}" >&2
-          echo "    • Fedora/RHEL:   ${CYAN}sudo dnf install tar${RESET}" >&2
+          echo "    • Debian/Ubuntu: ${cyan}sudo apt install tar${reset}" >&2
+          echo "    • Fedora/RHEL:   ${cyan}sudo dnf install tar${reset}" >&2
           ;;
         *)
           echo "    • https://www.gnu.org/software/tar/" >&2
@@ -177,9 +177,9 @@ prompt_with_default() {
   local question="$2"
   local default="$3"
   local answer
-  echo "${YELLOW}  ${number}) ${RESET}${BOLD}$question${RESET} ${CYAN}[${default}]${RESET}" >&2
-  printf "${YELLOW}  > ${RESET}" >&2
-  if ! read -r answer <&"$TTY_FD"; then
+  echo "${yellow}  ${number}) ${reset}${bold}$question${reset} ${cyan}[${default}]${reset}" >&2
+  printf "${yellow}  > ${reset}" >&2
+  if ! read -r answer <&"$tty_fd"; then
     echo >&2
     print_error "No input received (EOF). Aborted."
     exit 1
@@ -191,14 +191,12 @@ prompt_with_default() {
 # install_plugins <vault_path>
 # Downloads the latest release of each plugin listed in .obsidian/community-plugins.json.
 # Uses only curl (already a required dependency) and POSIX tools (grep, sed, mkdir).
-# Non-fatal: warns on failure and populates the global FAILED_PLUGINS array with
+# Non-fatal: warns on failure and populates the global failed_plugins array with
 # any plugin IDs that could not be installed.
 install_plugins() {
   local vault="$1"
   local plugins_json="$vault/.obsidian/community-plugins.json"
   local registry_url="https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json"
-  local failed_plugins=()
-
   # Read plugin IDs from the flat JSON array (no jq needed — one string per line after grep)
   if [ ! -f "$plugins_json" ]; then
     return 0
@@ -212,25 +210,24 @@ install_plugins() {
   print_header "Installing Obsidian community plugins..."
 
   # Fetch the Obsidian community plugin registry once.
-  # Reuse _INSTALL_TMPDIR (cleaned by the EXIT trap) to avoid a separate tempfile leak.
-  local registry_file="$_INSTALL_TMPDIR/plugin-registry.json"
+  # Reuse _install_tmpdir (cleaned by the EXIT trap) to avoid a separate tempfile leak.
+  local registry_file="$_install_tmpdir/plugin-registry.json"
   spinner_start "Fetching plugin registry..."
   local registry_err
   if ! registry_err=$(curl -fsSL "$registry_url" -o "$registry_file" 2>&1); then
-    spinner_stop "$ICON_FAIL" ""
+    spinner_stop "$icon_fail" ""
     print_info "Could not reach the plugin registry${registry_err:+ (${registry_err})}. All plugins will need to be installed manually."
-    # Populate FAILED_PLUGINS so the success message shows manual install instructions.
+    # Populate failed_plugins so the success message shows manual install instructions.
     while IFS= read -r _pid; do
       [ -z "$_pid" ] && continue
       failed_plugins+=("$_pid")
     done <<< "$plugin_ids"
-    FAILED_PLUGINS=("${failed_plugins[@]}")
     return 0
   fi
-  if [ -n "${SPINNER_PID:-}" ]; then
-    kill "$SPINNER_PID" 2>/dev/null || true
-    wait "$SPINNER_PID" 2>/dev/null || true
-    SPINNER_PID=""
+  if [ -n "${spinner_pid:-}" ]; then
+    kill "$spinner_pid" 2>/dev/null || true
+    wait "$spinner_pid" 2>/dev/null || true
+    spinner_pid=""
     printf "\r\033[K" >&2
   fi
   local plugins_dir="$vault/.obsidian/plugins"
@@ -241,7 +238,6 @@ install_plugins() {
       [ -z "$_pid" ] && continue
       failed_plugins+=("$_pid")
     done <<< "$plugin_ids"
-    FAILED_PLUGINS=("${failed_plugins[@]}")
     return 0
   fi
 
@@ -255,7 +251,7 @@ install_plugins() {
     curl_auth_args+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
   fi
 
-  local curl_errf="$_INSTALL_TMPDIR/curl_err"
+  local curl_errf="$_install_tmpdir/curl_err"
 
   while IFS= read -r plugin_id; do
     [ -z "$plugin_id" ] && continue
@@ -263,7 +259,7 @@ install_plugins() {
     # Validate plugin ID: reject IDs with path-traversal or shell-unsafe characters.
     # All legitimate Obsidian plugin IDs use only alphanumerics, hyphens, and underscores.
     if ! printf '%s' "$plugin_id" | grep -qE '^[a-zA-Z0-9_-]+$'; then
-      print_info "  ${YELLOW}skipped${RESET} invalid plugin ID: '${plugin_id}'"
+      print_info "  ${yellow}skipped${reset} invalid plugin ID: '${plugin_id}'"
       failed_plugins+=("$plugin_id")
       continue
     fi
@@ -279,7 +275,7 @@ install_plugins() {
            | head -1)
 
     if [ -z "$repo" ]; then
-      print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (not found in registry)"
+      print_info "  ${yellow}skipped${reset} ${plugin_id} (not found in registry)"
       failed_plugins+=("$plugin_id")
       continue
     fi
@@ -306,7 +302,7 @@ install_plugins() {
           | head -1)
 
     if [ -z "$tag" ]; then
-      spinner_stop "$ICON_FAIL" ""
+      spinner_stop "$icon_fail" ""
       # HTTP 403 can mean rate limit or access denied — check body to distinguish.
       # Rate-limit strings come from GitHub REST API error response "message" field.
       # Note: GitHub primary rate limits now return HTTP 429 (not 403) as of 2023;
@@ -315,12 +311,12 @@ install_plugins() {
       api_transport_err=$(cat "$curl_errf" 2>/dev/null | head -1 | tr -d '\r')
       if [ "$http_code" = "403" ]; then
         if printf '%s' "$release_json" | grep -qE '"(API rate limit exceeded|exceeded a secondary rate limit)"'; then
-          print_info "  ${RED}rate-limited${RESET} ${plugin_id} (GitHub rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)"
+          print_info "  ${red}rate-limited${reset} ${plugin_id} (GitHub rate limit reached; set GITHUB_TOKEN to raise to 5,000/hr)"
         else
-          print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (GitHub API returned 403 — check GITHUB_TOKEN if set)"
+          print_info "  ${yellow}skipped${reset} ${plugin_id} (GitHub API returned 403 — check GITHUB_TOKEN if set)"
         fi
       else
-        print_info "  ${YELLOW}skipped${RESET} ${plugin_id} (could not get release tag — HTTP ${http_code:-error}${api_transport_err:+; ${api_transport_err}})"
+        print_info "  ${yellow}skipped${reset} ${plugin_id} (could not get release tag — HTTP ${http_code:-error}${api_transport_err:+; ${api_transport_err}})"
       fi
       failed_plugins+=("$plugin_id")
       continue
@@ -328,8 +324,8 @@ install_plugins() {
 
     local plugin_dir="$plugins_dir/$plugin_id"
     if ! mkdir_err=$(mkdir -p "$plugin_dir" 2>&1); then
-      spinner_stop "$ICON_FAIL" ""
-      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (could not create plugin directory${mkdir_err:+: ${mkdir_err}})"
+      spinner_stop "$icon_fail" ""
+      print_info "  ${yellow}failed${reset}  ${plugin_id} (could not create plugin directory${mkdir_err:+: ${mkdir_err}})"
       failed_plugins+=("$plugin_id")
       continue
     fi
@@ -366,24 +362,24 @@ install_plugins() {
       local css_exit=0
       curl -fsSL "${base_url}/styles.css" -o "$plugin_dir/styles.css" 2>/dev/null || css_exit=$?
       if [ "$css_exit" -ne 0 ] && [ "$css_exit" -ne 22 ] && [ "$css_exit" -ne 56 ]; then
-        print_info "  ${YELLOW}warning${RESET} Unexpected error downloading styles.css for ${plugin_id} (curl exit ${css_exit})"
+        print_info "  ${yellow}warning${reset} Unexpected error downloading styles.css for ${plugin_id} (curl exit ${css_exit})"
       fi
       # Remove styles.css if absent or zero bytes (curl -f suppresses 404 bodies, leaving an empty file)
       [ -s "$plugin_dir/styles.css" ] || rm -f "$plugin_dir/styles.css"
     fi
 
     if [ "$ok" = true ]; then
-      spinner_stop "$ICON_OK" "${plugin_id}"
+      spinner_stop "$icon_ok" "${plugin_id}"
     else
-      spinner_stop "$ICON_FAIL" ""
+      spinner_stop "$icon_fail" ""
       local curl_err_detail
       curl_err_detail=$(cat "$curl_errf" 2>/dev/null | head -1 | tr -d '\r')
       local rm_err
       if ! rm_err=$(rm -rf "$plugin_dir" 2>&1); then
-        print_info "  ${YELLOW}warning${RESET} Could not remove partial directory '$plugin_dir': $rm_err"
+        print_info "  ${yellow}warning${reset} Could not remove partial directory '$plugin_dir': $rm_err"
         print_info "  Remove it manually before opening Obsidian."
       fi
-      print_info "  ${YELLOW}failed${RESET}  ${plugin_id} (${curl_err_detail:-download error})"
+      print_info "  ${yellow}failed${reset}  ${plugin_id} (${curl_err_detail:-download error})"
       failed_plugins+=("$plugin_id")
     fi
   done <<< "$plugin_ids"
@@ -397,19 +393,17 @@ install_plugins() {
     print_info "Install them manually: Settings → Community plugins → Browse"
   fi
 
-  # Populate global for use in the success message
-  FAILED_PLUGINS=("${failed_plugins[@]}")
 }
 
 # ─── Hook registration ────────────────────────────────────────────────────────
 # register_onebrain_hooks <vault_path>
 # Writes Stop, PreCompact, and PostCompact hook entries into .claude/settings.json
-# using the vault's absolute path. settings.json does not support ${CLAUDE_PLUGIN_ROOT}
-# (only hooks.json does), so absolute paths are required.
+# using a relative path. Claude Code uses vault root as cwd for hooks, so relative
+# paths work and avoid issues with spaces in absolute paths (e.g. iCloud paths).
 register_onebrain_hooks() {
   local vault="$1"
   local settings="$vault/.claude/settings.json"
-  local hook_script="$vault/.claude/plugins/onebrain/hooks/checkpoint-hook.sh"
+  local hook_script=".claude/plugins/onebrain/hooks/checkpoint-hook.sh"
 
   if [ ! -f "$settings" ]; then
     print_info "Warning: .claude/settings.json not found — hooks not registered"
@@ -424,10 +418,9 @@ settings_path, hook_script = sys.argv[1], sys.argv[2]
 with open(settings_path) as f:
     cfg = json.load(f)
 def hook_entry(mode):
-    return [{"matcher": "", "hooks": [{"type": "command", "command": f'bash "{hook_script}" {mode}'}]}]
+    return {"matcher": "", "hooks": [{"type": "command", "command": f'bash "{hook_script}" {mode}'}]}
 def register_hook(cfg, event, entry):
-    # entry is a list containing one matcher-object; extract it for insertion
-    new_entry = entry[0]
+    new_entry = entry
     hooks = cfg.setdefault("hooks", {})
     entries = hooks.get(event, [])
     if not isinstance(entries, list):
@@ -496,20 +489,20 @@ JSEOF
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
-FAILED_PLUGINS=()
+failed_plugins=()
 main() {
   # ── TTY check: when piped (curl | bash), stdin (fd 0) is the pipe — not the
   # ── terminal. Open /dev/tty as fd 3 so prompts reach the user without
   # ── replacing bash's own command source (which would cause a hang after the
-  # ── script finishes). TTY_FD=0 is the default for direct invocation.
+  # ── script finishes). tty_fd=0 is the default for direct invocation.
   # ── Two exit paths (in code order):
   # ──   (1) /dev/tty readable but exec 3< fails (rare) → exits with download instructions
   # ──   (2) /dev/tty not readable (no terminal at all) → exits with download instructions
-  TTY_FD=0
+  tty_fd=0
   if [ ! -t 0 ]; then
     if { true < /dev/tty; } 2>/dev/null; then
       if exec 3< /dev/tty; then
-        TTY_FD=3
+        tty_fd=3
       else
         print_error "Found /dev/tty but could not open it for reading."
         print_error "Download and run the script directly instead:"
@@ -527,7 +520,7 @@ main() {
   fi
 
   print_banner
-  echo "${BOLD}${CYAN}This script downloads OneBrain and sets up a fresh Obsidian vault.${RESET}"
+  echo "${bold}${cyan}This script downloads OneBrain and sets up a fresh Obsidian vault.${reset}"
   echo
 
   check_deps
@@ -542,7 +535,7 @@ main() {
 
   if [ ! -d "$install_location" ]; then
     print_prompt "Directory '$install_location' does not exist. Create it? [Y/n]:"
-    if ! read -r confirm <&"$TTY_FD"; then
+    if ! read -r confirm <&"$tty_fd"; then
       echo >&2
       print_error "No input received (EOF). Aborted."
       exit 1
@@ -580,44 +573,44 @@ main() {
   fi
 
   echo
-  echo "${BOLD}${CYAN}Vault will be created at: ${vault_path}${RESET}"
+  echo "${bold}${cyan}Vault will be created at: ${vault_path}${reset}"
   echo
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
   local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
   trap cleanup EXIT INT TERM
-  _INSTALL_TMPDIR=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
+  _install_tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
 
-  spinner_start "$ICON_DL Downloading OneBrain..."
-  if ! curl -fsSL "$repo_url" -o "$_INSTALL_TMPDIR/onebrain.tar.gz"; then
-    spinner_stop "$ICON_FAIL" ""
+  spinner_start "$icon_dl Downloading OneBrain..."
+  if ! curl -fsSL "$repo_url" -o "$_install_tmpdir/onebrain.tar.gz"; then
+    spinner_stop "$icon_fail" ""
     print_error "Download failed. Check your internet connection and try again."
     exit 1
   fi
-  spinner_stop "$ICON_OK" "Downloaded"
+  spinner_stop "$icon_ok" "Downloaded"
 
   # Verify the downloaded file is actually a valid tar archive, not an HTML error page
-  if ! tar tzf "$_INSTALL_TMPDIR/onebrain.tar.gz" >/dev/null; then
+  if ! tar tzf "$_install_tmpdir/onebrain.tar.gz" >/dev/null; then
     print_error "Downloaded file is not a valid archive."
     print_error "The repository may not be published yet, or the URL may have changed."
     print_error "URL: $repo_url"
     exit 1
   fi
 
-  spinner_start "$ICON_EXTRACT Extracting..."
-  if ! tar xzf "$_INSTALL_TMPDIR/onebrain.tar.gz" -C "$_INSTALL_TMPDIR"; then
-    spinner_stop "$ICON_FAIL" ""
+  spinner_start "$icon_extract Extracting..."
+  if ! tar xzf "$_install_tmpdir/onebrain.tar.gz" -C "$_install_tmpdir"; then
+    spinner_stop "$icon_fail" ""
     print_error "Extraction failed. The archive may be corrupted or your disk may be full."
     exit 1
   fi
-  spinner_stop "$ICON_OK" "Extracted"
+  spinner_stop "$icon_ok" "Extracted"
 
   # GitHub tarballs extract to a directory like onebrain-main/
   # || true prevents set -e from aborting if the find|head -1 pipeline exits non-zero
   # (e.g., SIGPIPE exit 141 when head -1 closes the read end before find finishes).
   # extracted_dir will be empty on genuine failure, caught by the check below.
   local extracted_dir
-  extracted_dir=$(find "$_INSTALL_TMPDIR" -maxdepth 1 -mindepth 1 -type d | head -1) || true
+  extracted_dir=$(find "$_install_tmpdir" -maxdepth 1 -mindepth 1 -type d | head -1) || true
 
   if [ -z "$extracted_dir" ]; then
     print_error "Extraction produced no directory. The archive may be malformed or extraction failed."
@@ -658,34 +651,34 @@ main() {
 
   # ── Step 5: Success ──────────────────────────────────────────────────────────
   echo
-  echo "${GREEN}  $ICON_DONE OneBrain is ready!${RESET}"
+  echo "${green}  $icon_done OneBrain is ready!${reset}"
   echo
   print_success "Vault path: ${vault_path}"
   echo
-  echo "${BOLD}${CYAN}Next steps:${RESET}"
+  echo "${bold}${cyan}Next steps:${reset}"
   echo
   echo "  1. Open Obsidian"
   echo "     File → Open Folder as Vault → select: ${vault_path}"
   local step=2
-  if [ ${#FAILED_PLUGINS[@]} -gt 0 ]; then
+  if [ ${#failed_plugins[@]} -gt 0 ]; then
     echo "  ${step}. Install missing plugins manually (Settings → Community plugins → Browse):"
-    for p in "${FAILED_PLUGINS[@]}"; do
-      echo "     ${CYAN}${p}${RESET}"
+    for p in "${failed_plugins[@]}"; do
+      echo "     ${cyan}${p}${reset}"
     done
     step=$((step + 1))
   fi
   echo "  ${step}. Open your terminal in the vault directory:"
-  echo "     ${CYAN}cd \"${vault_path}\"${RESET}"
+  echo "     ${cyan}cd \"${vault_path}\"${reset}"
   step=$((step + 1))
   echo "  ${step}. Start your AI assistant:"
-  echo "     ${CYAN}claude${RESET}  or  ${CYAN}gemini${RESET}"
+  echo "     ${cyan}claude${reset}  or  ${cyan}gemini${reset}"
   step=$((step + 1))
   echo "  ${step}. Run the onboarding command:"
-  echo "     ${CYAN}/onboarding${RESET}"
+  echo "     ${cyan}/onboarding${reset}"
   echo "     (Onboarding personalizes your vault and creates your folders)"
   step=$((step + 1))
   echo "  ${step}. (Optional) Add Obsidian-specific Claude Code skills:"
-  echo "     ${CYAN}git clone --depth 1 https://github.com/kepano/obsidian-skills .claude/plugins/obsidian-skills${RESET}"
+  echo "     ${cyan}git clone --depth 1 https://github.com/kepano/obsidian-skills .claude/plugins/obsidian-skills${reset}"
   echo
 }
 

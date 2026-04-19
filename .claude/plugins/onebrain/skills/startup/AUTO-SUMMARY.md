@@ -8,7 +8,7 @@ Run silently (no output) if ALL of these are true:
 3. The session had 3 or more user↔assistant exchanges
 
 If conditions are met:
-- Use `PPID` from context if already loaded; if absent, run `echo $PPID` via Bash and save to context. Glob checkpoint files: `[logs_folder]/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-*.md`. Also check yesterday's folder (compute yesterday's date, accounting for month/year rollover): `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{PPID}-checkpoint-*.md`. Keep files where `merged` is absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
+- Use `session_token` from context if already loaded; if absent, run the session token command via Bash and save to context. Glob checkpoint files: `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`. Also check yesterday's folder (compute yesterday's date, accounting for month/year rollover): `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`. Keep files where `merged` is absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
 - Determine NN: count existing `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …). **Verify** `YYYY-MM-DD-session-NN.md` does not already exist before writing; if it does, increment NN until a free slot is found.
 - Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Frontmatter:
   ```yaml
@@ -25,11 +25,19 @@ If conditions are met:
 - Guard: only delete checkpoint files AFTER confirming the session log file was successfully written. Never delete before or during the write.
 - After confirming the session log was written, reset the checkpoint hook counter to prevent spurious post-summary checkpoints:
   ```bash
-  TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
-  _ppid="${PPID:-$(echo $PPID)}"
-  if [ -n "$_ppid" ] && [ "$_ppid" -gt 0 ] 2>/dev/null; then
-    echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${_ppid}.state" 2>/dev/null
+  tmpdir_safe="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
+  if [ -n "${WT_SESSION:-}" ]; then
+    _token=$(printf '%s' "$WT_SESSION" | tr -cd 'a-zA-Z0-9' | cut -c1-8)
+  elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
+    _token="${PPID}"
+  elif command -v powershell.exe &>/dev/null; then
+    _token=$(powershell.exe -NoProfile -NonInteractive -Command '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n ')
+  else
+    _f="${tmpdir_safe}/ob1-$(date +%Y-%m-%d).sid"
+    [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null
+    _token=$(cat "$_f" 2>/dev/null || echo '99999')
   fi
+  [ -n "${_token:-}" ] && echo "0:$(date +%s)" > "${tmpdir_safe}/onebrain-${_token}.state" 2>/dev/null
   ```
 - Delete the checkpoint files from the glob above that were marked `merged: true`. Do not delete checkpoint files outside this session's glob result.
 - Safety-net: glob `[logs_folder]/YYYY/MM/*-checkpoint-*.md` (current month only) for any remaining files with `merged: true` — delete them. Scoped to current month to avoid vault-wide glob on large vaults.
