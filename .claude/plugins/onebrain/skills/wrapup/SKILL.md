@@ -207,7 +207,7 @@ _Omit this section if the session had no notable friction or technique worth log
 After writing the session log, reset the checkpoint hook counter to prevent spurious post-wrapup checkpoints:
 
 ```bash
-TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
+tmpdir_safe="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
 if [ -n "${WT_SESSION:-}" ]; then
   _token=$(printf '%s' "${WT_SESSION:0:8}" | tr -cd 'a-zA-Z0-9')
 elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
@@ -215,11 +215,11 @@ elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
 elif command -v powershell.exe &>/dev/null; then
   _token=$(powershell.exe -NoProfile -NonInteractive -Command '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n ')
 else
-  _f="${TMPDIR_SAFE}/ob1-$(date +%Y-%m-%d).sid"
+  _f="${tmpdir_safe}/ob1-$(date +%Y-%m-%d).sid"
   [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null
   _token=$(cat "$_f" 2>/dev/null || echo '99999')
 fi
-[ -n "${_token:-}" ] && echo "0:$(date +%s)" > "${TMPDIR_SAFE}/onebrain-${_token}.state" 2>/dev/null
+[ -n "${_token:-}" ] && echo "0:$(date +%s)" > "${tmpdir_safe}/onebrain-${_token}.state" 2>/dev/null
 ```
 
 This writes `COUNT=0` with a fresh timestamp, triggering a 60-second skip window and resetting the message counter.
