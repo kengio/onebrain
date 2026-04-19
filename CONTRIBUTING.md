@@ -106,7 +106,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    - `run_in_background: true` — for fire-and-forget tasks (link suggestion, tagging). The skill proceeds immediately; the agent notifies the user when done.
    - `run_in_background: false` — for tasks whose results the skill needs before continuing (classification, analysis). Launch multiple in parallel when processing a batch.
 
-5. Register the agent in the **Agents** table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and in the table in the **Skills vs Agents** section above. Note: both tables include a Mode column; keep them in sync.
+5. Register the agent in the **Agents** table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and add the filename to the `agents/` tree in the **Project Structure** section above. Note: the INSTRUCTIONS.md Agents table includes a Mode column — keep it accurate.
 
 Agents are stateless — they receive all context in the prompt payload and do not retain memory between invocations. Keep them focused on a single task.
 

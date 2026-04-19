@@ -97,7 +97,7 @@ Always use Obsidian wikilink syntax to connect related notes:
 
 When creating a new note, search the vault first (using qmd or Grep), then automatically add the top 1–3 relevant wikilinks under a `## Related` section.
 
-## Task Syntax
+## Task Syntax (Obsidian Tasks Plugin)
 
 Always create tasks in this format when capturing action items:
 ```
@@ -272,7 +272,19 @@ When the user asks you to recall something (a decision, preference, fact, or pas
 
 Stop as soon as you find a confident answer. If the answer spans multiple layers, synthesize across them.
 
-### Auto Checkpoint
+### Auto Session Summary
+
+Runs silently when ALL three conditions are true: (1) end-of-session signal detected (e.g. "bye", "good night", "I'm done for today", "see you tomorrow"), (2) `/wrapup` was not already run this session, (3) session had ≥ 3 user↔assistant exchanges.
+
+> Full procedure: see `skills/startup/AUTO-SUMMARY.md`
+
+If the user closes the session without any end-of-session signal, AUTO-SUMMARY does not run — checkpoint files written during the session serve as the recovery mechanism (run `/wrapup` at next session start to synthesize them).
+
+> **Missing file fallback:**
+> - AUTO-SUMMARY.md missing → skip silent save; checkpoint synthesis at next session start recovers
+> - /doctor flags the missing file at next run
+
+### Auto Checkpoint (Hook-Triggered)
 
 > **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal pane GUID, non-alphanumeric stripped, first 8 chars) → `$PPID` if > 1 (Mac/Linux only) → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
 
@@ -319,18 +331,6 @@ merged: false
 
 Keep under 250 words.
 
-### Auto Session Summary
-
-Runs silently when ALL three conditions are true: (1) end-of-session signal detected (e.g. "bye", "good night", "I'm done for today", "see you tomorrow"), (2) `/wrapup` was not already run this session, (3) session had ≥ 3 user↔assistant exchanges.
-
-> Full procedure: see `skills/startup/AUTO-SUMMARY.md`
-
-If the user closes the session without any end-of-session signal, AUTO-SUMMARY does not run — checkpoint files written during the session serve as the recovery mechanism (run `/wrapup` at next session start to synthesize them).
-
-> **Missing file fallback:**
-> - AUTO-SUMMARY.md missing → skip silent save; checkpoint synthesis at next session start recovers
-> - /doctor flags the missing file at next run
-
 ---
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -354,15 +354,16 @@ For cron/automated agents specifically: output is read by the user async (often 
 
 ## Working Principles
 
-- **Think before acting** — surface ambiguities and assumptions first; if multiple interpretations exist, present them via AskUserQuestion rather than picking silently
-- **Minimal footprint** — do only what was asked; no extra notes, restructuring, or automation beyond the request
+- **Think before acting** — surface ambiguities about task scope or intent first; if multiple interpretations exist, present them via AskUserQuestion rather than picking silently. File operations (reads, writes, searches, fetches) proceed autonomously per Permissions — this rule applies to task understanding, not file mechanics.
+- **Minimal footprint** — do only what was asked; no extra notes, restructuring, or automation beyond the request. When a choice exists between adding to an existing note vs. creating a new one, prefer adding.
 - **Surgical changes** — modify only what is necessary; don't reorganize adjacent notes or refactor vault structure unless explicitly asked
-- **Define success before starting** — for multi-step tasks, confirm what "done" looks like before proceeding
+- **Define success before starting** — for tasks spanning 3+ steps or involving irreversible restructuring (e.g. reorganize, archive), confirm what "done" looks like before proceeding. Excludes Capture-profile commands (/capture, /bookmark, /braindump, /learn) which proceed immediately.
 
 ## Boundaries
 
 - Don't delete notes without confirmation
 - Don't move files to the archive folder without telling the user
+- Prefer adding to existing notes over creating new ones when a suitable note already exists
 - Keep `[agent_folder]/MEMORY.md` under ~180 lines (/doctor audits at 180)
 
 ## Permissions
