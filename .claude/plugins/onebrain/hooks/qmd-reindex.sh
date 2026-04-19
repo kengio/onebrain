@@ -8,13 +8,13 @@
 # silent crashes on unexpected input instead of graceful no-ops.
 
 # ── Debug logging ─────────────────────────────────────────────────────────────
-LOG=""
+log_file=""
 if [ "${DEBUG:-}" = "1" ]; then
-  LOG="/tmp/onebrain-qmd-debug.log"
-  [ -f "$LOG" ] && [ "$(wc -c < "$LOG")" -gt 1048576 ] && : > "$LOG"
-  echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] qmd-reindex.sh started" >> "$LOG"
+  log_file="/tmp/onebrain-qmd-debug.log"
+  [ -f "$log_file" ] && [ "$(wc -c < "$log_file")" -gt 1048576 ] && : > "$log_file"
+  echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] qmd-reindex.sh started" >> "$log_file"
 fi
-log() { [ -n "$LOG" ] && echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] $*" >> "$LOG" || true; }
+log() { [ -n "$log_file" ] && echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] $*" >> "$log_file" || true; }
 
 # ── Check qmd is installed ─────────────────────────────────────────────────────
 if ! command -v qmd &>/dev/null; then
@@ -34,15 +34,15 @@ fi
 read_qmd_collection() {
   local yml="$vault_root/vault.yml"
   [ -f "$yml" ] || return 1
-  local collection=""
+  local _collection=""
   while IFS= read -r line || [ -n "$line" ]; do
     # Match top-level key: qmd_collection: <value>
     if printf '%s' "$line" | grep -qE '^qmd_collection:[[:space:]]+\S'; then
-      collection=$(printf '%s' "$line" | sed 's/^qmd_collection:[[:space:]]*//' | sed 's/[[:space:]]*#.*//' | tr -d ' \r"'"'"'')
+      _collection=$(printf '%s' "$line" | sed 's/^qmd_collection:[[:space:]]*//' | sed 's/[[:space:]]*#.*//' | tr -d ' \r"'"'"'')
       break
     fi
   done < "$yml"
-  printf '%s' "$collection"
+  printf '%s' "$_collection"
 }
 
 collection=$(read_qmd_collection 2>/dev/null) || true
@@ -54,8 +54,8 @@ log "collection: $collection"
 
 # ── Run qmd update ─────────────────────────────────────────────────────────────
 log "running: qmd update -c ${collection}"
-if [ -n "$LOG" ]; then
-  qmd update -c "$collection" >> "$LOG" 2>&1 &
+if [ -n "$log_file" ]; then
+  qmd update -c "$collection" >> "$log_file" 2>&1 &
 else
   qmd update -c "$collection" &>/dev/null &
 fi
