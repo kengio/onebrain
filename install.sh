@@ -424,10 +424,9 @@ settings_path, hook_script = sys.argv[1], sys.argv[2]
 with open(settings_path) as f:
     cfg = json.load(f)
 def hook_entry(mode):
-    return [{"matcher": "", "hooks": [{"type": "command", "command": f'bash "{hook_script}" {mode}'}]}]
+    return {"matcher": "", "hooks": [{"type": "command", "command": f'bash "{hook_script}" {mode}'}]}
 def register_hook(cfg, event, entry):
-    # entry is a list containing one matcher-object; extract it for insertion
-    new_entry = entry[0]
+    new_entry = entry
     hooks = cfg.setdefault("hooks", {})
     entries = hooks.get(event, [])
     if not isinstance(entries, list):

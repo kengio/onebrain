@@ -6,8 +6,9 @@
 # precompact  — fires before compact; forces checkpoint unconditionally
 # postcompact — fires after compact; resets message counter only
 #
-# State file: $TMPDIR/onebrain-{PPID}.state (COUNT:LAST_TS)
-# COUNT=0 with fresh timestamp in an *existing* state file signals post-checkpoint reset;
+# State file: $TMPDIR/onebrain-{SESSION_TOKEN}.state (COUNT:LAST_TS)
+# COUNT=0:NOW in an *existing* state file = post-checkpoint stop-hook reset (SKIP_WINDOW active);
+# COUNT=0:0 = post-compact reset (compact is not a checkpoint; SKIP_WINDOW does NOT activate);
 # absence of state file = first run.
 # SKIP_WINDOW=60: prevents re-trigger immediately after a checkpoint resets COUNT to 0.
 # MIN_ACTIVITY guard: if fewer than 2 messages since last checkpoint, reset and skip.
@@ -22,23 +23,27 @@ case "$MODE" in
   *) echo "checkpoint-hook.sh: unknown mode '${MODE}'" >&2; exit 1 ;;
 esac
 
-# Debug tracing: always logs when /tmp/ob1-hook-trace.enabled exists; or set OB1_HOOK_DEBUG=1
-_HOOK_LOG_FILE="${OB1_HOOK_DEBUG_LOG:-/tmp/ob1-hook.log}"
-if [ -n "${OB1_HOOK_DEBUG:-}" ] || [ -f "/tmp/ob1-hook-trace.enabled" ]; then
-  printf '%s: checkpoint-hook.sh mode=%s PPID=%s WT_SESSION=%s\n' \
-    "$(date '+%Y-%m-%d %H:%M:%S')" "$MODE" "${PPID:-unset}" "${WT_SESSION:-unset}" \
-    >> "$_HOOK_LOG_FILE" 2>/dev/null
-fi
-
-# Windows-compatible temp dir
+# Windows-compatible temp dir (resolved before debug tracing)
 TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
+
+# Debug tracing: set OB1_HOOK_DEBUG=1 or touch the sentinel file to enable.
+# Sentinel is user-scoped (includes USER or uid) to prevent other users on shared systems
+# from enabling another user's trace. Log file is guarded against symlink attacks.
+_HOOK_TRACE_FILE="${TMPDIR_SAFE}/ob1-${USER:-$(id -u)}-hook-trace.enabled"
+_HOOK_LOG_FILE="${OB1_HOOK_DEBUG_LOG:-${TMPDIR_SAFE}/ob1-hook.log}"
+if [ -n "${OB1_HOOK_DEBUG:-}" ] || [ -f "$_HOOK_TRACE_FILE" ]; then
+  [ ! -L "$_HOOK_LOG_FILE" ] && \
+    printf '%s: checkpoint-hook.sh mode=%s PPID=%s WT_SESSION=%s\n' \
+      "$(date '+%Y-%m-%d %H:%M:%S')" "$MODE" "${PPID:-unset}" "${WT_SESSION:-unset}" \
+      >> "$_HOOK_LOG_FILE" 2>/dev/null
+fi
 
 # Cross-platform session token: avoids $PPID=1 on Windows Git Bash
 # Priority: WT_SESSION (Windows Terminal) > PPID>1 (Unix/Mac) > PowerShell PPID > day-cache
 _resolve_session_token() {
-  # 1. Windows Terminal: each pane/tab gets a unique GUID
+  # 1. Windows Terminal: each pane/tab gets a unique GUID; strip non-alphanumeric (e.g. leading '{')
   if [ -n "${WT_SESSION:-}" ]; then
-    printf '%s' "${WT_SESSION:0:8}"; return
+    printf '%s' "${WT_SESSION:0:8}" | tr -cd 'a-zA-Z0-9'; return
   fi
   # 2. Unix/Mac: PPID is the Claude Code process PID, unique per window
   if [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
@@ -51,7 +56,8 @@ _resolve_session_token() {
       '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n ')
     [ -n "${_p:-}" ] && [ "${_p}" -gt 1 ] 2>/dev/null && { printf '%s' "${_p}"; return; }
   fi
-  # 4. Day-scoped cache: stable within a day, shared across windows on this platform
+  # 4. Day-scoped cache (last resort): shared across all windows in this environment.
+  #    Known limitation: simultaneous windows will share the same token here.
   local _f="${TMPDIR_SAFE}/ob1-$(date +%Y-%m-%d 2>/dev/null || echo fallback).sid"
   [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null
   cat "$_f" 2>/dev/null || printf '99999'
@@ -144,7 +150,9 @@ CHECKPOINT_DIR="${LOGS_FOLDER_ABS}/${TODAY_DATE%%-*}/$(echo "$TODAY_DATE" | cut 
 
 # --- PostCompact: reset counter so fresh accumulation begins after compact ---
 if [ "$MODE" = "postcompact" ]; then
-  if ! echo "0:${NOW}" > "$STATE_FILE" 2>/dev/null; then
+  # Use 0:0 (not 0:NOW) so the Stop hook's SKIP_WINDOW check does not activate —
+  # compaction is not a checkpoint, so the next Stop should not be suppressed.
+  if ! echo "0:0" > "$STATE_FILE" 2>/dev/null; then
     echo "checkpoint-hook.sh: postcompact state reset failed for ${STATE_FILE}" >&2
   fi
   exit 0
@@ -168,17 +176,19 @@ build_json() {
 
 # --- PreCompact: force checkpoint before compact, then allow on retry ---
 if [ "$MODE" = "precompact" ]; then
-  # If a checkpoint file was written within the last 5 minutes, allow compact to proceed.
-  # This is more reliable than checking the state file, which Stop hooks modify independently.
-  _LATEST_CP=$(ls -t "${CHECKPOINT_DIR}/${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-"*.md 2>/dev/null | head -1)
-  if [ -n "$_LATEST_CP" ]; then
+  # Single ls call sorted by mtime: check recency of newest file and derive count in one pass.
+  _ALL_CPS=$(ls -t "${CHECKPOINT_DIR}/${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-"*.md 2>/dev/null)
+  if [ -n "$_ALL_CPS" ]; then
+    _LATEST_CP=$(printf '%s\n' "$_ALL_CPS" | head -1)
     _CP_TS=$(stat -f %m "$_LATEST_CP" 2>/dev/null || stat -c %Y "$_LATEST_CP" 2>/dev/null || echo 0)
     if [ "${_CP_TS:-0}" -gt 0 ] && [ $(( NOW - _CP_TS )) -lt 300 ]; then
       exit 0  # checkpoint written within last 5 min — let compact proceed
     fi
+    EXISTING=$(printf '%s\n' "$_ALL_CPS" | wc -l | tr -d ' ')
+  else
+    EXISTING=0
   fi
   # No recent checkpoint — trigger one before allowing compact.
-  EXISTING=$(ls "${CHECKPOINT_DIR}/${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-"*.md 2>/dev/null | wc -l | tr -d ' ')
   NN_CP=$(printf "%02d" $(( EXISTING + 1 )))
   PROMPT="${TODAY_DATE}-${SESSION_TOKEN}-checkpoint-${NN_CP}.md"
   JSON=$(build_json "$PROMPT")
