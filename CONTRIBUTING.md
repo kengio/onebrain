@@ -182,13 +182,15 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 Each memory layer has designated skills. Do not write to a layer outside your skill's scope.
 
+> Paths below use variable form — defaults are `05-agent/` for `[agent_folder]` and `07-logs/` for `[logs_folder]`. See the Configuration table in INSTRUCTIONS.md.
+
 | Layer | Storage | Written by |
 |---|---|---|
-| Session logs | `07-logs/` | `/wrapup` only |
-| Memory files | `05-agent/memory/` | `/learn`, `/recap`, `/memory-review` |
-| MEMORY.md — Identity | `05-agent/MEMORY.md` | `/onboarding`, manual |
-| MEMORY.md — Active Projects | `05-agent/MEMORY.md` | `/learn`, manual |
-| MEMORY.md — Critical Behaviors | `05-agent/MEMORY.md` | `/learn` only |
+| Session logs | `[logs_folder]/` | `/wrapup` only |
+| Memory files | `[agent_folder]/memory/` | `/learn`, `/recap`, `/memory-review` |
+| MEMORY.md — Identity | `[agent_folder]/MEMORY.md` | `/onboarding`, manual |
+| MEMORY.md — Active Projects | `[agent_folder]/MEMORY.md` | `/learn`, manual |
+| MEMORY.md — Critical Behaviors | `[agent_folder]/MEMORY.md` | `/learn` only |
 
 ### Critical Behaviors Promotion Threshold
 
@@ -210,9 +212,9 @@ If any condition fails → write to `memory/` with `type: behavioral` instead.
 
 Skills that surface past information must search memory layers in this priority order — stop as soon as a confident answer is found:
 
-1. `05-agent/MEMORY.md` — always in context; check here first
-2. `05-agent/memory/` — match query keywords against INDEX.md Topics column to find relevant files, then read them; fall back to direct grep if no topic match
-3. `07-logs/` — grep session logs for past decisions and discussions
+1. `[agent_folder]/MEMORY.md` — always in context; check here first
+2. `[agent_folder]/memory/` — match query keywords against INDEX.md Topics column to find relevant files, then read them; fall back to direct grep if no topic match
+3. `[logs_folder]/` — grep session logs for past decisions and discussions
 
 ### INDEX.md Sync Rules
 

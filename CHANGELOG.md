@@ -12,10 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v1.10.7 — Documentation Reorganization
 
-- INSTRUCTIONS.md restructured into 5 logical groups with section comment headers for human readability
-- Added Working Principles section (think before acting, minimal footprint, surgical changes, define success first)
-- Reordered Session Behavior subsections to match runtime execution order; Auto Checkpoint labeled as Hook-Triggered
-- CONTRIBUTING.md sections reordered for top-to-bottom contributor flow; added Recall Order subsection to Memory System; removed duplicate agent table; added version bump requirement to PR Guidelines
+- INSTRUCTIONS.md restructured into 5 logical groups with comment headers for human and agent readability
+- Added Working Principles section: think before acting, minimal footprint, surgical changes, define success first
+- Permissions rewritten: inside-vault allowlist vs. outside-vault rule; shell/git commands now covered explicitly
+- Session Behavior subsections reordered to match runtime sequence; Auto Checkpoint labeled as Hook-Triggered
+- Boundaries: softened "always prefer adding to existing notes" to "when a suitable note already exists"
+- CONTRIBUTING.md: sections reordered for contributor flow; Memory System paths use variable form; Recall Order and version bump requirement added
 
 ## v1.10.6 — Cross-Platform Session Token + Hook Fixes
 

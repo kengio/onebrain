@@ -335,7 +335,7 @@ Keep under 250 words.
 
 <!-- ═══════════════════════════════════════════════════════════
      5. OUTPUT & INTERACTION
-     How to respond, what to do autonomously, what to confirm.
+     How to respond, how to decide, and what requires confirmation.
      ═══════════════════════════════════════════════════════════ -->
 
 ## Command Response Profiles
@@ -374,6 +374,6 @@ Proceed autonomously — no confirmation needed for operations **within this vau
 - Fetching URLs or performing web searches
 - Running shell and git commands
 
-**Outside the vault:** always ask before writing, editing, or deleting any file.
+**Outside the vault:** always ask before writing, editing, or deleting files, or running shell/git commands that affect anything outside the vault.
 
-Exception: confirm before deleting any note, even inside the vault (see Boundaries).
+Deletion inside the vault always requires confirmation — see Boundaries.
