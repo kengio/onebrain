@@ -1,6 +1,6 @@
 ---
-latest_version: 1.10.5
-released: 2026-04-18
+latest_version: 1.10.6
+released: 2026-04-19
 ---
 
 # Changelog
@@ -9,6 +9,17 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.6 — Cross-Platform Session Token + Hook Fixes
+
+- Cross-platform session token: `$WT_SESSION` (Windows Terminal) → `$PPID > 1` (Mac/Linux) → PowerShell parent PID → day-scoped cache. Fixes `$PPID=1` on Windows Git Bash causing checkpoint collisions across windows.
+- Checkpoint filenames now use `{session_token}` (alphanumeric) instead of `{PPID}` (numeric only)
+- PreCompact infinite-block fix: mtime check on latest checkpoint file (300s window) replaces state-file skip check, which was corrupted by intervening Stop hooks
+- Hooks moved to vault-level `.claude/settings.json` with relative paths — resolves silent failures from spaces in iCloud absolute paths
+- PostCompact writes `0:0` sentinel (not `0:NOW`) so Stop hook's SKIP_WINDOW does not activate after compact; ELAPSED zeroed when `LAST_TS=0` to prevent immediate time-threshold fire
+- `wrapup` and `AUTO-SUMMARY` state-file reset updated to use resolved session token (not bare `$PPID`) — fixes incorrect state file on Windows WT_SESSION
+- WT_SESSION sanitized with `tr -cd 'a-zA-Z0-9'` to strip GUID punctuation; token is always alphanumeric
+- Removed debug tracing from hook script
 
 ## v1.10.5 — Terminal Output Formatting
 

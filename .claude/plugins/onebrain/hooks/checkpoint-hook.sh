@@ -23,20 +23,8 @@ case "$MODE" in
   *) echo "checkpoint-hook.sh: unknown mode '${MODE}'" >&2; exit 1 ;;
 esac
 
-# Windows-compatible temp dir (resolved before debug tracing)
+# Windows-compatible temp dir
 TMPDIR_SAFE="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
-
-# Debug tracing: set OB1_HOOK_DEBUG=1 or touch the sentinel file to enable.
-# Sentinel is user-scoped (includes USER or uid) to prevent other users on shared systems
-# from enabling another user's trace. Log file is guarded against symlink attacks.
-_HOOK_TRACE_FILE="${TMPDIR_SAFE}/ob1-${USER:-$(id -u)}-hook-trace.enabled"
-_HOOK_LOG_FILE="${OB1_HOOK_DEBUG_LOG:-${TMPDIR_SAFE}/ob1-hook.log}"
-if [ -n "${OB1_HOOK_DEBUG:-}" ] || [ -f "$_HOOK_TRACE_FILE" ]; then
-  [ ! -L "$_HOOK_LOG_FILE" ] && \
-    printf '%s: checkpoint-hook.sh mode=%s PPID=%s WT_SESSION=%s\n' \
-      "$(date '+%Y-%m-%d %H:%M:%S')" "$MODE" "${PPID:-unset}" "${WT_SESSION:-unset}" \
-      >> "$_HOOK_LOG_FILE" 2>/dev/null
-fi
 
 # Cross-platform session token: avoids $PPID=1 on Windows Git Bash
 # Priority: WT_SESSION (Windows Terminal) > PPID>1 (Unix/Mac) > PowerShell PPID > day-cache
@@ -220,7 +208,9 @@ else
 fi
 
 COUNT=$(( COUNT + 1 ))
-ELAPSED=$(( NOW - LAST_TS ))
+# LAST_TS=0 means post-compact reset (0:0 sentinel) — treat as no elapsed time so the
+# time threshold doesn't fire immediately after compact.
+ELAPSED=$(( LAST_TS == 0 ? 0 : NOW - LAST_TS ))
 
 if [ "$COUNT" -ge "$MSG_THRESHOLD" ] || [ "$ELAPSED" -ge "$TIME_THRESHOLD" ]; then
   if [ "$COUNT" -lt $MIN_ACTIVITY ]; then
