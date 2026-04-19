@@ -8,7 +8,7 @@ Run silently (no output) if ALL of these are true:
 3. The session had 3 or more user↔assistant exchanges
 
 If conditions are met:
-- Use `PPID` from context if already loaded; if absent, run `echo $PPID` via Bash and save to context. Glob checkpoint files: `[logs_folder]/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-*.md`. Also check yesterday's folder (compute yesterday's date, accounting for month/year rollover): `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{PPID}-checkpoint-*.md`. Keep files where `merged` is absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
+- Use `PPID` from context if already loaded; if absent, run the session token command via Bash and save to context. Glob checkpoint files: `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`. Also check yesterday's folder (compute yesterday's date, accounting for month/year rollover): `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`. Keep files where `merged` is absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
 - Determine NN: count existing `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …). **Verify** `YYYY-MM-DD-session-NN.md` does not already exist before writing; if it does, increment NN until a free slot is found.
 - Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Frontmatter:
   ```yaml
