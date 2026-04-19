@@ -39,6 +39,26 @@ Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
+## Skills vs Agents — When to Use Which
+
+| | Skill | Agent |
+|--|-------|-------|
+| Invoked by | User (slash command or auto-route) | Another skill |
+| Runs | Inline, sequential | Background or parallel |
+| User interaction | Yes — can ask questions, confirm | No — autonomous, notifies only |
+| Scope | Multi-step workflow | Single focused task |
+| Reuse | One entry point | Can be dispatched by many skills |
+
+**Create an agent when all of these are true:**
+1. The task is self-contained and does not need user input mid-run
+2. It would block the main agent for more than one step if done inline
+3. It is either reusable across multiple skills, or benefits from parallel execution (e.g. classifying 10 inbox notes simultaneously)
+
+**Keep it in the skill when:**
+- The task is a single step that is already fast
+- It needs user confirmation before acting
+- It only makes sense in one skill's sequential flow
+
 ## Adding a New Skill
 
 1. Create `.claude/plugins/onebrain/skills/[skill-name]/SKILL.md`
@@ -61,36 +81,6 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 - Keep the frontmatter intact
 - Prefer adding steps over removing them — removals can break workflows users depend on
 - Test manually: open a vault, invoke the command, follow it through
-
-## Skills vs Agents — When to Use Which
-
-| | Skill | Agent |
-|--|-------|-------|
-| Invoked by | User (slash command or auto-route) | Another skill |
-| Runs | Inline, sequential | Background or parallel |
-| User interaction | Yes — can ask questions, confirm | No — autonomous, notifies only |
-| Scope | Multi-step workflow | Single focused task |
-| Reuse | One entry point | Can be dispatched by many skills |
-
-**Create an agent when all of these are true:**
-1. The task is self-contained and does not need user input mid-run
-2. It would block the main agent for more than one step if done inline
-3. It is either reusable across multiple skills, or benefits from parallel execution (e.g. classifying 10 inbox notes simultaneously)
-
-**Keep it in the skill when:**
-- The task is a single step that is already fast
-- It needs user confirmation before acting
-- It only makes sense in one skill's sequential flow
-
-**Existing agents** (for reference before adding a new one):
-
-| Agent | Dispatched by | Mode | Purpose |
-|-------|--------------|------|---------|
-| `knowledge-linker.md` | `/connect` | foreground | Find and add wikilinks across vault |
-| `link-suggester.md` | `/learn` | background | Auto-add up to 3 wikilinks to a new note |
-| `tag-suggester.md` | `/capture`, `/reading-notes` | background | Auto-add up to 3 tags from vault vocabulary |
-| `inbox-classifier.md` | `/consolidate` | foreground parallel | Pre-classify inbox notes for routing |
-| `task-extractor.md` | `/braindump` | background | Extract action items as formatted vault tasks |
 
 ## Adding a New Agent
 
@@ -116,7 +106,7 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
    - `run_in_background: true` — for fire-and-forget tasks (link suggestion, tagging). The skill proceeds immediately; the agent notifies the user when done.
    - `run_in_background: false` — for tasks whose results the skill needs before continuing (classification, analysis). Launch multiple in parallel when processing a batch.
 
-5. Register the agent in the **Agents** table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and in the table above. Note: both tables include a Mode column; keep them in sync.
+5. Register the agent in the **Agents** table in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and in the table in the **Skills vs Agents** section above. Note: both tables include a Mode column; keep them in sync.
 
 Agents are stateless — they receive all context in the prompt payload and do not retain memory between invocations. Keep them focused on a single task.
 
@@ -186,30 +176,7 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 5. **Stop, PreCompact, and PostCompact hooks cannot be registered in `hooks.json`** — Claude Code does not fire them from plugin hook files. Register them in the **vault's** `.claude/settings.json` (the `.claude/` folder inside the vault, not `~/.claude/settings.json`). Hook commands must use absolute paths — `${CLAUDE_PLUGIN_ROOT}` is only available in `hooks.json`, not `settings.json`. Use `/update` to register or repair these hooks automatically.
 
-## Install Scripts
-
-- [`install.sh`](install.sh) — bash, targets macOS and Linux
-- [`install.ps1`](install.ps1) — PowerShell 5+, targets Windows
-
-Both scripts download the repo tarball, extract it, remove themselves from the vault, and install community plugins. Keep them simple — vault setup belongs in `/onboarding`, not here.
-
-## Pull Request Guidelines
-
-- One logical change per PR
-- Include a brief description of what changed and why
-- If adding a skill, show an example interaction in the PR description
-- Keep skill files readable — they're prompts, not code
-
-## Reporting Issues
-
-Open a GitHub issue with:
-
-- What you expected to happen
-- What actually happened
-- Which AI agent you were using (Claude Code, Gemini CLI, etc.)
-- Relevant skill output if applicable
-
-## Memory Skills
+## Memory System
 
 ### Layer Ownership
 
@@ -232,7 +199,7 @@ A behavior qualifies for MEMORY.md Critical Behaviors ONLY when ALL three are tr
 
 If any condition fails → write to `memory/` with `type: behavioral` instead.
 
-### Memory File Naming Convention
+### Memory File Naming
 
 - Format: `kebab-case.md` — lowercase, hyphens, no spaces
 - Length: 3–5 words (e.g. `dev-workflow-superpowers.md`)
@@ -241,10 +208,34 @@ If any condition fails → write to `memory/` with `type: behavioral` instead.
 
 ### INDEX.md Sync Rules
 
-INDEX.md must be kept in sync at all times. Every skill that creates, updates, deprecates,
-or deletes a memory/ file must also update INDEX.md:
+INDEX.md must be kept in sync at all times. Every skill that creates, updates, deprecates, or deletes a memory/ file must also update INDEX.md:
+
 - Create → add row; increment `total_active`
 - Deprecate → remove row; decrement `total_active`
 - Delete (soft) → remove row; decrement `total_active`; move file to archive
 - Update → update row Description and Type columns if changed
 - After any change: set INDEX.md frontmatter `updated:` to today
+
+## Install Scripts
+
+- [`install.sh`](install.sh) — bash, targets macOS and Linux
+- [`install.ps1`](install.ps1) — PowerShell 5+, targets Windows
+
+Both scripts download the repo tarball, extract it, remove themselves from the vault, and install community plugins. Keep them simple — vault setup belongs in `/onboarding`, not here.
+
+## Pull Request Guidelines
+
+- One logical change per PR
+- Include a brief description of what changed and why
+- If adding a skill, show an example interaction in the PR description
+- Keep skill files readable — they're prompts, not code
+- Bump `plugin.json` version for every PR that adds or changes a skill or agent
+
+## Reporting Issues
+
+Open a GitHub issue with:
+
+- What you expected to happen
+- What actually happened
+- Which AI agent you were using (Claude Code, Gemini CLI, etc.)
+- Relevant skill output if applicable
