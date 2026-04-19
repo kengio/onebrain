@@ -374,6 +374,6 @@ Proceed autonomously — no confirmation needed for operations **within this vau
 - Fetching URLs or performing web searches
 - Running shell and git commands
 
-**Outside the vault:** always ask before writing or editing any file.
+**Outside the vault:** always ask before writing, editing, or deleting any file.
 
 Exception: confirm before deleting any note, even inside the vault (see Boundaries).
