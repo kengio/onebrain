@@ -22,7 +22,7 @@ Good contributions include:
 ├── .claude-plugin/
 │   └── plugin.json                      Plugin manifest (name, version, description)
 ├── INSTRUCTIONS.md                      Agent instructions — loaded by CLAUDE.md/GEMINI.md/AGENTS.md
-├── skills/                              One directory per slash command (25 skills)
+├── skills/                              One directory per slash command (24 skills)
 │   └── [name]/
 │       └── SKILL.md                     The skill prompt — what the AI follows when invoked
 ├── hooks/
