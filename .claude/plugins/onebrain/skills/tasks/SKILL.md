@@ -1,6 +1,6 @@
 ---
 name: tasks
-description: "Create or update the live task dashboard (TASKS.md) in Obsidian."
+description: "Create or update the live task dashboard (TASKS.md) in Obsidian. Use when the user wants to view or regenerate the task dashboard — 'show my tasks', 'update TASKS.md', 'open task view'. Do NOT use for: the vault portal/map (use moc), capturing new tasks (add them inside project notes directly), or daily briefing (use daily)."
 ---
 
 # Task Dashboard

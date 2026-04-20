@@ -1,6 +1,6 @@
 ---
 name: onboarding
-description: "First-run setup for OneBrain : personalize identity, communication style, and vault configuration"
+description: "First-run setup for OneBrain : personalize identity, communication style, and vault configuration. Use only on first install or when the user wants to fully reconfigure OneBrain from scratch — manual only. Do NOT use for: teaching a single preference (use learn), updating system files (use update), or reviewing memory (use memory-review)."
 ---
 
 ## Install Path Detection

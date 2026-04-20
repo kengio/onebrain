@@ -1,6 +1,6 @@
 ---
 name: wrapup
-description: "Wrap up and save the current session summary to the session log"
+description: "Wrap up and save the current session summary to the session log. Use at end of session when the user says 'bye', 'wrap up', 'save session', or an end-of-session signal is detected. /wrapup writes to 07-logs/ only. Do NOT use for: promoting insights to memory/ (use recap), synthesizing a topic across sessions (use distill), or teaching a single preference (use learn)."
 ---
 
 # Session Summary (TL;DR)

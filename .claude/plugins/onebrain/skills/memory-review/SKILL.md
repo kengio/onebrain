@@ -1,6 +1,6 @@
 ---
 name: memory-review
-description: "Interactive review of all memory/ files — keep, update, deprecate, or delete entries one by one"
+description: "Interactive review of all memory/ files — keep, update, deprecate, or delete entries one by one. Use when the user wants to audit and prune accumulated memory — 'review my memory', 'clean up what you remember'. Do NOT use for: teaching a new fact (use learn), recalling something specific (read memory directly), or batch-promoting session insights (use recap)."
 ---
 
 # Memory Review

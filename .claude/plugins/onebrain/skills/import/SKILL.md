@@ -1,6 +1,6 @@
 ---
 name: import
-description: "Import local files (PDF, Word, PowerPoint, Excel, images, video, scripts) from a staging inbox folder or explicit path into structured markdown notes in the resources folder (default 04-resources/, resolved from vault.yml). Invoke when user runs /import, /import [path], or /import --attach."
+description: "Import local files (PDF, Word, PowerPoint, Excel, images, video, scripts) from a staging inbox folder or explicit path into structured markdown notes in the resources folder. Invoke when user mentions a local file path to bring into the vault, or runs /import or /import --attach. Do NOT use for: fetching content from a URL (use summarize), capturing a text idea (use capture), or processing a book already read (use reading-notes)."
 ---
 
 # Import

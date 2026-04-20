@@ -21,8 +21,11 @@ Good contributions include:
 .claude/plugins/onebrain/                Main plugin directory
 ├── .claude-plugin/
 │   └── plugin.json                      Plugin manifest (name, version, description)
-├── INSTRUCTIONS.md                      Agent instructions — loaded by CLAUDE.md/GEMINI.md/AGENTS.md
-├── skills/                              One directory per slash command (24 skills)
+├── INSTRUCTIONS.md                      Shared agent instructions — harness-neutral core
+├── references/                          Harness-specific context loaded by GEMINI.md / AGENTS.md
+│   ├── gemini-tools.md                  Tool name mapping for Gemini CLI
+│   └── codex-tools.md                   Tool name mapping for Codex CLI
+├── skills/                              One directory per slash command (25 skills)
 │   └── [name]/
 │       └── SKILL.md                     The skill prompt — what the AI follows when invoked
 ├── hooks/
@@ -38,6 +41,20 @@ Good contributions include:
 Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
+
+## Multi-Harness Support
+
+OneBrain runs on three AI harnesses. Each has a root entrypoint file that loads harness-specific context before delegating to the shared INSTRUCTIONS.md:
+
+| File | Harness | Loads |
+|---|---|---|
+| `CLAUDE.md` | Claude Code | `INSTRUCTIONS.md` directly |
+| `GEMINI.md` | Gemini CLI | `references/gemini-tools.md` → `INSTRUCTIONS.md` |
+| `AGENTS.md` | Codex CLI | `references/codex-tools.md` → `INSTRUCTIONS.md` |
+
+**INSTRUCTIONS.md is harness-neutral** — it uses Claude Code tool names throughout. The `references/` files translate those names to each harness's equivalents.
+
+When editing INSTRUCTIONS.md or skills, use Claude Code tool names (`Read`, `Write`, `Edit`, `Bash`, `Agent`, etc.) — the harness mapping handles translation automatically.
 
 ## Skills vs Agents — When to Use Which
 

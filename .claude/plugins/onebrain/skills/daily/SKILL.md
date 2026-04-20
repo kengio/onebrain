@@ -1,6 +1,6 @@
 ---
 name: daily
-description: "Daily briefing: surfaces tasks due today and open items from the last session"
+description: "Daily briefing: surfaces tasks due today and open items from the last session. Use when the user wants a snapshot of today's obligations — 'what's on today', 'daily briefing', 'what do I have today'. Do NOT use for: full weekly review (use weekly), vault health check (use doctor), or listing all tasks across future dates."
 ---
 
 # /daily : Daily Briefing

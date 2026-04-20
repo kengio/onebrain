@@ -1,6 +1,6 @@
 ---
 name: reading-notes
-description: "Process a book or article into structured progressive summary notes saved to the resources folder"
+description: "Process a book or article into structured progressive summary notes saved to the resources folder. Use when the user has finished reading something and wants to capture structured notes — 'I just finished reading X', 'take notes on this book'. Do NOT use for: fetching and summarizing a URL now (use summarize), capturing a raw thought (use capture), or web research (use research)."
 ---
 
 # Reading Notes

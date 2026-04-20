@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Teach the agent a new fact or behavioral preference and save it to memory/ for future recall"
+description: "Teach the agent a new fact or behavioral preference and save it to memory/ for future recall. Use when the user says 'remember that', 'from now on', 'always do X', or corrects agent behavior they want persisted. Do NOT use for: capturing a general note or idea (use capture), saving a session summary (use wrapup), or promoting recurring patterns from many sessions (use recap)."
 ---
 
 # Learn

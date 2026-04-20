@@ -1,6 +1,6 @@
 ---
 name: bookmark
-description: "Quick URL bookmark capture : paste a link, AI generates name and description, suggests category, saves to Bookmarks.md in awesome-list format. Invoke when user wants to save a link, bookmark a URL, or add to their reading list."
+description: "Quick URL bookmark capture : paste a link, AI generates name and description, suggests category, saves to Bookmarks.md in awesome-list format. Invoke when user wants to save a URL for later — bare URL with no other context defaults to this. Do NOT use for: deeply processing or summarizing the URL content now (use summarize), saving a note that is not a URL (use capture), or researching a topic from scratch (use research)."
 ---
 
 # Bookmark

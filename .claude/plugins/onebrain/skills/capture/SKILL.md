@@ -1,6 +1,6 @@
 ---
 name: capture
-description: "Quick note capture with automatic wikilink suggestions to related existing notes"
+description: "Quick note capture with automatic wikilink suggestions to related existing notes. Use when the user wants to save a single, specific, titled idea, insight, or piece of information to the vault. Do NOT use for: unstructured multi-thread thought dumps (use braindump), saving a URL for later (use bookmark), deeply summarizing an article or URL (use summarize), processing a book (use reading-notes), or teaching the agent a preference (use learn)."
 ---
 
 # Capture

@@ -1,6 +1,6 @@
 ---
 name: summarize
-description: "Fetch a URL and create a structured summary note saved to the resources folder. Invoke when user wants to deeply process a link, article, blog post, documentation, or paper into a permanent vault note."
+description: "Fetch a URL and create a structured summary note saved to the resources folder. Invoke when user shares a URL and explicitly asks for a summary, deep read, or notes on it. Do NOT use for: just saving a URL without reading it (use bookmark), researching a topic without a specific URL (use research), or processing a physical book (use reading-notes)."
 ---
 
 # Summarize

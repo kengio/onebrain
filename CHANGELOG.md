@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.10
+latest_version: 1.10.11
 released: 2026-04-20
 ---
 
@@ -9,6 +9,15 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.11 — Skill Exclusion Clauses + Multi-Harness Entrypoints
+
+- docs(skills): add "Do NOT use for:" exclusion clause to all 25 skill descriptions to prevent skill routing errors between overlapping skills (capture/braindump/bookmark/summarize/research, wrapup/recap/distill, etc.)
+- feat(harness): add `references/gemini-tools.md` — Gemini CLI tool name mapping for INSTRUCTIONS.md
+- feat(harness): add `references/codex-tools.md` — Codex CLI tool name mapping and sub-agent dispatch guide
+- fix(harness): update GEMINI.md to load gemini-tools.md before INSTRUCTIONS.md
+- fix(harness): update AGENTS.md to load codex-tools.md before INSTRUCTIONS.md
+- docs(contributing): add Multi-Harness Support section documenting entrypoint structure
 
 ## v1.10.10 — MEMORY-INDEX Rename + README Memory Layer
 
