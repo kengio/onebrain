@@ -213,18 +213,18 @@ If any condition fails → write to `memory/` with `type: behavioral` instead.
 Skills that surface past information must search memory layers in this priority order — stop as soon as a confident answer is found:
 
 1. `[agent_folder]/MEMORY.md` — always in context; check here first
-2. `[agent_folder]/memory/` — match query keywords against INDEX.md Topics column to find relevant files, then read them; fall back to direct grep if no topic match
+2. `[agent_folder]/memory/` — match query keywords against MEMORY-INDEX.md Topics column to find relevant files, then read them; fall back to direct grep if no topic match
 3. `[logs_folder]/` — grep session logs for past decisions and discussions
 
-### INDEX.md Sync Rules
+### MEMORY-INDEX.md Sync Rules
 
-INDEX.md must be kept in sync at all times. Every skill that creates, updates, deprecates, or deletes a memory/ file must also update INDEX.md:
+MEMORY-INDEX.md must be kept in sync at all times. Every skill that creates, updates, deprecates, or deletes a memory/ file must also update MEMORY-INDEX.md:
 
 - Create → add row; increment `total_active`
 - Deprecate → remove row; decrement `total_active`
 - Delete (soft) → remove row; decrement `total_active`; move file to archive
 - Update → update row Description and Type columns if changed
-- After any change: set INDEX.md frontmatter `updated:` to today
+- After any change: set MEMORY-INDEX.md frontmatter `updated:` to today
 
 ## Install Scripts
 

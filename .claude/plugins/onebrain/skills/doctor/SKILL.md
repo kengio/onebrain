@@ -242,10 +242,10 @@ Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and t
 
 | Check | Action |
 |---|---|
-| INDEX.md missing | AskUserQuestion: "INDEX.md not found — create an empty one?" `yes / no` |
-| Files in memory/ not in INDEX.md | Read frontmatter; skip `status: deprecated`; list remaining as orphans |
-| Rows in INDEX.md pointing to missing files | List dead links |
-| Files with `verified` > 90 days | Check active/needs-review only (skip deprecated); auto-set `status: needs-review` in file and INDEX.md |
+| MEMORY-INDEX.md missing | AskUserQuestion: "MEMORY-INDEX.md not found — create an empty one?" `yes / no` |
+| Files in memory/ not in MEMORY-INDEX.md | Read frontmatter; skip `status: deprecated`; list remaining as orphans |
+| Rows in MEMORY-INDEX.md pointing to missing files | List dead links |
+| Files with `verified` > 90 days | Check active/needs-review only (skip deprecated); auto-set `status: needs-review` in file and MEMORY-INDEX.md |
 | Critical Behaviors section > 15 items | Warn: suggest moving excess to memory/ |
 | MEMORY.md `## Identity & Personality` uses old 6-field labels (`**Agent name:**`, `**User name:**`) | Warn: "MEMORY.md Identity block uses pre-v1.10.1 format — run /doctor --fix or /update to migrate" |
 | Checkpoint files with `merged: true` | Delete them (safety net — /wrapup handles these, /doctor catches stragglers) |
@@ -262,9 +262,9 @@ Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and t
 
 Ongoing maintenance only (not migration). Fixes issues arising after initial setup:
 
-1. **Rebuild INDEX.md** from scratch:
+1. **Rebuild MEMORY-INDEX.md** from scratch:
    - Read frontmatter of all files in `memory/`
-   - Skip files with `status: deprecated` (not in INDEX by design)
+   - Skip files with `status: deprecated` (not in MEMORY-INDEX by design)
    - Rebuild table with active and needs-review entries only
    - Recalculate `total_active`, `total_needs_review`
    - Set `updated:` to today
@@ -273,7 +273,7 @@ Ongoing maintenance only (not migration). Fixes issues arising after initial set
    - kebab-case (lowercase, hyphens only)
    - No date prefix (e.g. `YYYY-MM-DD-topic.md` → `topic.md`)
    - 3–5 words
-   - Update INDEX.md wikilinks to match renamed files
+   - Update MEMORY-INDEX.md wikilinks to match renamed files
 
 3. **Reset `recap.min_frequency`** to `2` if invalid value found in vault.yml.
 

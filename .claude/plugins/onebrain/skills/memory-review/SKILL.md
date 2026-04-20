@@ -9,12 +9,12 @@ Interactive review session for pruning and updating memory entries.
 
 ## Data Source
 
-Read the entry list from INDEX.md (already in context after session startup). Before
+Read the entry list from MEMORY-INDEX.md (already in context after session startup). Before
 displaying the first entry, read the frontmatter of every `active` and `needs-review`
-file in memory/ to fetch `conf` and `verified` — these fields are not in INDEX.md.
+file in memory/ to fetch `conf` and `verified` — these fields are not in MEMORY-INDEX.md.
 Only read the full file body when user picks `update` and needs to modify content.
 
-## Edge Case: Empty INDEX
+## Edge Case: Empty MEMORY-INDEX
 
 If memory/ is empty or has no active/needs-review entries → display
 "No memory files to review." and stop.
@@ -101,26 +101,26 @@ Call 2 — additional edits (cancel first — safe default, discards all staged 
 - `change-description` → prompt for new description as free text (plain text response,
   not AskUserQuestion). After user replies: stage the change, return to Call 2.
 - `confirm` → write all staged changes; bump `verified` and `updated` to today;
-  update INDEX.md row and file frontmatter. Advance to next entry.
+  update MEMORY-INDEX.md row and file frontmatter. Advance to next entry.
 - `cancel` → discard all staged changes; return to Primary menu for this entry.
 
 **needs-review** (via manage...) → sets `status: needs-review`; bumps `updated` to today.
 `verified` unchanged. Advance to next entry.
 
 **deprecate** (via manage...) → sets `status: deprecated`; bumps `updated` to today;
-removes row from INDEX.md; decrement `total_active` if entry was `active`, or
+removes row from MEMORY-INDEX.md; decrement `total_active` if entry was `active`, or
 `total_needs_review` if entry was `needs-review`. `verified` unchanged.
 File stays in memory/ (browsable in Obsidian). Advance to next entry.
 
-**delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
+**delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from MEMORY-INDEX?"
 - options:
   - label: "cancel", description: "Return to Manage menu, no changes"
-  - label: "confirm", description: "Archive file and remove from INDEX"
+  - label: "confirm", description: "Archive file and remove from MEMORY-INDEX"
 If cancel: return to Manage menu for this entry.
 If confirm:
 1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`
 2. Add `archived: YYYY-MM-DD` to file frontmatter
-3. Remove row from INDEX.md; decrement `total_active` if status was `active`, `total_needs_review` if status was `needs-review`
+3. Remove row from MEMORY-INDEX.md; decrement `total_active` if status was `active`, `total_needs_review` if status was `needs-review`
 4. If archive path already exists: suffix with `-NN` (e.g. `dev-workflow-02.md`) — never overwrite
 5. Auto-create `[archive_folder]/[agent_folder]/memory/YYYY-MM/` folder if missing
 Advance to next entry.
@@ -129,9 +129,9 @@ Advance to next entry.
 
 **stop** → exit session, all unreviewed entries unchanged.
 
-## INDEX.md Sync
+## MEMORY-INDEX.md Sync
 
-Every skill that modifies INDEX.md must update these frontmatter cache fields:
+Every skill that modifies MEMORY-INDEX.md must update these frontmatter cache fields:
 - `total_active` — increment/decrement on status changes
 - `total_needs_review` — increment/decrement on status changes
 - `updated` — set to today after any modification
@@ -152,8 +152,8 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 
 ## Edge Cases
 
-- If entry's row is missing from INDEX.md but file exists in memory/ (out of sync) →
-  pass over the entry and output: "INDEX out of sync — run /doctor --fix"
+- If entry's row is missing from MEMORY-INDEX.md but file exists in memory/ (out of sync) →
+  pass over the entry and output: "MEMORY-INDEX out of sync — run /doctor --fix"
 - `keep`, `needs-review`, `deprecate`, `delete` commit immediately. No undo.
   `update` commits only on explicit `confirm` (cancel at any stage discards all staged changes).
   `stop` and `skip` (via manage...) never commit.
@@ -161,5 +161,5 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 ## Restore from Archive
 
 To recover a soft-deleted file: manually move it back to `memory/` and remove the
-`archived:` frontmatter field. Then re-add the INDEX.md row manually or run `/doctor --fix`
-to rebuild INDEX.
+`archived:` frontmatter field. Then re-add the MEMORY-INDEX.md row manually or run `/doctor --fix`
+to rebuild MEMORY-INDEX.md.

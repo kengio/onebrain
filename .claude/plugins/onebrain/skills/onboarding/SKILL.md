@@ -229,9 +229,9 @@ Do NOT create Key Learnings, Key Decisions, or Recurring Contexts sections.
 
 ---
 
-## Step 9b: Create INDEX.md
+## Step 9b: Create MEMORY-INDEX.md
 
-Write `05-agent/INDEX.md` with an empty table and frontmatter cache fields. If the write fails, report the error and continue to Step 10 (non-blocking).
+Write `05-agent/MEMORY-INDEX.md` with an empty table and frontmatter cache fields. If the write fails, report the error and continue to Step 10 (non-blocking).
 
 ```markdown
 ---
@@ -247,7 +247,7 @@ total_needs_review: 0
 |------|--------|------|--------|-------------|
 ```
 
-Omit `last_review:` from INDEX.md frontmatter — last review date is tracked in `vault.yml stats.last_memory_review:`, updated by /memory-review on each run.
+Omit `last_review:` from MEMORY-INDEX.md frontmatter — last review date is tracked in `vault.yml stats.last_memory_review:`, updated by /memory-review on each run.
 
 ---
 
@@ -479,7 +479,7 @@ Check if `[agent_folder]/MEMORY.md` already exists:
 
 Write `[agent_folder]/MEMORY.md` using the same 3-section template and personalization data as Step 9 in the standard Path A flow (Identity & Personality, Active Projects, Critical Behaviors — no other sections).
 
-Also write `[agent_folder]/INDEX.md` using the same template as Step 9b in Path A (empty table, frontmatter cache fields, no `last_review:`).
+Also write `[agent_folder]/MEMORY-INDEX.md` using the same template as Step 9b in Path A (empty table, frontmatter cache fields, no `last_review:`).
 
 ---
 

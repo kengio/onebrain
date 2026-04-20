@@ -71,7 +71,7 @@ Then AskUserQuestion:
 
 Options:
 - **update** → merge insight into existing file in-place, bump `verified`
-- **supersede** → create new file; deprecate old; remove old row from INDEX.md;
+- **supersede** → create new file; deprecate old; remove old row from MEMORY-INDEX.md;
   set `supersedes:` on new, `superseded_by:` on old
 - **separate** → create new file, no changes to existing
 - **skip** → discard this insight, move on
@@ -102,9 +102,9 @@ Then AskUserQuestion:
 3. Name new file after shared topics (e.g. `dev-workflow-worktree.md`)
 4. Frontmatter: keep highest `conf`; most recent `verified`; if either was `needs-review`
    → merged file inherits `needs-review` (caution wins); update `total_needs_review` accordingly
-5. Deprecate both old files + remove their rows from INDEX.md; for each deprecated file:
+5. Deprecate both old files + remove their rows from MEMORY-INDEX.md; for each deprecated file:
    decrement `total_active` if it was `active`, or `total_needs_review` if it was `needs-review`
-6. Add new file to INDEX.md; increment `total_active` (or `total_needs_review` if inherited `needs-review`)
+6. Add new file to MEMORY-INDEX.md; increment `total_active` (or `total_needs_review` if inherited `needs-review`)
 
 **Contradiction during merge:** if files contain contradicting facts, do NOT auto-pick.
 AskUserQuestion showing both versions: `keep version A / keep version B / cancel merge`
@@ -133,8 +133,8 @@ Each insight that passes the frequency filter:
 - Filename collision: if target exists, suffix with `-NN` automatically (no user prompt —
   batch mode)
 - Infer `type` from content (same 5 categories as /learn): behavioral / context / dev / project / reference — pick silently, no prompt
-- Add row to INDEX.md: `| [[memory/filename]] | topic1, topic2 | {inferred-type} | active | description |`
-- Update INDEX.md `updated:` and `total_active` counter
+- Add row to MEMORY-INDEX.md: `| [[memory/filename]] | topic1, topic2 | {inferred-type} | active | description |`
+- Update MEMORY-INDEX.md `updated:` and `total_active` counter
 
 Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /learn.
 
