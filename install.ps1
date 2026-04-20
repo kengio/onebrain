@@ -1,5 +1,6 @@
 #Requires -Version 5.0
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 
 # Ensure TLS 1.2 is enabled — required by GitHub (PS 5 defaults to TLS 1.0 which GitHub dropped)
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -176,7 +177,7 @@ function Install-Plugins {
       if (-not $ok) { break }
       $assetPath = Join-Path $pluginDir $asset
       try {
-        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile $assetPath -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile $assetPath -UseBasicParsing -ErrorAction Stop | Out-Null
         $assetLen = try { (Get-Item $assetPath -ErrorAction Stop).Length } catch { 0 }
         if ($assetLen -eq 0) {
           Write-Host "  ⚠️  $pluginId/$asset downloaded as empty (network drop?)" -ForegroundColor Yellow
@@ -194,7 +195,7 @@ function Install-Plugins {
     if ($ok) {
       $cssPath = Join-Path $pluginDir "styles.css"
       try {
-        $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -ErrorAction Stop
+        $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -UseBasicParsing -ErrorAction Stop
         # Defensive: remove if non-200 or empty (guards against zero-byte writes on network drop)
         $cssLen = try { (Get-Item $cssPath -ErrorAction Stop).Length } catch { 0 }
         if ($cssResponse.StatusCode -ne 200 -or $cssLen -eq 0) {
@@ -307,9 +308,9 @@ function Register-OnebrainHooks {
       }
       if (-not $found) { $arr += $entry }
       if ($null -eq $existing) {
-        $hooksObj | Add-Member -NotePropertyName $event -NotePropertyValue $arr -Force
+        $hooksObj | Add-Member -NotePropertyName $event -NotePropertyValue ([object[]]$arr) -Force
       } else {
-        $hooksObj.PSObject.Properties[$event].Value = $arr
+        $hooksObj.PSObject.Properties[$event].Value = [object[]]$arr
       }
     }
 
