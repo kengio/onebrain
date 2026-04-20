@@ -253,7 +253,7 @@ function Register-OnebrainHooks {
   param([string]$VaultPath)
 
   $settingsPath = Join-Path $VaultPath ".claude\settings.json"
-  $hookScript   = Join-Path $VaultPath ".claude\plugins\onebrain\hooks\checkpoint-hook.sh"
+  $hookScript   = ".claude/plugins/onebrain/hooks/checkpoint-hook.sh"
 
   if (-not (Test-Path $settingsPath)) {
     Print-Info "Warning: .claude/settings.json not found — hooks not registered"
@@ -348,6 +348,10 @@ function Main {
   # ── Step 1: Install location ────────────────────────────────────────────────
   $defaultLocation = (Get-Location).Path
   $installLocation = Prompt-WithDefault "1" "Where should the vault be created?" $defaultLocation
+  # Expand a leading ~ to $HOME (matches install.sh behaviour)
+  if ($installLocation -eq '~' -or $installLocation.StartsWith('~\') -or $installLocation.StartsWith('~/')) {
+    $installLocation = $installLocation -replace '^~', $env:USERPROFILE
+  }
 
   if (-not (Test-Path $installLocation)) {
     Write-Host "  ? " -NoNewline -ForegroundColor Yellow
