@@ -9,9 +9,10 @@ Interactive review session for pruning and updating memory entries.
 
 ## Data Source
 
-Read entries from INDEX.md (already in context after session startup). Only read individual
-file frontmatter when user picks `update` and needs to modify file content. This avoids
-file system scanning for the listing phase.
+Read the entry list from INDEX.md (already in context after session startup). Before
+displaying the first entry, read the frontmatter of every `active` and `needs-review`
+file in memory/ to fetch `conf` and `verified` — these fields are not in INDEX.md.
+Only read the full file body when user picks `update` and needs to modify content.
 
 ## Edge Case: Empty INDEX
 
@@ -20,65 +21,111 @@ If memory/ is empty or has no active/needs-review entries → display
 
 ## Entry Ordering
 
-1. `needs-review` first (ordered by verified date, oldest first)
-2. `active` (ordered by verified date, oldest first)
+Sort all entries by `verified` date (ascending — oldest first) before starting:
+1. `needs-review` entries first
+2. `active` entries second
 3. `deprecated` — skipped entirely
 
 ## Display Per Entry
 
-Header before first entry:
+Print this header as plain text output before making the first AskUserQuestion call.
+Do not repeat it per entry and do not embed it inside any question string:
 ──────────────────────────────────────────────────────────────
 🔬 Memory Review — {N} files to review
 ──────────────────────────────────────────────────────────────
 
-Per-entry format:
-[{n}/{N}] {topics} | {status} | conf:{level} | verified {X} days ago
-      `{filename}.md`
-      "{1-line description}"
+Per-entry: use a single AskUserQuestion with entry details embedded in the question text.
+When constructing the AskUserQuestion tool call, the `question` parameter must contain
+actual newline characters in the JSON string — not backslash-n (`\n`) escape sequences.
 
-Then AskUserQuestion:
-- question: "What would you like to do with this entry?"
+**Primary menu** (shown for every entry):
+- question (use real newlines — the lines below are separate lines in the string):
+  ```
+  [{n}/{N}] "{1-line description}"
+
+  {status_emoji} {status}  ·  conf: {level}  ·  📅 {X} days ago
+  🏷️ {topics}
+  ──────────────────────────────────────────────────────────────
+  `{filename}.md`
+
+  What would you like to do?
+  ```
+  Status emoji: 🟢 active, 🟡 needs-review, ⚫ deprecated
 - header: "Memory Review [{n}/{N}]"
 - multiSelect: false
 - options:
-  - label: "keep", description: "Bump verified date to today, no other changes"
+  - label: "keep", description: "Bump verified date to today, no changes"
   - label: "update", description: "Edit confidence, type, or description"
+  - label: "manage...", description: "Flag, deprecate, or delete this entry"
+  - label: "stop", description: "Exit review, leave remaining entries unchanged"
+
+**Manage menu** (shown only when user picks "manage..." from Primary):
+- question: "`{filename}.md` — choose an action:"
+- header: "Manage [{n}/{N}]"
+- multiSelect: false
+- options:
+  - label: "skip", description: "Advance to next entry, no changes to this entry"
   - label: "needs-review", description: "Flag for later review"
   - label: "deprecate", description: "Mark as deprecated (keeps file, removes from active index)"
   - label: "delete", description: "Move to archive and remove from index"
-  - label: "skip", description: "Move to next entry, no changes"
-  - label: "stop", description: "Exit review, leave remaining entries unchanged"
+
+After any Manage action completes, advance to the next entry's Primary menu.
 
 ## Option Behaviors
 
 **keep** → bump `verified` to today only. `updated` unchanged (status did not change —
-`updated` tracks status changes, not verification events).
+`updated` tracks status changes, not verification events). Advance to next entry.
 
-**update** → interactive sub-menu:
-- `conf`: low / medium / high / unchanged
-- `type`: pick from defaults (context, behavioral, dev, project, reference) or type custom value
-  (also updates INDEX.md Type column)
-- `description`: rewrite one-liner (also updates INDEX.md Description column)
-- `confirm` → save all changes; bump `verified` and `updated` to today;
-  update INDEX.md row and file frontmatter
-- `cancel` → discard all changes; return to main options for this entry
+**update** → two sequential AskUserQuestion calls. All changes are staged until `confirm`;
+nothing is written until the user confirms. `cancel` at any point discards all staged changes.
 
-**needs-review** → sets `status: needs-review`; bumps `updated` to today. `verified` unchanged.
+Call 1 — set confidence:
+- options: conf-unchanged / conf-low / conf-medium / conf-high
+- `conf-unchanged` is listed first (safe default for confidence only — it does NOT cancel
+  the update flow; always advance to Call 2 after any selection in Call 1)
+- After selecting: stage the conf change, then show Call 2.
 
-**deprecate** → sets `status: deprecated`; bumps `updated` to today; removes row from INDEX.md;
-decrement `total_active` if entry was `active`, or `total_needs_review` if entry was `needs-review`.
-`verified` unchanged. File stays in memory/ (browsable in Obsidian).
+Call 2 — additional edits (cancel first — safe default, discards all staged changes):
+- options:
+  - label: "cancel", description: "Discard all staged changes, return to Primary menu"
+  - label: "change-type", description: "Change the memory type"
+  - label: "change-description", description: "Rewrite the one-liner description"
+  - label: "confirm", description: "Save all staged changes and advance to next entry"
+- `change-type` → type selection split across two menus (4-option limit):
+  - Call 3a: cancel / context / behavioral / more...
+  - Call 3b (if "more..."): dev / project / reference / back
+  `cancel` (Call 3a) → discard type change, return to Call 2.
+  `back` (Call 3b) → return to Call 3a.
+  To exit Call 3b without picking a type: back → Call 3a → cancel → Call 2.
+  After picking a type in Call 3a or Call 3b: stage the change, return to Call 2.
+- `change-description` → prompt for new description as free text (plain text response,
+  not AskUserQuestion). After user replies: stage the change, return to Call 2.
+- `confirm` → write all staged changes; bump `verified` and `updated` to today;
+  update INDEX.md row and file frontmatter. Advance to next entry.
+- `cancel` → discard all staged changes; return to Primary menu for this entry.
 
-**delete** → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
-Options: `confirm / cancel`
+**needs-review** (via manage...) → sets `status: needs-review`; bumps `updated` to today.
+`verified` unchanged. Advance to next entry.
+
+**deprecate** (via manage...) → sets `status: deprecated`; bumps `updated` to today;
+removes row from INDEX.md; decrement `total_active` if entry was `active`, or
+`total_needs_review` if entry was `needs-review`. `verified` unchanged.
+File stays in memory/ (browsable in Obsidian). Advance to next entry.
+
+**delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
+- options:
+  - label: "cancel", description: "Return to Manage menu, no changes"
+  - label: "confirm", description: "Archive file and remove from INDEX"
+If cancel: return to Manage menu for this entry.
 If confirm:
 1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`
 2. Add `archived: YYYY-MM-DD` to file frontmatter
 3. Remove row from INDEX.md; decrement `total_active` if status was `active`, `total_needs_review` if status was `needs-review`
 4. If archive path already exists: suffix with `-NN` (e.g. `dev-workflow-02.md`) — never overwrite
 5. Auto-create `[archive_folder]/[agent_folder]/memory/YYYY-MM/` folder if missing
+Advance to next entry.
 
-**skip** → move to next entry, no changes.
+**skip** (via manage...) → advance to next entry, no changes to this entry.
 
 **stop** → exit session, all unreviewed entries unchanged.
 
@@ -90,21 +137,26 @@ Every skill that modifies INDEX.md must update these frontmatter cache fields:
 - `updated` — set to today after any modification
 
 On /memory-review completion: update `vault.yml` `stats.last_memory_review: YYYY-MM-DD`.
-Update regardless of whether any changes were made — the field tracks when the user last reviewed, not when they last changed something. Only skip the update if the user invoked **stop** before processing any entries.
+Update regardless of whether any changes were made — the field tracks when the user last
+reviewed, not when they last changed something. Only skip the update if the user invoked
+**stop** without completing any entry action (keep, update, manage..., or skip).
 
 ## Completion
 
 After the review session ends:
-✅ Memory review complete — kept {N}, updated {M}, deprecated {P}, deleted {Q}.
+✅ Memory review complete — kept {N}, updated {M}, skipped {S}, flagged {R}, deprecated {P}, deleted {Q}.
 
-Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via skip/stop).
+(`skipped` = entries passed via manage... → skip; `flagged` = entries moved to `needs-review` via manage...)
+
+Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via manage.../stop).
 
 ## Edge Cases
 
 - If entry's row is missing from INDEX.md but file exists in memory/ (out of sync) →
-  skip the entry and report "INDEX out of sync — run /doctor --fix"
-- All choices (keep/update/needs-review/deprecate/delete) commit immediately.
-  No undo for completed actions. `stop` only preserves remaining unreviewed entries.
+  pass over the entry and output: "INDEX out of sync — run /doctor --fix"
+- `keep`, `needs-review`, `deprecate`, `delete` commit immediately. No undo.
+  `update` commits only on explicit `confirm` (cancel at any stage discards all staged changes).
+  `stop` and `skip` (via manage...) never commit.
 
 ## Restore from Archive
 
