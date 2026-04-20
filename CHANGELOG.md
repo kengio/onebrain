@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.8
+latest_version: 1.10.9
 released: 2026-04-20
 ---
 
@@ -9,6 +9,17 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.9
+
+- fix(ps1): write settings.json without UTF-8 BOM on PowerShell 5 (issue 14)
+- fix(ps1): exit early with clear message in non-interactive sessions (issue 15)
+- fix(ps1): validate ZIP archive before Expand-Archive to catch HTML error pages (issue 16)
+- fix(ps1): add -UseBasicParsing to all Invoke-WebRequest calls for Server Core compatibility (issue 17)
+- fix(ps1): Set-StrictMode -Version Latest to catch undefined variables
+- fix(ps1): force [object[]] cast on hook array to prevent PS5 serialisation bug
+- fix(ps1/docs): relative hook path + tilde expansion; correct "absolute path required" claim in 3 files
+- fix(update): use WebFetch for version check instead of git commands (prevents hang on Windows)
 
 ## v1.10.8 — /memory-review Redesign
 

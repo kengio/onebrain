@@ -174,7 +174,7 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection. PreCompact hooks do not support `decision:block` and cannot inject prompts.
 
-5. **Stop, PreCompact, and PostCompact hooks cannot be registered in `hooks.json`** — Claude Code does not fire them from plugin hook files. Register them in the **vault's** `.claude/settings.json` (the `.claude/` folder inside the vault, not `~/.claude/settings.json`). Hook commands must use absolute paths — `${CLAUDE_PLUGIN_ROOT}` is only available in `hooks.json`, not `settings.json`. Use `/update` to register or repair these hooks automatically.
+5. **Stop, PreCompact, and PostCompact hooks cannot be registered in `hooks.json`** — Claude Code does not fire them from plugin hook files. Register them in the **vault's** `.claude/settings.json` (the `.claude/` folder inside the vault, not `~/.claude/settings.json`). Hook commands use relative paths — Claude Code runs hooks from the vault directory as CWD, so `${CLAUDE_PLUGIN_ROOT}` (hooks.json only) is not needed. Use `/update` to register or repair these hooks automatically.
 
 ## Memory System
 

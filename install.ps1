@@ -1,5 +1,6 @@
 #Requires -Version 5.0
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 
 # Ensure TLS 1.2 is enabled — required by GitHub (PS 5 defaults to TLS 1.0 which GitHub dropped)
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -176,7 +177,7 @@ function Install-Plugins {
       if (-not $ok) { break }
       $assetPath = Join-Path $pluginDir $asset
       try {
-        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile $assetPath -ErrorAction Stop | Out-Null
+        Invoke-WebRequest -Uri "$baseUrl/$asset" -OutFile $assetPath -UseBasicParsing -ErrorAction Stop | Out-Null
         $assetLen = try { (Get-Item $assetPath -ErrorAction Stop).Length } catch { 0 }
         if ($assetLen -eq 0) {
           Write-Host "  ⚠️  $pluginId/$asset downloaded as empty (network drop?)" -ForegroundColor Yellow
@@ -194,7 +195,7 @@ function Install-Plugins {
     if ($ok) {
       $cssPath = Join-Path $pluginDir "styles.css"
       try {
-        $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -ErrorAction Stop
+        $cssResponse = Invoke-WebRequest -Uri "$baseUrl/styles.css" -OutFile $cssPath -PassThru -UseBasicParsing -ErrorAction Stop
         # Defensive: remove if non-200 or empty (guards against zero-byte writes on network drop)
         $cssLen = try { (Get-Item $cssPath -ErrorAction Stop).Length } catch { 0 }
         if ($cssResponse.StatusCode -ne 200 -or $cssLen -eq 0) {
@@ -246,13 +247,13 @@ function Install-Plugins {
 # ─── Hook registration ────────────────────────────────────────────────────────
 # Register-OnebrainHooks <VaultPath>
 # Writes Stop, PreCompact, and PostCompact hook entries into .claude/settings.json
-# using the vault's absolute path. settings.json does not support ${CLAUDE_PLUGIN_ROOT}
-# (only hooks.json does), so absolute paths are required.
+# using a relative path. Claude Code runs hooks from the vault directory as CWD, so
+# relative paths work and avoid issues with spaces in absolute paths (e.g. iCloud paths).
 function Register-OnebrainHooks {
   param([string]$VaultPath)
 
   $settingsPath = Join-Path $VaultPath ".claude\settings.json"
-  $hookScript   = Join-Path $VaultPath ".claude\plugins\onebrain\hooks\checkpoint-hook.sh"
+  $hookScript   = ".claude/plugins/onebrain/hooks/checkpoint-hook.sh"
 
   if (-not (Test-Path $settingsPath)) {
     Print-Info "Warning: .claude/settings.json not found — hooks not registered"
@@ -296,7 +297,7 @@ function Register-OnebrainHooks {
               $isMatch = $true; break
             }
           }
-        } elseif ($e -is [PSCustomObject]) {
+        } elseif ($e -is [PSCustomObject] -and $e.PSObject.Properties['hooks']) {
           foreach ($h in $e.hooks) {
             if ($h -is [PSCustomObject] -and $h.command -like '*checkpoint-hook.sh*') {
               $isMatch = $true; break
@@ -307,9 +308,9 @@ function Register-OnebrainHooks {
       }
       if (-not $found) { $arr += $entry }
       if ($null -eq $existing) {
-        $hooksObj | Add-Member -NotePropertyName $event -NotePropertyValue $arr -Force
+        $hooksObj | Add-Member -NotePropertyName $event -NotePropertyValue ([object[]]$arr) -Force
       } else {
-        $hooksObj.PSObject.Properties[$event].Value = $arr
+        $hooksObj.PSObject.Properties[$event].Value = [object[]]$arr
       }
     }
 
@@ -317,7 +318,11 @@ function Register-OnebrainHooks {
     Register-Hook $cfg.hooks "PreCompact"  (& $makeHook "precompact")
     Register-Hook $cfg.hooks "PostCompact" (& $makeHook "postcompact")
 
-    $cfg | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+    [System.IO.File]::WriteAllText(
+      $settingsPath,
+      ($cfg | ConvertTo-Json -Depth 10) + "`n",
+      [System.Text.UTF8Encoding]::new($false)
+    )
     Print-Info "Registered Stop, PreCompact, PostCompact hooks in .claude/settings.json"
   } catch {
     Print-Info "Warning: could not register hooks: $($_.Exception.Message). Run /update after first session."
@@ -331,11 +336,22 @@ function Main {
   Write-Host "$($script:Bold)This script downloads OneBrain and sets up a fresh Obsidian vault.$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
 
+  if (-not [Environment]::UserInteractive -or $Host.Name -eq 'Default Host' -or [Console]::IsInputRedirected) {
+    Print-Error "Cannot read user input (non-interactive session)."
+    Print-Error "Download and run the script directly:"
+    Print-Error "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1' -OutFile install.ps1; pwsh install.ps1"
+    exit 1
+  }
+
   Check-Deps
 
   # ── Step 1: Install location ────────────────────────────────────────────────
   $defaultLocation = (Get-Location).Path
   $installLocation = Prompt-WithDefault "1" "Where should the vault be created?" $defaultLocation
+  # Expand a leading ~ to $HOME (matches install.sh behaviour)
+  if ($installLocation -eq '~' -or $installLocation.StartsWith('~\') -or $installLocation.StartsWith('~/')) {
+    $installLocation = $env:USERPROFILE + $installLocation.Substring(1)
+  }
 
   if (-not (Test-Path $installLocation)) {
     Write-Host "  ? " -NoNewline -ForegroundColor Yellow
@@ -397,6 +413,16 @@ function Main {
       throw "error:already-printed"
     }
     Write-Done "Downloaded"
+
+    try {
+      Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+      $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+      try { } finally { $zip.Dispose() }  # empty try: OpenRead already succeeded; finally guarantees handle release
+    } catch {
+      Print-Error "Downloaded archive is not a valid ZIP (corrupt download or GitHub error page)."
+      Print-Error "Try again. If this persists, check https://githubstatus.com"
+      throw "error:already-printed"
+    }
 
     try {
       Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
