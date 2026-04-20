@@ -17,7 +17,7 @@ Usage: `/clone`
 ## Files Included in Clone Package
 
 - `05-agent/MEMORY.md`
-- `05-agent/MEMORY-INDEX.md`          ← include INDEX
+- `05-agent/MEMORY-INDEX.md`          ← include MEMORY-INDEX
 - `05-agent/memory/`           ← all memory files (was: context/ + memory/ separately; now merged)
 - `vault.yml`                  ← include vault.yml (has recap config)
 - `.claude/plugins/onebrain/`

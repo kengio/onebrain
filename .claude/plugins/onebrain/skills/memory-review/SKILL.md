@@ -14,7 +14,7 @@ displaying the first entry, read the frontmatter of every `active` and `needs-re
 file in memory/ to fetch `conf` and `verified` — these fields are not in MEMORY-INDEX.md.
 Only read the full file body when user picks `update` and needs to modify content.
 
-## Edge Case: Empty INDEX
+## Edge Case: Empty MEMORY-INDEX
 
 If memory/ is empty or has no active/needs-review entries → display
 "No memory files to review." and stop.
@@ -153,7 +153,7 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 ## Edge Cases
 
 - If entry's row is missing from MEMORY-INDEX.md but file exists in memory/ (out of sync) →
-  pass over the entry and output: "INDEX out of sync — run /doctor --fix"
+  pass over the entry and output: "MEMORY-INDEX out of sync — run /doctor --fix"
 - `keep`, `needs-review`, `deprecate`, `delete` commit immediately. No undo.
   `update` commits only on explicit `confirm` (cancel at any stage discards all staged changes).
   `stop` and `skip` (via manage...) never commit.
@@ -162,4 +162,4 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 
 To recover a soft-deleted file: manually move it back to `memory/` and remove the
 `archived:` frontmatter field. Then re-add the MEMORY-INDEX.md row manually or run `/doctor --fix`
-to rebuild INDEX.
+to rebuild MEMORY-INDEX.md.

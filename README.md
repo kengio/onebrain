@@ -107,14 +107,14 @@ After `/onboarding`, your AI agent:
 
 ### Memory System
 
-OneBrain uses a four-tier memory system — each tier is more compressed and longer-lived than the one below:
+OneBrain uses a four-tier memory system — each tier is more compressed and longer-lived than the one below. The Semantic tier has two loading modes (always-loaded and lazy-loaded):
 
 | Tier | Location | What it stores | Promoted by |
 |------|----------|---------------|-------------|
 | **Working** | `00-inbox/` + current session | Raw captures, active conversation | `/consolidate`, `/wrapup` |
 | **Episodic** | `07-logs/YYYY/MM/` | Session summaries, decisions, action items | `/wrapup`, auto-checkpoint |
 | **Semantic** (always-loaded) | `05-agent/MEMORY.md` + `05-agent/MEMORY-INDEX.md` | Identity + Active Projects + Critical Behaviors + memory file registry | `/learn`, `/onboarding` |
-| **Semantic** (lazy-loaded) | `05-agent/memory/` | Behavioral patterns, domain facts — loaded on demand via MEMORY-INDEX.md | `/learn`, `/recap` |
+| **Semantic** (lazy-loaded) | `05-agent/memory/` | Behavioral patterns, domain facts — loaded on demand via MEMORY-INDEX.md | `/learn`, `/recap`, `/memory-review` |
 | **Knowledge** | `03-knowledge/` | Permanent synthesized notes | `/distill` |
 
 ---

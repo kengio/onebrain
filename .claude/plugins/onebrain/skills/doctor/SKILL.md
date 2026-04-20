@@ -264,7 +264,7 @@ Ongoing maintenance only (not migration). Fixes issues arising after initial set
 
 1. **Rebuild MEMORY-INDEX.md** from scratch:
    - Read frontmatter of all files in `memory/`
-   - Skip files with `status: deprecated` (not in INDEX by design)
+   - Skip files with `status: deprecated` (not in MEMORY-INDEX by design)
    - Rebuild table with active and needs-review entries only
    - Recalculate `total_active`, `total_needs_review`
    - Set `updated:` to today
