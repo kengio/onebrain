@@ -13,10 +13,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## v1.10.8 — Fix /memory-review AskUserQuestion structure
 
 ### Fixed
-- `/memory-review`: entry details (topics, status, conf, filename, description) now embedded in AskUserQuestion question text — no separate pre-display block
-- `/memory-review`: split 7 options into Primary (keep/update/manage.../stop) and Manage (needs-review/deprecate/delete/back) menus to respect 4-option limit
-- `/memory-review`: "stop" accessible from Primary menu directly (no longer buried in Manage sub-menu)
-- `/memory-review`: "back" option in Manage menu to return to Primary without action or losing session
+- `/memory-review`: entry details (topics, status, conf, filename, description) now embedded in AskUserQuestion question text — no separate plain-text pre-display block
+- `/memory-review`: split into Primary menu (keep/update/manage.../stop) and Manage submenu (needs-review/deprecate/delete/skip) to respect 4-option limit — `manage...` and `skip` are navigation affordances, not new actions
+- `/memory-review`: "stop" accessible from Primary menu directly (no longer buried in a submenu)
+- `/memory-review`: "skip" restored in Manage submenu — advance to next entry without taking action, including as an escape from manage... if opened by mistake
+- `/memory-review`: completion summary now includes `flagged {R}` counter for needs-review actions
+- `/memory-review`: "update" sub-menu now specified as AskUserQuestion calls (no ambiguous plain-text loop)
 
 ## v1.10.7 — Documentation Reorganization
 
