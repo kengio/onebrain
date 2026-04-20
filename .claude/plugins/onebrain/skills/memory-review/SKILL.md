@@ -79,7 +79,8 @@ After any Manage action completes (including "skip"), advance to the next entry'
 **update** → two sequential AskUserQuestion calls:
 
 Call 1 — pick field to edit:
-- options: conf-low / conf-medium / conf-high / conf-unchanged
+- options: conf-unchanged / conf-low / conf-medium / conf-high
+- `conf-unchanged` is listed first (safe default — no change if user confirms by mistake)
 - After selecting conf: apply immediately, then show Call 2.
 
 Call 2 — additional edits:
