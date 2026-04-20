@@ -317,7 +317,11 @@ function Register-OnebrainHooks {
     Register-Hook $cfg.hooks "PreCompact"  (& $makeHook "precompact")
     Register-Hook $cfg.hooks "PostCompact" (& $makeHook "postcompact")
 
-    $cfg | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+    [System.IO.File]::WriteAllText(
+      $settingsPath,
+      ($cfg | ConvertTo-Json -Depth 10) + "`n",
+      [System.Text.UTF8Encoding]::new($false)
+    )
     Print-Info "Registered Stop, PreCompact, PostCompact hooks in .claude/settings.json"
   } catch {
     Print-Info "Warning: could not register hooks: $($_.Exception.Message). Run /update after first session."
