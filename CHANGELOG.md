@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.8
+latest_version: 1.10.9
 released: 2026-04-20
 ---
 

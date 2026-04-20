@@ -297,7 +297,7 @@ function Register-OnebrainHooks {
               $isMatch = $true; break
             }
           }
-        } elseif ($e -is [PSCustomObject]) {
+        } elseif ($e -is [PSCustomObject] -and $e.PSObject.Properties['hooks']) {
           foreach ($h in $e.hooks) {
             if ($h -is [PSCustomObject] -and $h.command -like '*checkpoint-hook.sh*') {
               $isMatch = $true; break
