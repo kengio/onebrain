@@ -112,10 +112,10 @@ removes row from MEMORY-INDEX.md; decrement `total_active` if entry was `active`
 `total_needs_review` if entry was `needs-review`. `verified` unchanged.
 File stays in memory/ (browsable in Obsidian). Advance to next entry.
 
-**delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
+**delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from MEMORY-INDEX?"
 - options:
   - label: "cancel", description: "Return to Manage menu, no changes"
-  - label: "confirm", description: "Archive file and remove from INDEX"
+  - label: "confirm", description: "Archive file and remove from MEMORY-INDEX"
 If cancel: return to Manage menu for this entry.
 If confirm:
 1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`

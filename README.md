@@ -325,7 +325,7 @@ Checkpoints: `07-logs/YYYY/MM/YYYY-MM-DD-{PPID}-checkpoint-NN.md` — auto-gener
 <summary><strong>🧠 Memory System</strong></summary>
 <br>
 
-OneBrain uses a four-tier memory system, where knowledge flows upward as it gets validated:
+OneBrain uses a four-tier memory system, where knowledge flows upward as it gets validated. The Semantic tier has two loading modes (always-loaded and lazy-loaded):
 
 **Tier 1 — Working memory** (`00-inbox/` + current session)
 Everything that hasn't been processed yet. Captures from `/braindump`, `/capture`, and quick notes land here. Process with `/consolidate` to move into the knowledge base.
