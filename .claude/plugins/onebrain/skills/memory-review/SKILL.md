@@ -41,13 +41,14 @@ actual newline characters in the JSON string — not backslash-n (`\n`) escape s
   ```
   [{n}/{N}] "{1-line description}"
 
-  status: {status}  ·  conf: {level}  ·  verified {X} days ago
-  topics: {topics}
+  {status_emoji} {status}  ·  conf: {level}  ·  📅 {X} days ago
+  🏷️ {topics}
   ─────────────────────────────────────────────────────────────
   `{filename}.md`
 
   What would you like to do?
   ```
+  Status emoji: 🟢 active, 🟡 needs-review, ⚫ deprecated
 - header: "Memory Review [{n}/{N}]"
 - multiSelect: false
 - options:
