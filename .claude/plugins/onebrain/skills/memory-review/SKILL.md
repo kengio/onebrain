@@ -69,34 +69,39 @@ actual newline characters in the JSON string — not backslash-n (`\n`) escape s
   - label: "deprecate", description: "Mark as deprecated (keeps file, removes from active index)"
   - label: "delete", description: "Move to archive and remove from index"
 
-After any Manage action completes (including "skip"), advance to the next entry's Primary menu.
+After any Manage action completes, advance to the next entry's Primary menu.
 
 ## Option Behaviors
 
 **keep** → bump `verified` to today only. `updated` unchanged (status did not change —
 `updated` tracks status changes, not verification events). Advance to next entry.
 
-**update** → two sequential AskUserQuestion calls:
+**update** → two sequential AskUserQuestion calls. All changes are staged until `confirm`;
+nothing is written until the user confirms. `cancel` at any point discards all staged changes.
 
-Call 1 — pick field to edit:
+Call 1 — set confidence:
 - options: conf-unchanged / conf-low / conf-medium / conf-high
-- `conf-unchanged` is listed first (safe default — no change if user confirms by mistake)
-- After selecting conf: apply immediately, then show Call 2.
+- `conf-unchanged` is listed first (safe default)
+- After selecting: stage the conf change, then show Call 2.
 
-Call 2 — additional edits:
-- options: cancel / change-type / change-description / confirm
-- `cancel` is listed first (safe default — discards all changes if user confirms by mistake)
-- `change-type` → show a third AskUserQuestion (type selection, split across two menus
-  to stay within 4-option limit):
+Call 2 — additional edits (cancel first — safe default, discards all staged changes):
+- options:
+  - label: "cancel", description: "Discard all staged changes, return to Primary menu"
+  - label: "change-type", description: "Change the memory type"
+  - label: "change-description", description: "Rewrite the one-liner description"
+  - label: "confirm", description: "Save all staged changes and advance to next entry"
+- `change-type` → type selection split across two menus (4-option limit):
   - Call 3a: cancel / context / behavioral / more...
   - Call 3b (if "more..."): dev / project / reference / back
-  `cancel` returns to Call 2 without changing type. `back` returns to Call 3a.
-  After picking a type: apply, return to Call 2.
+  `cancel` (Call 3a) → discard type change, return to Call 2.
+  `back` (Call 3b) → return to Call 3a.
+  To exit Call 3b without picking a type: back → Call 3a → cancel → Call 2.
+  After picking a type in Call 3a or Call 3b: stage the change, return to Call 2.
 - `change-description` → prompt for new description as free text (plain text response,
-  not AskUserQuestion). After user replies: apply, return to Call 2.
-- `confirm` → save all changes; bump `verified` and `updated` to today;
+  not AskUserQuestion). After user replies: stage the change, return to Call 2.
+- `confirm` → write all staged changes; bump `verified` and `updated` to today;
   update INDEX.md row and file frontmatter. Advance to next entry.
-- `cancel` → discard all changes; return to Primary menu for this entry.
+- `cancel` → discard all staged changes; return to Primary menu for this entry.
 
 **needs-review** (via manage...) → sets `status: needs-review`; bumps `updated` to today.
 `verified` unchanged. Advance to next entry.
@@ -107,14 +112,17 @@ removes row from INDEX.md; decrement `total_active` if entry was `active`, or
 File stays in memory/ (browsable in Obsidian). Advance to next entry.
 
 **delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
-Options: `cancel / confirm` (`cancel` listed first — safe default)
+- options:
+  - label: "cancel", description: "Return to Manage menu, no changes"
+  - label: "confirm", description: "Archive file and remove from INDEX"
+If cancel: return to Manage menu for this entry.
 If confirm:
 1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`
 2. Add `archived: YYYY-MM-DD` to file frontmatter
 3. Remove row from INDEX.md; decrement `total_active` if status was `active`, `total_needs_review` if status was `needs-review`
 4. If archive path already exists: suffix with `-NN` (e.g. `dev-workflow-02.md`) — never overwrite
 5. Auto-create `[archive_folder]/[agent_folder]/memory/YYYY-MM/` folder if missing
-If confirm: advance to next entry. If cancel: return to Manage menu for this entry.
+Advance to next entry.
 
 **skip** (via manage...) → advance to next entry, no changes to this entry.
 
@@ -135,9 +143,9 @@ reviewed, not when they last changed something. Only skip the update if the user
 ## Completion
 
 After the review session ends:
-✅ Memory review complete — kept {N}, updated {M}, flagged {R}, deprecated {P}, deleted {Q}.
+✅ Memory review complete — kept {N}, updated {M}, skipped {S}, flagged {R}, deprecated {P}, deleted {Q}.
 
-(`flagged` = entries moved to `needs-review` status via manage...)
+(`skipped` = entries passed via manage... → skip; `flagged` = entries moved to `needs-review` via manage...)
 
 Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via manage.../stop).
 
@@ -145,9 +153,9 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 
 - If entry's row is missing from INDEX.md but file exists in memory/ (out of sync) →
   silently pass over the entry and report "INDEX out of sync — run /doctor --fix"
-- All choices except stop and skip commit immediately (keep, update, and via manage...:
-  needs-review, deprecate, delete). No undo for completed actions. `stop` only preserves
-  remaining unreviewed entries.
+- All choices except `stop` and `skip` (via manage...) commit immediately — keep, update,
+  and via manage...: needs-review, deprecate, delete. No undo for completed actions.
+  `stop` only preserves remaining unreviewed entries.
 
 ## Restore from Archive
 
