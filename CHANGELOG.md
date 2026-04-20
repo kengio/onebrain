@@ -8,15 +8,14 @@ released: 2026-04-20
 All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.10.10] - 2026-04-20
-
-### Changed
-- Rename `INDEX.md` → `MEMORY-INDEX.md` — name now clearly conveys "registry of the memory system" in Obsidian graph view and wikilink autocomplete
-- README: fix four-tier memory table — `05-agent/memory/` moved from Knowledge tier to Semantic (lazy-loaded) sub-row; `MEMORY-INDEX.md` surfaces as always-loaded enabler
-- `MEMORY.md`: add `## Memory Files` section with link to `[[MEMORY-INDEX]]` for Obsidian graph connection
-- Fix stale bare `INDEX` shorthand references in memory-review/SKILL.md (section heading, error strings, delete dialog), doctor/SKILL.md, and clone/SKILL.md
-
 ## [Unreleased]
+
+## v1.10.10 — MEMORY-INDEX Rename + README Memory Layer
+
+- rename: `INDEX.md` → `MEMORY-INDEX.md` across all plugin files — name now clearly conveys "registry of the memory system" in graph view and wikilink autocomplete
+- README: four-tier table restructured — `05-agent/memory/` split into Semantic (lazy-loaded) sub-row; `MEMORY-INDEX.md` added as always-loaded enabler; `/memory-review` added to lazy-loaded Promoted by
+- `MEMORY.md`: new `## Memory Files` section with `[[MEMORY-INDEX]]` wikilink for Obsidian graph connection
+- fix: stale bare `INDEX` shorthand in memory-review (heading, error strings, delete dialog), doctor, and clone skills
 
 ## v1.10.9
 
