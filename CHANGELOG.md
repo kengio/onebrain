@@ -14,7 +14,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `/memory-review`: entry display redesigned — description first, status emoji (🟢/🟡/⚫), 📅 verified date, 🏷️ topics, backtick filename as footer with separator line
 - `/memory-review`: split into Primary (keep/update/manage.../stop) and Manage (skip/needs-review/deprecate/delete) to respect 4-option AskUserQuestion limit
-- `/memory-review`: safe-default principle — no-op or cancel listed first in every menu (skip, conf-unchanged, cancel)
+- `/memory-review`: safe-default principle — non-destructive option listed first in every menu: skip (Manage), conf-unchanged (Call 1), cancel (Call 2, Call 3a, delete confirm)
 - `/memory-review`: update uses staged model — conf in Call 1, edits in Call 2; nothing written until explicit confirm; change-type split into Call 3a/3b for 4-option limit
 - `/memory-review`: Data Source pre-reads all entry frontmatter before starting (conf + verified not in INDEX.md)
 - `/memory-review`: delete cancel returns to Manage menu; completion summary adds skipped + flagged counters
