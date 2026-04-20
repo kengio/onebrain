@@ -335,6 +335,13 @@ function Main {
   Write-Host "$($script:Bold)This script downloads OneBrain and sets up a fresh Obsidian vault.$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
 
+  if (-not [Environment]::UserInteractive -or $Host.Name -eq 'Default Host') {
+    Print-Error "Cannot read user input (non-interactive session)."
+    Print-Error "Download and run the script directly:"
+    Print-Error "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1' -OutFile install.ps1; pwsh install.ps1"
+    exit 1
+  }
+
   Check-Deps
 
   # ── Step 1: Install location ────────────────────────────────────────────────
