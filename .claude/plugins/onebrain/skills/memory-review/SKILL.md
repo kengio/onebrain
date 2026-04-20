@@ -26,24 +26,30 @@ If memory/ is empty or has no active/needs-review entries → display
 
 ## Display Per Entry
 
-Header before first entry:
+Show this header once before the first entry (not repeated per entry):
 ──────────────────────────────────────────────────────────────
 🔬 Memory Review — {N} files to review
 ──────────────────────────────────────────────────────────────
 
 Per-entry: use a single AskUserQuestion with entry details embedded in the question text.
+Use real newline characters in the question string — not `\n` escape sequences.
 
 **Primary menu** (shown for every entry):
-- question: "[{n}/{N}] {topics} | {status} | conf:{level} | verified {X} days ago\n`{filename}.md`\n\"{1-line description}\"\n\nWhat would you like to do?"
+- question:
+  "[{n}/{N}] {topics} | {status} | conf:{level} | verified {X} days ago
+  `{filename}.md`
+  "{1-line description}"
+
+  What would you like to do?"
 - header: "Memory Review [{n}/{N}]"
 - multiSelect: false
 - options:
   - label: "keep", description: "Bump verified date to today, no changes"
   - label: "update", description: "Edit confidence, type, or description"
-  - label: "skip", description: "Move to next entry, no changes"
-  - label: "manage...", description: "Flag, deprecate, delete, or stop"
+  - label: "manage...", description: "Flag, deprecate, or delete this entry"
+  - label: "stop", description: "Exit review, leave remaining entries unchanged"
 
-**Manage menu** (shown only when user picks "manage..."):
+**Manage menu** (shown only when user picks "manage..." from Primary):
 - question: "`{filename}.md` — choose an action:"
 - header: "Manage [{n}/{N}]"
 - multiSelect: false
@@ -51,12 +57,15 @@ Per-entry: use a single AskUserQuestion with entry details embedded in the quest
   - label: "needs-review", description: "Flag for later review"
   - label: "deprecate", description: "Mark as deprecated (keeps file, removes from active index)"
   - label: "delete", description: "Move to archive and remove from index"
-  - label: "stop", description: "Exit review, leave remaining entries unchanged"
+  - label: "back", description: "Return to Primary menu for this entry, no changes"
+
+After any Manage action completes (except "back"), advance to the next entry's Primary menu.
+"back" returns to the same entry's Primary menu.
 
 ## Option Behaviors
 
 **keep** → bump `verified` to today only. `updated` unchanged (status did not change —
-`updated` tracks status changes, not verification events).
+`updated` tracks status changes, not verification events). Advance to next entry.
 
 **update** → interactive sub-menu:
 - `conf`: low / medium / high / unchanged
@@ -64,16 +73,16 @@ Per-entry: use a single AskUserQuestion with entry details embedded in the quest
   (also updates INDEX.md Type column)
 - `description`: rewrite one-liner (also updates INDEX.md Description column)
 - `confirm` → save all changes; bump `verified` and `updated` to today;
-  update INDEX.md row and file frontmatter
-- `cancel` → discard all changes; return to main options for this entry
+  update INDEX.md row and file frontmatter. Advance to next entry.
+- `cancel` → discard all changes; return to Primary menu for this entry
 
-**needs-review** → sets `status: needs-review`; bumps `updated` to today. `verified` unchanged.
+**needs-review** (via manage...) → sets `status: needs-review`; bumps `updated` to today. `verified` unchanged.
 
-**deprecate** → sets `status: deprecated`; bumps `updated` to today; removes row from INDEX.md;
+**deprecate** (via manage...) → sets `status: deprecated`; bumps `updated` to today; removes row from INDEX.md;
 decrement `total_active` if entry was `active`, or `total_needs_review` if entry was `needs-review`.
 `verified` unchanged. File stays in memory/ (browsable in Obsidian).
 
-**delete** → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
+**delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
 Options: `confirm / cancel`
 If confirm:
 1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`
@@ -82,7 +91,7 @@ If confirm:
 4. If archive path already exists: suffix with `-NN` (e.g. `dev-workflow-02.md`) — never overwrite
 5. Auto-create `[archive_folder]/[agent_folder]/memory/YYYY-MM/` folder if missing
 
-**skip** → move to next entry, no changes.
+**back** (via manage...) → return to Primary menu for this entry, no changes.
 
 **stop** → exit session, all unreviewed entries unchanged.
 
@@ -101,14 +110,14 @@ Update regardless of whether any changes were made — the field tracks when the
 After the review session ends:
 ✅ Memory review complete — kept {N}, updated {M}, deprecated {P}, deleted {Q}.
 
-Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via skip/stop).
+Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via manage.../stop).
 
 ## Edge Cases
 
 - If entry's row is missing from INDEX.md but file exists in memory/ (out of sync) →
   skip the entry and report "INDEX out of sync — run /doctor --fix"
-- All choices (keep/update/needs-review/deprecate/delete) commit immediately.
-  No undo for completed actions. `stop` only preserves remaining unreviewed entries.
+- All choices except stop commit immediately (keep, update, and via manage...: needs-review,
+  deprecate, delete). No undo for completed actions. `stop` only preserves remaining unreviewed entries.
 
 ## Restore from Archive
 
