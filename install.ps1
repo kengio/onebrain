@@ -336,7 +336,7 @@ function Main {
   Write-Host "$($script:Bold)This script downloads OneBrain and sets up a fresh Obsidian vault.$($script:BoldReset)" -ForegroundColor Cyan
   Write-Host
 
-  if (-not [Environment]::UserInteractive -or $Host.Name -eq 'Default Host') {
+  if (-not [Environment]::UserInteractive -or $Host.Name -eq 'Default Host' -or [Console]::IsInputRedirected) {
     Print-Error "Cannot read user input (non-interactive session)."
     Print-Error "Download and run the script directly:"
     Print-Error "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1' -OutFile install.ps1; pwsh install.ps1"
@@ -350,7 +350,7 @@ function Main {
   $installLocation = Prompt-WithDefault "1" "Where should the vault be created?" $defaultLocation
   # Expand a leading ~ to $HOME (matches install.sh behaviour)
   if ($installLocation -eq '~' -or $installLocation.StartsWith('~\') -or $installLocation.StartsWith('~/')) {
-    $installLocation = $installLocation -replace '^~', $env:USERPROFILE
+    $installLocation = $env:USERPROFILE + $installLocation.Substring(1)
   }
 
   if (-not (Test-Path $installLocation)) {
@@ -417,7 +417,7 @@ function Main {
     try {
       Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
       $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
-      $zip.Dispose()
+      try { } finally { $zip.Dispose() }
     } catch {
       Print-Error "Downloaded archive is not a valid ZIP (corrupt download or GitHub error page)."
       Print-Error "Try again. If this persists, check https://githubstatus.com"
