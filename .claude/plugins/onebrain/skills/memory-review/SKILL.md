@@ -9,9 +9,10 @@ Interactive review session for pruning and updating memory entries.
 
 ## Data Source
 
-Read entries from INDEX.md (already in context after session startup). Only read individual
-file frontmatter when user picks `update` and needs to modify file content. This avoids
-file system scanning for the listing phase.
+Read the entry list from INDEX.md (already in context after session startup). Before
+displaying the first entry, read the frontmatter of every `active` and `needs-review`
+file in memory/ to fetch `conf` and `verified` — these fields are not in INDEX.md.
+Only read the full file body when user picks `update` and needs to modify content.
 
 ## Edge Case: Empty INDEX
 
@@ -20,8 +21,9 @@ If memory/ is empty or has no active/needs-review entries → display
 
 ## Entry Ordering
 
-1. `needs-review` first (ordered by verified date, oldest first)
-2. `active` (ordered by verified date, oldest first)
+Sort all entries by `verified` date (ascending — oldest first) before starting:
+1. `needs-review` entries first
+2. `active` entries second
 3. `deprecated` — skipped entirely
 
 ## Display Per Entry
@@ -43,7 +45,7 @@ actual newline characters in the JSON string — not backslash-n (`\n`) escape s
 
   {status_emoji} {status}  ·  conf: {level}  ·  📅 {X} days ago
   🏷️ {topics}
-  ─────────────────────────────────────────────────────────────
+  ──────────────────────────────────────────────────────────────
   `{filename}.md`
 
   What would you like to do?
@@ -74,9 +76,19 @@ After any Manage action completes (including "skip"), advance to the next entry'
 **keep** → bump `verified` to today only. `updated` unchanged (status did not change —
 `updated` tracks status changes, not verification events). Advance to next entry.
 
-**update** → show as an AskUserQuestion with options: conf-low / conf-medium / conf-high /
-conf-unchanged / change-type / change-description / confirm / cancel. (Split into two
-AskUserQuestion calls if over 4 options — group conf options first, then type/description/confirm/cancel.)
+**update** → two sequential AskUserQuestion calls:
+
+Call 1 — pick field to edit:
+- options: conf-low / conf-medium / conf-high / conf-unchanged
+- After selecting conf: apply immediately, then show Call 2.
+
+Call 2 — additional edits:
+- options: change-type / change-description / confirm / cancel
+- `change-type` → show a third AskUserQuestion with type options:
+  context / behavioral / dev / project / reference / cancel.
+  After picking: apply, return to Call 2.
+- `change-description` → prompt for new description as free text (plain text response,
+  not AskUserQuestion). After user replies: apply, return to Call 2.
 - `confirm` → save all changes; bump `verified` and `updated` to today;
   update INDEX.md row and file frontmatter. Advance to next entry.
 - `cancel` → discard all changes; return to Primary menu for this entry.
@@ -97,7 +109,7 @@ If confirm:
 3. Remove row from INDEX.md; decrement `total_active` if status was `active`, `total_needs_review` if status was `needs-review`
 4. If archive path already exists: suffix with `-NN` (e.g. `dev-workflow-02.md`) — never overwrite
 5. Auto-create `[archive_folder]/[agent_folder]/memory/YYYY-MM/` folder if missing
-Advance to next entry after confirm or cancel.
+If confirm: advance to next entry. If cancel: return to Manage menu for this entry.
 
 **skip** (via manage...) → advance to next entry, no changes to this entry.
 
@@ -111,7 +123,9 @@ Every skill that modifies INDEX.md must update these frontmatter cache fields:
 - `updated` — set to today after any modification
 
 On /memory-review completion: update `vault.yml` `stats.last_memory_review: YYYY-MM-DD`.
-Update regardless of whether any changes were made — the field tracks when the user last reviewed, not when they last changed something. Only skip the update if the user invoked **stop** before processing any entries.
+Update regardless of whether any changes were made — the field tracks when the user last
+reviewed, not when they last changed something. Only skip the update if the user invoked
+**stop** without completing any entry action (keep, update, manage..., or skip).
 
 ## Completion
 
