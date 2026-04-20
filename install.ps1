@@ -410,6 +410,16 @@ function Main {
     Write-Done "Downloaded"
 
     try {
+      Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+      $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+      $zip.Dispose()
+    } catch {
+      Print-Error "Downloaded archive is not a valid ZIP (corrupt download or GitHub error page)."
+      Print-Error "Try again. If this persists, check https://githubstatus.com"
+      throw "error:already-printed"
+    }
+
+    try {
       Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
     } catch {
       Print-Error "Extraction failed. The archive may be corrupted or your disk may be full."
