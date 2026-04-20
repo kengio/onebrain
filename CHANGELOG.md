@@ -1,6 +1,6 @@
 ---
-latest_version: 1.10.7
-released: 2026-04-19
+latest_version: 1.10.8
+released: 2026-04-20
 ---
 
 # Changelog
@@ -9,6 +9,14 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.8 — Fix /memory-review AskUserQuestion structure
+
+### Fixed
+- `/memory-review`: entry details (topics, status, conf, filename, description) now embedded in AskUserQuestion question text — no separate pre-display block
+- `/memory-review`: split 7 options into Primary (keep/update/manage.../stop) and Manage (needs-review/deprecate/delete/back) menus to respect 4-option limit
+- `/memory-review`: "stop" accessible from Primary menu directly (no longer buried in Manage sub-menu)
+- `/memory-review`: "back" option in Manage menu to return to Primary without action or losing session
 
 ## v1.10.7 — Documentation Reorganization
 
