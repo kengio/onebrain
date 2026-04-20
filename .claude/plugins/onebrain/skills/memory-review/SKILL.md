@@ -81,7 +81,8 @@ nothing is written until the user confirms. `cancel` at any point discards all s
 
 Call 1 — set confidence:
 - options: conf-unchanged / conf-low / conf-medium / conf-high
-- `conf-unchanged` is listed first (safe default)
+- `conf-unchanged` is listed first (safe default for confidence only — it does NOT cancel
+  the update flow; always advance to Call 2 after any selection in Call 1)
 - After selecting: stage the conf change, then show Call 2.
 
 Call 2 — additional edits (cancel first — safe default, discards all staged changes):
@@ -152,10 +153,10 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 ## Edge Cases
 
 - If entry's row is missing from INDEX.md but file exists in memory/ (out of sync) →
-  silently pass over the entry and report "INDEX out of sync — run /doctor --fix"
-- All choices except `stop` and `skip` (via manage...) commit immediately — keep, update,
-  and via manage...: needs-review, deprecate, delete. No undo for completed actions.
-  `stop` only preserves remaining unreviewed entries.
+  pass over the entry and output: "INDEX out of sync — run /doctor --fix"
+- `keep`, `needs-review`, `deprecate`, `delete` commit immediately. No undo.
+  `update` commits only on explicit `confirm` (cancel at any stage discards all staged changes).
+  `stop` and `skip` (via manage...) never commit.
 
 ## Restore from Archive
 
