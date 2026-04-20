@@ -14,6 +14,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rename `INDEX.md` → `MEMORY-INDEX.md` — name now clearly conveys "registry of the memory system" in Obsidian graph view and wikilink autocomplete
 - README: fix four-tier memory table — `05-agent/memory/` moved from Knowledge tier to Semantic (lazy-loaded) sub-row; `MEMORY-INDEX.md` surfaces as always-loaded enabler
 - `MEMORY.md`: add `## Memory Files` section with link to `[[MEMORY-INDEX]]` for Obsidian graph connection
+- Fix stale bare `INDEX` shorthand references in memory-review/SKILL.md (section heading, error strings, delete dialog), doctor/SKILL.md, and clone/SKILL.md
 
 ## [Unreleased]
 
