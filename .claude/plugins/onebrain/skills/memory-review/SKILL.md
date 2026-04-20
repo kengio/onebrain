@@ -39,13 +39,14 @@ actual newline characters in the JSON string — not backslash-n (`\n`) escape s
 **Primary menu** (shown for every entry):
 - question (use real newlines — the lines below are separate lines in the string):
   ```
-  [{n}/{N}] {topics} | {status} | conf:{level} | verified {X} days ago
-  `{filename}.md`
-  '{1-line description}'
+  [{n}/{N}] "{1-line description}"
+  {filename}.md
+
+  status: {status}  ·  conf: {level}  ·  verified {X} days ago
+  topics: {topics}
 
   What would you like to do?
   ```
-  Note: the description is wrapped in single quotes to avoid ambiguity with the outer string.
 - header: "Memory Review [{n}/{N}]"
 - multiSelect: false
 - options:
