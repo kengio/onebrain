@@ -247,8 +247,8 @@ function Install-Plugins {
 # ─── Hook registration ────────────────────────────────────────────────────────
 # Register-OnebrainHooks <VaultPath>
 # Writes Stop, PreCompact, and PostCompact hook entries into .claude/settings.json
-# using the vault's absolute path. settings.json does not support ${CLAUDE_PLUGIN_ROOT}
-# (only hooks.json does), so absolute paths are required.
+# using a relative path. Claude Code runs hooks from the vault directory as CWD, so
+# relative paths work and avoid issues with spaces in absolute paths (e.g. iCloud paths).
 function Register-OnebrainHooks {
   param([string]$VaultPath)
 

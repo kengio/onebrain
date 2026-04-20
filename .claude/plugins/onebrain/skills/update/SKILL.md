@@ -211,11 +211,11 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
 
   | Event | Command |
   |-------|---------|
-  | `Stop` | `bash "[vault]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh" stop` |
-  | `PreCompact` | `bash "[vault]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh" precompact` |
-  | `PostCompact` | `bash "[vault]/.claude/plugins/onebrain/hooks/checkpoint-hook.sh" postcompact` |
+  | `Stop` | `bash ".claude/plugins/onebrain/hooks/checkpoint-hook.sh" stop` |
+  | `PreCompact` | `bash ".claude/plugins/onebrain/hooks/checkpoint-hook.sh" precompact` |
+  | `PostCompact` | `bash ".claude/plugins/onebrain/hooks/checkpoint-hook.sh" postcompact` |
 
-  Replace `[vault]` with the vault's absolute path (the directory containing `vault.yml`). Use the same JSON structure as the existing Stop entry in the file.
+  Use the same JSON structure as the existing Stop entry in the file.
 
 **Hook registration algorithm (additive):** For each event key in the table above:
 1. Read the existing array under that key (treat missing or null as empty array)
