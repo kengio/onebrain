@@ -417,7 +417,7 @@ function Main {
     try {
       Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
       $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
-      try { } finally { $zip.Dispose() }
+      try { } finally { $zip.Dispose() }  # empty try: OpenRead already succeeded; finally guarantees handle release
     } catch {
       Print-Error "Downloaded archive is not a valid ZIP (corrupt download or GitHub error page)."
       Print-Error "Try again. If this persists, check https://githubstatus.com"
