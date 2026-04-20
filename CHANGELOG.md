@@ -10,15 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v1.10.8 — Fix /memory-review AskUserQuestion structure
+## v1.10.8 — /memory-review Redesign
 
-### Fixed
-- `/memory-review`: entry details (topics, status, conf, filename, description) now embedded in AskUserQuestion question text — no separate plain-text pre-display block
-- `/memory-review`: split into Primary menu (keep/update/manage.../stop) and Manage submenu (needs-review/deprecate/delete/skip) to respect 4-option limit — `manage...` and `skip` are navigation affordances, not new actions
-- `/memory-review`: "stop" accessible from Primary menu directly (no longer buried in a submenu)
-- `/memory-review`: "skip" restored in Manage submenu — advance to next entry without taking action, including as an escape from manage... if opened by mistake
-- `/memory-review`: completion summary now includes `flagged {R}` counter for needs-review actions
-- `/memory-review`: "update" sub-menu now specified as AskUserQuestion calls (no ambiguous plain-text loop)
+- `/memory-review`: entry display redesigned — description first, status emoji (🟢/🟡/⚫), 📅 verified date, 🏷️ topics, backtick filename as footer with separator line
+- `/memory-review`: split into Primary (keep/update/manage.../stop) and Manage (skip/needs-review/deprecate/delete) to respect 4-option AskUserQuestion limit
+- `/memory-review`: safe-default principle — no-op or cancel listed first in every menu (skip, conf-unchanged, cancel)
+- `/memory-review`: update uses staged model — conf in Call 1, edits in Call 2; nothing written until explicit confirm; change-type split into Call 3a/3b for 4-option limit
+- `/memory-review`: Data Source pre-reads all entry frontmatter before starting (conf + verified not in INDEX.md)
+- `/memory-review`: delete cancel returns to Manage menu; completion summary adds skipped + flagged counters
+- `/memory-review`: Edge Cases rewritten with per-action commit rules (update uses staged model, not immediate commit)
 
 ## v1.10.7 — Documentation Reorganization
 
