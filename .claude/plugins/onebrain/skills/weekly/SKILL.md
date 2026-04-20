@@ -1,6 +1,6 @@
 ---
 name: weekly
-description: "Weekly reflection : review the past week's sessions, surface patterns, and plan ahead"
+description: "Weekly reflection : review the past week's sessions, surface patterns, and plan ahead. Use when the user wants a structured end-of-week review — 'weekly review', 'how did this week go', 'plan next week'. Do NOT use for: daily task check-in (use daily), session summary (use wrapup), or promoting insights to memory (use recap)."
 ---
 
 # Weekly Reflection

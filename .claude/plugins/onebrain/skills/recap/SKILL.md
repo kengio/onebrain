@@ -1,6 +1,6 @@
 ---
 name: recap
-description: "Batch-promote recurring insights from session logs into memory/ files with frequency filtering"
+description: "Batch-promote recurring insights from session logs into memory/ files with frequency filtering. Use when the user wants to extract persistent lessons or patterns from recent sessions — 'recap my recent sessions', 'what have I been learning lately'. Do NOT use for: saving a single fact now (use learn), writing today's session log (use wrapup), or synthesizing a specific topic into a note (use distill)."
 ---
 
 # Recap

@@ -1,6 +1,6 @@
 ---
 name: braindump
-description: "Capture a stream of raw thoughts : classify them and file to inbox with action items extracted"
+description: "Capture a stream of raw thoughts : classify them and file to inbox with action items extracted. Use when the user signals a free-form, stream-of-consciousness dump with multiple unrelated threads — 'let me dump everything on my mind'. Do NOT use for: a single titled idea (use capture), saving a URL (use bookmark), or anything structured and focused."
 ---
 
 # Braindump

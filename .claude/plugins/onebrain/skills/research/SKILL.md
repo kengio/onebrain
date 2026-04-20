@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Research a topic on the web and save a structured note to the resources folder"
+description: "Research a topic on the web and save a structured note to the resources folder. Use when the user wants to investigate a topic from scratch with no specific URL — 'research X for me', 'what do I need to know about Y'. Do NOT use for: processing a specific URL the user already has (use summarize), processing a book already read (use reading-notes), or quick note capture without web research (use capture or braindump)."
 ---
 
 # Research

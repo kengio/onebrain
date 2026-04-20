@@ -1,6 +1,6 @@
 ---
 name: clone
-description: "Clone your agent's portable context (agent folder including MEMORY.md) to a folder for transfer to another vault"
+description: "Clone your agent's portable context (agent folder including MEMORY.md) to a folder for transfer to another vault. Use only when the user explicitly wants to migrate or copy agent memory to a new vault. Do NOT use for: backing up the whole vault, updating OneBrain (use update), or reviewing memory (use memory-review)."
 ---
 
 # Clone

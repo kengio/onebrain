@@ -1,6 +1,6 @@
 ---
 name: connect
-description: "Find connections between notes and suggest wikilinks to strengthen the knowledge graph"
+description: "Find connections between notes and suggest wikilinks to strengthen the knowledge graph. Use when the user wants to discover how existing notes relate to each other — 'find connections', 'what links to this note', 'strengthen my graph'. Do NOT use for: creating new notes (use capture), processing inbox (use consolidate), or searching for specific content (search directly)."
 ---
 
 # Connect
