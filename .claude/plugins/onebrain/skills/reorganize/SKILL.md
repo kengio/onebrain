@@ -32,7 +32,7 @@ Only run if `vault.yml` is missing `folders.areas`.
    - If frontmatter has a `source:` field matching `/research`, `/summarize`, or `/reading-notes` → move to `04-resources/[same subfolder]`
    - Otherwise → keep in `03-knowledge/` (treat as synthesized content)
    - Notes that cannot be automatically classified → list them and ask the user before moving
-5. Verify `05-agent/INDEX.md` exists; if not, create an empty INDEX.md with the standard frontmatter (`total_active: 0`, `total_needs_review: 0`, `updated: YYYY-MM-DD`)
+5. Verify `05-agent/MEMORY-INDEX.md` exists; if not, create an empty MEMORY-INDEX.md with the standard frontmatter (`total_active: 0`, `total_needs_review: 0`, `updated: YYYY-MM-DD`)
 6. Update `vault.yml` with all 8 keys:
    ```yaml
    method: onebrain

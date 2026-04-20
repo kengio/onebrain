@@ -53,7 +53,7 @@ If `[agent_folder]/MEMORY.md` has no `## Identity & Personality` section, onboar
 02-areas/          Ongoing responsibilities (health, finances, career...)
 03-knowledge/      Your own synthesized thinking and insights
 04-resources/      External info : research output, summaries, reference
-05-agent/          AI-specific context and memory (MEMORY.md + INDEX.md + memory/)
+05-agent/          AI-specific context and memory (MEMORY.md + MEMORY-INDEX.md + memory/)
 06-archive/        Completed projects and archived areas
 07-logs/           Session logs (YYYY-MM-DD-session-NN.md in YYYY/MM/)
 attachments/       Copied files from /import --attach (pdf/, images/, video/)
@@ -220,8 +220,8 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 
 **Step 3 — After greeting (run all in parallel):**
 - Run session token detection via Bash → store result as `session_token` in context (all skills use this; never re-run if already in context). Command: `if [ -n "${WT_SESSION:-}" ]; then printf '%s' "$WT_SESSION" | tr -cd 'a-zA-Z0-9' | cut -c1-8; elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then echo "$PPID"; elif command -v powershell.exe &>/dev/null; then powershell.exe -NoProfile -NonInteractive -Command '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n '; else _f="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}/ob1-$(date +%Y-%m-%d).sid"; [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null; cat "$_f" 2>/dev/null || echo '99999'; fi`
-- Read `[agent_folder]/INDEX.md` → load memory file index for lazy-loading
-- Load `memory/` files matching active project keywords from INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
+- Read `[agent_folder]/MEMORY-INDEX.md` → load memory file index for lazy-loading
+- Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
 - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 \d{4}-\d{2}-\d{2}` → keep only tasks where date ≤ today; group overdue first, then due today
 - Glob `[logs_folder]/**/*-checkpoint-*.md` → keep files where date in filename is before today and not older than 3 days; read frontmatter of each; discard files where `merged: true`; also discard files whose date already has a session log (`YYYY-MM-DD-session-*.md`) that does NOT contain `auto-saved: true` in its frontmatter (a log without `auto-saved: true` means /wrapup ran manually and already merged the checkpoints); count remaining as `orphan_count`
@@ -249,9 +249,9 @@ Then append a hint line, adapted to the user's language. Example:
 
 ### Per-Turn Relevance Check
 
-After startup, check each new user message against INDEX.md topics (case-insensitive whole-word match).
+After startup, check each new user message against MEMORY-INDEX.md topics (case-insensitive whole-word match).
 If a new match is found that hasn't been loaded yet, load the file before responding.
-No extra file reads required — INDEX.md is already in context.
+No extra file reads required — MEMORY-INDEX.md is already in context.
 
 When a file is lazy-loaded mid-session, wrap content in fence:
 
@@ -267,7 +267,7 @@ Note inline: `[Loading memory: filename]`
 When the user asks you to recall something (a decision, preference, fact, or past discussion), search the memory layers in order of permanence:
 
 1. **`[agent_folder]/MEMORY.md`** : already in context; check here first
-2. **`[agent_folder]/memory/`** : INDEX.md is already in context — match query keywords against its Topics column to identify relevant files, then read those files. If no topic match, grep memory/ directly. Use qmd if available for broader semantic search.
+2. **`[agent_folder]/memory/`** : MEMORY-INDEX.md is already in context — match query keywords against its Topics column to identify relevant files, then read those files. If no topic match, grep memory/ directly. Use qmd if available for broader semantic search.
 3. **`[logs_folder]/`** : grep session logs for past decisions and discussions
 
 Stop as soon as you find a confident answer. If the answer spans multiple layers, synthesize across them.

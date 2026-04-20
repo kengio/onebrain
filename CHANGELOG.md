@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.9
+latest_version: 1.10.10
 released: 2026-04-20
 ---
 
@@ -7,6 +7,13 @@ released: 2026-04-20
 
 All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [1.10.10] - 2026-04-20
+
+### Changed
+- Rename `INDEX.md` → `MEMORY-INDEX.md` — name now clearly conveys "registry of the memory system" in Obsidian graph view and wikilink autocomplete
+- README: fix four-tier memory table — `05-agent/memory/` moved from Knowledge tier to Semantic (lazy-loaded) sub-row; `MEMORY-INDEX.md` surfaces as always-loaded enabler
+- `MEMORY.md`: add `## Memory Files` section with link to `[[MEMORY-INDEX]]` for Obsidian graph connection
 
 ## [Unreleased]
 

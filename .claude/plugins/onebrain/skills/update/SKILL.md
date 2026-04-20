@@ -84,7 +84,7 @@ Steps:
    - [x] Step 2: Migrated context/ → memory/ (N files)
    - [x] Step 3: Updated frontmatter on N memory/ files
    - [x] Step 4: Restructured MEMORY.md → 3 sections
-   - [x] Step 5: Created INDEX.md (N active entries)
+   - [x] Step 5: Created MEMORY-INDEX.md (N active entries)
    - [x] Step 6: Backfilled recapped: on N session logs
    - [x] Step 7: Registered Stop/PreCompact/PostCompact hooks in [vault]/.claude/settings.json
    - [x] Step 8: /doctor — N issues
@@ -131,7 +131,7 @@ Run these steps IN ORDER. Halt on first failure — do not continue.
   - A numeric segment prefix (e.g. `2026-04-05-02-superpowers-docs-in-vault.md` → `superpowers-docs-vault.md`)
   - Title-Case or spaces in the filename
   - More than 5 words (strip stop words; keep the meaningful 3–5)
-- After renaming: update all `[[wikilinks]]` in `[agent_folder]/INDEX.md` and any `supersedes:`/`superseded_by:` references to use the new filename
+- After renaming: update all `[[wikilinks]]` in `[agent_folder]/MEMORY-INDEX.md` and any `supersedes:`/`superseded_by:` references to use the new filename
 - Compliant example: `bump-version-pr.md`, `dev-workflow-worktree.md`, `telegram-format.md`
 
 **Step 4: Restructure MEMORY.md** (MUST run after Step 1)
@@ -182,7 +182,7 @@ Field extraction hints (for old-section consolidation):
 
 Always: update `updated:` frontmatter to today.
 
-**Step 5: Create `[agent_folder]/INDEX.md`**
+**Step 5: Create `[agent_folder]/MEMORY-INDEX.md`**
 - Read frontmatter of all files in `[agent_folder]/memory/` (batch 20 at a time if >50 files)
 - Include only status: active and status: needs-review in table
 - Column format (exact order): `| File | Topics | Type | Status | Description |`
@@ -193,7 +193,7 @@ Always: update `updated:` frontmatter to today.
   - **Description**: 1-line summary derived from file content (not from frontmatter)
 - For each file with supersedes: X, set superseded_by: [this file] on X's frontmatter
 - Set cache fields: total_active, total_needs_review (omit last_review)
-- If INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format; preserve existing Description values from old rows (map by filename) rather than regenerating from scratch
+- If MEMORY-INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format; preserve existing Description values from old rows (map by filename) rather than regenerating from scratch
 
 **Step 6: Backfill recapped: on existing session logs**
 - If 07-logs/ doesn't exist → skip
@@ -232,7 +232,7 @@ Never replace the entire array — user-added hooks in the same event key must b
 
 **Step 8: Verify migration**
 - Run /doctor (newly-synced version) automatically
-- Expected: 0 orphans, 0 dead links, 0 non-compliant names, INDEX.md present
+- Expected: 0 orphans, 0 dead links, 0 non-compliant names, MEMORY-INDEX.md present
 - If any check fails: surface to user with suggestion to run /doctor --fix
 
 **Step 9: Initialize vault.yml stats + recap block**

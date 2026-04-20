@@ -7,7 +7,7 @@ description: "Clone your agent's portable context (agent folder including MEMORY
 
 Package your agent's full context for transfer to a new vault.
 
-**What gets cloned:** Everything in the agent folder : `MEMORY.md`, `INDEX.md`, `memory/`, and `CLONE.md` once generated. Also includes `vault.yml` and the OneBrain plugin.
+**What gets cloned:** Everything in the agent folder : `MEMORY.md`, `MEMORY-INDEX.md`, `memory/`, and `CLONE.md` once generated. Also includes `vault.yml` and the OneBrain plugin.
 **What does NOT get cloned:** your notes, projects, areas, knowledge, resources, archive, and logs.
 
 Usage: `/clone`
@@ -17,7 +17,7 @@ Usage: `/clone`
 ## Files Included in Clone Package
 
 - `05-agent/MEMORY.md`
-- `05-agent/INDEX.md`          ← include INDEX
+- `05-agent/MEMORY-INDEX.md`          ← include INDEX
 - `05-agent/memory/`           ← all memory files (was: context/ + memory/ separately; now merged)
 - `vault.yml`                  ← include vault.yml (has recap config)
 - `.claude/plugins/onebrain/`
@@ -58,7 +58,7 @@ updated: YYYY-MM-DD
 - Last updated: [TODAY'S DATE]
 
 ## Index
-[If [agent_folder]/INDEX.md exists, include a note that INDEX.md is present. Otherwise write: (none)]
+[If [agent_folder]/MEMORY-INDEX.md exists, include a note that MEMORY-INDEX.md is present. Otherwise write: (none)]
 
 ## Memory Notes
 [For each .md file in agent_folder/memory/ (skip .gitkeep and non-.md files), list: - filename : first line of file body (after frontmatter). If no .md files exist, write: (none yet)]
@@ -73,7 +73,7 @@ Show the user what will be cloned:
 📦 Ready to Clone
 ──────────────────────────────────────────────────────────────
 ✅  `[agent_folder]/MEMORY.md`      identity and personality
-✅  `[agent_folder]/INDEX.md`       memory index
+✅  `[agent_folder]/MEMORY-INDEX.md`       memory index
 ✅  `[agent_folder]/CLONE.md`       this manifest
 ✅  `[agent_folder]/memory/`        {N} files
 ✅  `vault.yml`                     vault configuration
@@ -100,7 +100,7 @@ If the user chose option 1:
 2. If that folder already exists, append a counter: `agent-clone-YYYY-MM-DD-02/`, `-03/`, etc. Keep incrementing until you find a name that does not exist.
 3. Create the output folder
 4. Copy the following into the output folder, preserving all subfolders and files:
-   - Entire `[agent_folder]/` to `[output_folder]/[agent_folder]/` (including CLONE.md, MEMORY.md, INDEX.md, memory/)
+   - Entire `[agent_folder]/` to `[output_folder]/[agent_folder]/` (including CLONE.md, MEMORY.md, MEMORY-INDEX.md, memory/)
    - `vault.yml` to `[output_folder]/vault.yml`
    - `.claude/plugins/onebrain/` to `[output_folder]/.claude/plugins/onebrain/`
    - If archive included: `[archive_folder]/[agent_folder]/memory/` to `[output_folder]/[archive_folder]/[agent_folder]/memory/`
@@ -119,7 +119,7 @@ If the user chose option 2:
 Print a markdown code block listing every file's relative path:
 ```
 [agent_folder]/MEMORY.md
-[agent_folder]/INDEX.md
+[agent_folder]/MEMORY-INDEX.md
 [agent_folder]/CLONE.md
 [agent_folder]/memory/[each file]
 vault.yml

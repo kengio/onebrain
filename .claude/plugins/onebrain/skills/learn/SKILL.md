@@ -47,10 +47,10 @@ Then AskUserQuestion:
   - label: "separate", description: "Create new file separately (no conflict, keep both)"
 
 **update** → read existing file, merge new fact in-place, bump `verified` to today.
-No new file created, INDEX.md unchanged.
+No new file created, MEMORY-INDEX.md unchanged.
 
 **supersede** → create new file; set old file `status: deprecated` (regardless of previous
-status); remove old file's row from INDEX.md; add `supersedes: old-file.md` to new file's
+status); remove old file's row from MEMORY-INDEX.md; add `supersedes: old-file.md` to new file's
 frontmatter. Also set `superseded_by: new-file.md` on the old file's frontmatter.
 
 **separate** → create new file as normal, no changes to existing file.
@@ -91,10 +91,10 @@ Example: `dev-workflow.md` exists → try `dev-workflow-02.md` → `dev-workflow
    ---
    ```
 
-4. Add row to INDEX.md table:
+4. Add row to MEMORY-INDEX.md table:
    `| [[memory/filename]] | topic1, topic2 | type | active | description |`
 
-5. Update INDEX.md frontmatter:
+5. Update MEMORY-INDEX.md frontmatter:
    - `updated:` → today
    - `total_active` → increment by 1
 
