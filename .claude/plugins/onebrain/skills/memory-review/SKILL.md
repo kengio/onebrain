@@ -31,22 +31,26 @@ Header before first entry:
 🔬 Memory Review — {N} files to review
 ──────────────────────────────────────────────────────────────
 
-Per-entry format:
-[{n}/{N}] {topics} | {status} | conf:{level} | verified {X} days ago
-      `{filename}.md`
-      "{1-line description}"
+Per-entry: use a single AskUserQuestion with entry details embedded in the question text.
 
-Then AskUserQuestion:
-- question: "What would you like to do with this entry?"
+**Primary menu** (shown for every entry):
+- question: "[{n}/{N}] {topics} | {status} | conf:{level} | verified {X} days ago\n`{filename}.md`\n\"{1-line description}\"\n\nWhat would you like to do?"
 - header: "Memory Review [{n}/{N}]"
 - multiSelect: false
 - options:
-  - label: "keep", description: "Bump verified date to today, no other changes"
+  - label: "keep", description: "Bump verified date to today, no changes"
   - label: "update", description: "Edit confidence, type, or description"
+  - label: "skip", description: "Move to next entry, no changes"
+  - label: "manage...", description: "Flag, deprecate, delete, or stop"
+
+**Manage menu** (shown only when user picks "manage..."):
+- question: "`{filename}.md` — choose an action:"
+- header: "Manage [{n}/{N}]"
+- multiSelect: false
+- options:
   - label: "needs-review", description: "Flag for later review"
   - label: "deprecate", description: "Mark as deprecated (keeps file, removes from active index)"
   - label: "delete", description: "Move to archive and remove from index"
-  - label: "skip", description: "Move to next entry, no changes"
   - label: "stop", description: "Exit review, leave remaining entries unchanged"
 
 ## Option Behaviors
