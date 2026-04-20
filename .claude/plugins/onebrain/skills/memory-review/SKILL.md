@@ -40,10 +40,11 @@ actual newline characters in the JSON string — not backslash-n (`\n`) escape s
 - question (use real newlines — the lines below are separate lines in the string):
   ```
   [{n}/{N}] "{1-line description}"
-  {filename}.md
 
   status: {status}  ·  conf: {level}  ·  verified {X} days ago
   topics: {topics}
+  ─────────────────────────────────────────────────────────────
+  `{filename}.md`
 
   What would you like to do?
   ```
