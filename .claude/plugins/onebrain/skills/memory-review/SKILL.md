@@ -64,10 +64,10 @@ actual newline characters in the JSON string — not backslash-n (`\n`) escape s
 - header: "Manage [{n}/{N}]"
 - multiSelect: false
 - options:
+  - label: "skip", description: "Advance to next entry, no changes to this entry"
   - label: "needs-review", description: "Flag for later review"
   - label: "deprecate", description: "Mark as deprecated (keeps file, removes from active index)"
   - label: "delete", description: "Move to archive and remove from index"
-  - label: "skip", description: "Advance to next entry, no changes to this entry"
 
 After any Manage action completes (including "skip"), advance to the next entry's Primary menu.
 
@@ -84,10 +84,14 @@ Call 1 — pick field to edit:
 - After selecting conf: apply immediately, then show Call 2.
 
 Call 2 — additional edits:
-- options: change-type / change-description / confirm / cancel
-- `change-type` → show a third AskUserQuestion with type options:
-  context / behavioral / dev / project / reference / cancel.
-  After picking: apply, return to Call 2.
+- options: cancel / change-type / change-description / confirm
+- `cancel` is listed first (safe default — discards all changes if user confirms by mistake)
+- `change-type` → show a third AskUserQuestion (type selection, split across two menus
+  to stay within 4-option limit):
+  - Call 3a: cancel / context / behavioral / more...
+  - Call 3b (if "more..."): dev / project / reference / back
+  `cancel` returns to Call 2 without changing type. `back` returns to Call 3a.
+  After picking a type: apply, return to Call 2.
 - `change-description` → prompt for new description as free text (plain text response,
   not AskUserQuestion). After user replies: apply, return to Call 2.
 - `confirm` → save all changes; bump `verified` and `updated` to today;
@@ -103,7 +107,7 @@ removes row from INDEX.md; decrement `total_active` if entry was `active`, or
 File stays in memory/ (browsable in Obsidian). Advance to next entry.
 
 **delete** (via manage...) → AskUserQuestion: "Move `memory/X.md` to archive and remove from INDEX?"
-Options: `confirm / cancel`
+Options: `cancel / confirm` (`cancel` listed first — safe default)
 If confirm:
 1. Move file to `[archive_folder]/[agent_folder]/memory/YYYY-MM/X.md`
 2. Add `archived: YYYY-MM-DD` to file frontmatter
