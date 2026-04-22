@@ -322,6 +322,18 @@ If either is missing, delete the partial directory recursively and tell the user
 
 From this point, the project-level copy takes priority over the global cache.
 
+**Pin to vault (run after Step 0 file copy — sequential order required):**
+
+```bash
+# 1. Pin installPath to vault FIRST (so cache deletion is safe)
+bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"
+
+# 2. THEN delete all cache versions
+bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"
+```
+
+This ensures Claude Code loads from vault on the next `/reload-plugins`. Must be sequential: if cache is deleted before pinning, there is a brief window where installPath points to a deleted path.
+
 ---
 
 ## Path B : Step 1: Welcome
