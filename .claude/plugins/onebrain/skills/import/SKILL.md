@@ -162,7 +162,7 @@ Ask using AskUserQuestion:
 
 4. After processing all suggestions for this note: confirm what was linked or appended.
 
-If qmd is available, run `qmd update -c [qmd_collection]` once after all integrations complete.
+Run `bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"` once after all integrations complete.
 
 ### Supported File Types
 

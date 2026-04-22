@@ -182,9 +182,8 @@ PINNED_CONTENT
 
 ## Step 5: Open in Obsidian and confirm
 
-Run via Bash (fails silently if Obsidian is not installed):
 ```bash
-open "obsidian://open?path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)/MOC.md" 2>/dev/null || true
+bash ".claude/plugins/onebrain/startup/scripts/open-in-obsidian.sh" "MOC.md"
 ```
 
 Then say:

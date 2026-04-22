@@ -224,7 +224,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
 - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 \d{4}-\d{2}-\d{2}` → keep only tasks where date ≤ today; group overdue first, then due today
-- Glob `[logs_folder]/**/*-checkpoint-*.md` → keep files where date in filename is before today and not older than 3 days; read frontmatter of each; discard files where `merged: true`; also discard files whose date already has a session log (`YYYY-MM-DD-session-*.md`) that does NOT contain `auto-saved: true` in its frontmatter (a log without `auto-saved: true` means /wrapup ran manually and already merged the checkpoints); count remaining as `orphan_count`
+- Run `bash ".claude/plugins/onebrain/startup/scripts/orphan-scan.sh" "[logs_folder]" "[SESSION_TOKEN]"` → read `ORPHAN_COUNT` from output; store as `orphan_count`. If the script fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, count remaining.
 
 **Step 4 — Send startup status (after Step 3 completes):**
 

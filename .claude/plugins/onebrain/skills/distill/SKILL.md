@@ -147,9 +147,8 @@ Say:
 
 ## Step 6: Update qmd Index
 
-If `qmd_collection` is set in vault.yml, run:
 ```bash
-qmd update -c [qmd_collection]
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
 
 ---

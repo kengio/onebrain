@@ -91,9 +91,9 @@ If `timezone` was not found: skip this pass, note "No deprecated keys to clean u
 
 ## Final step
 
-After all fix passes complete, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml, which is not a markdown note and is not indexed by qmd), and `qmd_collection` is set in vault.yml, run:
+After all fix passes complete, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml which is not indexed by qmd):
 ```bash
-qmd update -c [qmd_collection]
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
 
 Do NOT delete any content, modify files outside `[agent_folder]/MEMORY.md` and the files containing broken wikilinks, or restructure vault folders automatically.
