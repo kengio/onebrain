@@ -6,7 +6,18 @@
 # Usage: bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 # Run from vault root (CLAUDE_PROJECT_DIR or cwd).
 
-collection=$(grep '^qmd_collection:' "${CLAUDE_PROJECT_DIR:-.}/vault.yml" 2>/dev/null | awk '{print $2}')
-[ -z "$collection" ] && exit 0
 command -v qmd >/dev/null 2>&1 || exit 0
+
+# Robust collection parser — same logic as qmd-reindex.sh (handles comments, whitespace, quotes)
+vault_yml="${CLAUDE_PROJECT_DIR:-.}/vault.yml"
+[ -f "$vault_yml" ] || exit 0
+collection=""
+while IFS= read -r line || [ -n "$line" ]; do
+  if printf '%s' "$line" | grep -qE '^qmd_collection:[[:space:]]+\S'; then
+    collection=$(printf '%s' "$line" | sed 's/^qmd_collection:[[:space:]]*//' | sed 's/[[:space:]]*#.*//' | tr -d ' \r"'"'"'')
+    break
+  fi
+done < "$vault_yml"
+[ -z "$collection" ] && exit 0
+
 qmd update -c "$collection"
