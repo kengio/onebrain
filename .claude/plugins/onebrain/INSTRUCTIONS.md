@@ -191,7 +191,7 @@ Run before responding to any user message.
 **Step 1 — Critical path (greeting blocks on these):** Run in parallel:
 - Read `vault.yml` → load Configuration variables; override defaults once resolved
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
-- Run `bash ".claude/plugins/onebrain/startup/scripts/session-init.sh"` → read KEY=VALUE output; store `DATETIME` (for greeting) and `SESSION_TOKEN` (for checkpoints) in context. If the script fails or is unavailable, fall back to running `date` for time and treating session_token as `99999`.
+- Run `bash ".claude/plugins/onebrain/startup/scripts/session-init.sh"` → read KEY=VALUE output; store `DATETIME` (for greeting) and `session_token` (for checkpoints) in context. If the script fails or is unavailable, fall back to running `date '+%a · %d %b %Y · %H:%M'` for `DATETIME` and treating `session_token` as `99999`.
 
 **Step 2 — Send greeting immediately:**
 
@@ -219,12 +219,12 @@ Ddd · DD Mon YYYY · HH:MM
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
 **Step 3 — After greeting (run all in parallel):**
-- `SESSION_TOKEN` is already in context from Step 1 (`session-init.sh`) — do not re-run detection
+- `session_token` is already in context from Step 1 (`session-init.sh`) — do not re-run detection
 - Read `[agent_folder]/MEMORY-INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
 - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 \d{4}-\d{2}-\d{2}` → keep only tasks where date ≤ today; group overdue first, then due today
-- Run `bash ".claude/plugins/onebrain/startup/scripts/orphan-scan.sh" "[logs_folder]" "[SESSION_TOKEN]"` → read `ORPHAN_COUNT` from output; store as `orphan_count`. If the script fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, count remaining.
+- Run `bash ".claude/plugins/onebrain/startup/scripts/orphan-scan.sh" "[logs_folder]" "[session_token]"` → read `ORPHAN_COUNT` from output; store as `orphan_count`. If the script fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
 
 **Step 4 — Send startup status (after Step 3 completes):**
 

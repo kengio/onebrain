@@ -162,7 +162,9 @@ Ask using AskUserQuestion:
 
 4. After processing all suggestions for this note: confirm what was linked or appended.
 
-Run `bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"` once after all integrations complete.
+```bash
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
 
 ### Supported File Types
 

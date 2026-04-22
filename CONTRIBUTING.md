@@ -50,7 +50,7 @@ Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
-**Predefined scripts** (`startup/scripts/` and `skills/[name]/scripts/`) are shell scripts the AI calls via `bash "path/to/script.sh"` instead of writing bash inline. Use them for repeatable operations (datetime, session token detection, qmd update, file opens) so Claude does not spend tokens re-generating the same bash logic each time. All scripts must be defensive — exit silently when conditions are not met (binary missing, variable unset, etc.).
+**Predefined scripts** (`startup/scripts/` and `skills/[name]/scripts/`) are shell scripts the AI calls via `bash "path/to/script.sh"` instead of writing bash inline. Use them for repeatable operations (datetime, session token detection, qmd update, file opens, hook state reset) so Claude does not spend tokens re-generating the same bash logic each time. All scripts must be defensive — exit silently when conditions are not met (binary missing, variable unset, etc.).
 
 ## Multi-Harness Support
 
