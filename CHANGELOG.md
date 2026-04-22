@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.16
+latest_version: 1.10.17
 released: 2026-04-22
 ---
 
@@ -9,6 +9,14 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.17 — Revert onebrain@kengio → onebrain@onebrain
+
+- fix: revert plugin identifier back to onebrain@onebrain (reverts v1.10.12/v1.10.15 rename that broke vault installs)
+- fix: rename extraKnownMarketplaces key back to "onebrain" (was "kengio") — restores original dev marketplace for repo context
+- fix(update): skip extraKnownMarketplaces and onebrain@kengio during settings merge — vault context cannot resolve repo-local directory marketplace
+- fix(onboarding): update install command back to /plugin install onebrain@onebrain
+- fix(README): update install command back to /plugin install onebrain@onebrain
 
 ## v1.10.16 — Vault-level plugin loading enforcement
 

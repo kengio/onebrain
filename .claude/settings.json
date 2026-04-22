@@ -12,10 +12,10 @@
     ]
   },
   "enabledPlugins": {
-    "onebrain@kengio": true
+    "onebrain@onebrain": true
   },
   "extraKnownMarketplaces": {
-    "kengio": {
+    "onebrain": {
       "source": {
         "source": "directory",
         "path": "."
