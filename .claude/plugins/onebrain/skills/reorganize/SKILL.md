@@ -170,6 +170,6 @@ Want to run `/connect` to find new connections between your organized notes?
 
 - **Wikilinks are path-independent in Obsidian.** Moving files does NOT break `[[Note Name]]` links — Obsidian resolves by filename, not path. The skill already notes this, but it is the most common user concern; reassure proactively before executing moves.
 
-- **Full migration: `02-knowledge/` classification is imperfect.** Notes without explicit source frontmatter require judgment. When uncertain, err on the side of keeping notes in knowledge/ — the user can always move them to resources/ later via /consolidate.
+- **Full migration: classification of old `02-knowledge/` notes into `03-knowledge/` vs `04-resources/` is imperfect.** Notes without explicit source frontmatter require judgment. When uncertain, err on the side of keeping notes in `03-knowledge/` — the user can always move them to `04-resources/` later via /consolidate.
 
 - **40-note batch limit.** If the vault has more than 40 flat notes, the skill shows the first 40 and offers to continue on the next run. Inform the user upfront if the vault is large.

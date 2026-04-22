@@ -168,6 +168,6 @@ to rebuild MEMORY-INDEX.md.
 
 ## Known Gotchas
 
-- **`keep`, `deprecate`, and `delete` commit immediately — no undo.** If the user accidentally picks `delete`, the file is moved to archive. Remind the user before the first destructive action that only `update` has a cancel path — all other actions are immediate.
+- **`keep` and `deprecate` commit immediately — no undo.** `update` can be cancelled via the `cancel` option before `confirm`. `delete` asks for confirmation before executing. Remind the user that `keep` and `deprecate` take effect immediately with no cancel path.
 
 - **Out-of-sync MEMORY-INDEX.md.** If a memory/ file is missing from MEMORY-INDEX.md (written by /learn outside of review), the skill skips it with an "out of sync" message. After the review completes, prompt the user to run `/doctor --fix` if any out-of-sync entries were encountered.

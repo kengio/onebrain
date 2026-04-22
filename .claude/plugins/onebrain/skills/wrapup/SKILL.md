@@ -302,7 +302,7 @@ Good session! See you next time.
 
 - **Session token mismatch on Mac.** `$PPID` changes if the session was started from a wrapper (Hammerspoon, tmux `new-session`, etc.). If Step 1 finds no checkpoints but you expect some, compare `$PPID` against the date-matching checkpoint filenames in the folder to find the actual token used when they were written.
 
-- **Cross-month midnight sessions.** If a session starts before midnight and /wrapup runs after midnight in a new month, Step 1 looks in "yesterday's folder" — but when yesterday was the last day of the prior month, the path must also roll back the year (e.g., January 1 → December of the prior year). Verify the month rollover logic handles `MM=01`.
+- **Cross-month midnight sessions.** If a session starts before midnight and /wrapup runs after midnight in a new month, Step 1 looks in "yesterday's folder." Decrementing the month is sufficient for all months except January — for January specifically, also roll back the year (e.g., January 1 → December of the prior year). All other month boundaries only need the month decremented.
 
 - **`merged: false` YAML type.** Some YAML parsers return the string `"false"` rather than boolean `false`. The filter "keep where `merged` is absent or not `true`" should treat both `merged: false` (boolean) and `merged: "false"` (string) as "not merged" — only exact `merged: true` counts.
 

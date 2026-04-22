@@ -105,6 +105,13 @@ Example: `dev-workflow.md` exists → try `dev-workflow-02.md` → `dev-workflow
 6. If `supersede` was chosen: additionally set `supersedes: old-file.md` in new file's
    frontmatter and `superseded_by: new-file.md` in old file's frontmatter.
 
+## Confirmation
+
+After writing or updating the file, say in one line:
+🧠 Learned: {brief description of what was saved or updated}.
+
+---
+
 ## Known Gotchas
 
 - **Conflict detection is shallow by default.** Grepping MEMORY-INDEX.md Topics column may miss a file whose topics field is broad but whose content overlaps. When a candidate file is found, read its first 20 lines before concluding there is or is not a conflict.
@@ -129,17 +136,9 @@ Run minimum 3 independent review rounds before merging any PR.
 
 **Input:** "remember that the OneBrain source repo is at ~/projects/onebrain"
 
-**Good output (context memory file body):**
+**Good output (context memory file — minimal one-liner body):**
 ```
 OneBrain source repo is at ~/projects/onebrain.
-
-**Why:** Needed for worktree creation, PR workflow, and direct skill edits.
-**How to apply:** When implementing OneBrain features or updating skills, always work from this path.
 ```
 
----
-
-## Confirmation
-
-After writing or updating the file, say in one line:
-🧠 Learned: {brief description of what was saved or updated}.
+(Simple factual memories do not need **Why:** / **How to apply:** structure — use it only when the rule needs reasoning to be applied correctly in edge cases.)

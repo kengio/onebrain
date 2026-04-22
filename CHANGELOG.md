@@ -12,7 +12,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v1.10.12 — Skill Authoring Patterns: Known Gotchas, Explain-the-Why, In-Skill Examples
 
-- docs(skills): add Known Gotchas sections to all 25 skills — concrete failure modes and solutions observed in production for each skill
+- docs(skills): add Known Gotchas sections to all 24 applicable skills — concrete failure modes and solutions observed in production (help/SKILL.md excluded — no runtime behavior to document)
 - docs(skills): add Explain-the-Why annotations to non-obvious rules across wrapup, learn, consolidate, recap, doctor, and import — rules now include the reasoning behind them so Claude can generalize to edge cases
 - docs(skills): add In-Skill Examples to learn, wrapup, capture, and recap — labeled input/output pairs that calibrate tone and output quality
 

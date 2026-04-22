@@ -140,16 +140,6 @@ Each insight that passes the frequency filter:
 
 Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /learn.
 
-## Known Gotchas
-
-- **Frequency is per unique session log, not per occurrence.** A topic mentioned 3 times within a single session log still counts as frequency 1. Only occurrences across separate log files increment the frequency count.
-
-- **Extract from findings sections only.** Insights from `## Open Questions` are unresolved and not promotable — they are not yet facts. Extract from `## Key Decisions`, `## Insights & Learnings`, and `## What Worked / Didn't Work` sections only.
-
-- **`merged` confidence on merge.** When merging two memory files where one is `conf: high` and the other is `conf: low`, the merged file inherits the LOWER confidence. The conservative value wins — a low-confidence fact does not become high-confidence by being merged with one that is.
-
-- **`auto-saved: true` logs.** These are checkpoint-synthesized summaries. They may contain less detail than manually-written session logs. Weight them equally for frequency counting but be conservative about extracting nuanced insights from them.
-
 ## Output
 
 ### No unrecapped logs
@@ -166,3 +156,15 @@ Promoted {N} insights to memory/:
 {N} session logs marked recapped.
 → Run /distill to compress a completed thread into a knowledge note.
 ```
+
+---
+
+## Known Gotchas
+
+- **Frequency is per unique session log, not per occurrence.** A topic mentioned 3 times within a single session log still counts as frequency 1. Only occurrences across separate log files increment the frequency count.
+
+- **Extract from findings sections only.** Insights from `## Open Questions` are unresolved and not promotable — they are not yet facts. Extract from `## Key Decisions`, `## Insights & Learnings`, and `## What Worked / Didn't Work` sections only.
+
+- **`merged` confidence on merge.** When merging two memory files where one is `conf: high` and the other is `conf: low`, the merged file inherits the LOWER confidence. The conservative value wins — a low-confidence fact does not become high-confidence by being merged with one that is.
+
+- **`auto-saved: true` logs.** These are checkpoint-synthesized summaries. They may contain less detail than manually-written session logs. Weight them equally for frequency counting but be conservative about extracting nuanced insights from them.

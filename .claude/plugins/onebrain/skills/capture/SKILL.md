@@ -104,6 +104,13 @@ After writing, dispatch the **Tag Suggester** agent (`agents/tag-suggester.md`) 
 
 ---
 
+## Step 6: Confirm
+
+Say in one line:
+📝 Captured to `[file path]`.
+
+---
+
 ## Known Gotchas
 
 - **Project notes: always append, never overwrite.** Even if an existing project file looks sparse, create a new `## [Date] : [heading]` section rather than replacing content. Overwriting destroys project history.
@@ -123,11 +130,3 @@ After writing, dispatch the **Tag Suggester** agent (`agents/tag-suggester.md`) 
 | "checkpoint write-before-delete ordering is critical" | personal insight | `03-knowledge/onebrain/Checkpoint Write Ordering.md` |
 | "found this Obsidian PKM article" | external reference | `04-resources/productivity/Obsidian PKM Methods.md` |
 | "just started the Mac Mini research project" | project update | append to `01-projects/hardware/Mac Mini.md` |
-| "quick thought: maybe use $PPID for session tokens" | fleeting idea | `00-inbox/YYYY-MM-DD-ppid-session-tokens.md` |
-
----
-
-## Step 6: Confirm
-
-Say in one line:
-📝 Captured to `[file path]`.
