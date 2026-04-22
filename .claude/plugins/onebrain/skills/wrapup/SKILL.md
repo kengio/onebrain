@@ -31,7 +31,7 @@ synthesized_from_checkpoints: true      # only if synthesized from checkpoints
 ---
 ```
 
-Absence of `recapped:` field = not yet processed by /recap.
+**Never add `recapped:` or `topics:` to this frontmatter** — these fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log.
 
 ---
 
