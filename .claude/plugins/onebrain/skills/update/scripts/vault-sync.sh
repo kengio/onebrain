@@ -2,7 +2,7 @@
 # vault-sync.sh <source_repo> <vault_root>
 # Syncs plugin folder from source repo to vault (with stale file cleanup)
 # and copies root docs (README, CONTRIBUTING, CHANGELOG) to vault root.
-# Run from the source repo — does not depend on vault having this script first.
+# Must be run with CWD = vault root (called via vault-relative path after bootstrap step 1).
 
 set -euo pipefail
 
@@ -19,10 +19,20 @@ fi
 
 mkdir -p "$VAULT_PLUGIN"
 
+# Warn about files that will be deleted (stale files in vault not in source repo).
+# Output is captured by the agent and surfaced in the migration log.
+deleted=$(rsync -a --delete --dry-run \
+  --exclude='.claude-plugin/' \
+  "${SOURCE_PLUGIN}/" "${VAULT_PLUGIN}/" \
+  | grep "^deleting " | grep -v "/$" || true)
+if [ -n "$deleted" ]; then
+  echo "INFO: Removing stale vault files (not in source repo):"
+  echo "$deleted"
+fi
+
 # Sync plugin folder: copy new/changed files, delete files removed from source.
-# Excludes plugin.json (written last as completion signal) and .claude-plugin/.
+# Excludes .claude-plugin/ (contains plugin.json — written last as completion signal).
 rsync -a --delete \
-  --exclude='plugin.json' \
   --exclude='.claude-plugin/' \
   "${SOURCE_PLUGIN}/" "${VAULT_PLUGIN}/"
 

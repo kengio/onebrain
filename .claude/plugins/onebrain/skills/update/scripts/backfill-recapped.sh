@@ -20,10 +20,11 @@ while IFS= read -r -d '' file; do
     [ -z "$date_val" ] && date_val=$(basename "$file" | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2}' || true)
     [ -z "$date_val" ] && continue
 
-    # Insert recapped: after the date: line
+    # Insert recapped: after the date: line (portable: avoid sed -i '' macOS-only syntax)
     if grep -q "^date:" "$file"; then
-        sed -i '' "/^date:/a\\
-recapped: ${date_val}" "$file"
+        tmp=$(mktemp)
+        sed "/^date:/a\\
+recapped: ${date_val}" "$file" > "$tmp" && mv "$tmp" "$file"
         count=$((count + 1))
     fi
 done < <(find "$LOGS" -name "*-session-*.md" -print0 2>/dev/null)

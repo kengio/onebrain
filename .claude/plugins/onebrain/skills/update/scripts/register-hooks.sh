@@ -2,6 +2,7 @@
 # register-hooks.sh <vault_settings_json>
 # Idempotently registers OneBrain Stop/PreCompact/PostCompact hooks.
 # Safe: never replaces user-added hooks in the same event key.
+# Must be run with CWD = vault root (path argument is relative to vault root).
 
 set -euo pipefail
 

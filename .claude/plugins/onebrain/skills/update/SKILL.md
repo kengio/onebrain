@@ -59,7 +59,7 @@ Steps:
    b. Sync remaining files — run these two sub-steps in parallel:
       - **Plugin folder + root file sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "{source_repo}" "{vault_root}"`. Now safe to call from the vault (scripts were synced in step 1). Syncs the full plugin folder (with stale file cleanup) and copies README.md, CONTRIBUTING.md, CHANGELOG.md to the vault root.
       - **Settings merge:** merge `[vault]/.claude/settings.json` from `{source_repo}/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys; `extraKnownMarketplaces` → merge keys; `hooks` → skip (handled by migration Step 7).
-   c. Load `skills/update/references/migration-steps.md` and run all 9 steps (all scripts are now in the vault)
+   c. Load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps (all scripts are now in the vault)
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
 4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
 
@@ -133,7 +133,7 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 
 - **plugin.json bump is the last step.** If /update is interrupted before step 3d, the version stays at the old number — re-running /update will retry the full migration. Do not bump plugin.json early as a progress marker.
 
-- **MEMORY.md Key Learnings migration (Step 1) must run before Step 4.** Step 4 restructures MEMORY.md; Step 1 reads and extracts from it. Running them in the wrong order loses the Key Learnings content before it can be promoted to memory/ files.
+- **MEMORY.md Key Learnings migration (migration Step 1) must run before migration Step 4.** Migration Step 4 restructures MEMORY.md; migration Step 1 reads and extracts from it. Running them in the wrong order loses the Key Learnings content before it can be promoted to memory/ files.
 
 - **Plugin folder sync deletes stale files.** Step 3b removes files in the vault's plugin folder that no longer exist in the source repo. This is intentional — the source repo is the single source of truth. Do not place user customizations inside `.claude/plugins/onebrain/`; they belong at the project or user settings level.
 
