@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # vault-sync.sh <vault_root> <branch>
 # Downloads the latest onebrain plugin files from GitHub and syncs to vault.
-# Syncs the plugin folder (with stale file cleanup), copies root docs, and
-# merges harness entrypoints (CLAUDE.md, GEMINI.md, AGENTS.md).
+# After download, all sync operations run in parallel:
+#   - Plugin folder sync (with stale file cleanup)
+#   - Root docs copy (README, CONTRIBUTING, CHANGELOG)
+#   - Harness file merge (CLAUDE.md, GEMINI.md, AGENTS.md) — vault is primary
 # Requires: curl, tar (both included in Git for Windows / Git Bash).
-# No rsync dependency — uses Python 3.8+ for directory sync (cross-platform).
+# No rsync dependency — uses Python 3.6+ for all sync operations (cross-platform).
 # CWD must be vault root when calling this script (uses vault-relative path invocation).
 
 set -euo pipefail
@@ -26,128 +28,147 @@ echo "vault-sync: downloading from github.com/${REPO}@${BRANCH}..."
 curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
   | tar -xz -C "$TMP_DIR" --strip-components=1
 
-SOURCE_PLUGIN="${TMP_DIR}/.claude/plugins/onebrain"
-VAULT_PLUGIN="${VAULT_ROOT}/.claude/plugins/onebrain"
-
-# Sync plugin folder using Python (cross-platform; no rsync required).
-# Copies new/changed files, deletes stale vault files, excludes .claude-plugin/
-# (plugin.json lives there — written last as completion signal).
-"$PYTHON" - "$SOURCE_PLUGIN" "$VAULT_PLUGIN" ".claude-plugin" <<'PYEOF'
+# All three sync operations are independent — run them in parallel.
+"$PYTHON" - "$TMP_DIR" "$VAULT_ROOT" <<'PYEOF'
 import sys, shutil
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Explicit assignment avoids bare *splat on RHS (invalid syntax in Python < 3.9)
-# and walrus operator (requires Python 3.8+).
-src = Path(sys.argv[1])
-dst = Path(sys.argv[2])
-excludes = sys.argv[3:]
-exclude_set = set(excludes)
-dst.mkdir(parents=True, exist_ok=True)
+tmp_dir = Path(sys.argv[1])
+vault_root = Path(sys.argv[2])
+
+source_plugin = tmp_dir / ".claude" / "plugins" / "onebrain"
+vault_plugin = vault_root / ".claude" / "plugins" / "onebrain"
+exclude_dirs = {".claude-plugin"}
+
+# ── helpers ──────────────────────────────────────────────────────────────────
 
 def is_excluded(parts):
-    return any(p in exclude_set for p in parts)
+    return any(p in exclude_dirs for p in parts)
 
-# Collect stale files first (preview before deletion)
-stale = []
-for dst_item in dst.rglob("*"):
-    if not dst_item.is_file():
-        continue
-    rel = dst_item.relative_to(dst)
-    if not is_excluded(rel.parts) and not (src / rel).exists():
-        stale.append(rel)
+# ── task 1: plugin folder sync ───────────────────────────────────────────────
 
-if stale:
-    print("INFO: Removing stale vault files (not in current release):")
-    for f in sorted(stale):
-        print(f"  {f}")
+def sync_plugin():
+    vault_plugin.mkdir(parents=True, exist_ok=True)
 
-# Copy all files from src to dst (overwrite)
-for item in src.rglob("*"):
-    rel = item.relative_to(src)
-    if is_excluded(rel.parts):
-        continue
-    dst_item = dst / rel
-    if item.is_dir():
-        dst_item.mkdir(parents=True, exist_ok=True)
-    else:
-        dst_item.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(item, dst_item)
+    # Identify stale files (preview before deletion)
+    stale = []
+    for dst_item in vault_plugin.rglob("*"):
+        if not dst_item.is_file():
+            continue
+        rel = dst_item.relative_to(vault_plugin)
+        if not is_excluded(rel.parts) and not (source_plugin / rel).exists():
+            stale.append(rel)
 
-# Delete stale files (deepest paths first to allow empty-dir cleanup)
-for dst_item in sorted(dst.rglob("*"), key=lambda p: len(p.parts), reverse=True):
-    rel = dst_item.relative_to(dst)
-    if is_excluded(rel.parts):
-        continue
-    if not (src / rel).exists():
-        if dst_item.is_file():
-            dst_item.unlink()
-        elif dst_item.is_dir():
-            try:
-                dst_item.rmdir()
-            except OSError:
-                pass
-PYEOF
+    if stale:
+        print("INFO: Removing stale vault files (not in current release):")
+        for f in sorted(stale):
+            print(f"  {f}")
 
-echo "synced: .claude/plugins/onebrain/"
+    # Copy files in parallel
+    def copy_one(item):
+        rel = item.relative_to(source_plugin)
+        if is_excluded(rel.parts):
+            return
+        dst = vault_plugin / rel
+        if item.is_dir():
+            dst.mkdir(parents=True, exist_ok=True)
+        else:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(item, dst)
 
-# Copy root docs to vault root (simple overwrite — no user customization expected)
-synced_root=0
-for f in README.md CONTRIBUTING.md CHANGELOG.md; do
-  if [ -f "${TMP_DIR}/${f}" ]; then
-    cp "${TMP_DIR}/${f}" "${VAULT_ROOT}/${f}"
-    echo "synced: ${f}"
-    synced_root=$((synced_root + 1))
-  fi
-done
+    items = list(source_plugin.rglob("*"))
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(copy_one, items))
 
-# Merge harness entrypoints (CLAUDE.md, GEMINI.md, AGENTS.md):
-# - Absent in vault → copy from release
-# - Identical to release → skip
-# - Differs → apply repo changes and preserve any user-added @ imports
-# Uses utf-8-sig to silently strip BOM if present (Windows editors may add it).
-"$PYTHON" - "$TMP_DIR" "$VAULT_ROOT" <<'PYEOF'
-import sys
-from pathlib import Path
+    # Delete stale files (deepest first to allow empty-dir cleanup)
+    for dst_item in sorted(vault_plugin.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+        rel = dst_item.relative_to(vault_plugin)
+        if is_excluded(rel.parts):
+            continue
+        if not (source_plugin / rel).exists():
+            if dst_item.is_file():
+                dst_item.unlink()
+            elif dst_item.is_dir():
+                try:
+                    dst_item.rmdir()
+                except OSError:
+                    pass
 
-tmp_dir, vault_root = Path(sys.argv[1]), Path(sys.argv[2])
+    print("synced: .claude/plugins/onebrain/")
 
-for fname in ("CLAUDE.md", "GEMINI.md", "AGENTS.md"):
+# ── task 2: root docs copy (overwrite) ───────────────────────────────────────
+
+def copy_root_docs():
+    copied = 0
+    for fname in ("README.md", "CONTRIBUTING.md", "CHANGELOG.md"):
+        src = tmp_dir / fname
+        if src.exists():
+            shutil.copy2(src, vault_root / fname)
+            print(f"synced: {fname}")
+            copied += 1
+    return copied
+
+# ── task 3: harness file merge (vault is primary) ────────────────────────────
+
+def merge_harness_file(fname):
     src = tmp_dir / fname
     dst = vault_root / fname
 
     if not src.exists():
-        continue
+        return
 
     repo_text = src.read_text(encoding="utf-8-sig")
 
     if not dst.exists():
         dst.write_text(repo_text, encoding="utf-8")
         print(f"created: {fname}")
-        continue
+        return
 
     vault_text = dst.read_text(encoding="utf-8-sig")
 
     if vault_text == repo_text:
         print(f"up-to-date: {fname}")
-        continue
+        return
 
-    # Preserve user-added @ imports not present in the repo version
-    repo_lines = set(repo_text.splitlines())
-    user_imports = [
-        line for line in vault_text.splitlines()
-        if line.startswith("@") and line not in repo_lines
+    # Vault is primary. Find @ imports in repo not yet present in vault.
+    vault_lines = vault_text.splitlines()
+    vault_at_set = {l.strip() for l in vault_lines if l.startswith("@")}
+    new_imports = [
+        line for line in repo_text.splitlines()
+        if line.startswith("@") and line.strip() not in vault_at_set
     ]
 
-    merged = repo_text.rstrip()
-    if user_imports:
-        merged += "\n\n## Personal Extensions\n\n" + "\n".join(user_imports)
-    merged += "\n"
+    if not new_imports:
+        print(f"kept: {fname} (vault version retained, no new imports to inject)")
+        return
 
-    dst.write_text(merged, encoding="utf-8")
-    if user_imports:
-        print(f"merged: {fname} (preserved {len(user_imports)} personal import(s))")
+    # Insert before the last @ line (keeps @INSTRUCTIONS.md last)
+    last_at = max((i for i, l in enumerate(vault_lines) if l.startswith("@")), default=-1)
+    if last_at >= 0:
+        vault_lines[last_at:last_at] = new_imports
     else:
-        print(f"updated: {fname}")
-PYEOF
+        vault_lines += [""] + new_imports
 
-echo "vault-sync: done (${synced_root} root files synced)"
+    dst.write_text("\n".join(vault_lines) + "\n", encoding="utf-8")
+    print(f"merged: {fname} (injected {len(new_imports)} new import(s) from repo)")
+
+def merge_harness_files():
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        list(pool.map(merge_harness_file, ("CLAUDE.md", "GEMINI.md", "AGENTS.md")))
+
+# ── run all three tasks in parallel ──────────────────────────────────────────
+
+with ThreadPoolExecutor(max_workers=3) as pool:
+    futures = {
+        pool.submit(sync_plugin): "plugin sync",
+        pool.submit(copy_root_docs): "root docs",
+        pool.submit(merge_harness_files): "harness merge",
+    }
+    for future in as_completed(futures):
+        exc = future.exception()
+        if exc:
+            raise RuntimeError(f"{futures[future]} failed: {exc}") from exc
+
+print("vault-sync: done")
+PYEOF
