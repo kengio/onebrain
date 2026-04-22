@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.14
+latest_version: 1.10.15
 released: 2026-04-22
 ---
 
@@ -9,6 +9,10 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.15 — Fix plugin marketplace key mismatch
+
+- fix: extraKnownMarketplaces key renamed "onebrain" → "kengio" to match enabledPlugins identifier onebrain@kengio — fixes "Plugin onebrain not found in marketplace kengio" error on every plugin reload (regression from v1.10.12 rename)
 
 ## v1.10.14 — Fix stale "source repo" refs, plugin load error, H1 heading consistency
 
