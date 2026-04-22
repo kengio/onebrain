@@ -3,8 +3,8 @@
 # Run from vault root.
 #
 # Usage:
-#   bash .claude/plugins/onebrain/skills/update/update.sh           # dry-run (compare only)
-#   bash .claude/plugins/onebrain/skills/update/update.sh --apply   # apply updates
+#   bash .claude/plugins/onebrain/skills/update/scripts/update.sh           # dry-run (compare only)
+#   bash .claude/plugins/onebrain/skills/update/scripts/update.sh --apply   # apply updates
 #
 # Note: two-layer self-replacement guard:
 #   1. main() — bash parses the full function body before executing any of it

@@ -106,7 +106,7 @@ If `timezone` was not found: skip this pass, note "No deprecated keys to clean u
 
 ## Final step
 
-After all fix passes complete, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml which is not indexed by qmd):
+After all fix passes complete, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass D edits vault.yml which is not indexed by qmd):
 ```bash
 bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```

@@ -21,10 +21,13 @@ Update OneBrain system files from GitHub to the latest version.
    Parse the `version` field from the JSON response.
 4. If equal → say: ✅ Already up to date — v{X.X.X}. and stop
 5. If newer → WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/CHANGELOG.md`; display before proceeding (do not skip or summarize):
+
+   ```
    ──────────────────────────────────────────────────────────────
    🔄 Update Available — v{current} → v{new}
    ──────────────────────────────────────────────────────────────
    {changelog entry verbatim}
+   ```
 
    Then AskUserQuestion: "Update to v{new}?" Options: update / cancel
 
@@ -72,9 +75,9 @@ Steps:
    b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
       - **Full vault sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "$PWD" "{branch}"`. `$PWD` resolves to the vault root at runtime. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md to vault root (overwrite), and merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only).
       - **Settings merge:** WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys; `extraKnownMarketplaces` → merge keys; `hooks` → skip (handled by migration Step 7).
-      - After both complete: run both in parallel:
-        - `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"` — deletes all onebrain cache versions
-        - `bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"` — pins `installPath` in `installed_plugins.json` to vault directory (handled internally by vault-sync.sh; this description is for documentation)
+      - After both complete: run in order (sequential — pin first, then clear cache):
+        1. `bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"` — pins `installPath` in `installed_plugins.json` to vault directory
+        2. `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"` — deletes all onebrain cache versions
    c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
 4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
