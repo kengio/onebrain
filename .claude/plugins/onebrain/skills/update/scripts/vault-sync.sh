@@ -6,7 +6,7 @@
 #   - Root docs copy (README, CONTRIBUTING, CHANGELOG)
 #   - Harness file merge (CLAUDE.md, GEMINI.md, AGENTS.md) — vault is primary
 # Requires: curl, tar (both included in Git for Windows / Git Bash).
-# No rsync dependency — uses Python 3.6+ for all sync operations (cross-platform).
+# No rsync dependency — uses Python 3.7+ for all sync operations (cross-platform).
 # CWD must be vault root when calling this script (uses vault-relative path invocation).
 
 set -euo pipefail
