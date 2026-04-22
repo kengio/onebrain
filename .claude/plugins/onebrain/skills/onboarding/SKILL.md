@@ -187,67 +187,15 @@ Do NOT overwrite existing data.
 
 > **Note:** vault.yml is not written until Step 11, so this step hardcodes the default agent folder path. Do not change this to use vault.yml : the file doesn't exist yet at this point.
 
-Write `05-agent/MEMORY.md` with exactly 3 sections:
-
-```markdown
----
-tags: [agent-memory]
-created: [TODAY'S DATE]
-updated: [TODAY'S DATE]
----
-
-# OneBrain Memory
-
-## Identity & Personality
-
-**Agent:** [agent_name]
-**Personality:** [agent_personality]: [agent_personality_description]
-**User:** [preferred_name] · [role]
-**Tone:** [tone] · [detail_level]
-
-You are [agent_name], [preferred_name]'s personal chief of staff inside their Obsidian vault.
-
-- Priority goal: [goals[0]]
-- Proactive: surface connections, flag stale items, suggest next steps
-- Ground responses in vault — reference actual notes when relevant
-
-## Active Projects
-
-[For each goal:]
-- [goal]
-
-[If recurring_contexts provided:]
-[Each item as a bullet under a "Context:" label]
-
-## Critical Behaviors
-
-[If no specific behaviors were given during onboarding, leave this section empty with the comment below]
-<!-- Add behavioral preferences here via /learn — e.g., "always show task counts", "skip confirmations on capture" -->
-```
-
-Do NOT create Key Learnings, Key Decisions, or Recurring Contexts sections.
+Write `05-agent/MEMORY.md` with exactly 3 sections using the template in `references/memory-template.md`.
+Substitute all placeholder values from the interview answers above.
 
 ---
 
 ## Step 9b: Create MEMORY-INDEX.md
 
-Write `05-agent/MEMORY-INDEX.md` with an empty table and frontmatter cache fields. If the write fails, report the error and continue to Step 10 (non-blocking).
-
-```markdown
----
-tags: [agent-index]
-updated: [TODAY'S DATE]
-total_active: 0
-total_needs_review: 0
----
-
-# Memory Index
-
-| File | Topics | Type | Status | Description |
-|------|--------|------|--------|-------------|
-```
-
-Omit `last_review:` from MEMORY-INDEX.md frontmatter — last review date is tracked in `vault.yml stats.last_memory_review:`, updated by /memory-review on each run.
+Write `05-agent/MEMORY-INDEX.md` using the template in `references/memory-index-template.md`.
+If the write fails, report the error and continue to Step 10 (non-blocking).
 
 ---
 
@@ -276,40 +224,7 @@ attachments/video/
 
 ## Step 11: Write vault.yml
 
-Write `vault.yml` to the vault root with the folder mapping, plus `stats:` and `recap:` blocks:
-
-```yaml
-method: onebrain
-folders:
-  inbox: 00-inbox
-  import_inbox: 00-inbox/imports
-  attachments: attachments
-  projects: 01-projects
-  areas: 02-areas
-  knowledge: 03-knowledge
-  resources: 04-resources
-  agent: 05-agent
-  archive: 06-archive
-  logs: 07-logs
-
-checkpoint:
-  messages: 15    # auto-checkpoint every N message exchanges
-  minutes: 30     # auto-checkpoint every N minutes (whichever comes first)
-
-stats:
-  # Fields populate on first run of each skill — leave absent initially
-  # last_recap: YYYY-MM-DD
-  # last_doctor_run: YYYY-MM-DD
-  # last_doctor_fix: YYYY-MM-DD
-  # last_memory_review: YYYY-MM-DD
-
-recap:
-  min_sessions: 6
-  min_frequency: 2
-
-# Update channel (controls which GitHub branch /update pulls from)
-# update_channel: stable    # stable | next | 1.x | 2.x — uncomment to change
-```
+Write `vault.yml` to the vault root using the template in `references/vault-config-template.md`.
 
 
 ---

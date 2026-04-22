@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.12
+latest_version: 1.10.13
 released: 2026-04-22
 ---
 
@@ -9,6 +9,12 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.13 — Progressive Skill Loading: Handler and Template Reference Files
+
+- refactor(import): split 9 file-type handlers + markitdown dependency + note template into `references/` subdirectory — SKILL.md reduced from 587 to 196 lines (67%)
+- refactor(doctor): move Memory Health Checks table, auto-fix procedures (Pass A/B/C), and migration safety net to `references/` — SKILL.md reduced from 311 to 185 lines (40%)
+- refactor(onboarding): extract MEMORY.md, MEMORY-INDEX.md, and vault.yml templates to `references/` — SKILL.md reduced from 531 to 446 lines (16%)
 
 ## v1.10.12 — Skill Authoring Patterns: Known Gotchas, Explain-the-Why, In-Skill Examples
 
