@@ -2,7 +2,9 @@
 # vault-sync.sh <vault_root> <branch>
 # Downloads the latest onebrain plugin files from GitHub and syncs to vault.
 # Syncs the plugin folder (with stale file cleanup) and copies root docs to vault root.
-# Must be run with CWD = vault root (called via vault-relative path after bootstrap step 1).
+# Requires: curl, tar (both included in Git for Windows / Git Bash).
+# No rsync dependency — uses Python for directory sync (cross-platform).
+# CWD must be vault root when calling this script (uses vault-relative path invocation).
 
 set -euo pipefail
 
@@ -10,8 +12,8 @@ VAULT_ROOT="${1:?Usage: vault-sync.sh <vault_root> <branch>}"
 BRANCH="${2:-main}"
 REPO="kengio/onebrain"
 
-command -v rsync >/dev/null 2>&1 || {
-  echo "ERROR: rsync is required but not installed. Install with: apt install rsync / brew install rsync" >&2
+PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
+  echo "ERROR: Python is required but not found. Install Python 3." >&2
   exit 1
 }
 
@@ -19,28 +21,65 @@ TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 echo "vault-sync: downloading from github.com/${REPO}@${BRANCH}..."
-# -f: fail on HTTP errors (clear error message instead of cryptic tar failure)
+# -f: exit non-zero on HTTP errors (clear error vs cryptic tar failure)
 curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
   | tar -xz -C "$TMP_DIR" --strip-components=1
 
 SOURCE_PLUGIN="${TMP_DIR}/.claude/plugins/onebrain"
 VAULT_PLUGIN="${VAULT_ROOT}/.claude/plugins/onebrain"
 
-# Warn about files that will be deleted (stale files in vault not in source).
-deleted=$(rsync -a --delete --dry-run \
-  --exclude='.claude-plugin/' \
-  "${SOURCE_PLUGIN}/" "${VAULT_PLUGIN}/" \
-  | grep "^deleting " | grep -v "/$" || true)
-if [ -n "$deleted" ]; then
-  echo "INFO: Removing stale vault files (not in current release):"
-  echo "$deleted"
-fi
+# Sync plugin folder using Python (cross-platform; no rsync required).
+# Copies new/changed files, deletes stale vault files, excludes .claude-plugin/
+# (plugin.json lives there — written last as completion signal).
+"$PYTHON" - "$SOURCE_PLUGIN" "$VAULT_PLUGIN" ".claude-plugin" <<'PYEOF'
+import sys, shutil
+from pathlib import Path
 
-# Sync plugin folder: copy new/changed files, delete files removed from source.
-# Excludes .claude-plugin/ (contains plugin.json — written last as completion signal).
-rsync -a --delete \
-  --exclude='.claude-plugin/' \
-  "${SOURCE_PLUGIN}/" "${VAULT_PLUGIN}/"
+src, dst, *excludes = Path(sys.argv[1]), Path(sys.argv[2]), *sys.argv[3:]
+exclude_set = set(excludes)
+dst.mkdir(parents=True, exist_ok=True)
+
+def is_excluded(parts):
+    return any(p in exclude_set for p in parts)
+
+# Collect stale files first (preview)
+stale = [
+    rel for dst_item in dst.rglob("*")
+    if dst_item.is_file()
+    and not is_excluded((rel := dst_item.relative_to(dst)).parts)
+    and not (src / rel).exists()
+]
+if stale:
+    print("INFO: Removing stale vault files (not in current release):")
+    for f in sorted(stale):
+        print(f"  {f}")
+
+# Copy all files from src to dst (overwrite)
+for item in src.rglob("*"):
+    rel = item.relative_to(src)
+    if is_excluded(rel.parts):
+        continue
+    dst_item = dst / rel
+    if item.is_dir():
+        dst_item.mkdir(parents=True, exist_ok=True)
+    else:
+        dst_item.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(item, dst_item)
+
+# Delete stale files (deepest paths first to allow empty-dir cleanup)
+for dst_item in sorted(dst.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+    rel = dst_item.relative_to(dst)
+    if is_excluded(rel.parts):
+        continue
+    if not (src / rel).exists():
+        if dst_item.is_file():
+            dst_item.unlink()
+        elif dst_item.is_dir():
+            try:
+                dst_item.rmdir()
+            except OSError:
+                pass
+PYEOF
 
 echo "synced: .claude/plugins/onebrain/"
 

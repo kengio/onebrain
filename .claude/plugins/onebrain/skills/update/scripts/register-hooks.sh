@@ -13,7 +13,12 @@ if [ ! -f "$SETTINGS" ]; then
   exit 1
 fi
 
-python3 - "$SETTINGS" <<'PYEOF'
+PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
+  echo "ERROR: Python is required but not found." >&2
+  exit 1
+}
+
+"$PYTHON" - "$SETTINGS" <<'PYEOF'
 import json, sys
 
 path = sys.argv[1]
