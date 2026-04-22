@@ -174,6 +174,8 @@ def pin_vault():
         print(result.stdout.strip())
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or f"pin-to-vault.sh exited {result.returncode}")
+    elif result.stderr.strip():
+        print(result.stderr.strip(), file=sys.stderr)
 
 # ── run first three tasks in parallel, then pin_vault sequentially ───────────
 

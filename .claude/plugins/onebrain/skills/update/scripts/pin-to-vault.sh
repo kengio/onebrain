@@ -19,7 +19,7 @@ python_cmd=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) ||
 }
 
 "$python_cmd" - "$installed_plugins_json" "$vault_plugin_dir" "$vault_plugin_json" <<'PYEOF'
-import json, sys
+import json, os, sys, tempfile
 from pathlib import Path
 
 plugins_path   = sys.argv[1]
@@ -38,14 +38,10 @@ with open(plugins_path) as f:
         print(f"ERROR: {plugins_path} is not valid JSON: {e}", file=sys.stderr)
         sys.exit(1)
 
-# Find onebrain entry (key starting with onebrain@)
-onebrain_key = None
-for key in data.get("plugins", {}):
-    if key.startswith("onebrain@"):
-        onebrain_key = key
-        break
+# Find ALL onebrain entries (supports legacy dual-key: onebrain@onebrain-local + onebrain@onebrain)
+onebrain_keys = [k for k in data.get("plugins", {}) if k.startswith("onebrain@")]
 
-if onebrain_key is None:
+if not onebrain_keys:
     print("pin-to-vault: onebrain not found in installed_plugins.json, skipping")
     sys.exit(0)
 
@@ -54,7 +50,6 @@ if not Path(vault_dir).exists():
     print("pin-to-vault: vault plugin dir not found, skipping")
     sys.exit(0)
 
-entries = data["plugins"][onebrain_key]
 cache_dir = Path(plugins_path).parent / "cache"  # installed_plugins.json → plugins/ → cache/
 changed = False
 
@@ -64,32 +59,46 @@ try:
     with open(vault_pjson) as f:
         pjson = json.load(f)
     vault_version = pjson.get("version", "unknown")
-except (FileNotFoundError, json.JSONDecodeError):
-    pass
+except FileNotFoundError:
+    pass  # plugin.json not yet written — acceptable during initial sync
+except json.JSONDecodeError as e:
+    print(f"WARNING: {vault_pjson} is not valid JSON: {e} — version will be set to 'unknown'", file=sys.stderr)
 
-for entry in entries:
-    if not entry.get("installPath"):
-        continue
+for onebrain_key in onebrain_keys:
+    for entry in data["plugins"][onebrain_key]:
+        if not entry.get("installPath"):
+            continue
 
-    install_path = Path(entry["installPath"])
-    # Use Path.relative_to() to detect if path is inside cache — avoids
-    # false positives on similarly-named directories (e.g. ~/.claude/plugins/cache-backup/)
-    try:
-        install_path.relative_to(cache_dir)
-        in_cache = True
-    except ValueError:
-        in_cache = False
+        install_path = Path(entry["installPath"])
+        # Use Path.relative_to() to detect if path is inside cache — avoids
+        # false positives on similarly-named directories (e.g. ~/.claude/plugins/cache-backup/)
+        try:
+            install_path.relative_to(cache_dir)
+            in_cache = True
+        except ValueError:
+            in_cache = False
 
-    if not in_cache:
-        continue
+        if not in_cache:
+            continue
 
-    entry["installPath"] = vault_dir
-    entry["version"] = vault_version
-    changed = True
+        entry["installPath"] = vault_dir
+        entry["version"] = vault_version
+        changed = True
 
 if changed:
-    with open(plugins_path, "w") as f:
-        json.dump(data, f, indent=4)
+    # Atomic write: write to temp file first, then rename — prevents corruption on mid-write failure
+    dir_ = Path(plugins_path).parent
+    fd, tmp_path = tempfile.mkstemp(dir=dir_, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=4)
+        os.replace(tmp_path, plugins_path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
     print(f"pin-to-vault: pinned to vault ({vault_dir})")
 else:
     print("pin-to-vault: already vault-level, no change needed")

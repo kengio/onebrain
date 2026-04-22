@@ -334,7 +334,7 @@ bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"
 bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"
 ```
 
-This ensures Claude Code loads from vault on the next `/reload-plugins`. Must be sequential: if cache is deleted before pinning, there is a brief window where installPath points to a deleted path.
+This ensures Claude Code loads from vault on the next session. Must be sequential: if cache is deleted before pinning, there is a brief window where installPath points to a deleted path. Tell the user: "Start a new Claude Code session — the plugin will now load from the vault directory."
 
 ---
 
