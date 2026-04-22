@@ -573,3 +573,15 @@ file_type: <pdf|docx|xlsx|pptx|image|svg|video|script>
 **Scan for related notes:** After creating the note, grep `[resources_folder]/**/*.md` and `[knowledge_folder]/**/*.md` for titles or tags related to the file's topic. Suggest up to 2 wikilinks if found. If no related notes are found, leave the `## Related` section with: `_No related notes found : add links manually._`
 
 > **Note on `file_path`:** `file_path` is only included for files imported from an explicit path (kept in place after import). For inbox-staged files, `file_path` is omitted : the staging copy is deleted and the note is the permanent artifact.
+
+---
+
+## Known Gotchas
+
+- **Password-protected PDFs and Word files.** The Read tool returns empty content or a decryption error on protected files. When a non-trivially sized file (> 0 bytes) returns completely empty content, create a stub note with the message "File may be password-protected — content could not be extracted. Unlock the file and re-import."
+
+- **Large PDFs need chunked reading.** Claude's Read tool reads up to 20 pages per request. For PDFs with 20+ pages, read in consecutive page ranges (`pages: "1-20"`, `pages: "21-40"`, etc.) and synthesize across chunks. Without chunking, pages 21+ are silently truncated.
+
+- **`.xls` legacy Excel format.** markitdown may return garbled characters or fail silently on `.xls` files. The Excel stub fallback already has a special message for `.xls` — trust the stub path for `.xls` rather than retrying markitdown. The user should convert to `.xlsx` and re-import.
+
+- **`--attach` flag with batch mode.** In batch mode, `cp` operations for attach run inside subagents. If a subagent's `cp` fails, the orchestrator Step 5 report should include it as a partial failure — the note is created but the attachment copy was skipped.

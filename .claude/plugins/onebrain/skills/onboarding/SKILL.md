@@ -521,3 +521,11 @@ Say:
 
 → Run /daily to see your first briefing.
 → Run /help to see all available commands.
+
+---
+
+## Known Gotchas
+
+- **Onboarding on an already-configured vault.** If `vault.yml` or `[agent_folder]/MEMORY.md` already exists, ask the user before overwriting: "Existing OneBrain config found — reconfigure from scratch?" Running /onboarding on an already-configured vault destroys identity and folder settings.
+
+- **Plugin hooks require a Claude Code session restart to activate.** The Stop/PreCompact/PostCompact hooks registered during onboarding take effect on the NEXT session start. If the user runs /wrapup immediately after onboarding and no checkpoint appears, remind them to restart the session.

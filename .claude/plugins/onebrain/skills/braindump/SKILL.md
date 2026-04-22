@@ -85,6 +85,14 @@ After writing, dispatch the **Task Extractor** agent (`agents/task-extractor.md`
 
 ---
 
+## Known Gotchas
+
+- **Multiple braindumps on the same day.** The default filename `YYYY-MM-DD-braindump.md` collides if run twice on the same day. Step 3 already handles this with `-NN` suffix — do not skip the glob check even on the first call of the day.
+
+- **Project link threshold.** Step 4 appends to project files for "direct updates" — not passing mentions. A braindump that says "thinking about starting project X" should NOT trigger an automatic append to project notes. Only clear task assignments, decisions, or status updates qualify.
+
+---
+
 ## Step 6: Confirm
 
 Say in one line:

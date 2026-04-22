@@ -135,3 +135,9 @@ If the user asks to retro-tag existing notes (e.g. "update all notes in 01-proje
 
 ---
 
+## Known Gotchas
+
+- **"Entire knowledge base" scope can be very large.** If note count exceeds 20, Step 2b delegates to the Knowledge Linker agent — the inline Steps 3-4 path is only for small scopes. Do not try to hold hundreds of notes in context.
+
+- **Avoid suggesting wikilinks that already exist.** Before proposing a connection between Note A and Note B, check whether `[[Note B]]` (or `[[Note B|...]]`) already appears anywhere in Note A. Suggesting existing links adds noise without value.
+

@@ -129,3 +129,11 @@ vault.yml
 Then say:
 > Copy the listed files/folders to your new vault root.
 > Your new vault needs to have OneBrain installed for the agent to work.
+
+---
+
+## Known Gotchas
+
+- **`qmd_collection` in `vault.yml` is vault-specific.** When cloning to a new vault, the `qmd_collection` value will point to the old vault's collection. The user must run `/qmd setup` in the new vault to create a collection for the new vault and update `vault.yml` accordingly.
+
+- **Cloned memory/ files reference project paths from the old vault.** Project-type memory files may contain file paths (e.g., repo locations) that differ in the new environment. Run `/memory-review` after cloning to audit and update any path-specific facts.

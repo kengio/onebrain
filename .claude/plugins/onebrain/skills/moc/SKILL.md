@@ -190,3 +190,11 @@ open "obsidian://open?path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)/MOC.md" 2>/de
 Then say:
 🗺️ MOC.md updated.
 → Opening in Obsidian...
+
+---
+
+## Known Gotchas
+
+- **MOC.md is overwritten on every `/moc` run.** The user-editable `## Pinned` section is preserved by reading it first and re-inserting it. If the Pinned section is missing from the existing file, it will not appear in the new version — warn the user if no Pinned section is found during the read.
+
+- **Dataview must be installed** in Obsidian for the query blocks to render. If the user reports that MOC.md shows raw code blocks instead of data, they need to install the Dataview community plugin.

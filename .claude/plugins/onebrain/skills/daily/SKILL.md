@@ -69,3 +69,9 @@ If both task sources are empty:
 ──────────────────────────────────────────────────────────────
 ✅ Nothing on your plate today — clear!
 ```
+
+## Known Gotchas
+
+- **Monday morning: "last session" is typically Friday.** When globbing for the most recent session log on a Monday morning, don't assume it's from today or yesterday — it may be 2-3 days ago. Always sort by filename (which contains the date) rather than file modification time.
+
+- **Tasks grep includes tasks in TASKS.md.** `TASKS.md` contains Dataview query blocks, not real tasks — its content changes dynamically and may include false matches. Exclude `TASKS.md` from the task grep.

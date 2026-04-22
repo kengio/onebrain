@@ -238,6 +238,8 @@ For each checkpoint file path stored in Step 1:
    - key absent → add `merged: true` to frontmatter
 3. Write the updated file
 
+**Why write before deleting:** Always complete Step 5 (mark merged) before Step 6 (delete). If the write fails, `merged: true` is never set and future /wrapup runs will correctly re-include the checkpoint. Deleting first would lose checkpoint data permanently with no recovery path.
+
 This prevents /wrapup from re-reading the same checkpoints in future sessions.
 
 ---
@@ -293,3 +295,35 @@ Auto-recovered {S} orphan session(s):
 {Recap reminder message from Step 7}
 
 Good session! See you next time.
+
+---
+
+## Known Gotchas
+
+- **Session token mismatch on Mac.** `$PPID` changes if the session was started from a wrapper (Hammerspoon, tmux `new-session`, etc.). If Step 1 finds no checkpoints but you expect some, compare `$PPID` against the date-matching checkpoint filenames in the folder to find the actual token used when they were written.
+
+- **Cross-month midnight sessions.** If a session starts before midnight and /wrapup runs after midnight in a new month, Step 1 looks in "yesterday's folder" — but when yesterday was the last day of the prior month, the path must also roll back the year (e.g., January 1 → December of the prior year). Verify the month rollover logic handles `MM=01`.
+
+- **`merged: false` YAML type.** Some YAML parsers return the string `"false"` rather than boolean `false`. The filter "keep where `merged` is absent or not `true`" should treat both `merged: false` (boolean) and `merged: "false"` (string) as "not merged" — only exact `merged: true` counts.
+
+- **Duplicate session slot collision.** If auto-save and a manual /wrapup run nearly simultaneously, both may try to write `session-01.md`. Step 2 already verifies the slot is free before writing — do not skip this check even when synthesizing from checkpoints.
+
+## In-Skill Examples
+
+**Good Key Decisions section** (enough detail to reconstruct what happened):
+```markdown
+## Key Decisions
+
+- Chose $PPID as session token because it is stable within a shell session and unique per terminal window
+- Moved checkpoint delete to AFTER merged: true write — prevents data loss if write fails
+- Kept the state-file reset bash snippet in Step 4 rather than a hook, to avoid hook-ordering issues
+```
+
+**Bad Key Decisions section** (too vague to be useful later):
+```markdown
+## Key Decisions
+
+- Fixed a bug
+- Made some changes to wrapup
+- Updated the session handling
+```

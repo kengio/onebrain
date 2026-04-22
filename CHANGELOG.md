@@ -1,6 +1,6 @@
 ---
-latest_version: 1.10.11
-released: 2026-04-20
+latest_version: 1.10.12
+released: 2026-04-22
 ---
 
 # Changelog
@@ -9,6 +9,12 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.12 — Skill Authoring Patterns: Known Gotchas, Explain-the-Why, In-Skill Examples
+
+- docs(skills): add Known Gotchas sections to all 25 skills — concrete failure modes and solutions observed in production for each skill
+- docs(skills): add Explain-the-Why annotations to non-obvious rules across wrapup, learn, consolidate, recap, doctor, and import — rules now include the reasoning behind them so Claude can generalize to edge cases
+- docs(skills): add In-Skill Examples to learn, wrapup, capture, and recap — labeled input/output pairs that calibrate tone and output quality
 
 ## v1.10.11 — Skill Exclusion Clauses + Multi-Harness Entrypoints
 

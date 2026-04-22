@@ -90,6 +90,16 @@ Say in one line:
 
 ## Recategorize
 
+## Known Gotchas
+
+- **Fetch failure with a bare URL.** If the page cannot be fetched (timeout, 404, auth-gated), ask the user for name, description, and category rather than stopping. A bookmark with manual metadata is still useful.
+
+- **Category auto-inference.** Infer category from page content, not just the domain. A GitHub repo for a productivity tool belongs under `Productivity` or `Dev Utilities`, not under a generic `GitHub` category.
+
+---
+
+## Recategorize
+
 If the user asks to move or recategorize a bookmark:
 
 1. Resolve file path using `[resources_folder]`

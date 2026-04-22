@@ -152,3 +152,15 @@ Then AskUserQuestion:
   - label: "Keep both", description: "Keep the bookmark and the summary note"
 
 If the user selects "Remove", remove the bookmark entry from `Bookmarks.md` and refresh `updated` in its frontmatter.
+
+---
+
+## Known Gotchas
+
+- **Paywalled articles fetch successfully but return only the teaser.** If the fetched content is unusually short for an article (< 300 words) but the page is known to be long-form, tell the user: "This page may be paywalled — I only got the preview. Paste the full content and I'll summarize it."
+
+- **JavaScript-rendered pages may return near-empty content.** Single-page apps and some Substack posts render content client-side. Retry once; if the content is still too sparse to summarize meaningfully, offer the paste fallback from Step 4.
+
+- **Steps 2 and 7 both read `Bookmarks.md`.** If the file is large, read it once early (Step 2) and reuse the content in Step 7 rather than grepping twice. The file does not change between these steps.
+
+- **Wikilink append format in Bookmarks.md.** The ` → [[Title]]` appended in Step 7 must use the exact note title as it appears in the vault, not the article title from the web (they may differ by punctuation or casing). Use the filename stem of the note that was just created.

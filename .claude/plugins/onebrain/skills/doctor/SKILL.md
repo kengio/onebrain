@@ -211,7 +211,7 @@ For each unique broken link name:
 
 3. **If no candidates found**: flag as unresolvable — user must fix manually.
 
-4. **Never auto-replace without user confirmation.** Every substitution requires an explicit yes or number.
+4. **Never auto-replace without user confirmation.** Every substitution requires an explicit yes or number. **Why:** Wikilink names may be intentionally different — an alias, a display override, or a reference to a planned-but-not-yet-created note. Silent replacement could rename concepts across the vault in ways that are correct syntactically but wrong semantically.
 
 After Pass B, report:
 ✅ Fixed {N} broken links across {M} files.
@@ -299,3 +299,13 @@ If `05-agent/context/` still exists:
 
 Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`.
 If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
+
+---
+
+## Known Gotchas
+
+- **Wikilinks in frontmatter YAML values are not navigable links.** Fields like `superseded_by: [[old-file]]` contain wikilink syntax but are not real links — Obsidian does not resolve them. The broken-link checker already skips fenced code blocks and blockquotes; also skip any `[[...]]` that appears on a line before the closing `---` of the frontmatter block.
+
+- **`--fix` is not transactional.** If Pass B is interrupted (user says "stop", or a file write fails), previously edited files are already changed but later files are not. Report each fixed file immediately as it completes so the user has a clear record of what was and was not changed if something interrupts.
+
+- **vault.yml with Windows line endings (CRLF).** If edited on Windows, YAML values may have a trailing `\r`. If a folder path existence check fails unexpectedly, strip trailing whitespace from vault.yml values before using them in file path operations.

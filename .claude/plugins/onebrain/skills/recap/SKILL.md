@@ -39,6 +39,8 @@ After deciding to proceed, apply frequency filter to all extracted insights:
 - Promote only insights whose topic appears in ≥ min_frequency of the session logs being processed
 - Single-occurrence insights → skip; insight stays in session log (accessible later via /distill)
 
+**Why require recurrence:** An insight seen once is an observation. Seen in multiple separate sessions, it becomes evidence of a genuine pattern worth long-term storage. The frequency filter prevents one-off thoughts from cluttering memory/ with noise that quickly becomes stale.
+
 Example (min_frequency=2, 8 logs):
 - Topic "recap"    → appears in logs 1, 3, 5, 7 → ✅ promote
 - Topic "dreaming" → appears in log 2 only       → ⏭ skip
@@ -137,6 +139,16 @@ Each insight that passes the frequency filter:
 - Update MEMORY-INDEX.md `updated:` and `total_active` counter
 
 Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /learn.
+
+## Known Gotchas
+
+- **Frequency is per unique session log, not per occurrence.** A topic mentioned 3 times within a single session log still counts as frequency 1. Only occurrences across separate log files increment the frequency count.
+
+- **Extract from findings sections only.** Insights from `## Open Questions` are unresolved and not promotable — they are not yet facts. Extract from `## Key Decisions`, `## Insights & Learnings`, and `## What Worked / Didn't Work` sections only.
+
+- **`merged` confidence on merge.** When merging two memory files where one is `conf: high` and the other is `conf: low`, the merged file inherits the LOWER confidence. The conservative value wins — a low-confidence fact does not become high-confidence by being merged with one that is.
+
+- **`auto-saved: true` logs.** These are checkpoint-synthesized summaries. They may contain less detail than manually-written session logs. Weight them equally for frequency counting but be conservative about extracting nuanced insights from them.
 
 ## Output
 

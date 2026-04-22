@@ -12,6 +12,8 @@ Teach the agent a new fact or behavioral preference. Writes immediately to memor
 If the user provides multiple facts in one /learn call, create separate files for each concept.
 Do not combine multiple facts into one file.
 
+**Why:** Memory files are the unit of deprecation. If fact A becomes outdated but B stays valid, a combined file forces you to either keep stale A or discard still-valid B. Separate files let each fact be independently deprecated or superseded.
+
 ## Active Projects Intent Detection
 
 Write to `MEMORY.md ## Active Projects` ONLY when the user message explicitly references
@@ -31,6 +33,8 @@ Options: `active-projects / memory-file`
 
 Before writing a new file, grep `memory/` for files with overlapping topics or similar content.
 Scan ONLY files with `status: active` or `status: needs-review` — skip deprecated files.
+
+**Why:** Deprecated files are intentionally retired. Re-surfacing them as conflicts would create ghost conversations about facts the user has already decided to discard.
 
 If a potential conflict is found, show this display block first:
 ⚠️ Possible conflict with `memory/{filename}.md`
@@ -100,6 +104,40 @@ Example: `dev-workflow.md` exists → try `dev-workflow-02.md` → `dev-workflow
 
 6. If `supersede` was chosen: additionally set `supersedes: old-file.md` in new file's
    frontmatter and `superseded_by: new-file.md` in old file's frontmatter.
+
+## Known Gotchas
+
+- **Conflict detection is shallow by default.** Grepping MEMORY-INDEX.md Topics column may miss a file whose topics field is broad but whose content overlaps. When a candidate file is found, read its first 20 lines before concluding there is or is not a conflict.
+
+- **`type` inference edge case.** "I always use library X for Y in project Z" reads as behavioral but is often project context. When uncertain between `behavioral` and `context`, prefer `behavioral` — it triggers in more situations and is easier to deprecate if the project changes.
+
+- **`-NN` collision suffix must keep incrementing.** If `dev-workflow.md` through `dev-workflow-05.md` all exist, increment to `-06`. Do not stop at the first suffix you try.
+
+- **`update` vs `supersede` distinction.** `update` is for facts that are partially still true (add new nuance to existing file). `supersede` is when the old fact is fully wrong or replaced. If unsure, surface both options rather than guessing.
+
+## In-Skill Examples
+
+**Input:** "always run 3 review rounds before merging any PR — we got burned when a PR slipped through with a broken import"
+
+**Good output (behavioral memory file body):**
+```
+Run minimum 3 independent review rounds before merging any PR.
+
+**Why:** A PR slipped through with a broken import when fewer rounds were used — multiple independent reviewers catch different issue types.
+**How to apply:** After implementation is complete, dispatch 3 review sub-agents before running `gh pr create`.
+```
+
+**Input:** "remember that the OneBrain source repo is at ~/projects/onebrain"
+
+**Good output (context memory file body):**
+```
+OneBrain source repo is at ~/projects/onebrain.
+
+**Why:** Needed for worktree creation, PR workflow, and direct skill edits.
+**How to apply:** When implementing OneBrain features or updating skills, always work from this path.
+```
+
+---
 
 ## Confirmation
 

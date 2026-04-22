@@ -149,3 +149,13 @@ open "obsidian://open?path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)/TASKS.md" 2>/
 Then say:
 📋 TASKS.md updated.
 → Opening in Obsidian...
+
+---
+
+## Known Gotchas
+
+- **TASKS.md is a query-only dashboard — never add raw tasks directly to it.** The file is overwritten on every `/tasks` run. Any tasks written directly into TASKS.md will be lost on the next run.
+
+- **`path does not include` queries use partial matching.** If a folder name appears as a substring of another (e.g., `resources` appears in `04-resources`), the exclusion still works correctly because Obsidian Tasks matches the full path. But verify exclusions when adding new folders with overlapping names.
+
+- **Obsidian must be open** for the `open obsidian://` command to work. The command fails silently if Obsidian is not running — this is expected behavior, not an error.

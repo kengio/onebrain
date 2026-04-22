@@ -70,6 +70,8 @@ Classify the item and route it to the appropriate folder:
 
 Confirm routing with the user for the first 3 items. After that, proceed autonomously : or if the user says 'stop and confirm', return to confirmation mode for the next item.
 
+**Why front-load confirmations:** The first 3 items calibrate the model's understanding of the user's routing preferences. After that pattern is established, autonomous routing reduces friction. Front-loading prevents the worst mistakes (wrong folder for the first batch) without slowing down the whole session.
+
 [{n}/{N}] `{filename}` looks like {classification}
   Route to `{folder}/{subfolder}/`?
 
@@ -145,3 +147,15 @@ Kept in inbox ({M}):
 
 Empty state:
 ✅ Inbox is empty — nothing to process.
+
+---
+
+## Known Gotchas
+
+- **Primary signal takes precedence over content analysis.** An inbox note with `source: /research` in frontmatter routes to resources/ regardless of how personal or insight-like its content appears. Check frontmatter first; content-type rules are secondary.
+
+- **Mixed-content notes.** Braindumps often start with a personal insight but contain project tasks, external references, and reflections all in one file. Read the FULL note before classifying — the first paragraph can be misleading about the overall content type.
+
+- **"First 3 confirmations" counter resets each /consolidate run.** If the user runs /consolidate again on a different day, the first 3 items get confirmation again even if the same routing preferences were established previously. This is intentional — batch context may differ.
+
+- **Tasks in processed inbox notes.** Unchecked tasks (`- [ ]`) in an inbox note should stay in whichever file the content moves to (or be moved to the relevant project note). Do not strip them out — the Tasks plugin finds them wherever they live.
