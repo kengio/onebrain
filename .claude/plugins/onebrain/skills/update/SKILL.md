@@ -260,3 +260,13 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 - Version stays old until plugin.json bump (step 4g) — re-running /update retries from start
 - Already-synced files are idempotent (compare content before overwriting)
 - If vault in unrecoverable state: restore from backup in 06-archive/, then re-run /update
+
+---
+
+## Known Gotchas
+
+- **Do not use git commands for the version check.** `git fetch` and `git pull` hang on Windows while waiting for credentials. Always use `WebFetch` on the raw GitHub URL to compare versions and fetch files.
+
+- **plugin.json bump is the last step.** If /update is interrupted before Step 4g, the version stays at the old number — re-running /update will retry the full migration. Do not bump plugin.json early as a progress marker.
+
+- **MEMORY.md Key Learnings migration (Step 1) must run before Step 4.** Step 4 restructures MEMORY.md; Step 1 reads and extracts from it. Running them in the wrong order loses the Key Learnings content before it can be promoted to memory/ files.

@@ -89,3 +89,9 @@ After writing, dispatch the **Task Extractor** agent (`agents/task-extractor.md`
 
 Say in one line:
 💭 Filed to `[inbox_folder]/YYYY-MM-DD-braindump.md`. [If project link: Added note to "Project Name".]
+
+---
+
+## Known Gotchas
+
+- **Project link threshold.** Step 4 appends to project files for "direct updates" — not passing mentions. A braindump that says "thinking about starting project X" should NOT trigger an automatic append to project notes. Only clear task assignments, decisions, or status updates qualify.

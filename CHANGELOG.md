@@ -1,6 +1,6 @@
 ---
-latest_version: 1.10.11
-released: 2026-04-20
+latest_version: 1.10.12
+released: 2026-04-22
 ---
 
 # Changelog
@@ -9,6 +9,16 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.12 — Skill Quality: Authoring Patterns, Progressive Loading, Predefined Scripts
+
+- docs(skills): add Known Gotchas, Explain-the-Why, and In-Skill Examples to all 24 applicable skills
+- refactor(skills): split large skills into `references/` subdirectories — import 587→196, doctor 311→185, onboarding 531→446 lines
+- refactor(scripts): add `startup/scripts/` with 4 predefined shell scripts (session-init, orphan-scan, qmd-update, open-in-obsidian) replacing inline bash across INSTRUCTIONS.md and multiple skills
+- refactor(wrapup): extract 14-line session token reset to `wrapup/scripts/reset-checkpoint-counter.sh`
+- feat(import): add optional Step 6 — integrate imported notes into related vault notes after import
+- fix: rename plugin identifier onebrain@onebrain → onebrain@kengio (README, settings.json, onboarding skill)
+- docs(contributing): update project structure to show startup/scripts/ and skill scripts/ patterns
 
 ## v1.10.11 — Skill Exclusion Clauses + Multi-Harness Entrypoints
 

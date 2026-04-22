@@ -147,7 +147,16 @@ Say:
 
 ## Step 6: Update qmd Index
 
-If `qmd_collection` is set in vault.yml, run:
 ```bash
-qmd update -c [qmd_collection]
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
+
+---
+
+## Known Gotchas
+
+- **`synthesized_from_checkpoints: true` logs are recovery summaries.** Checkpoint-synthesized session logs contain less detail than manually written ones — they summarize what was captured by the hook, not a full session review. Treat them as supporting context rather than authoritative sources when distilling decisions.
+
+- **The `> 20 sources` guard does not re-apply after refinement.** If the user refines the search and gets 18 results, proceed — do not re-apply the guard to the refined set if the user already approved or narrowed it.
+
+- **Case-insensitive filename check for existing digest notes.** `Machine Learning.md` and `machine learning.md` represent the same topic. Check case-insensitively when determining if a digest note already exists before deciding to create vs. append.

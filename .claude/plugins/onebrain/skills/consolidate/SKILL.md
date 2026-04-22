@@ -70,6 +70,8 @@ Classify the item and route it to the appropriate folder:
 
 Confirm routing with the user for the first 3 items. After that, proceed autonomously : or if the user says 'stop and confirm', return to confirmation mode for the next item.
 
+**Why front-load confirmations:** The first 3 items calibrate the model's understanding of the user's routing preferences. After that pattern is established, autonomous routing reduces friction. Front-loading prevents the worst mistakes (wrong folder for the first batch) without slowing down the whole session.
+
 [{n}/{N}] `{filename}` looks like {classification}
   Route to `{folder}/{subfolder}/`?
 
@@ -145,3 +147,15 @@ Kept in inbox ({M}):
 
 Empty state:
 ✅ Inbox is empty — nothing to process.
+
+```bash
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+
+---
+
+## Known Gotchas
+
+- **Mixed-content notes.** Braindumps often start with a personal insight but contain project tasks, external references, and reflections all in one file. Read the FULL note before classifying — the first paragraph can be misleading about the overall content type.
+
+- **Tasks survive moves but can be duplicated by merges.** When merging an inbox note into a destination, verify the write operation preserves unchecked `- [ ]` lines from the source note rather than dropping them. The Tasks plugin finds them wherever they live, but only if they aren't silently lost during the merge.

@@ -163,3 +163,11 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 To recover a soft-deleted file: manually move it back to `memory/` and remove the
 `archived:` frontmatter field. Then re-add the MEMORY-INDEX.md row manually or run `/doctor --fix`
 to rebuild MEMORY-INDEX.md.
+
+---
+
+## Known Gotchas
+
+- **`keep` and `deprecate` commit immediately — no undo.** `update` can be cancelled via the `cancel` option before `confirm`. `delete` asks for confirmation before executing. Remind the user that `keep` and `deprecate` take effect immediately with no cancel path.
+
+- **Out-of-sync MEMORY-INDEX.md.** If a memory/ file is missing from MEMORY-INDEX.md (written by /learn outside of review), the skill skips it with an "out of sync" message. After the review completes, prompt the user to run `/doctor --fix` if any out-of-sync entries were encountered.

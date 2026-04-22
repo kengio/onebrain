@@ -25,9 +25,17 @@ Good contributions include:
 ├── references/                          Harness-specific context loaded by GEMINI.md / AGENTS.md
 │   ├── gemini-tools.md                  Tool name mapping for Gemini CLI
 │   └── codex-tools.md                   Tool name mapping for Codex CLI
+├── startup/                             Startup utilities loaded at session begin
+│   └── scripts/                         Predefined shell scripts called by INSTRUCTIONS.md
+│       ├── session-init.sh              Outputs DATETIME + SESSION_TOKEN in one Bash call
+│       ├── orphan-scan.sh               Counts unmerged checkpoint sessions (orphans)
+│       ├── qmd-update.sh                Runs qmd index update (reads collection from vault.yml)
+│       └── open-in-obsidian.sh          Opens a vault file in the Obsidian app
 ├── skills/                              One directory per slash command (25 skills)
 │   └── [name]/
-│       └── SKILL.md                     The skill prompt — what the AI follows when invoked
+│       ├── SKILL.md                     The skill prompt — what the AI follows when invoked
+│       ├── references/                  Large content loaded on-demand (handlers, templates, procedures)
+│       └── scripts/                     Predefined shell scripts called inline by the skill
 ├── hooks/
 │   └── hooks.json                       Hook configuration (session automation)
 └── agents/
@@ -41,6 +49,8 @@ Good contributions include:
 Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
+
+**Predefined scripts** (`startup/scripts/` and `skills/[name]/scripts/`) are shell scripts the AI calls via `bash "path/to/script.sh"` instead of writing bash inline. Use them for repeatable operations (datetime, session token detection, qmd update, file opens, hook state reset) so Claude does not spend tokens re-generating the same bash logic each time. All scripts must be defensive — exit silently when conditions are not met (binary missing, variable unset, etc.).
 
 ## Multi-Harness Support
 

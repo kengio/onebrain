@@ -98,3 +98,11 @@ If the user asks to move or recategorize a bookmark:
 4. Refresh `updated` in frontmatter
 5. Confirm in one line:
    🔖 Moved {Name} from `## {Old}` → `## {New}`. [If subcategory: `/ ### {Sub}`]
+
+---
+
+## Known Gotchas
+
+- **Fetch failure with a bare URL.** If the page cannot be fetched (timeout, 404, auth-gated), ask the user for name, description, and category rather than stopping. A bookmark with manual metadata is still useful.
+
+- **Category auto-inference.** Infer category from page content, not just the domain. A GitHub repo for a productivity tool belongs under `Productivity` or `Dev Utilities`, not under a generic `GitHub` category.

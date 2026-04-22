@@ -39,6 +39,8 @@ After deciding to proceed, apply frequency filter to all extracted insights:
 - Promote only insights whose topic appears in ≥ min_frequency of the session logs being processed
 - Single-occurrence insights → skip; insight stays in session log (accessible later via /distill)
 
+**Why require recurrence:** An insight seen once is an observation. Seen in multiple separate sessions, it becomes evidence of a genuine pattern worth long-term storage. The frequency filter prevents one-off thoughts from cluttering memory/ with noise that quickly becomes stale.
+
 Example (min_frequency=2, 8 logs):
 - Topic "recap"    → appears in logs 1, 3, 5, 7 → ✅ promote
 - Topic "dreaming" → appears in log 2 only       → ⏭ skip
@@ -154,3 +156,36 @@ Promoted {N} insights to memory/:
 {N} session logs marked recapped.
 → Run /distill to compress a completed thread into a knowledge note.
 ```
+
+---
+
+## In-Skill Examples
+
+**Promotable vs. non-promotable insights (min_frequency=2, 3 logs):**
+
+| Topic | log-01 | log-02 | log-03 | Unique log count | Promoted? |
+|-------|--------|--------|--------|-----------------|-----------|
+| "review-rounds" | ✓ | ✓ | ✓ | 3 | ✅ yes |
+| "worktree" | ✓ ✓ ✓ ✓ | — | — | 1 | ❌ no — 4 occurrences in 1 log = frequency 1 |
+| "checkpoint" | — | ✓ | — | 1 | ❌ no — below min_frequency |
+
+**Good promotable insight** (generalizable, not session-specific):
+```
+Run minimum 3 independent review rounds before merging any PR.
+```
+
+**Not promotable** (open question, not yet a fact):
+```
+Should we use per-occurrence weighting instead of per-log frequency?
+```
+→ Comes from `## Open Questions` — skip, don't promote.
+
+## Known Gotchas
+
+- **Frequency is per unique session log, not per occurrence.** A topic mentioned 3 times within a single session log still counts as frequency 1. Only occurrences across separate log files increment the frequency count.
+
+- **Extract from findings sections only.** Insights from `## Open Questions` are unresolved and not promotable — they are not yet facts. Extract from `## Key Decisions`, `## Insights & Learnings`, and `## What Worked / Didn't Work` sections only.
+
+- **`merged` confidence on merge.** When merging two memory files where one is `conf: high` and the other is `conf: low`, the merged file inherits the LOWER confidence. The conservative value wins — a low-confidence fact does not become high-confidence by being merged with one that is.
+
+- **`auto-saved: true` logs.** These are checkpoint-synthesized summaries. They may contain less detail than manually-written session logs. Weight them equally for frequency counting but be conservative about extracting nuanced insights from them.

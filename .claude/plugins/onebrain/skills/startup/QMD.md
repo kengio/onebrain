@@ -22,7 +22,7 @@ Without embeddings, `mcp__plugin_onebrain_qmd__query` uses BM25 keyword search o
 Whenever you add, edit, or delete any file in the vault, check first whether qmd is available by looking for `mcp__plugin_onebrain_qmd__query` in your tool list. If it is available, immediately run:
 
 ```bash
-qmd update -c [qmd_collection]
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
 
-This keeps the search index in sync. If qmd tools are not available, or `[qmd_collection]` is absent, skip this step entirely.
+This keeps the search index in sync. The script reads `qmd_collection` from vault.yml and exits silently if qmd is not installed or the collection is not set.

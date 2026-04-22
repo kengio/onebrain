@@ -38,7 +38,7 @@ Absence of `recapped:` field = not yet processed by /recap.
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
-2. Use `session_token` from context if already loaded; if absent, run the session token command via Bash and save to context. The session token is alphanumeric — numeric on Mac/Linux (`$PPID`), alphanumeric on Windows Terminal (`$WT_SESSION` prefix).
+2. Use `session_token` from context if already loaded (set by `session-init.sh` at startup); if absent, run `bash ".claude/plugins/onebrain/startup/scripts/session-init.sh"` and use the `SESSION_TOKEN` value.
 3. Glob checkpoint files:
    - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`
    - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`
@@ -207,22 +207,10 @@ _Omit this section if the session had no notable friction or technique worth log
 After writing the session log, reset the checkpoint hook counter to prevent spurious post-wrapup checkpoints:
 
 ```bash
-tmpdir_safe="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
-if [ -n "${WT_SESSION:-}" ]; then
-  _token=$(printf '%s' "$WT_SESSION" | tr -cd 'a-zA-Z0-9' | cut -c1-8)
-elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
-  _token="${PPID}"
-elif command -v powershell.exe &>/dev/null; then
-  _token=$(powershell.exe -NoProfile -NonInteractive -Command '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n ')
-else
-  _f="${tmpdir_safe}/ob1-$(date +%Y-%m-%d).sid"
-  [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null
-  _token=$(cat "$_f" 2>/dev/null || echo '99999')
-fi
-[ -n "${_token:-}" ] && echo "0:$(date +%s)" > "${tmpdir_safe}/onebrain-${_token}.state" 2>/dev/null
+bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"
 ```
 
-This writes `0:<epoch>` into the state file, triggering a 60-second skip window and resetting the message counter.
+This writes `0:<epoch>` into the session state file, triggering a 60-second skip window and resetting the message counter.
 
 ---
 
@@ -237,6 +225,8 @@ For each checkpoint file path stored in Step 1:
    - `merged: null` or bare `merged:` → replace with `merged: true`
    - key absent → add `merged: true` to frontmatter
 3. Write the updated file
+
+**Why write before deleting:** Always complete Step 5 (mark merged) before Step 6 (delete). If the write fails, `merged: true` is never set and future /wrapup runs will correctly re-include the checkpoint. Deleting first would lose checkpoint data permanently with no recovery path.
 
 This prevents /wrapup from re-reading the same checkpoints in future sessions.
 
@@ -293,3 +283,35 @@ Auto-recovered {S} orphan session(s):
 {Recap reminder message from Step 7}
 
 Good session! See you next time.
+
+---
+
+## In-Skill Examples
+
+**Good Key Decisions section** (enough detail to reconstruct what happened):
+```markdown
+## Key Decisions
+
+- Chose $PPID as session token because it is stable within a shell session and unique per terminal window
+- Moved checkpoint delete to AFTER merged: true write — prevents data loss if write fails
+- Kept the state-file reset bash snippet in Step 4 rather than a hook, to avoid hook-ordering issues
+```
+
+**Bad Key Decisions section** (too vague to be useful later):
+```markdown
+## Key Decisions
+
+- Fixed a bug
+- Made some changes to wrapup
+- Updated the session handling
+```
+
+## Known Gotchas
+
+- **Session token mismatch on Mac.** `$PPID` changes if the session was started from a wrapper (Hammerspoon, tmux `new-session`, etc.). If Step 1 finds no checkpoints but you expect some, compare `$PPID` against the date-matching checkpoint filenames in the folder to find the actual token used when they were written.
+
+- **Cross-month midnight sessions.** If a session starts before midnight and /wrapup runs after midnight in a new month, Step 1 looks in "yesterday's folder." Decrementing the month is sufficient for all months except January — for January specifically, also roll back the year (e.g., January 1 → December of the prior year). All other month boundaries only need the month decremented.
+
+- **`merged: false` YAML type.** Some YAML parsers return the string `"false"` rather than boolean `false`. The filter "keep where `merged` is absent or not `true`" should treat both `merged: false` (boolean) and `merged: "false"` (string) as "not merged" — only exact `merged: true` counts.
+
+- **Duplicate session slot collision.** If auto-save and a manual /wrapup run nearly simultaneously, both may try to write `session-01.md`. Step 2 already verifies the slot is free before writing — do not skip this check even when synthesizing from checkpoints.

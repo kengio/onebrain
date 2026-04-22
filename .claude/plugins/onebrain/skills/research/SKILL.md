@@ -123,3 +123,11 @@ You might also explore:
 
 → Run /summarize [url] to go deeper on a specific source.
 → Run /learn to save key insights to memory.
+
+---
+
+## Known Gotchas
+
+- **Versioned tools and libraries.** Web search may return cached or outdated documentation pages. Include the version number in search queries when the topic is a versioned library or framework, and note the publication date of each source in the note.
+
+- **No web search tool in context.** If no search tool is available, be explicit about which parts of the research come from training data vs. live sources. Do not silently present training knowledge as web-researched findings.

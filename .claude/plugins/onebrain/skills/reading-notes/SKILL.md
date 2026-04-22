@@ -146,3 +146,11 @@ Saved to `[resources_folder]/[subfolder]/[Title] : Notes.md`
 → Add to a reading list in a project note?
 → Run /connect to find related vault notes.
 → Set a revisit reminder? (I'll add a task)
+
+---
+
+## Known Gotchas
+
+- **Input option (b) — describing from memory — is the hardest path.** Users often conflate the author's ideas with their own take. Ask separate questions: "What was the book's main argument?" and "What did YOU conclude or take away?" to separate source material from personal synthesis.
+
+- **Filename colon on Windows.** The file template uses `[Book Title] : Notes.md` with a colon, which is invalid on Windows filesystems. If vault is on Windows or synced via a Windows-incompatible path, replace ` : ` with ` - ` in the filename.

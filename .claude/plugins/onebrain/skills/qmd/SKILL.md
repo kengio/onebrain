@@ -103,9 +103,8 @@ If the write fails, show the error. Tell the user to manually add `qmd_collectio
 
 ### Step 8: Run initial index
 
-Run:
-```
-qmd update -c <collection-name>
+```bash
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
 
 Report progress. If it fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
@@ -218,12 +217,9 @@ Stop.
 
 ### Step 2: Run update
 
-Run:
+```bash
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
-qmd update -c <collection-name>
-```
-
-Where `<collection-name>` is read from vault.yml `qmd_collection`.
 
 Report progress and any errors.
 
@@ -278,3 +274,13 @@ Say:
 > qmd search disabled for this vault. The agent will use standard Glob/Grep/Read search.
 >
 > You can re-enable anytime with `/qmd setup`.
+
+---
+
+## Known Gotchas
+
+- **`qmd` not found after setup.** If `qmd` installs successfully but subsequent calls fail with "command not found", the binary may be in a PATH that is set in `.zshrc` but not active in the Claude Code session. The fix is already documented in the setup flow — add the path to `.claude/settings.json` env config. Remind the user to run `/doctor` to verify after setup.
+
+- **`qmd embed` must be run after setup before searches return semantic results.** `qmd setup` registers the collection but does not create embeddings. The first search after setup returns lexical-only results until `qmd embed` completes.
+
+- **`qmd_collection` value in vault.yml must exactly match the collection name used during setup.** A mismatch causes all qmd tool calls to silently fail (wrong collection). Verify with `qmd status` after changing the value.

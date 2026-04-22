@@ -119,3 +119,11 @@ If the weekly review reveals a persistent pattern or learning, save it via `/lea
 [If insights saved]: Added a pattern to your memory.
 
 Enjoy your {weekend/time off}. See you next week!
+
+---
+
+## Known Gotchas
+
+- **No sessions this week.** If the week has no session logs, skip "What you worked on" and "Patterns I noticed" — don't fabricate activity. Acknowledge it directly: "No sessions logged this week." and jump to Step 5 (reflection questions).
+
+- **Weekly note file path.** Step 8 mentions saving to `[logs_folder]/YYYY/MM/YYYY-MM-DD-weekly.md`, but the actual write step is not explicitly in the skill — this file is a summary artifact for the user's review, not a session log. Write it with frontmatter `tags: [weekly-review]` and omit session/checkpoint fields.
