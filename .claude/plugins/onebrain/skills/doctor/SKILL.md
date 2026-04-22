@@ -79,7 +79,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Read `~/.claude/plugins/installed_plugins.json`
 - Find the entry where key starts with `onebrain@` and `scope == "project"` and `projectPath` matches the current vault
 - If not found: 🟡 "onebrain not found in installed_plugins.json — run /onboarding or /plugin to install"
-- If `installPath` is inside `~/.claude/plugins/cache/`: 🔴 "Plugin loading from user cache — run /doctor --fix to pin to vault"
+- If `installPath` is inside `~/.claude/plugins/cache/` (use `Path(installPath).relative_to(Path.home() / '.claude/plugins/cache')` or check if the path string contains `/.claude/plugins/cache/` — do not use simple `startswith` on unexpanded tilde): 🔴 "Plugin loading from user cache — run /doctor --fix to pin to vault"
 - If `installPath` is the vault plugin directory (ends with `.claude/plugins/onebrain`): ✅ "Plugin: vault-level"
 
 **INSTRUCTIONS.md:**

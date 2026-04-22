@@ -55,7 +55,7 @@ if not Path(vault_dir).exists():
     sys.exit(0)
 
 entries = data["plugins"][onebrain_key]
-cache_dir = Path.home() / ".claude" / "plugins" / "cache"
+cache_dir = Path(plugins_path).parent / "cache"  # installed_plugins.json → plugins/ → cache/
 changed = False
 
 # Read version from vault plugin.json once before iterating entries

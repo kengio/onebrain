@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # vault-sync.sh <vault_root> <branch>
 # Downloads the latest onebrain plugin files from GitHub and syncs to vault.
-# After download, all sync operations run in parallel:
+# After download, three sync operations run in parallel:
 #   - Plugin folder sync (with stale file cleanup)
 #   - Root docs copy (README, CONTRIBUTING, CHANGELOG)
 #   - Harness file merge (CLAUDE.md, GEMINI.md, AGENTS.md) — vault is primary
+# Then sequentially (must follow sync_plugin):
+#   - pin-to-vault.sh (reads plugin.json written by sync_plugin)
 # Requires: curl, tar (both included in Git for Windows / Git Bash).
 # No rsync dependency — uses Python 3.7+ for all sync operations (cross-platform).
 # CWD must be vault root when calling this script (uses vault-relative path invocation).
@@ -173,19 +175,21 @@ def pin_vault():
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or f"pin-to-vault.sh exited {result.returncode}")
 
-# ── run all four tasks in parallel ───────────────────────────────────────────
+# ── run first three tasks in parallel, then pin_vault sequentially ───────────
 
-with ThreadPoolExecutor(max_workers=4) as pool:
+with ThreadPoolExecutor(max_workers=3) as pool:
     futures = {
         pool.submit(sync_plugin): "plugin sync",
         pool.submit(copy_root_docs): "root docs",
         pool.submit(merge_harness_files): "harness merge",
-        pool.submit(pin_vault): "pin to vault",
     }
     for future in as_completed(futures):
         exc = future.exception()
         if exc:
             raise RuntimeError(f"{futures[future]} failed: {exc}") from exc
+
+# pin_vault reads plugin.json written by sync_plugin — must run after parallel block
+pin_vault()
 
 print("vault-sync: done")
 PYEOF

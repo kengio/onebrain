@@ -13,6 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## v1.10.16 — Vault-level plugin loading enforcement
 
 - feat(update): add pin-to-vault.sh — pins installed_plugins.json installPath to vault directory, preventing Claude Code from loading plugin from user cache
+- fix(update): pin-to-vault.sh — fix loop early exit, move plugin.json read outside loop, add empty installPath guard, fix file-missing error message
 - fix(update): clean-plugin-cache.sh now deletes ALL onebrain cache versions on every /update (not just stale), ensuring cache never becomes authoritative source
 - feat(update): vault-sync.sh runs pin-to-vault.sh + clean-plugin-cache.sh after sync (sequential: pin first, then clean)
 - feat(doctor): Config check detects when plugin is loading from user cache and warns to run /doctor --fix

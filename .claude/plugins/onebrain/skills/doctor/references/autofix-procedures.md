@@ -15,7 +15,7 @@ bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"
 bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"
 ```
 
-After running: prompt the user to run `/reload-plugins` to apply.
+After running: Tell the user: "Start a new Claude Code session — the plugin will now load from the vault directory."
 
 ---
 
@@ -106,7 +106,7 @@ If `timezone` was not found: skip this pass, note "No deprecated keys to clean u
 
 ## Final step
 
-After all fix passes complete, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass D edits vault.yml which is not indexed by qmd):
+After all fix passes complete, if any files were written to disk (Pass B or Pass C made confirmed changes — Pass A writes to `installed_plugins.json` outside vault, not indexed by qmd; Pass D edits vault.yml which is not indexed by qmd):
 ```bash
 bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```

@@ -324,6 +324,8 @@ From this point, the project-level copy takes priority over the global cache.
 
 **Pin to vault (run after Step 0 file copy — sequential order required):**
 
+`$PWD` must be the vault root (the directory containing `.claude/`) when running these commands.
+
 ```bash
 # 1. Pin installPath to vault FIRST (so cache deletion is safe)
 bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"

@@ -28,7 +28,6 @@ with open(installed_path) as f:
     data = json.load(f)
 
 # Find onebrain entry (any marketplace key starting with "onebrain@")
-active_version = None
 active_plugin_dir = None
 
 for plugin_key, entries in data.get("plugins", {}).items():
@@ -41,10 +40,9 @@ for plugin_key, entries in data.get("plugins", {}).items():
         if install_path:
             p = Path(install_path)
             active_plugin_dir = p.parent
-            active_version = p.name
             break
 
-if not active_version:
+if not active_plugin_dir:
     print("clean-plugin-cache: onebrain not in remote cache (local directory install), skipping")
     exit(0)
 

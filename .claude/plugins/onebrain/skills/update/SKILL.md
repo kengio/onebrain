@@ -59,12 +59,13 @@ Steps:
 
    Raw URL: `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/plugins/onebrain/{path}`
 
-   Download and write all five files:
+   Download and write all six files:
    - `skills/update/SKILL.md`
    - `skills/update/scripts/vault-sync.sh`
    - `skills/update/scripts/register-hooks.sh`
    - `skills/update/scripts/backfill-recapped.sh`
    - `skills/update/scripts/clean-plugin-cache.sh`
+   - `skills/update/scripts/pin-to-vault.sh`
 
    All paths relative to `[vault]/.claude/plugins/onebrain/`. This ensures every script used in subsequent steps is present before anything runs.
 
@@ -160,6 +161,6 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 
 - **Root files live at the repo root, not the plugin folder.** `vault-sync.sh` handles all six root-level files: README.md, CONTRIBUTING.md, CHANGELOG.md (simple overwrite) and CLAUDE.md, GEMINI.md, AGENTS.md (merge — preserves user `@` imports). Never copy any of these into the plugin folder.
 
-- **Update scripts must be bootstrapped before they can be called.** Bootstrap step 1 downloads `SKILL.md` and all four update scripts from GitHub before running any other step. Do not call vault scripts before step 1 completes.
+- **Update scripts must be bootstrapped before they can be called.** Bootstrap step 1 downloads `SKILL.md` and all five update scripts from GitHub before running any other step. Do not call vault scripts before step 1 completes.
 
 - **Failure recovery path:** If interrupted before step 3d (plugin.json bump), re-running /update will retry from step 1. The early bootstrap (copy skills/update/) is idempotent — safe to repeat.
