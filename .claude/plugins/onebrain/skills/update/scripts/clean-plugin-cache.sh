@@ -13,8 +13,8 @@ cache_dir="${HOME}/.claude/plugins/cache"
 [ -f "$installed" ] || { echo "clean-plugin-cache: installed_plugins.json not found, skipping"; exit 0; }
 
 python_cmd=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
-  echo "clean-plugin-cache: Python not found, skipping"
-  exit 0
+  echo "ERROR: Python is required but not found." >&2
+  exit 1
 }
 
 "$python_cmd" - "$cache_dir" "$installed" <<'PYEOF'
