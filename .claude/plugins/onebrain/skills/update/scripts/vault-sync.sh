@@ -72,11 +72,14 @@ def sync_plugin():
         if is_excluded(rel.parts):
             return
         dst = vault_plugin / rel
-        if item.is_dir():
-            dst.mkdir(parents=True, exist_ok=True)
-        else:
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(item, dst)
+        try:
+            if item.is_dir():
+                dst.mkdir(parents=True, exist_ok=True)
+            else:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, dst)
+        except OSError as e:
+            raise OSError(f"failed to copy {rel}: {e}") from e
 
     items = list(source_plugin.rglob("*"))
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -89,7 +92,10 @@ def sync_plugin():
             continue
         if not (source_plugin / rel).exists():
             if dst_item.is_file():
-                dst_item.unlink()
+                try:
+                    dst_item.unlink()
+                except OSError as e:
+                    print(f"WARNING: could not remove stale file {rel}: {e}", file=sys.stderr)
             elif dst_item.is_dir():
                 try:
                     dst_item.rmdir()
@@ -119,7 +125,11 @@ def merge_harness_file(fname):
     if not src.exists():
         return
 
-    repo_text = src.read_text(encoding="utf-8-sig")
+    try:
+        repo_text = src.read_text(encoding="utf-8-sig")
+    except OSError as e:
+        print(f"WARNING: could not read {fname} from repo bundle: {e} — skipping", file=sys.stderr)
+        return
 
     if not dst.exists():
         dst.write_text(repo_text, encoding="utf-8")
@@ -161,13 +171,14 @@ def merge_harness_files():
 # ── task 4: pin-to-vault.sh ──────────────────────────────────────────────────
 
 def pin_vault():
-    import subprocess, os
+    import subprocess, shutil as _sh
     script = vault_root / ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh"
     if not script.exists():
         print("pin-to-vault: script not found, skipping")
         return
+    bash_exe = _sh.which("bash") or "bash"
     result = subprocess.run(
-        ["bash", str(script), str(vault_root)],
+        [bash_exe, str(script), str(vault_root)],
         capture_output=True, text=True, cwd=str(vault_root)
     )
     if result.stdout.strip():

@@ -57,8 +57,8 @@ for plugin_dir in onebrain_dirs:
     for version_dir in plugin_dir.iterdir():
         if not version_dir.is_dir():
             continue
-        size = sum(f.stat().st_size for f in version_dir.rglob("*") if f.is_file())
         try:
+            size = sum(f.stat().st_size for f in version_dir.rglob("*") if f.is_file())
             shutil.rmtree(version_dir)
             freed_bytes += size
             removed += 1

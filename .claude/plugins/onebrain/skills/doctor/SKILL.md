@@ -190,6 +190,6 @@ If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
 
 - **Wikilinks in frontmatter YAML values are not navigable links.** Fields like `superseded_by: [[old-file]]` contain wikilink syntax but are not real links — Obsidian does not resolve them. The broken-link checker already skips fenced code blocks and blockquotes; also skip any `[[...]]` that appears on a line before the closing `---` of the frontmatter block.
 
-- **`--fix` is not transactional.** If Pass B is interrupted (user says "stop", or a file write fails), previously edited files are already changed but later files are not. Report each fixed file immediately as it completes so the user has a clear record of what was and was not changed if something interrupts.
+- **`--fix` is not transactional.** If Pass C is interrupted (user says "stop", or a file write fails), previously edited files are already changed but later files are not. Report each fixed file immediately as it completes so the user has a clear record of what was and was not changed if something interrupts.
 
 - **vault.yml with Windows line endings (CRLF).** If edited on Windows, YAML values may have a trailing `\r`. If a folder path existence check fails unexpectedly, strip trailing whitespace from vault.yml values before using them in file path operations.
