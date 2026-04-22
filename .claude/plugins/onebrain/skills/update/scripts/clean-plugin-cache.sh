@@ -43,7 +43,10 @@ if not active_version:
     exit(0)
 
 # If install path is not inside the Claude cache directory, it's a local install
-if not str(active_plugin_dir).startswith(str(cache_dir)):
+# Use is_relative_to (Python 3.9+) to avoid false positives from startswith on similar dir names
+try:
+    active_plugin_dir.relative_to(cache_dir)
+except ValueError:
     print("clean-plugin-cache: onebrain is a local directory install, no remote cache to clean")
     exit(0)
 

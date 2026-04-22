@@ -44,22 +44,29 @@ Minor/patch bumps (1.10.0 → 1.10.1, 1.10.0 → 1.11.0): proceed without major 
 
 ## Self-Update Bootstrap (Read-New, Execute-In-Place)
 
-Skills are markdown instructions — the agent can read the new SKILL.md from the repo and
+Skills are markdown instructions — the agent can read the new SKILL.md from GitHub and
 follow it as instructions in the same conversation. No re-invoke needed.
 
-**Source repo path:** Resolve from `onebrain-development` memory file or ask user if unavailable. Typically `~/projects/onebrain`.
+GitHub raw URL template: `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/plugins/onebrain/{path}`
+where `{branch}` is the branch mapped from `update_channel` in step 2 of Version Check.
 
 Steps:
-1. **Early bootstrap — sync the update skill itself first:**
-   Copy `{source_repo}/.claude/plugins/onebrain/skills/update/` → `[vault]/.claude/plugins/onebrain/skills/update/` (overwrite all files including scripts/). This ensures the latest SKILL.md and predefined scripts are physically in the vault before anything else runs — regardless of which version the vault was previously running.
+1. **Early bootstrap — download and write the update skill itself first:**
+   Use WebFetch + Write to download these two files from GitHub raw URLs and write to vault:
+   - `skills/update/SKILL.md` → `[vault]/.claude/plugins/onebrain/skills/update/SKILL.md`
+   - `skills/update/scripts/vault-sync.sh` → `[vault]/.claude/plugins/onebrain/skills/update/scripts/vault-sync.sh`
+
+   Then make the script executable: `bash -c 'chmod +x ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh"'`
+
+   This ensures the latest SKILL.md and vault-sync.sh are in the vault before anything else runs.
 2. Read the newly-written `[vault]/.claude/plugins/onebrain/skills/update/SKILL.md` into agent context. Follow THESE instructions (not the pre-update copy) for all remaining steps.
 3. Execute migration in this order:
    a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/05-agent/MEMORY-YYYY-MM-DD.md`
       and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync remaining files — run these three sub-steps in parallel (all are independent):
-      - **Plugin folder + root file sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "{source_repo}" "{vault_root}"`. Syncs the full plugin folder (with stale file cleanup) and copies README.md, CONTRIBUTING.md, CHANGELOG.md to the vault root.
-      - **Settings merge:** merge `[vault]/.claude/settings.json` from `{source_repo}/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys; `extraKnownMarketplaces` → merge keys; `hooks` → skip (handled by migration Step 7).
-      - **Plugin cache cleanup:** run `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"`. Removes old cached versions of all installed plugins, keeping only the active version per plugin. Conservative: skips plugins not present in `~/.claude/plugins/installed_plugins.json`.
+      - **Full vault sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "{vault_root}" "{branch}"`. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), and copies README.md, CONTRIBUTING.md, CHANGELOG.md to vault root.
+      - **Settings merge:** WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys; `extraKnownMarketplaces` → merge keys; `hooks` → skip (handled by migration Step 7).
+      - **Plugin cache cleanup:** run `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"`. Removes stale onebrain cache versions; no-op for local directory installs.
    c. Load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps (all scripts are now in the vault)
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
 4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
@@ -140,6 +147,6 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 
 - **Root files (README, CONTRIBUTING, CHANGELOG) live at the repo root, not the plugin folder.** `vault-sync.sh` handles both the plugin folder and root file sync. Never copy CHANGELOG.md into the plugin folder.
 
-- **Update scripts must be bootstrapped before they can be called.** Bootstrap step 1 copies `skills/update/` to the vault before running any other step. Do not call vault scripts before step 1 completes.
+- **Update scripts must be bootstrapped before they can be called.** Bootstrap step 1 downloads `SKILL.md` and `vault-sync.sh` from GitHub before running any other step. Do not call vault scripts before step 1 completes.
 
 - **Failure recovery path:** If interrupted before step 3d (plugin.json bump), re-running /update will retry from step 1. The early bootstrap (copy skills/update/) is idempotent — safe to repeat.
