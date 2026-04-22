@@ -125,6 +125,8 @@ auto-recovered: true
 - [Open questions from checkpoints]
 ```
 
+**Never add `recapped:` or `topics:` to this frontmatter** — these fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log.
+
 **e. Write the session log** (per the template above). Verify the file exists and is non-empty before continuing.
 
 **f. Mark checkpoints as merged:** only after step e succeeds — for each checkpoint file in this group, set `merged: true` (same rules as Step 5).
