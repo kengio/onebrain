@@ -12,14 +12,6 @@
     ]
   },
   "enabledPlugins": {
-    "onebrain@kengio": true
-  },
-  "extraKnownMarketplaces": {
-    "kengio": {
-      "source": {
-        "source": "directory",
-        "path": "."
-      }
-    }
+    "onebrain@onebrain": true
   }
 }
