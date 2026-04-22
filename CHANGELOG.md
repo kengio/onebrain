@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.13
+latest_version: 1.10.12
 released: 2026-04-22
 ---
 
@@ -10,17 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v1.10.13 — Progressive Skill Loading: Handler and Template Reference Files
+## v1.10.12 — Skill Quality: Authoring Patterns + Progressive Loading
 
-- refactor(import): split 9 file-type handlers + markitdown dependency + note template into `references/` subdirectory — SKILL.md reduced from 587 to 196 lines (67%)
-- refactor(doctor): move Memory Health Checks table, auto-fix procedures (Pass A/B/C), and migration safety net to `references/` — SKILL.md reduced from 311 to 185 lines (40%)
-- refactor(onboarding): extract MEMORY.md, MEMORY-INDEX.md, and vault.yml templates to `references/` — SKILL.md reduced from 531 to 446 lines (16%)
-
-## v1.10.12 — Skill Authoring Patterns: Known Gotchas, Explain-the-Why, In-Skill Examples
-
-- docs(skills): add Known Gotchas sections to all 24 applicable skills — concrete failure modes and solutions observed in production (help/SKILL.md excluded — no runtime behavior to document)
-- docs(skills): add Explain-the-Why annotations to non-obvious rules across wrapup, learn, consolidate, recap, doctor, and import — rules now include the reasoning behind them so Claude can generalize to edge cases
-- docs(skills): add In-Skill Examples to learn, wrapup, capture, and recap — labeled input/output pairs that calibrate tone and output quality
+- docs(skills): add Known Gotchas sections to all 24 applicable skills — concrete failure modes and solutions observed in production (help/ excluded)
+- docs(skills): add Explain-the-Why annotations to non-obvious rules in wrapup, learn, consolidate, recap, doctor, import — enables Claude to generalize to edge cases
+- docs(skills): add In-Skill Examples to learn, wrapup, capture, recap — labeled input/output pairs that calibrate output quality
+- refactor(import): move 9 file-type handlers + markitdown setup + note template to `references/` — SKILL.md 587 → 196 lines (-67%)
+- refactor(doctor): move Memory Health Checks, auto-fix procedures, migration safety net to `references/` — SKILL.md 311 → 185 lines (-40%)
+- refactor(onboarding): extract MEMORY.md, MEMORY-INDEX.md, vault.yml templates to `references/` — SKILL.md 531 → 446 lines (-16%)
+- feat(import): add optional Step 6 — offer to integrate imported notes into related vault notes after import
+- fix: rename plugin identifier onebrain@onebrain → onebrain@kengio (README, settings.json, onboarding skill)
 
 ## v1.10.11 — Skill Exclusion Clauses + Multi-Harness Entrypoints
 
