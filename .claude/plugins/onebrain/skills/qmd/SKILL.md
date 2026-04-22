@@ -3,7 +3,7 @@ name: qmd
 description: "Set up and manage qmd search index for faster vault search. Subcommands: setup, embed, status, reindex, uninstall. Use when the user wants to configure, update, or troubleshoot the qmd search index itself. Do NOT use for: performing a search (call qmd tools directly), general vault operations, or installing OneBrain (use onboarding or update)."
 ---
 
-# /qmd : qmd Search Integration
+# qmd Search Integration
 
 qmd is an optional local search engine that indexes your vault for fast keyword and semantic search. When active, the agent uses it automatically for vault-wide searches.
 

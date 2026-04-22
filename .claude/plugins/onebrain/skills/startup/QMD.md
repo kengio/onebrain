@@ -1,8 +1,3 @@
----
-name: qmd-guide
-description: "Search strategy and index maintenance rules for qmd MCP tools"
----
-
 # QMD Guide
 
 ## Search Strategy

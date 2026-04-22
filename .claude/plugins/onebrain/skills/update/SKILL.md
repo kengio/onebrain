@@ -3,7 +3,7 @@ name: update
 description: "Update OneBrain system files from GitHub to the latest version. Use when the user wants to pull the latest OneBrain skills, hooks, and agents — 'update OneBrain', 'pull latest version'. Do NOT use for: updating vault notes (edit directly), teaching memory (use learn), or vault health checks (use doctor)."
 ---
 
-# /update
+# Update
 
 Update OneBrain system files from GitHub to the latest version.
 
