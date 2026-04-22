@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.15
+latest_version: 1.10.16
 released: 2026-04-22
 ---
 
@@ -9,6 +9,17 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.16 — Vault-level plugin loading enforcement
+
+- feat(update): add pin-to-vault.sh — pins installed_plugins.json installPath to vault directory, preventing Claude Code from loading plugin from user cache
+- fix(update): clean-plugin-cache.sh now deletes ALL onebrain cache versions on every /update (not just stale), ensuring cache never becomes authoritative source
+- feat(update): vault-sync.sh runs pin-to-vault.sh + clean-plugin-cache.sh after sync (sequential: pin first, then clean)
+- feat(doctor): Config check detects when plugin is loading from user cache and warns to run /doctor --fix
+- feat(doctor): /doctor --fix Pass A pins installPath to vault and clears cache (sequential)
+- feat(onboarding): post-Step 0 calls pin-to-vault.sh then clean-plugin-cache.sh to enforce vault-level from first install
+- refactor(update): move update.sh → scripts/update.sh (all .sh files now in scripts/ subfolder)
+- fix(update): step 5 display format wrapped in code block so separator lines render correctly in GitHub preview
 
 ## v1.10.15 — Fix plugin marketplace key mismatch
 
