@@ -1,11 +1,11 @@
 ---
 name: update
-description: "Update OneBrain system files from the source repo to the latest version. Use when the user wants to pull the latest OneBrain skills, hooks, and agents — 'update OneBrain', 'pull latest version'. Do NOT use for: updating vault notes (edit directly), teaching memory (use learn), or vault health checks (use doctor)."
+description: "Update OneBrain system files from GitHub to the latest version. Use when the user wants to pull the latest OneBrain skills, hooks, and agents — 'update OneBrain', 'pull latest version'. Do NOT use for: updating vault notes (edit directly), teaching memory (use learn), or vault health checks (use doctor)."
 ---
 
 # /update
 
-Update OneBrain system files from the source repo to the latest version.
+Update OneBrain system files from GitHub to the latest version.
 
 ## Version Check
 
@@ -20,7 +20,7 @@ Update OneBrain system files from the source repo to the latest version.
    where `{branch}` is the mapped branch from step 2.
    Parse the `version` field from the JSON response.
 4. If equal → say: ✅ Already up to date — v{X.X.X}. and stop
-5. If newer → read `CHANGELOG.md` from repo; display before proceeding (do not skip or summarize):
+5. If newer → WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/CHANGELOG.md`; display before proceeding (do not skip or summarize):
    ──────────────────────────────────────────────────────────────
    🔄 Update Available — v{current} → v{new}
    ──────────────────────────────────────────────────────────────

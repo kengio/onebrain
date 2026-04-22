@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.13
+latest_version: 1.10.14
 released: 2026-04-22
 ---
 
@@ -9,6 +9,11 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.14 — Fix stale "source repo" references in /update skill
+
+- fix(update): description and body heading now say "from GitHub" instead of "from the source repo"
+- fix(update): Version Check step 5 now specifies WebFetch URL for CHANGELOG.md instead of ambiguous "read from repo"
 
 ## v1.10.13 — Fix /update: CHANGELOG sync, stale file cleanup, predefined scripts, lazy loading
 
