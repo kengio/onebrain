@@ -156,13 +156,31 @@ def merge_harness_files():
     with ThreadPoolExecutor(max_workers=3) as pool:
         list(pool.map(merge_harness_file, ("CLAUDE.md", "GEMINI.md", "AGENTS.md")))
 
-# ── run all three tasks in parallel ──────────────────────────────────────────
+# ── task 4: pin-to-vault.sh ──────────────────────────────────────────────────
 
-with ThreadPoolExecutor(max_workers=3) as pool:
+def pin_vault():
+    import subprocess, os
+    script = vault_root / ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh"
+    if not script.exists():
+        print("pin-to-vault: script not found, skipping")
+        return
+    result = subprocess.run(
+        ["bash", str(script), str(vault_root)],
+        capture_output=True, text=True, cwd=str(vault_root)
+    )
+    if result.stdout.strip():
+        print(result.stdout.strip())
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or f"pin-to-vault.sh exited {result.returncode}")
+
+# ── run all four tasks in parallel ───────────────────────────────────────────
+
+with ThreadPoolExecutor(max_workers=4) as pool:
     futures = {
         pool.submit(sync_plugin): "plugin sync",
         pool.submit(copy_root_docs): "root docs",
         pool.submit(merge_harness_files): "harness merge",
+        pool.submit(pin_vault): "pin to vault",
     }
     for future in as_completed(futures):
         exc = future.exception()
