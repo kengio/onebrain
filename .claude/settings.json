@@ -15,7 +15,7 @@
     "onebrain@kengio": true
   },
   "extraKnownMarketplaces": {
-    "onebrain": {
+    "kengio": {
       "source": {
         "source": "directory",
         "path": "."
