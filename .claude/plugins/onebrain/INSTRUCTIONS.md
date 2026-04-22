@@ -191,7 +191,7 @@ Run before responding to any user message.
 **Step 1 — Critical path (greeting blocks on these):** Run in parallel:
 - Read `vault.yml` → load Configuration variables; override defaults once resolved
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
-- Get current local time in HH:MM format — if unavailable, treat as 09:00–17:00 (no emoji)
+- Run `bash ".claude/plugins/onebrain/startup/scripts/session-init.sh"` → read KEY=VALUE output; store `DATETIME` (for greeting) and `SESSION_TOKEN` (for checkpoints) in context. If the script fails or is unavailable, fall back to running `date` for time and treating session_token as `99999`.
 
 **Step 2 — Send greeting immediately:**
 
@@ -213,13 +213,13 @@ Ddd · DD Mon YYYY · HH:MM
 | 17:00–21:00 | good evening + ready | 🌆 |
 | after 21:00 | late night acknowledgement | 🌙 |
 
-- `Ddd` = abbreviated day (Mon–Sun); `DD Mon YYYY` = e.g. `18 Apr 2026`; `HH:MM` = local time
+- `Ddd · DD Mon YYYY · HH:MM` comes from the `DATETIME` variable set in Step 1 (`session-init.sh` output)
 - Always include a greeting phrase — never omit it. Example for daytime: "Hey [user], ready to go!"
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
 **Step 3 — After greeting (run all in parallel):**
-- Run session token detection via Bash → store result as `session_token` in context (all skills use this; never re-run if already in context). Command: `if [ -n "${WT_SESSION:-}" ]; then printf '%s' "$WT_SESSION" | tr -cd 'a-zA-Z0-9' | cut -c1-8; elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then echo "$PPID"; elif command -v powershell.exe &>/dev/null; then powershell.exe -NoProfile -NonInteractive -Command '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n '; else _f="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}/ob1-$(date +%Y-%m-%d).sid"; [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null; cat "$_f" 2>/dev/null || echo '99999'; fi`
+- `SESSION_TOKEN` is already in context from Step 1 (`session-init.sh`) — do not re-run detection
 - Read `[agent_folder]/MEMORY-INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
