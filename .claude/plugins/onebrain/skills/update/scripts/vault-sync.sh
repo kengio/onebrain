@@ -83,7 +83,7 @@ PYEOF
 
 echo "synced: .claude/plugins/onebrain/"
 
-# Copy root docs to vault root
+# Copy root docs to vault root (simple overwrite — no user customization expected)
 synced_root=0
 for f in README.md CONTRIBUTING.md CHANGELOG.md; do
   if [ -f "${TMP_DIR}/${f}" ]; then
@@ -92,5 +92,54 @@ for f in README.md CONTRIBUTING.md CHANGELOG.md; do
     synced_root=$((synced_root + 1))
   fi
 done
+
+# Merge harness entrypoints (CLAUDE.md, GEMINI.md, AGENTS.md):
+# - Absent in vault → copy from release
+# - Identical to release → skip
+# - Differs → apply repo changes and preserve any user-added @ imports
+"$PYTHON" - "$TMP_DIR" "$VAULT_ROOT" <<'PYEOF'
+import sys
+from pathlib import Path
+
+tmp_dir, vault_root = Path(sys.argv[1]), Path(sys.argv[2])
+
+for fname in ("CLAUDE.md", "GEMINI.md", "AGENTS.md"):
+    src = tmp_dir / fname
+    dst = vault_root / fname
+
+    if not src.exists():
+        continue
+
+    repo_text = src.read_text(encoding="utf-8")
+
+    if not dst.exists():
+        dst.write_text(repo_text, encoding="utf-8")
+        print(f"created: {fname}")
+        continue
+
+    vault_text = dst.read_text(encoding="utf-8")
+
+    if vault_text == repo_text:
+        print(f"up-to-date: {fname}")
+        continue
+
+    # Preserve user-added @ imports not present in the repo version
+    repo_lines = set(repo_text.splitlines())
+    user_imports = [
+        line for line in vault_text.splitlines()
+        if line.startswith("@") and line not in repo_lines
+    ]
+
+    merged = repo_text.rstrip()
+    if user_imports:
+        merged += "\n\n## Personal Extensions\n\n" + "\n".join(user_imports)
+    merged += "\n"
+
+    dst.write_text(merged, encoding="utf-8")
+    if user_imports:
+        print(f"merged: {fname} (preserved {len(user_imports)} personal import(s))")
+    else:
+        print(f"updated: {fname}")
+PYEOF
 
 echo "vault-sync: done (${synced_root} root files synced)"
