@@ -65,10 +65,13 @@ freed_bytes = 0
 for version_dir in active_plugin_dir.iterdir():
     if version_dir.is_dir() and version_dir.name != active_version:
         size = sum(f.stat().st_size for f in version_dir.rglob("*") if f.is_file())
-        shutil.rmtree(version_dir)
-        freed_bytes += size
-        removed += 1
-        print(f"  removed: onebrain/{version_dir.name}")
+        try:
+            shutil.rmtree(version_dir)
+            freed_bytes += size
+            removed += 1
+            print(f"  removed: onebrain/{version_dir.name}")
+        except PermissionError as e:
+            print(f"  skipped: onebrain/{version_dir.name} (in use: {e})")
 
 freed_mb = freed_bytes / (1024 * 1024)
 if removed:

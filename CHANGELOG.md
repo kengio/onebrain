@@ -21,6 +21,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - refactor(update): parallelize bootstrap sync sub-steps (plugin sync + settings merge run concurrently)
 - fix(update): remove redundant /doctor run from outer steps — already covered by migration Step 8
 - feat(update): add clean-plugin-cache.sh — removes stale onebrain cache versions; no-op for local directory installs, future-ready for remote marketplace distribution
+- feat(update): vault-sync.sh merges CLAUDE.md, GEMINI.md, AGENTS.md on update — absent files are created, identical files are skipped, changed files are updated while preserving user-added @ imports
 
 ## v1.10.12 — Skill Quality: Authoring Patterns, Progressive Loading, Predefined Scripts
 

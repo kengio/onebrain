@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # vault-sync.sh <vault_root> <branch>
 # Downloads the latest onebrain plugin files from GitHub and syncs to vault.
-# Syncs the plugin folder (with stale file cleanup) and copies root docs to vault root.
+# Syncs the plugin folder (with stale file cleanup), copies root docs, and
+# merges harness entrypoints (CLAUDE.md, GEMINI.md, AGENTS.md).
 # Requires: curl, tar (both included in Git for Windows / Git Bash).
-# No rsync dependency — uses Python for directory sync (cross-platform).
+# No rsync dependency — uses Python 3.8+ for directory sync (cross-platform).
 # CWD must be vault root when calling this script (uses vault-relative path invocation).
 
 set -euo pipefail
@@ -35,20 +36,26 @@ VAULT_PLUGIN="${VAULT_ROOT}/.claude/plugins/onebrain"
 import sys, shutil
 from pathlib import Path
 
-src, dst, *excludes = Path(sys.argv[1]), Path(sys.argv[2]), *sys.argv[3:]
+# Explicit assignment avoids bare *splat on RHS (invalid syntax in Python < 3.9)
+# and walrus operator (requires Python 3.8+).
+src = Path(sys.argv[1])
+dst = Path(sys.argv[2])
+excludes = sys.argv[3:]
 exclude_set = set(excludes)
 dst.mkdir(parents=True, exist_ok=True)
 
 def is_excluded(parts):
     return any(p in exclude_set for p in parts)
 
-# Collect stale files first (preview)
-stale = [
-    rel for dst_item in dst.rglob("*")
-    if dst_item.is_file()
-    and not is_excluded((rel := dst_item.relative_to(dst)).parts)
-    and not (src / rel).exists()
-]
+# Collect stale files first (preview before deletion)
+stale = []
+for dst_item in dst.rglob("*"):
+    if not dst_item.is_file():
+        continue
+    rel = dst_item.relative_to(dst)
+    if not is_excluded(rel.parts) and not (src / rel).exists():
+        stale.append(rel)
+
 if stale:
     print("INFO: Removing stale vault files (not in current release):")
     for f in sorted(stale):
@@ -97,6 +104,7 @@ done
 # - Absent in vault → copy from release
 # - Identical to release → skip
 # - Differs → apply repo changes and preserve any user-added @ imports
+# Uses utf-8-sig to silently strip BOM if present (Windows editors may add it).
 "$PYTHON" - "$TMP_DIR" "$VAULT_ROOT" <<'PYEOF'
 import sys
 from pathlib import Path
@@ -110,14 +118,14 @@ for fname in ("CLAUDE.md", "GEMINI.md", "AGENTS.md"):
     if not src.exists():
         continue
 
-    repo_text = src.read_text(encoding="utf-8")
+    repo_text = src.read_text(encoding="utf-8-sig")
 
     if not dst.exists():
         dst.write_text(repo_text, encoding="utf-8")
         print(f"created: {fname}")
         continue
 
-    vault_text = dst.read_text(encoding="utf-8")
+    vault_text = dst.read_text(encoding="utf-8-sig")
 
     if vault_text == repo_text:
         print(f"up-to-date: {fname}")
