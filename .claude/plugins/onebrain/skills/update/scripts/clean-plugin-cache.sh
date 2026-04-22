@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # clean-plugin-cache.sh
-# Removes old cached versions of the onebrain plugin, keeping only the active version.
+# Removes ALL cached versions of the onebrain plugin.
+# Called every /update so cache never becomes the authoritative source.
 # No-op when onebrain is installed as a local directory plugin (no remote cache entry).
 # Becomes active if/when onebrain is distributed through a remote marketplace.
 
@@ -12,8 +13,8 @@ cache_dir="${HOME}/.claude/plugins/cache"
 [ -f "$installed" ] || { echo "clean-plugin-cache: installed_plugins.json not found, skipping"; exit 0; }
 
 python_cmd=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
-  echo "clean-plugin-cache: Python not found, skipping"
-  exit 0
+  echo "ERROR: Python is required but not found." >&2
+  exit 1
 }
 
 "$python_cmd" - "$cache_dir" "$installed" <<'PYEOF'
@@ -24,58 +25,50 @@ cache_dir = Path(sys.argv[1])
 installed_path = Path(sys.argv[2])
 
 with open(installed_path) as f:
-    data = json.load(f)
+    try:
+        data = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: {installed_path} is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
 
-# Find onebrain entry (any marketplace key starting with "onebrain@")
-active_version = None
-active_plugin_dir = None
-
-for plugin_key, entries in data.get("plugins", {}).items():
+# Derive cache locations from plugin keys — not installPath (which pin-to-vault.sh may have rewritten)
+# Plugin key format: onebrain@{marketplace} → cache/{marketplace}/onebrain/
+onebrain_dirs = []
+for plugin_key in data.get("plugins", {}):
     if not plugin_key.startswith("onebrain@"):
         continue
-    if not isinstance(entries, list):
-        continue
-    for entry in entries:
-        install_path = entry.get("installPath", "")
-        if install_path:
-            p = Path(install_path)
-            active_plugin_dir = p.parent
-            active_version = p.name
-            break
+    marketplace = plugin_key.split("@", 1)[1]
+    candidate = cache_dir / marketplace / "onebrain"
+    if candidate.is_dir():
+        onebrain_dirs.append(candidate)
 
-if not active_version:
-    print("clean-plugin-cache: onebrain not in remote cache (local directory install), skipping")
-    exit(0)
+# Fallback: glob for any cache/*/onebrain/ directory (handles unknown marketplace names)
+if not onebrain_dirs and cache_dir.is_dir():
+    onebrain_dirs = list(cache_dir.glob("*/onebrain"))
 
-# If install path is not inside the Claude cache directory, it's a local install
-# Use relative_to() with try/except (Python 3.6+) to avoid false positives on similarly-named dirs
-try:
-    active_plugin_dir.relative_to(cache_dir)
-except ValueError:
-    print("clean-plugin-cache: onebrain is a local directory install, no remote cache to clean")
-    exit(0)
-
-if not active_plugin_dir.is_dir():
-    print("clean-plugin-cache: onebrain cache dir not found, skipping")
-    exit(0)
+if not onebrain_dirs:
+    print("clean-plugin-cache: no onebrain cache found, skipping")
+    sys.exit(0)
 
 removed = 0
 freed_bytes = 0
 
-for version_dir in active_plugin_dir.iterdir():
-    if version_dir.is_dir() and version_dir.name != active_version:
-        size = sum(f.stat().st_size for f in version_dir.rglob("*") if f.is_file())
+for plugin_dir in onebrain_dirs:
+    for version_dir in plugin_dir.iterdir():
+        if not version_dir.is_dir():
+            continue
         try:
+            size = sum(f.stat().st_size for f in version_dir.rglob("*") if f.is_file())
             shutil.rmtree(version_dir)
             freed_bytes += size
             removed += 1
-            print(f"  removed: onebrain/{version_dir.name}")
-        except PermissionError as e:
-            print(f"  skipped: onebrain/{version_dir.name} (in use: {e})")
+            print(f"  removed: {plugin_dir.name}/{version_dir.name}")
+        except OSError as e:
+            print(f"  skipped: {plugin_dir.name}/{version_dir.name} ({e})")
 
 freed_mb = freed_bytes / (1024 * 1024)
 if removed:
-    print(f"clean-plugin-cache: removed {removed} stale version(s), freed {freed_mb:.1f} MB")
+    print(f"clean-plugin-cache: removed {removed} version(s), freed {freed_mb:.1f} MB")
 else:
-    print(f"clean-plugin-cache: onebrain/{active_version} is the only version, nothing to remove")
+    print("clean-plugin-cache: no cache versions found")
 PYEOF

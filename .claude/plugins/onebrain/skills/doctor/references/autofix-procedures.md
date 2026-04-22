@@ -4,7 +4,22 @@ Invoked by `/doctor --fix` flag only. Each pass confirms with the user before wr
 
 ---
 
-## Pass A: memory/ confidence scores
+## Pass A: Pin plugin to vault
+
+Fixes: Plugin `installPath` pointing to user cache instead of vault directory.
+Applies when: /doctor Config check shows 🔴 "Plugin loading from user cache"
+
+Run in order (sequential — pin first, then clear cache):
+```bash
+bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"
+bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"
+```
+
+After running: Tell the user: "Start a new Claude Code session — the plugin will now load from the vault directory."
+
+---
+
+## Pass B: memory/ confidence scores
 
 Collect auto-fixable issues from the stale memory/ files scan:
 - `conf: high` files with `verified:` older than 90 days → downgrade to `conf: medium`
@@ -26,7 +41,7 @@ After applying auto-fixes, list any files flagged for manual review:
 
 ---
 
-## Pass B: Broken wikilink fuzzy-fix
+## Pass C: Broken wikilink fuzzy-fix
 
 If no broken links were found in Step 2: note "No broken links to fix." and skip this pass.
 
@@ -65,20 +80,20 @@ For each unique broken link name:
 
    - If **yes** or a number: update all source files that contain this broken link, replacing only the note name portion of each wikilink while **preserving** any `#anchor` and `|display text` (e.g. `[[Broken Name#sec|label]]` → `[[Actual Title#sec|label]]`)
    - If **skip this one**: leave as-is, note as unresolved, continue to next broken link
-   - If **stop**: end Pass B immediately, then still emit the Pass B summary report for any fixes already applied before the stop
+   - If **stop**: end Pass C immediately, then still emit the Pass C summary report for any fixes already applied before the stop
 
 3. **If no candidates found**: flag as unresolvable — user must fix manually.
 
 4. **Never auto-replace without user confirmation.** Every substitution requires an explicit yes or number. **Why:** Wikilink names may be intentionally different — an alias, a display override, or a reference to a planned-but-not-yet-created note. Silent replacement could rename concepts across the vault in ways that are correct syntactically but wrong semantically.
 
-After Pass B, report:
+After Pass C, report:
 ✅ Fixed {N} broken links across {M} files.
 🟡 {N} links could not be auto-matched — manual review needed.
 Modified files: [list of file paths that were changed]
 
 ---
 
-## Pass C: Deprecated vault.yml keys
+## Pass D: Deprecated vault.yml keys
 
 If `timezone` key was found in vault.yml (from Step 2 config check): confirm with AskUserQuestion:
 > `timezone` in vault.yml is no longer used — the agent now uses local machine time. Remove it?
@@ -91,7 +106,7 @@ If `timezone` was not found: skip this pass, note "No deprecated keys to clean u
 
 ## Final step
 
-After all fix passes complete, if any files were written to disk (Pass A or Pass B made confirmed changes — Pass C edits vault.yml which is not indexed by qmd):
+After all fix passes complete, if any files were written to disk (Pass B or Pass C made confirmed changes — Pass A writes to `installed_plugins.json` outside vault, not indexed by qmd; Pass D edits vault.yml which is not indexed by qmd):
 ```bash
 bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # vault-sync.sh <vault_root> <branch>
 # Downloads the latest onebrain plugin files from GitHub and syncs to vault.
-# After download, all sync operations run in parallel:
+# After download, three sync operations run in parallel:
 #   - Plugin folder sync (with stale file cleanup)
 #   - Root docs copy (README, CONTRIBUTING, CHANGELOG)
 #   - Harness file merge (CLAUDE.md, GEMINI.md, AGENTS.md) — vault is primary
+# Then sequentially (must follow sync_plugin):
+#   - pin-to-vault.sh (reads plugin.json written by sync_plugin)
 # Requires: curl, tar (both included in Git for Windows / Git Bash).
-# No rsync dependency — uses Python 3.6+ for all sync operations (cross-platform).
+# No rsync dependency — uses Python 3.7+ for all sync operations (cross-platform).
 # CWD must be vault root when calling this script (uses vault-relative path invocation).
 
 set -euo pipefail
@@ -70,11 +72,14 @@ def sync_plugin():
         if is_excluded(rel.parts):
             return
         dst = vault_plugin / rel
-        if item.is_dir():
-            dst.mkdir(parents=True, exist_ok=True)
-        else:
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(item, dst)
+        try:
+            if item.is_dir():
+                dst.mkdir(parents=True, exist_ok=True)
+            else:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, dst)
+        except OSError as e:
+            raise OSError(f"failed to copy {rel}: {e}") from e
 
     items = list(source_plugin.rglob("*"))
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -87,7 +92,10 @@ def sync_plugin():
             continue
         if not (source_plugin / rel).exists():
             if dst_item.is_file():
-                dst_item.unlink()
+                try:
+                    dst_item.unlink()
+                except OSError as e:
+                    print(f"WARNING: could not remove stale file {rel}: {e}", file=sys.stderr)
             elif dst_item.is_dir():
                 try:
                     dst_item.rmdir()
@@ -117,7 +125,11 @@ def merge_harness_file(fname):
     if not src.exists():
         return
 
-    repo_text = src.read_text(encoding="utf-8-sig")
+    try:
+        repo_text = src.read_text(encoding="utf-8-sig")
+    except OSError as e:
+        print(f"WARNING: could not read {fname} from repo bundle: {e} — skipping", file=sys.stderr)
+        return
 
     if not dst.exists():
         dst.write_text(repo_text, encoding="utf-8")
@@ -156,7 +168,27 @@ def merge_harness_files():
     with ThreadPoolExecutor(max_workers=3) as pool:
         list(pool.map(merge_harness_file, ("CLAUDE.md", "GEMINI.md", "AGENTS.md")))
 
-# ── run all three tasks in parallel ──────────────────────────────────────────
+# ── task 4: pin-to-vault.sh ──────────────────────────────────────────────────
+
+def pin_vault():
+    import subprocess, shutil as _sh
+    script = vault_root / ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh"
+    if not script.exists():
+        print("pin-to-vault: script not found, skipping")
+        return
+    bash_exe = _sh.which("bash") or "bash"
+    result = subprocess.run(
+        [bash_exe, str(script), str(vault_root)],
+        capture_output=True, text=True, cwd=str(vault_root)
+    )
+    if result.stdout.strip():
+        print(result.stdout.strip())
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or f"pin-to-vault.sh exited {result.returncode}")
+    elif result.stderr.strip():
+        print(result.stderr.strip(), file=sys.stderr)
+
+# ── run first three tasks in parallel, then pin_vault sequentially ───────────
 
 with ThreadPoolExecutor(max_workers=3) as pool:
     futures = {
@@ -168,6 +200,9 @@ with ThreadPoolExecutor(max_workers=3) as pool:
         exc = future.exception()
         if exc:
             raise RuntimeError(f"{futures[future]} failed: {exc}") from exc
+
+# pin_vault reads plugin.json written by sync_plugin — must run after parallel block
+pin_vault()
 
 print("vault-sync: done")
 PYEOF
