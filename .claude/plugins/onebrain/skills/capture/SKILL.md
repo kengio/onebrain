@@ -111,16 +111,6 @@ Say in one line:
 
 ---
 
-## Known Gotchas
-
-- **Project notes: always append, never overwrite.** Even if an existing project file looks sparse, create a new `## [Date] : [heading]` section rather than replacing content. Overwriting destroys project history.
-
-- **qmd may lag on fresh notes.** If qmd returns 0 results for wikilink suggestions immediately after creating a note, fall back to Glob — the PostToolUse hook updates the index after each write, so the very latest file may not yet be searchable.
-
-- **Knowledge vs. resources classification edge case.** "My conclusion after reading external docs" → knowledge (personal synthesis). "What the docs themselves say" → resources (external reference). When content is a direct restatement of an external source, route to resources even if it feels like an original insight.
-
-- **Subfolder creation.** Prefer an existing subfolder over creating a new one with the same or similar topic. Glob existing subfolders before proposing a new name.
-
 ## In-Skill Examples
 
 **Routing decisions by input:**
@@ -130,3 +120,13 @@ Say in one line:
 | "checkpoint write-before-delete ordering is critical" | personal insight | `03-knowledge/onebrain/Checkpoint Write Ordering.md` |
 | "found this Obsidian PKM article" | external reference | `04-resources/productivity/Obsidian PKM Methods.md` |
 | "just started the Mac Mini research project" | project update | append to `01-projects/hardware/Mac Mini.md` |
+
+## Known Gotchas
+
+- **Project notes: always append, never overwrite.** Even if an existing project file looks sparse, create a new `## [Date] : [heading]` section rather than replacing content. Overwriting destroys project history.
+
+- **qmd may lag on fresh notes.** If qmd returns 0 results for wikilink suggestions immediately after creating a note, fall back to Glob — the PostToolUse hook updates the index after each write, so the very latest file may not yet be searchable.
+
+- **Knowledge vs. resources classification edge case.** "My conclusion after reading external docs" → knowledge (personal synthesis). "What the docs themselves say" → resources (external reference). When content is a direct restatement of an external source, route to resources even if it feels like an original insight.
+
+- **Subfolder creation.** Prefer an existing subfolder over creating a new one with the same or similar topic. Glob existing subfolders before proposing a new name.

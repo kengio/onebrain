@@ -159,6 +159,27 @@ Promoted {N} insights to memory/:
 
 ---
 
+## In-Skill Examples
+
+**Promotable vs. non-promotable insights (min_frequency=2, 3 logs):**
+
+| Topic | log-01 | log-02 | log-03 | Unique log count | Promoted? |
+|-------|--------|--------|--------|-----------------|-----------|
+| "review-rounds" | ✓ | ✓ | ✓ | 3 | ✅ yes |
+| "worktree" | ✓ ✓ ✓ ✓ | — | — | 1 | ❌ no — 4 occurrences in 1 log = frequency 1 |
+| "checkpoint" | — | ✓ | — | 1 | ❌ no — below min_frequency |
+
+**Good promotable insight** (generalizable, not session-specific):
+```
+Run minimum 3 independent review rounds before merging any PR.
+```
+
+**Not promotable** (open question, not yet a fact):
+```
+Should we use per-occurrence weighting instead of per-log frequency?
+```
+→ Comes from `## Open Questions` — skip, don't promote.
+
 ## Known Gotchas
 
 - **Frequency is per unique session log, not per occurrence.** A topic mentioned 3 times within a single session log still counts as frequency 1. Only occurrences across separate log files increment the frequency count.

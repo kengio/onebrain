@@ -156,13 +156,13 @@ Ask using AskUserQuestion:
 
 3. **For each suggested related note**, ask what to do using AskUserQuestion:
    - options: `link-only` / `append-excerpt` / `skip`
-   - **link-only**: add `[[imported-note-title]]` to the related note's `## Related` section (bidirectional — also add the related note to the imported note's `## Related`)
+   - **link-only**: add `[[imported-note-title]]` to the related note's `## Related` section (bidirectional — also add the related note to the imported note's `## Related`). If the related note has no `## Related` section, append one at the end of the file before adding the wikilink.
    - **append-excerpt**: ask the user which section of the imported note to excerpt, then append under `## From [[imported-note-title]] (YYYY-MM-DD)` in the related note
    - **skip**: no changes
 
 4. After processing all suggestions for this note: confirm what was linked or appended.
 
-If qmd is available and new notes were written, run `qmd update -c [qmd_collection]` once after all integrations complete.
+If qmd is available, run `qmd update -c [qmd_collection]` once after all integrations complete.
 
 ### Supported File Types
 

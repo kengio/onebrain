@@ -112,16 +112,6 @@ After writing or updating the file, say in one line:
 
 ---
 
-## Known Gotchas
-
-- **Conflict detection is shallow by default.** Grepping MEMORY-INDEX.md Topics column may miss a file whose topics field is broad but whose content overlaps. When a candidate file is found, read its first 20 lines before concluding there is or is not a conflict.
-
-- **`type` inference edge case.** "I always use library X for Y in project Z" reads as behavioral but is often project context. When uncertain between `behavioral` and `context`, prefer `behavioral` — it triggers in more situations and is easier to deprecate if the project changes.
-
-- **`-NN` collision suffix must keep incrementing.** If `dev-workflow.md` through `dev-workflow-05.md` all exist, increment to `-06`. Do not stop at the first suffix you try.
-
-- **`update` vs `supersede` distinction.** `update` is for facts that are partially still true (add new nuance to existing file). `supersede` is when the old fact is fully wrong or replaced. If unsure, surface both options rather than guessing.
-
 ## In-Skill Examples
 
 **Input:** "always run 3 review rounds before merging any PR — we got burned when a PR slipped through with a broken import"
@@ -142,3 +132,13 @@ OneBrain source repo is at ~/projects/onebrain.
 ```
 
 (Simple factual memories do not need **Why:** / **How to apply:** structure — use it only when the rule needs reasoning to be applied correctly in edge cases.)
+
+## Known Gotchas
+
+- **Conflict detection is shallow by default.** Grepping MEMORY-INDEX.md Topics column may miss a file whose topics field is broad but whose content overlaps. When a candidate file is found, read its first 20 lines before concluding there is or is not a conflict.
+
+- **`type` inference edge case.** "I always use library X for Y in project Z" reads as behavioral but is often project context. When uncertain between `behavioral` and `context`, prefer `behavioral` — it triggers in more situations and is easier to deprecate if the project changes.
+
+- **`-NN` collision suffix must keep incrementing.** If `dev-workflow.md` through `dev-workflow-05.md` all exist, increment to `-06`. Do not stop at the first suffix you try.
+
+- **`update` vs `supersede` distinction.** `update` is for facts that are partially still true (add new nuance to existing file). `supersede` is when the old fact is fully wrong or replaced. If unsure, surface both options rather than guessing.

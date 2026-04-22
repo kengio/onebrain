@@ -152,8 +152,6 @@ Empty state:
 
 ## Known Gotchas
 
-- **Primary signal takes precedence over content analysis.** An inbox note with `source: /research` in frontmatter routes to resources/ regardless of how personal or insight-like its content appears. Check frontmatter first; content-type rules are secondary.
-
 - **Mixed-content notes.** Braindumps often start with a personal insight but contain project tasks, external references, and reflections all in one file. Read the FULL note before classifying — the first paragraph can be misleading about the overall content type.
 
-- **Tasks in processed inbox notes.** Unchecked tasks (`- [ ]`) in an inbox note should stay in whichever file the content moves to (or be moved to the relevant project note). Do not strip them out — the Tasks plugin finds them wherever they live.
+- **Tasks survive moves but can be duplicated by merges.** When merging an inbox note into a destination, verify the write operation preserves unchecked `- [ ]` lines from the source note rather than dropping them. The Tasks plugin finds them wherever they live, but only if they aren't silently lost during the merge.
