@@ -20,6 +20,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - refactor(update): add Skip conditions to all 9 migration steps for fast-exit on already-current vaults
 - refactor(update): parallelize bootstrap sync sub-steps (plugin sync + settings merge run concurrently)
 - fix(update): remove redundant /doctor run from outer steps — already covered by migration Step 8
+- feat(update): add clean-plugin-cache.sh — removes stale onebrain cache versions; no-op for local directory installs, future-ready for remote marketplace distribution
 
 ## v1.10.12 — Skill Quality: Authoring Patterns, Progressive Loading, Predefined Scripts
 

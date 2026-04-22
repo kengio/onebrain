@@ -56,9 +56,10 @@ Steps:
 3. Execute migration in this order:
    a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/05-agent/MEMORY-YYYY-MM-DD.md`
       and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
-   b. Sync remaining files — run these two sub-steps in parallel:
-      - **Plugin folder + root file sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "{source_repo}" "{vault_root}"`. Now safe to call from the vault (scripts were synced in step 1). Syncs the full plugin folder (with stale file cleanup) and copies README.md, CONTRIBUTING.md, CHANGELOG.md to the vault root.
+   b. Sync remaining files — run these three sub-steps in parallel (all are independent):
+      - **Plugin folder + root file sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "{source_repo}" "{vault_root}"`. Syncs the full plugin folder (with stale file cleanup) and copies README.md, CONTRIBUTING.md, CHANGELOG.md to the vault root.
       - **Settings merge:** merge `[vault]/.claude/settings.json` from `{source_repo}/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys; `extraKnownMarketplaces` → merge keys; `hooks` → skip (handled by migration Step 7).
+      - **Plugin cache cleanup:** run `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"`. Removes old cached versions of all installed plugins, keeping only the active version per plugin. Conservative: skips plugins not present in `~/.claude/plugins/installed_plugins.json`.
    c. Load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps (all scripts are now in the vault)
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
 4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
