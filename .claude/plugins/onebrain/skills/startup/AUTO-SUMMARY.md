@@ -25,19 +25,7 @@ If conditions are met:
 - Guard: only delete checkpoint files AFTER confirming the session log file was successfully written. Never delete before or during the write.
 - After confirming the session log was written, reset the checkpoint hook counter to prevent spurious post-summary checkpoints:
   ```bash
-  tmpdir_safe="${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"
-  if [ -n "${WT_SESSION:-}" ]; then
-    _token=$(printf '%s' "$WT_SESSION" | tr -cd 'a-zA-Z0-9' | cut -c1-8)
-  elif [ -n "${PPID:-}" ] && [ "${PPID}" -gt 1 ] 2>/dev/null; then
-    _token="${PPID}"
-  elif command -v powershell.exe &>/dev/null; then
-    _token=$(powershell.exe -NoProfile -NonInteractive -Command '(Get-Process -Id $PID).Parent.Id' 2>/dev/null | tr -d '\r\n ')
-  else
-    _f="${tmpdir_safe}/ob1-$(date +%Y-%m-%d).sid"
-    [ -f "$_f" ] || printf '%05d' "$(( RANDOM % 90000 + 10000 ))" > "$_f" 2>/dev/null
-    _token=$(cat "$_f" 2>/dev/null || echo '99999')
-  fi
-  [ -n "${_token:-}" ] && echo "0:$(date +%s)" > "${tmpdir_safe}/onebrain-${_token}.state" 2>/dev/null
+  bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"
   ```
 - Delete the checkpoint files from the glob above that were marked `merged: true`. Do not delete checkpoint files outside this session's glob result.
 - Safety-net: glob `[logs_folder]/YYYY/MM/*-checkpoint-*.md` (current month only) for any remaining files with `merged: true` — delete them. Scoped to current month to avoid vault-wide glob on large vaults.

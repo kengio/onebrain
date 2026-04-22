@@ -103,9 +103,8 @@ If the write fails, show the error. Tell the user to manually add `qmd_collectio
 
 ### Step 8: Run initial index
 
-Run:
-```
-qmd update -c <collection-name>
+```bash
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
 
 Report progress. If it fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
@@ -218,12 +217,9 @@ Stop.
 
 ### Step 2: Run update
 
-Run:
+```bash
+bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
 ```
-qmd update -c <collection-name>
-```
-
-Where `<collection-name>` is read from vault.yml `qmd_collection`.
 
 Report progress and any errors.
 

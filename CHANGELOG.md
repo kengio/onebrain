@@ -10,16 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v1.10.12 — Skill Quality: Authoring Patterns + Progressive Loading
+## v1.10.12 — Skill Quality: Authoring Patterns, Progressive Loading, Predefined Scripts
 
-- docs(skills): add Known Gotchas sections to all 24 applicable skills — concrete failure modes and solutions observed in production (help/ excluded)
-- docs(skills): add Explain-the-Why annotations to non-obvious rules in wrapup, learn, consolidate, recap, doctor, import — enables Claude to generalize to edge cases
-- docs(skills): add In-Skill Examples to learn, wrapup, capture, recap — labeled input/output pairs that calibrate output quality
-- refactor(import): move 9 file-type handlers + markitdown setup + note template to `references/` — SKILL.md 587 → 196 lines (-67%)
-- refactor(doctor): move Memory Health Checks, auto-fix procedures, migration safety net to `references/` — SKILL.md 311 → 185 lines (-40%)
-- refactor(onboarding): extract MEMORY.md, MEMORY-INDEX.md, vault.yml templates to `references/` — SKILL.md 531 → 446 lines (-16%)
-- feat(import): add optional Step 6 — offer to integrate imported notes into related vault notes after import
+- docs(skills): add Known Gotchas, Explain-the-Why, and In-Skill Examples to all 24 applicable skills
+- refactor(skills): split large skills into `references/` subdirectories — import 587→196, doctor 311→185, onboarding 531→446 lines
+- refactor(scripts): add `startup/scripts/` with 4 predefined shell scripts (session-init, orphan-scan, qmd-update, open-in-obsidian) replacing inline bash across INSTRUCTIONS.md and multiple skills
+- refactor(wrapup): extract 14-line session token reset to `wrapup/scripts/reset-checkpoint-counter.sh`
+- feat(import): add optional Step 6 — integrate imported notes into related vault notes after import
 - fix: rename plugin identifier onebrain@onebrain → onebrain@kengio (README, settings.json, onboarding skill)
+- docs(contributing): update project structure to show startup/scripts/ and skill scripts/ patterns
 
 ## v1.10.11 — Skill Exclusion Clauses + Multi-Harness Entrypoints
 

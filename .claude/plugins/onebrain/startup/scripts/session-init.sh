@@ -7,7 +7,7 @@
 # Output variables: DATETIME, SESSION_TOKEN
 
 # --- Datetime ---
-printf 'DATETIME=%s\n' "$(date '+%H:%M %a %d %b %Y')"
+printf 'DATETIME=%s\n' "$(date '+%a · %d %b %Y · %H:%M')"
 
 # --- Session token ---
 # Priority: WT_SESSION (Windows Terminal) → PPID (Mac/Linux) → PowerShell parent PID → day-scoped cache

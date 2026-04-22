@@ -9,4 +9,10 @@
 
 [ -z "$1" ] && exit 1
 vault_path=$(cd "${CLAUDE_PROJECT_DIR:-.}" && pwd)
-open "obsidian://open?path=${vault_path}/${1}" 2>/dev/null || true
+uri="obsidian://open?path=${vault_path}/${1}"
+case "$(uname -s 2>/dev/null)" in
+  Darwin)             open "$uri" 2>/dev/null || true ;;
+  Linux)              xdg-open "$uri" 2>/dev/null || true ;;
+  CYGWIN*|MINGW*|MSYS*) cmd.exe /c start "" "$uri" 2>/dev/null || true ;;
+  *)                  open "$uri" 2>/dev/null || true ;;
+esac
