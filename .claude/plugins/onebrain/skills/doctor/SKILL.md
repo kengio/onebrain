@@ -75,6 +75,13 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Read `.claude/plugins/onebrain/.claude-plugin/plugin.json`
 - Verify `name`, `version`, `description` fields exist and are non-empty
 
+**Plugin install path:**
+- Read `~/.claude/plugins/installed_plugins.json`
+- Find the entry where key starts with `onebrain@` and `scope == "project"` and `projectPath` matches the current vault
+- If not found: 🟡 "onebrain not found in installed_plugins.json — run /onboarding or /plugin to install"
+- If `installPath` is inside `~/.claude/plugins/cache/`: 🔴 "Plugin loading from user cache — run /doctor --fix to pin to vault"
+- If `installPath` is the vault plugin directory (ends with `.claude/plugins/onebrain`): ✅ "Plugin: vault-level"
+
 **INSTRUCTIONS.md:**
 - Check file exists at `.claude/plugins/onebrain/INSTRUCTIONS.md`
 - Check `skills/startup/AUTO-SUMMARY.md` exists — if missing: 🔴 "AUTO-SUMMARY.md not found — auto session summary disabled; run /update to restore"
@@ -116,6 +123,9 @@ Use this format:
 ⚙️ Config
   🟢 vault.yml: OK
   🟢 plugin.json: OK (vX.X.X)
+  ✅ Plugin: vault-level (.claude/plugins/onebrain/)
+  🔴 Plugin: loading from user cache — run /doctor --fix to pin to vault
+  🟡 Plugin: not found in installed_plugins.json — run /onboarding
   🔴 qmd_collection: missing — qmd search will not work
   🟡 vault.yml: `timezone` key found — no longer used, safe to remove
   🔴 OneBrain hooks: Stop missing or wrong — run /update to register
@@ -146,7 +156,7 @@ If no issues:
 
 ## Step 4: Auto-fix (`--fix` flag only)
 
-Read `references/autofix-procedures.md` and run Pass A, Pass B, and Pass C in order.
+Read `references/autofix-procedures.md` and run Pass A, Pass B, Pass C, and Pass D in order.
 Each pass confirms with the user before writing. Run the Final step (qmd-update.sh) after all passes.
 
 ---
