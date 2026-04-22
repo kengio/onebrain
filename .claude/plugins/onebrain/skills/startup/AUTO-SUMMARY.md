@@ -20,6 +20,7 @@ If conditions are met:
   synthesized_from_checkpoints: true   # only if checkpoints were found and incorporated
   ---
   ```
+  **Never add `recapped:` or `topics:` to this frontmatter.** These fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log.
   The log must include all sections: `## What We Worked On`, `## Key Decisions`, `## Insights & Learnings`, `## What Worked / Didn't Work`, `## Action Items`, `## Open Questions`. Omit `## What Worked / Didn't Work` only if the session had no notable friction or technique worth logging. **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** : every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
 - Mark as `merged: true` the checkpoint files that were read and incorporated above. Handle all frontmatter variants: `merged: false` → replace with `merged: true`; `merged: null` or bare `merged:` → replace with `merged: true`; key absent → add `merged: true`.
 - Guard: only delete checkpoint files AFTER confirming the session log file was successfully written. Never delete before or during the write.
@@ -31,3 +32,7 @@ If conditions are met:
 - Safety-net: glob `[logs_folder]/YYYY/MM/*-checkpoint-*.md` (current month only) for any remaining files with `merged: true` — delete them. Scoped to current month to avoid vault-wide glob on large vaults.
 - If a genuinely useful long-term insight emerged, write it to a new `memory/` file using /learn conventions: filename `[agent_folder]/memory/kebab-case-topic.md`, frontmatter `tags: [agent-memory], type: behavioral, source: auto-summary, status: active, conf: medium, verified: today, updated: today, created: today, topics: [2–4 keywords]`. Add a row to MEMORY-INDEX.md and increment `total_active`. **Do not write to MEMORY.md.**
 - Do NOT show any output about the auto-save to the user
+
+## Known Gotchas
+
+- **Never write `recapped:` or `topics:` in session log frontmatter.** These fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log, meaning insights are never promoted to memory/. The frontmatter template above is the complete list of valid fields.
