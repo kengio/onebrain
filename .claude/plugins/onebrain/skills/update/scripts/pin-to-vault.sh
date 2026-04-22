@@ -28,7 +28,7 @@ vault_pjson    = sys.argv[3]
 
 # Check installed_plugins.json exists
 if not Path(plugins_path).exists():
-    print("pin-to-vault: onebrain not found in installed_plugins.json, skipping")
+    print("pin-to-vault: installed_plugins.json not found, skipping")
     sys.exit(0)
 
 with open(plugins_path) as f:
@@ -58,8 +58,20 @@ entries = data["plugins"][onebrain_key]
 cache_dir = Path.home() / ".claude" / "plugins" / "cache"
 changed = False
 
+# Read version from vault plugin.json once before iterating entries
+vault_version = "unknown"
+try:
+    with open(vault_pjson) as f:
+        pjson = json.load(f)
+    vault_version = pjson.get("version", "unknown")
+except (FileNotFoundError, json.JSONDecodeError):
+    pass
+
 for entry in entries:
-    install_path = Path(entry.get("installPath", ""))
+    if not entry.get("installPath"):
+        continue
+
+    install_path = Path(entry["installPath"])
     # Use Path.relative_to() to detect if path is inside cache — avoids
     # false positives on similarly-named directories (e.g. ~/.claude/plugins/cache-backup/)
     try:
@@ -69,17 +81,7 @@ for entry in entries:
         in_cache = False
 
     if not in_cache:
-        print("pin-to-vault: already vault-level, no change needed")
-        sys.exit(0)
-
-    # Read version from vault plugin.json
-    vault_version = "unknown"
-    try:
-        with open(vault_pjson) as f:
-            pjson = json.load(f)
-        vault_version = pjson.get("version", "unknown")
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
+        continue
 
     entry["installPath"] = vault_dir
     entry["version"] = vault_version
