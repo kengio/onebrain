@@ -9,11 +9,18 @@ set -euo pipefail
 VAULT_ROOT="${1:?Usage: vault-sync.sh <vault_root> <branch>}"
 BRANCH="${2:-main}"
 REPO="kengio/onebrain"
+
+command -v rsync >/dev/null 2>&1 || {
+  echo "ERROR: rsync is required but not installed. Install with: apt install rsync / brew install rsync" >&2
+  exit 1
+}
+
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 echo "vault-sync: downloading from github.com/${REPO}@${BRANCH}..."
-curl -sL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
+# -f: fail on HTTP errors (clear error message instead of cryptic tar failure)
+curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
   | tar -xz -C "$TMP_DIR" --strip-components=1
 
 SOURCE_PLUGIN="${TMP_DIR}/.claude/plugins/onebrain"

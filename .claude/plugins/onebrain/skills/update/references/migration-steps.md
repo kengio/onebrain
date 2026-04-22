@@ -17,7 +17,7 @@ Each step lists a **Skip condition** — check it first before doing any file re
 - Delete context/ folder after all files migrated
 
 **Step 3: Update existing memory/ files**
-- **Skip if:** all files in memory/ already have all required frontmatter fields (topics, type, conf, verified, updated) and filenames are already kebab-case 3–5 words with no date/numeric prefix — check a batch of 5 files to fast-exit
+- **Skip if:** sample the first 5 files alphabetically in memory/ — if all 5 have all required frontmatter fields (topics, type, conf, verified, updated) and kebab-case 3–5 word filenames with no date/numeric prefix, skip the step. If any of the 5 fail, process all files.
 - Add missing frontmatter fields: topics, type, conf, verified, updated
 - Rename non-compliant files → kebab-case 3–5 words. A file is non-compliant if it has:
   - A date prefix (e.g. `2026-04-05-bump-version-every-pr.md` → `bump-version-pr.md`)
@@ -106,7 +106,7 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
 **PostToolUse qmd hook (only when `qmd_collection` is set in vault.yml):**
 - If `qmd_collection` is absent in vault.yml: skip
 - If `qmd_collection` is present: read `[vault]/.claude/plugins/onebrain/hooks/hooks.json`
-  - If missing or `PostToolUse` entry does not contain `qmd-reindex.sh`: the file was already synced in step 3b — re-verify the sync completed successfully and flag the issue
+  - If missing or `PostToolUse` entry does not contain `qmd-reindex.sh`: the file was already synced in bootstrap step 3b (vault-sync.sh) — re-verify the sync completed successfully and flag the issue
   - If correct: ✅ PostToolUse qmd hook registered
 
 **Step 8: Verify migration**

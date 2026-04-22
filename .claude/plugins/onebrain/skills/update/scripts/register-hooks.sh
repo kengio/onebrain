@@ -18,7 +18,11 @@ import json, sys
 
 path = sys.argv[1]
 with open(path) as f:
-    cfg = json.load(f)
+    try:
+        cfg = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"ERROR: {path} is not valid JSON: {e}", file=sys.stderr)
+        sys.exit(1)
 
 hooks_to_register = {
     "Stop":        'bash ".claude/plugins/onebrain/hooks/checkpoint-hook.sh" stop',

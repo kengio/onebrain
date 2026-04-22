@@ -51,23 +51,29 @@ GitHub raw URL template: `https://raw.githubusercontent.com/kengio/onebrain/{bra
 where `{branch}` is the branch mapped from `update_channel` in step 2 of Version Check.
 
 Steps:
-1. **Early bootstrap — download and write the update skill itself first:**
-   Use WebFetch + Write to download these two files from GitHub raw URLs and write to vault:
-   - `skills/update/SKILL.md` → `[vault]/.claude/plugins/onebrain/skills/update/SKILL.md`
-   - `skills/update/scripts/vault-sync.sh` → `[vault]/.claude/plugins/onebrain/skills/update/scripts/vault-sync.sh`
+1. **Early bootstrap — download all update scripts first:**
+   Use WebFetch + Write to download these files from GitHub raw URLs and write to vault. `{vault_root}` = the vault's absolute path (the current working directory — the directory containing `.claude/`).
 
-   Then make the script executable: `bash -c 'chmod +x ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh"'`
+   Raw URL: `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/plugins/onebrain/{path}`
 
-   This ensures the latest SKILL.md and vault-sync.sh are in the vault before anything else runs.
+   Download and write all five files:
+   - `skills/update/SKILL.md`
+   - `skills/update/scripts/vault-sync.sh`
+   - `skills/update/scripts/register-hooks.sh`
+   - `skills/update/scripts/backfill-recapped.sh`
+   - `skills/update/scripts/clean-plugin-cache.sh`
+
+   All paths relative to `[vault]/.claude/plugins/onebrain/`. This ensures every script used in subsequent steps is present before anything runs.
+
 2. Read the newly-written `[vault]/.claude/plugins/onebrain/skills/update/SKILL.md` into agent context. Follow THESE instructions (not the pre-update copy) for all remaining steps.
 3. Execute migration in this order:
    a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/05-agent/MEMORY-YYYY-MM-DD.md`
       and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
-   b. Sync remaining files — run these three sub-steps in parallel (all are independent):
-      - **Full vault sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "{vault_root}" "{branch}"`. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), and copies README.md, CONTRIBUTING.md, CHANGELOG.md to vault root.
+   b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
+      - **Full vault sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "$PWD" "{branch}"`. `$PWD` resolves to the vault root at runtime. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), and copies README.md, CONTRIBUTING.md, CHANGELOG.md to vault root.
       - **Settings merge:** WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys; `extraKnownMarketplaces` → merge keys; `hooks` → skip (handled by migration Step 7).
-      - **Plugin cache cleanup:** run `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"`. Removes stale onebrain cache versions; no-op for local directory installs.
-   c. Load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps (all scripts are now in the vault)
+      - After both complete: run `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"`. Removes stale onebrain cache versions; no-op for local directory installs.
+   c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
 4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
 
@@ -130,7 +136,7 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 ## Failure Recovery
 
 - Version stays old until plugin.json bump (step 3d) — re-running /update retries from start
-- Already-synced files are idempotent (compare content before overwriting)
+- Re-running /update from the start is safe — vault-sync.sh uses rsync which skips unchanged files
 - If vault in unrecoverable state: restore from backup in `[archive_folder]/`, then re-run /update
 
 ---
