@@ -197,7 +197,7 @@ Run from within your existing vault in Claude Code:
 
 ```
 /plugin marketplace add kengio/onebrain
-/plugin install onebrain@onebrain
+/plugin install onebrain@kengio
 ```
 
 Then run `/onboarding`.

@@ -280,7 +280,7 @@ Check both paths : both may exist depending on when the plugin was installed:
 - `~/.claude/plugins/cache/onebrain-local/onebrain/` : legacy installs before rename
 
 Collect all version subdirectories from both paths into a single combined list. If neither path exists or neither contains any version subdirectories, tell the user:
-> OneBrain plugin cache not found. Run `/plugin install onebrain@onebrain` to install it, then try `/onboarding` again.
+> OneBrain plugin cache not found. Run `/plugin install onebrain@kengio` to install it, then try `/onboarding` again.
 
 Stop here.
 
@@ -295,7 +295,7 @@ Confirm the selected version subdirectory contains at minimum:
 - `skills/onboarding/SKILL.md` : required for onboarding to function
 
 If either is missing, the cache entry is corrupt. Try the next-highest version from the combined list. If all versions across both cache paths fail validation, tell the user:
-> Cache exists but all version entries are corrupt or incomplete. Run `/plugin install onebrain@onebrain` to reinstall.
+> Cache exists but all version entries are corrupt or incomplete. Run `/plugin install onebrain@kengio` to reinstall.
 
 Stop here if no valid version found.
 
