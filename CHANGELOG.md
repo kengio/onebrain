@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.17
+latest_version: 1.10.18
 released: 2026-04-22
 ---
 
@@ -9,6 +9,12 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.18 — Fix: session logs must not include recapped: in frontmatter
+
+- fix(auto-summary): add explicit prohibition against writing `recapped:` or `topics:` in session log frontmatter
+- fix(auto-summary): add Known Gotchas section documenting that writing `recapped:` causes /recap to silently skip the log
+- fix(wrapup): strengthen `recapped:` prohibition from descriptive to directive with consequence clause
 
 ## v1.10.17 — Revert onebrain@kengio → onebrain@onebrain
 
