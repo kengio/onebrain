@@ -13,5 +13,13 @@
   },
   "enabledPlugins": {
     "onebrain@onebrain": true
+  },
+  "extraKnownMarketplaces": {
+    "onebrain": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
   }
 }
