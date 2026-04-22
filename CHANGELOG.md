@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.12
+latest_version: 1.10.13
 released: 2026-04-22
 ---
 
@@ -9,6 +9,19 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.13 — Fix /update: CHANGELOG sync, stale file cleanup, predefined scripts, lazy loading
+
+- fix(update): root file sync now explicitly copies README, CONTRIBUTING, CHANGELOG from repo root to vault root — fixes vault root CHANGELOG never being updated
+- fix(update): plugin folder sync now deletes stale vault files absent from source repo — fixes CHANGELOG.md accumulating in plugin folder
+- refactor(update): bootstrap reordered — early-bootstrap copies skills/update/ first so predefined scripts are available before full sync runs
+- feat(update): add 3 predefined scripts: vault-sync.sh (curl+tar download, Python sync, stale cleanup, root files), register-hooks.sh (idempotent JSON hook registration), backfill-recapped.sh (session log frontmatter)
+- refactor(update): extract Vault Migration Steps 1–9 to references/migration-steps.md for lazy loading — SKILL.md reduced from 273 to 158 lines
+- refactor(update): add Skip conditions to all 9 migration steps for fast-exit on already-current vaults
+- refactor(update): parallelize bootstrap sync sub-steps (plugin sync + settings merge run concurrently)
+- fix(update): remove redundant /doctor run from outer steps — already covered by migration Step 8
+- feat(update): add clean-plugin-cache.sh — removes stale onebrain cache versions; no-op for local directory installs, future-ready for remote marketplace distribution
+- feat(update): vault-sync.sh merges CLAUDE.md, GEMINI.md, AGENTS.md on update — absent files are created, identical files are skipped, changed files are updated while preserving user-added @ imports
 
 ## v1.10.12 — Skill Quality: Authoring Patterns, Progressive Loading, Predefined Scripts
 
