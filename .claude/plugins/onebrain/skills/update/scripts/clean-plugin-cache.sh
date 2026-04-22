@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # clean-plugin-cache.sh
-# Removes old cached versions of the onebrain plugin, keeping only the active version.
+# Removes ALL cached versions of the onebrain plugin.
+# Called every /update so cache never becomes the authoritative source.
 # No-op when onebrain is installed as a local directory plugin (no remote cache entry).
 # Becomes active if/when onebrain is distributed through a remote marketplace.
 
@@ -63,7 +64,7 @@ removed = 0
 freed_bytes = 0
 
 for version_dir in active_plugin_dir.iterdir():
-    if version_dir.is_dir() and version_dir.name != active_version:
+    if version_dir.is_dir():
         size = sum(f.stat().st_size for f in version_dir.rglob("*") if f.is_file())
         try:
             shutil.rmtree(version_dir)
@@ -75,7 +76,7 @@ for version_dir in active_plugin_dir.iterdir():
 
 freed_mb = freed_bytes / (1024 * 1024)
 if removed:
-    print(f"clean-plugin-cache: removed {removed} stale version(s), freed {freed_mb:.1f} MB")
+    print(f"clean-plugin-cache: removed {removed} version(s), freed {freed_mb:.1f} MB")
 else:
-    print(f"clean-plugin-cache: onebrain/{active_version} is the only version, nothing to remove")
+    print("clean-plugin-cache: no cache versions found")
 PYEOF
