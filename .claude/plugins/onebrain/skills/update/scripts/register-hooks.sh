@@ -6,19 +6,19 @@
 
 set -euo pipefail
 
-SETTINGS="${1:?Usage: register-hooks.sh <vault_settings_json>}"
+settings="${1:?Usage: register-hooks.sh <vault_settings_json>}"
 
-if [ ! -f "$SETTINGS" ]; then
-  echo "ERROR: settings file not found: $SETTINGS" >&2
+if [ ! -f "$settings" ]; then
+  echo "ERROR: settings file not found: $settings" >&2
   exit 1
 fi
 
-PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
+python_cmd=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
   echo "ERROR: Python is required but not found." >&2
   exit 1
 }
 
-"$PYTHON" - "$SETTINGS" <<'PYEOF'
+"$python_cmd" - "$settings" <<'PYEOF'
 import json, sys
 
 path = sys.argv[1]

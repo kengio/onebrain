@@ -70,7 +70,7 @@ Steps:
    a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/05-agent/MEMORY-YYYY-MM-DD.md`
       and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
-      - **Full vault sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "$PWD" "{branch}"`. `$PWD` resolves to the vault root at runtime. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md to vault root (overwrite), and merges CLAUDE.md/GEMINI.md/AGENTS.md (preserving user `@` imports).
+      - **Full vault sync:** run `bash ".claude/plugins/onebrain/skills/update/scripts/vault-sync.sh" "$PWD" "{branch}"`. `$PWD` resolves to the vault root at runtime. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md to vault root (overwrite), and merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only).
       - **Settings merge:** WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys; `extraKnownMarketplaces` → merge keys; `hooks` → skip (handled by migration Step 7).
       - After both complete: run `bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"`. Removes stale onebrain cache versions; no-op for local directory installs.
    c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps
@@ -136,7 +136,7 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 ## Failure Recovery
 
 - Version stays old until plugin.json bump (step 3d) — re-running /update retries from start
-- Re-running /update from the start is safe — vault-sync.sh uses rsync which skips unchanged files
+- Re-running /update from the start is safe — vault-sync.sh downloads fresh and overwrites (idempotent)
 - If vault in unrecoverable state: restore from backup in `[archive_folder]/`, then re-run /update
 
 ---
@@ -150,6 +150,8 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 - **MEMORY.md Key Learnings migration (migration Step 1) must run before migration Step 4.** Migration Step 4 restructures MEMORY.md; migration Step 1 reads and extracts from it. Running them in the wrong order loses the Key Learnings content before it can be promoted to memory/ files.
 
 - **Plugin folder sync deletes stale files.** Step 3b removes files in the vault's plugin folder that no longer exist in the source repo. This is intentional — the source repo is the single source of truth. Do not place user customizations inside `.claude/plugins/onebrain/`; they belong at the project or user settings level.
+
+- **Harness file merge is vault-primary.** If a user removed a plugin `@` import from CLAUDE.md/GEMINI.md/AGENTS.md (e.g., `@.claude/plugins/onebrain/INSTRUCTIONS.md`), `/update` will re-inject it on the next run because the script cannot distinguish intentional deletion from never having had it. If a specific import should stay absent, re-remove it after updating.
 
 - **Root files live at the repo root, not the plugin folder.** `vault-sync.sh` handles all six root-level files: README.md, CONTRIBUTING.md, CHANGELOG.md (simple overwrite) and CLAUDE.md, GEMINI.md, AGENTS.md (merge — preserves user `@` imports). Never copy any of these into the plugin folder.
 

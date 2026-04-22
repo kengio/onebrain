@@ -11,25 +11,25 @@
 
 set -euo pipefail
 
-VAULT_ROOT="${1:?Usage: vault-sync.sh <vault_root> <branch>}"
-BRANCH="${2:-main}"
-REPO="kengio/onebrain"
+vault_root="${1:?Usage: vault-sync.sh <vault_root> <branch>}"
+branch="${2:-main}"
+repo="kengio/onebrain"
 
-PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
+python_cmd=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
   echo "ERROR: Python is required but not found. Install Python 3." >&2
   exit 1
 }
 
-TMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TMP_DIR"' EXIT
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
 
-echo "vault-sync: downloading from github.com/${REPO}@${BRANCH}..."
+echo "vault-sync: downloading from github.com/${repo}@${branch}..."
 # -f: exit non-zero on HTTP errors (clear error vs cryptic tar failure)
-curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
-  | tar -xz -C "$TMP_DIR" --strip-components=1
+curl -fsSL "https://github.com/${repo}/archive/refs/heads/${branch}.tar.gz" \
+  | tar -xz -C "$tmp_dir" --strip-components=1
 
 # All three sync operations are independent — run them in parallel.
-"$PYTHON" - "$TMP_DIR" "$VAULT_ROOT" <<'PYEOF'
+"$python_cmd" - "$tmp_dir" "$vault_root" <<'PYEOF'
 import sys, shutil
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -61,9 +61,8 @@ def sync_plugin():
             stale.append(rel)
 
     if stale:
-        print("INFO: Removing stale vault files (not in current release):")
-        for f in sorted(stale):
-            print(f"  {f}")
+        print("INFO: Removing stale vault files (not in current release):\n" +
+              "\n".join(f"  {f}" for f in sorted(stale)))
 
     # Copy files in parallel
     def copy_one(item):
@@ -135,7 +134,7 @@ def merge_harness_file(fname):
     vault_lines = vault_text.splitlines()
     vault_at_set = {l.strip() for l in vault_lines if l.startswith("@")}
     new_imports = [
-        line for line in repo_text.splitlines()
+        line.rstrip() for line in repo_text.splitlines()
         if line.startswith("@") and line.strip() not in vault_at_set
     ]
 

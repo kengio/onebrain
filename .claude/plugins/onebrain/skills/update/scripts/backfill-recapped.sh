@@ -5,9 +5,9 @@
 
 set -euo pipefail
 
-LOGS="${1:?Usage: backfill-recapped.sh <logs_folder>}"
+logs="${1:?Usage: backfill-recapped.sh <logs_folder>}"
 
-if [ ! -d "$LOGS" ]; then
+if [ ! -d "$logs" ]; then
   echo "backfill-recapped: no logs folder, skipping"
   exit 0
 fi
@@ -27,6 +27,6 @@ while IFS= read -r -d '' file; do
 recapped: ${date_val}" "$file" > "$tmp" && mv "$tmp" "$file"
         count=$((count + 1))
     fi
-done < <(find "$LOGS" -name "*-session-*.md" -print0 2>/dev/null)
+done < <(find "$logs" -name "*-session-*.md" -print0 2>/dev/null)
 
 echo "backfill-recapped: ${count} files updated"

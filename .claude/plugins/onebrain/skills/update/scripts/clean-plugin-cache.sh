@@ -6,17 +6,17 @@
 
 set -euo pipefail
 
-INSTALLED="${HOME}/.claude/plugins/installed_plugins.json"
-CACHE_DIR="${HOME}/.claude/plugins/cache"
+installed="${HOME}/.claude/plugins/installed_plugins.json"
+cache_dir="${HOME}/.claude/plugins/cache"
 
-[ -f "$INSTALLED" ] || { echo "clean-plugin-cache: installed_plugins.json not found, skipping"; exit 0; }
+[ -f "$installed" ] || { echo "clean-plugin-cache: installed_plugins.json not found, skipping"; exit 0; }
 
-PYTHON=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
+python_cmd=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) || {
   echo "clean-plugin-cache: Python not found, skipping"
   exit 0
 }
 
-"$PYTHON" - "$CACHE_DIR" "$INSTALLED" <<'PYEOF'
+"$python_cmd" - "$cache_dir" "$installed" <<'PYEOF'
 import json, sys, shutil
 from pathlib import Path
 
