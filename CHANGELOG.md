@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.13
+latest_version: 1.10.14
 released: 2026-04-22
 ---
 
@@ -9,6 +9,13 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v1.10.14 — Fix stale "source repo" refs, plugin load error, H1 heading consistency
+
+- fix(update): description and body heading now say "from GitHub" instead of "from the source repo"
+- fix(update): Version Check step 5 now specifies WebFetch URL for CHANGELOG.md instead of ambiguous "read from repo"
+- fix(startup): remove YAML frontmatter from QMD.md — was incorrectly registered as a skill by the plugin loader, causing "1 error during load" on every plugin reload
+- fix(skills): standardise H1 headings — update/daily/help/qmd were using /command format; now consistent plain titles matching all other skills
 
 ## v1.10.13 — Fix /update: CHANGELOG sync, stale file cleanup, predefined scripts, lazy loading
 

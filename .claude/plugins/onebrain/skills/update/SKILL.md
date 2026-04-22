@@ -1,11 +1,11 @@
 ---
 name: update
-description: "Update OneBrain system files from the source repo to the latest version. Use when the user wants to pull the latest OneBrain skills, hooks, and agents — 'update OneBrain', 'pull latest version'. Do NOT use for: updating vault notes (edit directly), teaching memory (use learn), or vault health checks (use doctor)."
+description: "Update OneBrain system files from GitHub to the latest version. Use when the user wants to pull the latest OneBrain skills, hooks, and agents — 'update OneBrain', 'pull latest version'. Do NOT use for: updating vault notes (edit directly), teaching memory (use learn), or vault health checks (use doctor)."
 ---
 
-# /update
+# Update
 
-Update OneBrain system files from the source repo to the latest version.
+Update OneBrain system files from GitHub to the latest version.
 
 ## Version Check
 
@@ -20,7 +20,7 @@ Update OneBrain system files from the source repo to the latest version.
    where `{branch}` is the mapped branch from step 2.
    Parse the `version` field from the JSON response.
 4. If equal → say: ✅ Already up to date — v{X.X.X}. and stop
-5. If newer → read `CHANGELOG.md` from repo; display before proceeding (do not skip or summarize):
+5. If newer → WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/CHANGELOG.md`; display before proceeding (do not skip or summarize):
    ──────────────────────────────────────────────────────────────
    🔄 Update Available — v{current} → v{new}
    ──────────────────────────────────────────────────────────────
@@ -149,7 +149,7 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 
 - **MEMORY.md Key Learnings migration (migration Step 1) must run before migration Step 4.** Migration Step 4 restructures MEMORY.md; migration Step 1 reads and extracts from it. Running them in the wrong order loses the Key Learnings content before it can be promoted to memory/ files.
 
-- **Plugin folder sync deletes stale files.** Step 3b removes files in the vault's plugin folder that no longer exist in the source repo. This is intentional — the source repo is the single source of truth. Do not place user customizations inside `.claude/plugins/onebrain/`; they belong at the project or user settings level.
+- **Plugin folder sync deletes stale files.** Step 3b removes files in the vault's plugin folder that no longer exist in the GitHub repo. This is intentional — the GitHub repo is the single source of truth. Do not place user customizations inside `.claude/plugins/onebrain/`; they belong at the project or user settings level.
 
 - **Harness file merge is vault-primary.** If a user removed a plugin `@` import from CLAUDE.md/GEMINI.md/AGENTS.md (e.g., `@.claude/plugins/onebrain/INSTRUCTIONS.md`), `/update` will re-inject it on the next run because the script cannot distinguish intentional deletion from never having had it. If a specific import should stay absent, re-remove it after updating.
 
