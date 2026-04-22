@@ -125,6 +125,45 @@ If a note was created but the inbox delete failed (partial success):
   `{filename}` — note created at `{vault path}`, but inbox file could not be deleted. Delete manually.
 ```
 
+### Step 6: Offer Integration (optional)
+
+Skip this step if 0 notes were successfully created.
+
+Ask using AskUserQuestion:
+- question: "Do you want to integrate any of these notes into your vault?"
+- header: "Integrate"
+- multiSelect: false
+- options:
+  - label: "yes", description: "Find related vault notes and add connections"
+  - label: "skip", description: "Leave notes in resources/ as-is"
+
+**If "skip":** done.
+
+**If "yes":** For each successfully created note (process one at a time):
+
+1. **Find related vault notes:** Search using qmd if available, otherwise Grep `[knowledge_folder]/**/*.md`, `[resources_folder]/**/*.md`, `[projects_folder]/**/*.md` for keywords from the imported note's title, tags, and Summary section. Exclude the imported note itself.
+
+2. **Present suggestions:**
+   ```
+   ──────────────────────────────────────────────────────────────
+   🔗 Integrate — `{imported-note-filename}`
+   ──────────────────────────────────────────────────────────────
+   Related notes found:
+     1. [[Note A]] — {reason: overlapping topic or shared entity}
+     2. [[Note B]] — {reason}
+     3. No related notes found — adding to Related section only
+   ```
+
+3. **For each suggested related note**, ask what to do using AskUserQuestion:
+   - options: `link-only` / `append-excerpt` / `skip`
+   - **link-only**: add `[[imported-note-title]]` to the related note's `## Related` section (bidirectional — also add the related note to the imported note's `## Related`)
+   - **append-excerpt**: ask the user which section of the imported note to excerpt, then append under `## From [[imported-note-title]] (YYYY-MM-DD)` in the related note
+   - **skip**: no changes
+
+4. After processing all suggestions for this note: confirm what was linked or appended.
+
+If qmd is available and new notes were written, run `qmd update -c [qmd_collection]` once after all integrations complete.
+
 ### Supported File Types
 
 | Extension | Type | Reference file |
