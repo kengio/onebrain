@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "type": "module",
   "bin": {
-    "onebrain": "src/index.ts"
+    "onebrain": "dist/onebrain"
   },
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node --outfile onebrain",

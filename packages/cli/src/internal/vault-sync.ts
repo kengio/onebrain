@@ -613,7 +613,7 @@ export async function runVaultSync(
 		// Read version from extracted plugin.json (before sync writes it to vault)
 		try {
 			const pjText = await readFile(
-				join(extractedDir, '.claude', 'plugins', 'onebrain', 'plugin.json'),
+				join(extractedDir, '.claude', 'plugins', 'onebrain', '.claude-plugin', 'plugin.json'),
 				'utf8',
 			);
 			const pj = JSON.parse(pjText) as Record<string, unknown>;
@@ -688,7 +688,6 @@ export async function runVaultSync(
 				result.pinSkipped = pinResult.skipped;
 				if (pinResult.skipped) {
 					stopSpinner('pin skipped (not found or marketplace)');
-					note('');
 				} else {
 					stopSpinner('installPath → .claude/plugins/onebrain');
 				}

@@ -9,6 +9,7 @@ import { orphanScanCommand } from './internal/orphan-scan.js';
 import { qmdReindexCommand } from './internal/qmd-reindex.js';
 import { registerHooksCommand } from './internal/register-hooks.js';
 import { resolveSessionToken, sessionInitCommand } from './internal/session-init.js';
+import { vaultSyncCommand } from './internal/vault-sync.js';
 
 // BUILD_VERSION and BUILD_DATE are injected as string literals at compile time
 // via `bun build --define BUILD_VERSION='"x.y.z"'`. When running without --define
@@ -116,9 +117,12 @@ program
 
 program
 	.command('vault-sync', { hidden: true })
-	.description('Sync vault state to agent context')
-	.action(() => {
-		console.log('vault-sync: not yet implemented');
+	.description('Sync plugin files from GitHub to vault')
+	.argument('[vault_root]', 'vault root directory (default: cwd)')
+	.option('--branch <branch>', 'override branch (main | next)')
+	.action(async (vaultRoot: string | undefined, opts: { branch?: string }) => {
+		const root = vaultRoot ?? process.cwd();
+		await vaultSyncCommand(root, { branch: opts.branch });
 	});
 
 program

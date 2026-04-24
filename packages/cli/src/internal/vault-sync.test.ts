@@ -31,7 +31,7 @@ interface TarballOpts {
  * Build a minimal fake tarball (.tar.gz) using the tar CLI.
  * Layout mirrors a real GitHub archive:
  *   kengio-onebrain-<sha>/
- *     .claude/plugins/onebrain/plugin.json
+ *     .claude/plugins/onebrain/.claude-plugin/plugin.json
  *     .claude/plugins/onebrain/INSTRUCTIONS.md
  *     .claude/plugins/onebrain/skills/example/SKILL.md
  *     README.md  CONTRIBUTING.md  CHANGELOG.md
@@ -42,7 +42,7 @@ function buildMockTarball(opts: TarballOpts = {}): Buffer {
 	const version = opts.pluginVersion ?? '1.11.0';
 
 	const files: Record<string, string> = {
-		[`${prefix}/.claude/plugins/onebrain/plugin.json`]: JSON.stringify({
+		[`${prefix}/.claude/plugins/onebrain/.claude-plugin/plugin.json`]: JSON.stringify({
 			id: 'onebrain',
 			version,
 			name: 'OneBrain',
@@ -136,8 +136,8 @@ describe('runVaultSync', () => {
 		expect(result.filesAdded).toBeGreaterThan(0);
 		expect(result.filesRemoved).toBe(0);
 
-		// plugin.json should be present
-		const pluginJson = join(vaultDir, '.claude/plugins/onebrain/plugin.json');
+		// plugin.json should be present (lives under .claude-plugin/ within the plugin dir)
+		const pluginJson = join(vaultDir, '.claude/plugins/onebrain/.claude-plugin/plugin.json');
 		const pj = JSON.parse(await readFile(pluginJson, 'utf8'));
 		expect(pj.version).toBe('1.11.0');
 

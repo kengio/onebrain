@@ -251,7 +251,10 @@ async function registerDirectPath(): Promise<void> {
 	const content = await readFile(profilePath, 'utf8');
 	if (content.includes(ONEBRAIN_MARKER)) return;
 
-	await writeFile(profilePath, `${content}\n${ONEBRAIN_MARKER}\n${PATH_EXPORT}\n`, 'utf8');
+	const updated = `${content}\n${ONEBRAIN_MARKER}\n${PATH_EXPORT}\n`;
+	const tmpPath = `${profilePath}.tmp`;
+	await writeFile(tmpPath, updated, 'utf8');
+	await rename(tmpPath, profilePath);
 }
 
 // ---------------------------------------------------------------------------
@@ -331,9 +334,14 @@ export async function runRegisterHooks(
 			}).join('  ');
 			note(hookLine);
 		} else {
-			const hookLine = HOOK_EVENTS.map(
-				(e) => `${e} ${result.hooks[e] === 'ok' ? 'ok' : (result.hooks[e] ?? 'ok')}`,
-			).join('  ');
+			const hookLine = HOOK_EVENTS.map((e) => {
+				const status = result.hooks[e];
+				const label =
+					status === 'ok' || status === 'added' || status === 'migrated' || status === 'found'
+						? 'ok'
+						: (status ?? 'ok');
+				return `${e} ${label}`;
+			}).join('  ');
 			note(hookLine);
 		}
 

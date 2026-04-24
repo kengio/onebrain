@@ -137,6 +137,11 @@ describe('loadVaultConfig', () => {
 		expect(config.update_channel).toBe('next');
 	});
 
+	it('throws when vault.yml is a bare scalar', async () => {
+		await writeVaultYml(dir, 'just a string');
+		await expect(loadVaultConfig(dir)).rejects.toThrow('must be a YAML mapping');
+	});
+
 	it('preserves optional fields when present', async () => {
 		const yaml = `
 onebrain_version: "1.9.0"

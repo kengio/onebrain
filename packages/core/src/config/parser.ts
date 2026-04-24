@@ -44,7 +44,13 @@ export async function loadVaultConfig(vaultRoot: string): Promise<VaultConfig> {
 
   const text = await file.text();
   // parse() returns unknown — we cast after merging
-  const raw = (parse(text) ?? {}) as Record<string, unknown>;
+  const parsed = parse(text) ?? {};
+  if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+    throw new Error(
+      `vault.yml must be a YAML mapping. Got: ${Array.isArray(parsed) ? 'array' : typeof parsed}`,
+    );
+  }
+  const raw = parsed as Record<string, unknown>;
 
   const rawFolders = (raw['folders'] ?? {}) as Partial<Record<string, string>>;
   const folders: VaultFolders = {
