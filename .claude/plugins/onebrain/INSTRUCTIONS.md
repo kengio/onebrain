@@ -191,7 +191,7 @@ Run before responding to any user message.
 **Step 1 — Critical path (greeting blocks on these):** Run in parallel:
 - Read `vault.yml` → load Configuration variables; override defaults once resolved
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
-- Run `onebrain session-init` (from vault root) → parse JSON output; store `DATETIME` (for greeting), `session_token` (for checkpoints), and `qmd_unembedded` in context. JSON shape: `{"datetime":"Ddd · DD Mon YYYY · HH:MM","session_token":"XXXXX","qmd_unembedded":N}`. If the command fails or is unavailable, fall back to running `date '+%a · %d %b %Y · %H:%M'` for `DATETIME`, treating `session_token` as `99999`, and `qmd_unembedded` as `0`. If JSON output contains `{"decision":"block","reason":"onebrain-init-required"}`, skip remaining startup steps and prompt the user to run `/onboarding` to initialize the vault.
+- Run `onebrain session-init` (from vault root) → parse JSON output; store `DATETIME` (for greeting), `session_token` (for checkpoints), and `qmd_unembedded` in context. JSON shape: `{"datetime":"Ddd · DD Mon YYYY · HH:MM","session_token":"XXXXX","qmd_unembedded":N}`. If the command fails or is unavailable, fall back to running `date '+%a · %d %b %Y · %H:%M'` for `DATETIME`, treating `session_token` as `99999`, and `qmd_unembedded` as `0`. If JSON output contains `{"decision":"block","reason":"onebrain-init-required"}`, skip Steps 2–4; instead output a single message: "OneBrain vault not initialized. Run `/onboarding` to set up your vault."
 
 **Step 2 — Send greeting immediately:**
 
@@ -291,10 +291,10 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse session_token and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
 
-Stop and PostCompact hooks trigger checkpoint writes. Determine `trigger` from the system-reminder header: `Stop hook blocking error` → `trigger: stop`; `PostCompact` with block reason starting `fill-checkpoint:` → `trigger: postcompact`. PreCompact no longer sends a block to Claude (the binary writes a stub file directly and exits 0). If the header is ambiguous, default to `trigger: stop`.
+Stop and PostCompact hooks trigger checkpoint writes. Determine `trigger` from the system-reminder header: `Stop hook blocking error` → `trigger: stop`; `PostCompact` with block reason starting `fill-checkpoint:` → `trigger: postcompact`. PreCompact no longer sends a block to Claude (the binary writes a stub file directly and exits 0). If the header is ambiguous, default to `trigger: stop`. If a PostCompact block arrives with a block reason that does not start with `fill-checkpoint:`, treat it as a no-op — write nothing and output nothing.
 
 **PostCompact fill-checkpoint (trigger: postcompact):** When block reason matches `fill-checkpoint: <filename> since <reference>` (where reference is `start` or `checkpoint-NN`):
-1. Read the existing stub file at `[logs_folder]/YYYY/MM/<filename>` if it exists; if missing, create it at that path using `trigger: postcompact` in frontmatter
+1. Extract `YYYY` and `MM` from `<filename>` (format: `YYYY-MM-DD-{token}-checkpoint-NN.md`). Read the existing stub file at `[logs_folder]/YYYY/MM/<filename>` if it exists; if missing, create it at that path using `trigger: postcompact` in frontmatter (not `trigger: precompact`)
 2. Fill in all 6 content sections covering events **since `<reference>` only** — not the full session
 3. Preserve all frontmatter fields exactly as written — do not overwrite `trigger`, `date`, `checkpoint`, or `merged`
 4. Write back to the same file path
@@ -307,7 +307,7 @@ Write:
 tags: [checkpoint, session-log]
 date: YYYY-MM-DD
 checkpoint: NN
-trigger: stop
+trigger: stop  ← stop path; use trigger: postcompact when creating a new file in the fill-checkpoint path
 merged: false
 ---
 
