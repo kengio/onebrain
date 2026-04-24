@@ -1,0 +1,12 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`handleStop stop block JSON shape matches snapshot { decision: "block", reason: "...-checkpoint-NN.md since ..." } 1`] = `
+[
+  "decision",
+  "reason",
+]
+`;
+
+exports[`handleStop stop block JSON shape matches snapshot { decision: "block", reason: "...-checkpoint-NN.md since ..." } 2`] = `"block"`;
+
+exports[`handleStop stop block JSON shape matches snapshot { decision: "block", reason: "...-checkpoint-NN.md since ..." } 3`] = `"string"`;

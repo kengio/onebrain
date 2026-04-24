@@ -182,6 +182,20 @@ describe('runSessionInit', () => {
 		expect(result.qmd_unembedded).toBe(0);
 	});
 
+	// Update snapshots: bun test --update-snapshots
+	it('normal payload output shape matches snapshot', async () => {
+		await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+		process.env.PPID = '55555';
+		const result = (await runSessionInit(tmpDir, tmpDir)) as Record<string, unknown>;
+
+		// Lock the exact field names of the SessionInitPayload shape.
+		// The values are dynamic (datetime, session_token vary), so we assert structure only.
+		expect(Object.keys(result).sort()).toMatchSnapshot();
+		expect(typeof result.datetime).toMatchSnapshot();
+		expect(typeof result.session_token).toMatchSnapshot();
+		expect(typeof result.qmd_unembedded).toMatchSnapshot();
+	});
+
 	it('qmd_unembedded reflects unembedded count from qmd status --json', async () => {
 		await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
 

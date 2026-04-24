@@ -1,0 +1,15 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`runSessionInit normal payload output shape matches snapshot 1`] = `
+[
+  "datetime",
+  "qmd_unembedded",
+  "session_token",
+]
+`;
+
+exports[`runSessionInit normal payload output shape matches snapshot 2`] = `"string"`;
+
+exports[`runSessionInit normal payload output shape matches snapshot 3`] = `"string"`;
+
+exports[`runSessionInit normal payload output shape matches snapshot 4`] = `"number"`;

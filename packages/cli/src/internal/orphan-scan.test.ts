@@ -77,6 +77,25 @@ describe('runOrphanScan', () => {
 		expect(result).toEqual({ orphan_count: 0 });
 	});
 
+	// Update snapshots: bun test --update-snapshots
+	it('output shape matches snapshot { orphan_count: N }', async () => {
+		// Zero orphans — verifies the shape is { orphan_count: 0 }
+		const zeroResult = await runOrphanScan(logsDir, 'abc12345');
+		expect(zeroResult).toMatchSnapshot();
+
+		// One orphan — verifies the shape is { orphan_count: 1 }
+		const { thisYear, thisMonth } = getMonthParts();
+		const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
+		const pastDate = `${thisYear}-${thisMonth}-01`;
+		await writeFile(
+			join(monthDir, `${pastDate}-snaptoken-checkpoint-01.md`),
+			`---\ntags: [checkpoint]\nmerged: false\n---\n\nContent.`,
+			'utf8',
+		);
+		const oneResult = await runOrphanScan(logsDir, 'differenttoken');
+		expect(oneResult).toMatchSnapshot();
+	});
+
 	it('returns orphan_count: 0 when logs folder does not exist', async () => {
 		const result = await runOrphanScan(join(tmpDir, 'nonexistent'), 'abc12345');
 		expect(result).toEqual({ orphan_count: 0 });

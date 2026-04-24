@@ -282,6 +282,27 @@ describe('handleStop', () => {
 		expect(state.last_stop_nn).toBe('01');
 	});
 
+	// Update snapshots: bun test --update-snapshots
+	it('stop block JSON shape matches snapshot { decision: "block", reason: "...-checkpoint-NN.md since ..." }', () => {
+		// count=4 → increment to 5 = messages_threshold → emit block
+		const now = 1700001500;
+		writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
+
+		const cap = captureStdout();
+		handleStop(TOKEN, vaultDir, now, tmpDir);
+		const out = cap.stop();
+
+		const parsed = JSON.parse(out.trim()) as Record<string, unknown>;
+
+		// Lock the field names of the block decision shape.
+		expect(Object.keys(parsed).sort()).toMatchSnapshot();
+		// Lock the decision value ("block" is the only valid value).
+		expect(parsed.decision).toMatchSnapshot();
+		// Lock the reason pattern: must contain a checkpoint filename and a "since" clause.
+		expect(typeof parsed.reason).toMatchSnapshot();
+		expect(String(parsed.reason)).toMatch(/-checkpoint-\d{2}\.md since /);
+	});
+
 	it('threshold met by elapsed time, emits block JSON', () => {
 		// elapsed > minutes_threshold (10 min = 600s), count >= 2
 		const now = 1700001000;
