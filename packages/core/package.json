@@ -9,5 +9,8 @@
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "yaml": "^2"
   }
 }
