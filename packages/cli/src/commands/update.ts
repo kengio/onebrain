@@ -138,7 +138,7 @@ async function defaultValidateBinary(): Promise<boolean> {
 		if (exitCode !== 0) return false;
 		const stdout = await new Response(proc.stdout).text();
 		// Expect version-like output (digits)
-		return /\d/.test(stdout.trim());
+		return /^\d+\.\d+/.test(stdout.trim());
 	} catch {
 		return false;
 	}

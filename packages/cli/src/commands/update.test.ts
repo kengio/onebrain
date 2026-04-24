@@ -116,16 +116,8 @@ describe('runUpdate', () => {
 		expect(result.exitCode).toBe(0);
 		expect(result.latestVersion).toBe('v2.0.0');
 
-		// All steps called in order
-		expect(calls).toContain('vault-sync');
-		expect(calls).toContain('install:v2.0.0');
-		expect(calls).toContain('validate');
-		expect(calls).toContain('register-hooks');
-
-		// register-hooks called AFTER validate
-		const validateIdx = calls.indexOf('validate');
-		const hooksIdx = calls.indexOf('register-hooks');
-		expect(hooksIdx).toBeGreaterThan(validateIdx);
+		// All steps called in exact order
+		expect(calls).toEqual(['vault-sync', 'install:v2.0.0', 'validate', 'register-hooks']);
 
 		// vault.yml updated with new version
 		const vaultYml = await readVaultYml(tempDir);
@@ -333,5 +325,89 @@ describe('runUpdate', () => {
 		expect(result.ok).toBe(true);
 		// update_channel 'next' → branch 'next'
 		expect(syncBranchUsed).toBe('next');
+	});
+
+	it('channel stable resolves to branch main passed to vault-sync', async () => {
+		let syncBranchUsed = '';
+
+		const opts: UpdateOptions = {
+			vaultDir: tempDir,
+			isTTY: false,
+			channel: 'stable',
+			fetchFn: makeMockFetch('v2.0.0'),
+			vaultSyncFn: async (vaultDir, syncOpts) => {
+				syncBranchUsed = syncOpts.branch as string;
+				return noopVaultSync(vaultDir, syncOpts);
+			},
+			installBinaryFn: noopInstallBinary,
+			validateBinaryFn: noopValidateBinary,
+			registerHooksFn: noopRegisterHooks,
+		};
+
+		const result = await runUpdate(opts);
+
+		expect(result.ok).toBe(true);
+		expect(syncBranchUsed).toBe('main');
+	});
+
+	it('register-hooks failure is non-fatal — vault.yml still updated', async () => {
+		const opts: UpdateOptions = {
+			vaultDir: tempDir,
+			isTTY: false,
+			fetchFn: makeMockFetch('v2.0.0'),
+			vaultSyncFn: noopVaultSync,
+			installBinaryFn: noopInstallBinary,
+			validateBinaryFn: noopValidateBinary,
+			registerHooksFn: async (_vaultDir) => {
+				throw new Error('hooks: permission denied');
+			},
+		};
+
+		const result = await runUpdate(opts);
+
+		// register-hooks failure is a warning — update still completes
+		expect(result.ok).toBe(true);
+		expect(result.exitCode).toBe(0);
+
+		// vault.yml updated with new version despite hooks failure
+		const vaultYml = await readVaultYml(tempDir);
+		expect(vaultYml.onebrain_version).toBe('v2.0.0');
+	});
+
+	it('binary validation failure → register-hooks NOT called AND vault.yml unchanged', async () => {
+		const calls: string[] = [];
+
+		const opts: UpdateOptions = {
+			vaultDir: tempDir,
+			isTTY: false,
+			fetchFn: makeMockFetch('v2.0.0'),
+			vaultSyncFn: async (vaultDir, syncOpts) => {
+				calls.push('vault-sync');
+				return noopVaultSync(vaultDir, syncOpts);
+			},
+			installBinaryFn: async (version) => {
+				calls.push(`install:${version}`);
+			},
+			validateBinaryFn: async () => {
+				calls.push('validate-fail');
+				return false;
+			},
+			registerHooksFn: async (vaultDir) => {
+				calls.push('register-hooks');
+				return noopRegisterHooks(vaultDir);
+			},
+		};
+
+		const result = await runUpdate(opts);
+
+		expect(result.ok).toBe(false);
+		expect(result.exitCode).toBe(1);
+
+		// register-hooks was NOT called
+		expect(calls).not.toContain('register-hooks');
+
+		// vault.yml unchanged
+		const vaultYml = await readVaultYml(tempDir);
+		expect(vaultYml.onebrain_version).toBe('v1.10.18');
 	});
 });
