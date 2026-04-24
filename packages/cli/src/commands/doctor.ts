@@ -136,11 +136,11 @@ function printDoctorOutput(
 	lines.push('');
 
 	if (errorCount > 0 && warningCount > 0) {
-		lines.push(`Summary: ${errorCount} error(s), ${warningCount} warning(s)`);
+		lines.push(`Summary: ${errorCount} errors, ${warningCount} warnings`);
 	} else if (errorCount > 0) {
-		lines.push(`Summary: ${errorCount} error(s)`);
+		lines.push(`Summary: ${errorCount} errors`);
 	} else if (warningCount > 0) {
-		lines.push(`Summary: ${warningCount} warning(s) — ok to run`);
+		lines.push(`Summary: ${warningCount} warnings — ok to run`);
 	} else {
 		lines.push('Summary: All checks passed');
 	}
