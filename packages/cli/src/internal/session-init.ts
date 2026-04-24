@@ -83,11 +83,8 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
 	}
 
 	// 2. PPID
-	const ppid = process.env.PPID;
-	if (ppid !== undefined) {
-		const n = Number(ppid);
-		if (!Number.isNaN(n) && n > 1) return ppid;
-	}
+	const ppid = process.ppid;
+	if (ppid !== undefined && ppid > 1) return String(ppid);
 
 	// 3. PowerShell fallback (Windows only)
 	try {

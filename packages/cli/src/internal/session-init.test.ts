@@ -15,6 +15,18 @@ async function makeTmpDir(): Promise<string> {
 	return mkdtemp(join(tmpdir(), 'onebrain-si-test-'));
 }
 
+/** Set process.ppid (read-only property) for testing. Returns the original value. */
+function setPpid(value: number): number {
+	const original = process.ppid;
+	Object.defineProperty(process, 'ppid', { value, configurable: true });
+	return original;
+}
+
+/** Restore process.ppid to its original value. */
+function restorePpid(original: number): void {
+	Object.defineProperty(process, 'ppid', { value: original, configurable: true });
+}
+
 const VALID_VAULT_YML = `
 method: onebrain
 update_channel: stable
@@ -56,28 +68,31 @@ describe('formatDatetime', () => {
 
 describe('resolveSessionToken', () => {
 	let originalEnv: NodeJS.ProcessEnv;
+	let originalPpid: number;
 	let tmpDir: string;
 
 	beforeEach(async () => {
 		originalEnv = { ...process.env };
+		originalPpid = process.ppid;
 		tmpDir = await makeTmpDir();
 	});
 
 	afterEach(async () => {
 		process.env = originalEnv;
+		restorePpid(originalPpid);
 		await rm(tmpDir, { recursive: true, force: true });
 	});
 
 	it('uses PPID when > 1', async () => {
 		process.env.WT_SESSION = undefined;
-		process.env.PPID = '12345';
+		setPpid(12345);
 		const token = await resolveSessionToken(tmpDir);
 		expect(token).toBe('12345');
 	});
 
 	it('ignores PPID when = 1', async () => {
 		process.env.WT_SESSION = undefined;
-		process.env.PPID = '1';
+		setPpid(1);
 		// Should fall through to cache
 		const token = await resolveSessionToken(tmpDir);
 		// Token should be a 5-digit number or numeric string from cache
@@ -86,7 +101,7 @@ describe('resolveSessionToken', () => {
 
 	it('prefers WT_SESSION over PPID', async () => {
 		process.env.WT_SESSION = 'abc-123-def-456-ghi';
-		process.env.PPID = '99999';
+		setPpid(99999);
 		const token = await resolveSessionToken(tmpDir);
 		// WT_SESSION stripped to alphanumeric, first 8 chars: 'abc123de'
 		expect(token).toBe('abc123de');
@@ -94,7 +109,7 @@ describe('resolveSessionToken', () => {
 
 	it('strips non-alphanumeric from WT_SESSION and takes first 8 chars', async () => {
 		process.env.WT_SESSION = '{a1b2c3d4-e5f6-7890-abcd-ef1234567890}';
-		process.env.PPID = undefined;
+		setPpid(1); // force PPID fallthrough if WT_SESSION somehow fails
 		const token = await resolveSessionToken(tmpDir);
 		expect(token).toBe('a1b2c3d4');
 		expect(token.length).toBe(8);
@@ -102,7 +117,7 @@ describe('resolveSessionToken', () => {
 
 	it('reads cached token from day-scoped cache file', async () => {
 		process.env.WT_SESSION = undefined;
-		process.env.PPID = '1'; // force fallthrough
+		setPpid(1); // force fallthrough
 		const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 		const cacheFile = join(tmpDir, `onebrain-day-${today}.token`);
 		await writeFile(cacheFile, '54321', 'utf8');
@@ -112,7 +127,7 @@ describe('resolveSessionToken', () => {
 
 	it('writes new cache file when none exists', async () => {
 		process.env.WT_SESSION = undefined;
-		process.env.PPID = '1'; // force fallthrough
+		setPpid(1); // force fallthrough
 		const token = await resolveSessionToken(tmpDir);
 		// Should be a 5-digit number
 		expect(token).toMatch(/^\d{5}$/);
@@ -131,17 +146,20 @@ describe('resolveSessionToken', () => {
 describe('runSessionInit', () => {
 	let tmpDir: string;
 	let originalEnv: NodeJS.ProcessEnv;
+	let originalPpid: number;
 
 	beforeEach(async () => {
 		originalEnv = { ...process.env };
+		originalPpid = process.ppid;
 		tmpDir = await makeTmpDir();
-		// Ensure PPID is set for predictable token resolution in most tests
+		// Ensure predictable token resolution in most tests
 		process.env.WT_SESSION = undefined;
-		process.env.PPID = '77777';
+		setPpid(77777);
 	});
 
 	afterEach(async () => {
 		process.env = originalEnv;
+		restorePpid(originalPpid);
 		await rm(tmpDir, { recursive: true, force: true });
 	});
 
@@ -170,7 +188,7 @@ describe('runSessionInit', () => {
 
 	it('uses PPID as session_token', async () => {
 		await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-		process.env.PPID = '42001';
+		setPpid(42001);
 		const result = (await runSessionInit(tmpDir, tmpDir)) as Record<string, unknown>;
 		expect(result.session_token).toBe('42001');
 	});
@@ -185,7 +203,7 @@ describe('runSessionInit', () => {
 	// Update snapshots: bun test --update-snapshots
 	it('normal payload output shape matches snapshot', async () => {
 		await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-		process.env.PPID = '55555';
+		setPpid(55555);
 		const result = (await runSessionInit(tmpDir, tmpDir)) as Record<string, unknown>;
 
 		// Lock the exact field names of the SessionInitPayload shape.

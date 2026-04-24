@@ -179,7 +179,8 @@ export async function runOrphanScan(
 	logsFolder: string,
 	sessionToken: string,
 ): Promise<OrphanScanResult> {
-	const today = new Date().toISOString().slice(0, 10);
+	const now = new Date();
+	const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 	const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts();
 
 	const monthDirs: Array<{ year: string; month: string }> = [

@@ -178,14 +178,14 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 
 		// Race between process completion and 3-second timeout
 		const timeoutMs = 3000;
-		let timerId: ReturnType<typeof setTimeout>;
+		let timerId: ReturnType<typeof setTimeout> | undefined;
 		const raceResult = await Promise.race([
 			proc.exited,
 			new Promise<'timeout'>((resolve) => {
 				timerId = setTimeout(() => resolve('timeout'), timeoutMs);
 			}),
 		]);
-		clearTimeout(timerId!);
+		if (timerId !== undefined) clearTimeout(timerId);
 
 		if (raceResult === 'timeout') {
 			proc.kill();
