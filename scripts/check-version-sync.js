@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // check-version-sync.js — exits 1 if any version field is out of sync
 
 import { readFileSync } from "fs";
@@ -8,7 +8,11 @@ const ROOT = new URL("..", import.meta.url).pathname;
 
 function readJson(relPath) {
   const abs = resolve(ROOT, relPath);
-  return JSON.parse(readFileSync(abs, "utf8"));
+  const data = JSON.parse(readFileSync(abs, "utf8"));
+  if (typeof data.version !== "string" || !data.version) {
+    throw new Error(`Missing or empty "version" field in ${relPath}`);
+  }
+  return data;
 }
 
 function readChangelogVersion(relPath) {
