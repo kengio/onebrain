@@ -302,12 +302,14 @@ Stop and PostCompact hooks trigger checkpoint writes. Determine `trigger` from t
 
 Write:
 
+> **Note:** For stop-triggered checkpoints use `trigger: stop`; for new files created in the fill-checkpoint path use `trigger: postcompact`.
+
 ```markdown
 ---
 tags: [checkpoint, session-log]
 date: YYYY-MM-DD
 checkpoint: NN
-trigger: stop  ← stop path; use trigger: postcompact when creating a new file in the fill-checkpoint path
+trigger: stop
 merged: false
 ---
 
