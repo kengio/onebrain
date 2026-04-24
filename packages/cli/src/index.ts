@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
+import { initCommand } from './commands/init.js';
 import { checkpointCommand } from './internal/checkpoint.js';
 import { migrateCommand } from './internal/migrate.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
@@ -16,8 +17,15 @@ program.name('onebrain').description('OneBrain CLI — personal AI OS for Obsidi
 program
 	.command('init')
 	.description('Initialize a new OneBrain vault')
-	.action(() => {
-		console.log('init: not yet implemented');
+	.option('--vault-dir <path>', 'vault root directory (default: cwd)')
+	.option('--harness <harness>', 'harness type: claude-code | gemini | direct')
+	.option('--force', 'overwrite existing vault.yml without prompting')
+	.action(async (opts: { vaultDir?: string; harness?: string; force?: boolean }) => {
+		await initCommand({
+			vaultDir: opts.vaultDir,
+			harness: opts.harness as 'claude-code' | 'gemini' | 'direct' | undefined,
+			force: opts.force,
+		});
 	});
 
 program
