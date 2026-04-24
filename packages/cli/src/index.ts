@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { checkpointCommand } from './internal/checkpoint.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
 import { qmdReindexCommand } from './internal/qmd-reindex.js';
+import { registerHooksCommand } from './internal/register-hooks.js';
 import { resolveSessionToken, sessionInitCommand } from './internal/session-init.js';
 
 const program = new Command();
@@ -85,8 +86,9 @@ program
 program
 	.command('register-hooks', { hidden: true })
 	.description('Install Claude Code hooks into settings.json')
-	.action(() => {
-		console.log('register-hooks: not yet implemented');
+	.option('--vault-dir <path>', 'vault root directory (default: cwd)')
+	.action(async (opts: { vaultDir?: string }) => {
+		await registerHooksCommand(opts.vaultDir);
 	});
 
 program.parse(process.argv);
