@@ -17,3 +17,8 @@ Thumbs.db
 # ── Internal tooling ──────────────────────────────────────────────────────────
 .superpowers/
 docs/superpowers/
+
+# ── Node / Bun ────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+*.tsbuildinfo

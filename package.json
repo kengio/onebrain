@@ -1,0 +1,17 @@
+{
+  "name": "onebrain",
+  "version": "2.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "bump": "bun run packages/cli/package.json version",
+    "test": "bun test --cwd packages",
+    "build": "bun run build --cwd packages/cli"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9",
+    "typescript": "^5.7"
+  }
+}
