@@ -65,6 +65,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -136,11 +138,13 @@ jobs:
 
   # ─── Step 4: npm publish ──────────────────────────────────────────────────
   npm-publish:
-    needs: [verify-tag, build-binaries]
+    needs: [verify-tag, build-binaries, package-plugin]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -150,6 +154,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/cli
         run: |
+          # Write auth to ~/.npmrc (global) — bun publish reads this before any project-level .npmrc
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
           bun publish --access public
 
@@ -162,6 +167,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -181,7 +188,7 @@ jobs:
           VERSION: ${{ needs.verify-tag.outputs.version }}
         run: |
           # Extract section for this version: ## [2.0.0] or ## 2.0.0
-          NOTES=$(awk "/^## \[?${VERSION}\]?/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+          NOTES=$(awk -v ver="$VERSION" 'BEGIN{pat="^## \\[?" ver "\\]?"} $0~pat{found=1;next} found && /^## /{exit} found{print}' CHANGELOG.md)
           if [ -z "$NOTES" ]; then
             NOTES="See [CHANGELOG.md](CHANGELOG.md) for details."
           fi

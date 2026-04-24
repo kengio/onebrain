@@ -33,7 +33,7 @@ const downloadUrl =
 
 const marketplace = {
   name: plugin.name,
-  version: plugin.version,
+  version: VERSION,
   description: plugin.description,
   author: plugin.author,
   latestVersion: VERSION,
