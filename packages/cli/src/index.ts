@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { updateCommand } from './commands/update.js';
+import { doctorCommand } from './commands/doctor.js';
 import { checkpointCommand } from './internal/checkpoint.js';
 import { migrateCommand } from './internal/migrate.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
@@ -44,8 +45,9 @@ program
 program
 	.command('doctor')
 	.description('Run vault health checks and report issues')
-	.action(() => {
-		console.log('doctor: not yet implemented');
+	.action(async () => {
+		const vaultRoot = process.cwd();
+		await doctorCommand({ vaultDir: vaultRoot });
 	});
 
 program
