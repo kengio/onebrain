@@ -79,8 +79,9 @@ async function readSettings(settingsPath: string): Promise<SettingsJson> {
 	try {
 		const text = await readFile(settingsPath, 'utf8');
 		return JSON.parse(text) as SettingsJson;
-	} catch {
-		return {};
+	} catch (err: unknown) {
+		if ((err as NodeJS.ErrnoException).code === 'ENOENT') return {};
+		throw err;
 	}
 }
 
@@ -156,9 +157,17 @@ function applyPath(settings: SettingsJson): 'ok' | 'updated' {
 	const existing = settings.env.PATH ?? '';
 	const parts = existing ? existing.split(':') : [];
 
+	const bunForms = [BUN_BIN, '$HOME/.bun/bin', '${HOME}/.bun/bin', '~/.bun/bin'];
+	const npmForms = [
+		NPM_GLOBAL_BIN,
+		'$HOME/.npm-global/bin',
+		'${HOME}/.npm-global/bin',
+		'~/.npm-global/bin',
+	];
+
 	const missing: string[] = [];
-	if (!parts.includes(BUN_BIN)) missing.push(BUN_BIN);
-	if (!parts.includes(NPM_GLOBAL_BIN)) missing.push(NPM_GLOBAL_BIN);
+	if (!bunForms.some((f) => parts.includes(f))) missing.push(BUN_BIN);
+	if (!npmForms.some((f) => parts.includes(f))) missing.push(NPM_GLOBAL_BIN);
 
 	if (missing.length === 0) return 'ok';
 
@@ -305,13 +314,12 @@ export async function runRegisterHooks(
 	try {
 		if (isTTY) intro('OneBrain Register Hooks');
 
-		// ── Step 1: Hooks ─────────────────────────────────────────────────────
+		// ── Steps 1-3: Read once, apply all, write once ───────────────────────
 		const hooksSpinner = isTTY ? spinner() : null;
 		hooksSpinner?.start('Registering hooks...');
 
 		const settings = await readSettings(settingsPath);
 		result.hooks = applyHooks(settings);
-		await writeSettings(settingsPath, settings);
 
 		hooksSpinner?.stop('Registering hooks...');
 
@@ -333,9 +341,7 @@ export async function runRegisterHooks(
 		const pathSpinner = isTTY ? spinner() : null;
 		pathSpinner?.start('Registering PATH...');
 
-		const settingsForPath = await readSettings(settingsPath);
-		result.pathStatus = applyPath(settingsForPath);
-		await writeSettings(settingsPath, settingsForPath);
+		result.pathStatus = applyPath(settings);
 
 		pathSpinner?.stop('Registering PATH...');
 
@@ -349,9 +355,8 @@ export async function runRegisterHooks(
 		const permSpinner = isTTY ? spinner() : null;
 		permSpinner?.start('Updating permissions...');
 
-		const settingsForPerms = await readSettings(settingsPath);
-		result.permissionsAdded = applyPermissions(settingsForPerms);
-		await writeSettings(settingsPath, settingsForPerms);
+		result.permissionsAdded = applyPermissions(settings);
+		await writeSettings(settingsPath, settings);
 
 		permSpinner?.stop('Updating permissions...');
 
