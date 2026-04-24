@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "bump": "bun run --cwd packages/cli bump",
-    "test": "bun test packages/ || true",
+    "test": "bun test --pass-with-no-tests packages/",
     "build": "bun run --cwd packages/cli build"
   },
   "devDependencies": {
