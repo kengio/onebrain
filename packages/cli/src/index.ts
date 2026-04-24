@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
+import { updateCommand } from './commands/update.js';
 import { checkpointCommand } from './internal/checkpoint.js';
 import { migrateCommand } from './internal/migrate.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
@@ -31,8 +32,13 @@ program
 program
 	.command('update')
 	.description('Update OneBrain plugin files from GitHub')
-	.action(() => {
-		console.log('update: not yet implemented');
+	.option('--check', 'show what would change and exit without making changes')
+	.option('--channel <channel>', 'update channel: stable | next')
+	.action(async (opts: { check?: boolean; channel?: string }) => {
+		await updateCommand({
+			check: opts.check,
+			channel: opts.channel as 'stable' | 'next' | undefined,
+		});
 	});
 
 program
