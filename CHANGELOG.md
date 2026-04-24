@@ -1,5 +1,5 @@
 ---
-latest_version: 1.10.18
+latest_version: 2.0.0
 released: 2026-04-22
 ---
 
@@ -9,6 +9,18 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v2.0.0 — CLI Binary
+
+- feat: compiled TypeScript binary replaces all bash/Python scripts
+- feat(internal): session-init, orphan-scan, checkpoint, qmd-reindex
+- feat(ops): vault-sync, register-hooks, migrate
+- feat(init): onebrain init — covers Scenarios 1-7 including marketplace
+- feat(update): atomic update with binary validation
+- feat(doctor): qmd-embeddings check, version drift, orphan checkpoints
+- feat(release): 6-platform binaries, npm package, marketplace.json
+- feat(instructions): JSON parsing, qmd embed warning, PostCompact fill-checkpoint
+- feat(marketplace): hooks/hooks.json for /plugin install auto-registration
 
 ## v1.10.18 — Fix: session logs must not include recapped: in frontmatter
 
