@@ -32,8 +32,8 @@ program
   });
 
 program
-  .command('help-all')
-  .description('Show all commands including internal ones')
+  .command('help')
+  .description('Show this help message')
   .action(() => {
     program.help();
   });
