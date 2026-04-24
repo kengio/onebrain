@@ -1,6 +1,14 @@
 import { parse } from 'yaml';
 import { join } from 'node:path';
-import type { VaultConfig, VaultFolders, VaultCheckpoint } from '../types/config.js';
+import type {
+  VaultConfig,
+  VaultFolders,
+  VaultCheckpoint,
+  VaultRuntime,
+  VaultSandbox,
+  VaultStats,
+  VaultRecap,
+} from '../types/config.js';
 
 const DEFAULT_FOLDERS: VaultFolders = {
   inbox: '00-inbox',
@@ -79,19 +87,19 @@ export async function loadVaultConfig(vaultRoot: string): Promise<VaultConfig> {
   }
 
   if (raw['runtime'] !== undefined) {
-    config.runtime = raw['runtime'] as VaultConfig['runtime'];
+    config.runtime = raw['runtime'] as VaultRuntime;
   }
 
   if (raw['sandbox'] !== undefined) {
-    config.sandbox = raw['sandbox'] as VaultConfig['sandbox'];
+    config.sandbox = raw['sandbox'] as VaultSandbox;
   }
 
   if (raw['stats'] !== undefined) {
-    config.stats = raw['stats'] as VaultConfig['stats'];
+    config.stats = raw['stats'] as VaultStats;
   }
 
   if (raw['recap'] !== undefined) {
-    config.recap = raw['recap'] as VaultConfig['recap'];
+    config.recap = raw['recap'] as VaultRecap;
   }
 
   return config;

@@ -1,6 +1,6 @@
 import { parse } from 'yaml';
 import { join } from 'node:path';
-import { glob } from 'node:fs/promises';
+import { glob, stat } from 'node:fs/promises';
 import type { VaultConfig, DoctorResult } from '../types/config.js';
 
 // ---------------------------------------------------------------------------
@@ -65,16 +65,14 @@ export async function checkFolders(
   vaultRoot: string,
   config: VaultConfig,
 ): Promise<DoctorResult> {
-  const missing: string[] = [];
-
-  for (const key of STANDARD_FOLDER_KEYS) {
-    const folderName = config.folders[key];
-    const folderPath = join(vaultRoot, folderName);
-    const exists = await directoryExists(folderPath);
-    if (!exists) {
-      missing.push(folderName);
-    }
-  }
+  const results = await Promise.all(
+    STANDARD_FOLDER_KEYS.map(async (key) => {
+      const folderName = config.folders[key];
+      const exists = await directoryExists(join(vaultRoot, folderName));
+      return exists ? null : folderName;
+    }),
+  );
+  const missing = results.filter((f): f is string => f !== null);
 
   const total = STANDARD_FOLDER_KEYS.length;
   const present = total - missing.length;
@@ -97,7 +95,6 @@ export async function checkFolders(
 
 async function directoryExists(path: string): Promise<boolean> {
   try {
-    const { stat } = await import('node:fs/promises');
     const s = await stat(path);
     return s.isDirectory();
   } catch {
@@ -184,12 +181,16 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 
     // Race between process completion and 3-second timeout
     const timeoutMs = 3000;
-    const result = await Promise.race([
+    let timerId: ReturnType<typeof setTimeout>;
+    const raceResult = await Promise.race([
       proc.exited,
-      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), timeoutMs)),
+      new Promise<'timeout'>((resolve) => {
+        timerId = setTimeout(() => resolve('timeout'), timeoutMs);
+      }),
     ]);
+    clearTimeout(timerId!);
 
-    if (result === 'timeout') {
+    if (raceResult === 'timeout') {
       proc.kill();
       return {
         check: 'qmd-embeddings',
@@ -291,7 +292,7 @@ export async function checkVersionDrift(
   return {
     check: 'version-drift',
     status: 'warn',
-    message: `binary v${configVersion}, plugin files v${pluginVersion}`,
+    message: `vault v${configVersion}, plugin files v${pluginVersion}`,
     hint: 'Run onebrain update to sync',
   };
 }
@@ -357,6 +358,7 @@ export async function checkOrphanCheckpoints(
     check: 'orphan-checkpoints',
     status: 'warn',
     message: `${orphanCount} pre-v1.10.0 files in ${logsFolder}/ — review manually`,
+    hint: 'Run /wrapup to synthesize and merge them',
   };
 }
 

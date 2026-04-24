@@ -12,5 +12,8 @@
   },
   "dependencies": {
     "yaml": "^2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
   }
 }
