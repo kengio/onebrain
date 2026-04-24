@@ -75,6 +75,13 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
 		// Missing or malformed → fresh state
 		// last_ts=0: avoids SKIP_WINDOW on first run (guard requires last_ts > 0)
 		// and avoids false "recent checkpoint" in precompact (guard requires last_ts > 0)
+		// Eagerly rewrite the state file so v1/malformed files don't accumulate.
+		const now = Math.floor(Date.now() / 1000);
+		try {
+			writeFileSync(stateFilePath(token, tmpDir), `0:${now}:00`, 'utf8');
+		} catch (writeErr) {
+			process.stderr.write(`checkpoint: failed to rewrite state file for token ${token}: ${writeErr}\n`);
+		}
 		return {
 			count: 0,
 			last_ts: 0,
@@ -256,7 +263,7 @@ export function handleStop(
 const PRECOMPACT_STUB_TEMPLATE = (date: string, nn: string): string => `---
 tags: [checkpoint, session-log]
 date: ${date}
-checkpoint: ${Number(nn)}
+checkpoint: ${nn}
 trigger: precompact
 merged: false
 ---
@@ -357,6 +364,7 @@ export async function handlePrecompact(
  */
 export function handlePostcompact(
 	token: string,
+	// _now kept for API symmetry with handleStop/handlePrecompact so call sites can pass now as 2nd arg
 	_now: number = Math.floor(Date.now() / 1000),
 	tmpDir: string = osTmpdir(),
 ): void {

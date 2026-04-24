@@ -485,6 +485,25 @@ describe('handlePrecompact', () => {
 		expect(content).toContain('## What We Worked On');
 	});
 
+	it('stub frontmatter checkpoint: field preserves zero-padding (e.g. "03" not 3)', async () => {
+		const now = 1700001000;
+		const date = new Date(now * 1000);
+		const yyyy = date.getFullYear().toString();
+		const mm = String(date.getMonth() + 1).padStart(2, '0');
+		// last_stop_nn='02' → stub NN='03'
+		writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
+
+		await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
+
+		const state = readState(TOKEN, tmpDir);
+		const stubFilename = state.pending_stub ?? '';
+		const stubPath = join(vaultDir, '07-logs', yyyy, mm, stubFilename);
+		const content = await readFile(stubPath, 'utf8');
+		// Must contain 'checkpoint: 03' (zero-padded), NOT 'checkpoint: 3'
+		expect(content).toContain('checkpoint: 03');
+		expect(content).not.toContain('checkpoint: 3\n');
+	});
+
 	it('last_stop_nn NOT updated (stays same in state after precompact)', async () => {
 		const now = 1700001000;
 		writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '03' }, tmpDir);
