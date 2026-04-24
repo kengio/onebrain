@@ -119,11 +119,7 @@ function loadThresholds(vaultRoot: string): {
 	try {
 		const vaultYml = join(vaultRoot, 'vault.yml');
 		const raw = readFileSync(vaultYml, 'utf8');
-		// Simple regex extraction — avoids async yaml parse
-		const messagesMatch = raw.match(/^checkpoint:\s*\n(?:[^\n]*\n)*?\s+messages:\s*(\d+)/m);
-		const minutesMatch = raw.match(/^checkpoint:\s*\n(?:[^\n]*\n)*?\s+minutes:\s*(\d+)/m);
-
-		// More robust: find checkpoint block then parse keys within it
+		// Find checkpoint block then parse keys within it
 		const checkpointBlock = raw.match(/^checkpoint:\s*\n((?:[ \t]+[^\n]+\n?)*)/m);
 		let messages = DEFAULT_MESSAGES_THRESHOLD;
 		let minutes = DEFAULT_MINUTES_THRESHOLD;
@@ -133,10 +129,6 @@ function loadThresholds(vaultRoot: string): {
 			const minMatch = block.match(/minutes:\s*(\d+)/);
 			if (msgMatch?.[1]) messages = Number(msgMatch[1]);
 			if (minMatch?.[1]) minutes = Number(minMatch[1]);
-		} else {
-			// Try flat matches as fallback
-			if (messagesMatch?.[1]) messages = Number(messagesMatch[1]);
-			if (minutesMatch?.[1]) minutes = Number(minutesMatch[1]);
 		}
 
 		return { messagesThreshold: messages, minutesThreshold: minutes };

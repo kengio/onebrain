@@ -2,8 +2,7 @@
 import { Command } from 'commander';
 import { checkpointCommand } from './internal/checkpoint.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
-import { resolveSessionToken } from './internal/session-init.js';
-import { sessionInitCommand } from './internal/session-init.js';
+import { resolveSessionToken, sessionInitCommand } from './internal/session-init.js';
 
 const program = new Command();
 
