@@ -24,7 +24,8 @@ if (existsSync(SHA256_FILE)) {
   const raw = readFileSync(SHA256_FILE, "utf8").trim();
   sha256 = raw.split(/\s+/)[0];
 } else {
-  console.warn(`[warn] SHA256 file not found: ${SHA256_FILE} — skipping sha256 field`);
+  console.error(`[error] SHA256 file not found: ${SHA256_FILE}`);
+  process.exit(1);
 }
 
 // ─── Build marketplace.json ───────────────────────────────────────────────

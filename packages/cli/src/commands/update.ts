@@ -16,7 +16,7 @@
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { intro, log, outro } from '@clack/prompts';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
@@ -87,7 +87,10 @@ async function writeVersionToVaultYml(vaultDir: string, version: string): Promis
 	const raw = await readVaultYmlRaw(vaultDir);
 	raw.onebrain_version = version;
 	const content = stringifyYaml(raw, { lineWidth: 0 });
-	await writeFile(join(vaultDir, 'vault.yml'), content, 'utf8');
+	const vaultYmlPath = join(vaultDir, 'vault.yml');
+	const tmpPath = `${vaultYmlPath}.tmp`;
+	await writeFile(tmpPath, content, 'utf8');
+	await rename(tmpPath, vaultYmlPath);
 }
 
 // ---------------------------------------------------------------------------

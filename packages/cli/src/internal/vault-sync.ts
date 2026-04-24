@@ -332,9 +332,8 @@ async function updateVaultYml(
  * Read plugin.json version from the synced plugin dir.
  */
 async function readPluginVersion(vaultRoot: string): Promise<string> {
-	// plugin.json lives in .claude/plugins/onebrain/plugin.json
-	// (not inside .claude-plugin subdir — that's the old shell script convention)
-	const pluginJsonPath = join(vaultRoot, '.claude', 'plugins', 'onebrain', 'plugin.json');
+	// plugin.json lives in .claude/plugins/onebrain/.claude-plugin/plugin.json
+	const pluginJsonPath = join(vaultRoot, '.claude', 'plugins', 'onebrain', '.claude-plugin', 'plugin.json');
 	try {
 		const text = await readFile(pluginJsonPath, 'utf8');
 		const parsed = JSON.parse(text) as Record<string, unknown>;
@@ -385,15 +384,19 @@ async function pinToVault(
 	// Determine cache dir: installed_plugins.json parent → plugins/ → cache/
 	const cacheDir = installedPluginsCacheDir ?? join(dirname(installedPluginsPath), 'cache');
 
+	// If ANY onebrain entry has source: marketplace, Claude Code owns it — skip entirely.
+	const hasMarketplace = onebrainKeys.some((k) => {
+		const entries = plugins[k] as Array<Record<string, unknown>>;
+		return entries.some((e) => e.source === 'marketplace');
+	});
+	if (hasMarketplace) {
+		return { skipped: true };
+	}
+
 	let changed = false;
 	for (const key of onebrainKeys) {
 		const entries = plugins[key] as Array<Record<string, unknown>>;
 		for (const entry of entries) {
-			// Skip marketplace-managed entries
-			if (entry.source === 'marketplace') {
-				continue;
-			}
-
 			const installPath = entry.installPath;
 			if (typeof installPath !== 'string') {
 				continue;
@@ -416,17 +419,6 @@ async function pinToVault(
 			entry.version = pluginVersion;
 			changed = true;
 		}
-	}
-
-	// Check if all entries were marketplace (skipped) — detect by checking changed
-	// Also check if any non-marketplace entry existed
-	const hasNonMarketplace = onebrainKeys.some((k) => {
-		const entries = plugins[k] as Array<Record<string, unknown>>;
-		return entries.some((e) => e.source !== 'marketplace');
-	});
-
-	if (!hasNonMarketplace) {
-		return { skipped: true };
 	}
 
 	if (!changed) {

@@ -321,7 +321,7 @@ export async function runRegisterHooks(
 		const settings = await readSettings(settingsPath);
 		result.hooks = applyHooks(settings);
 
-		hooksSpinner?.stop('Registering hooks...');
+		hooksSpinner?.stop('Hooks registered');
 
 		if (isTTY) {
 			const hookLine = HOOK_EVENTS.map((e) => {
