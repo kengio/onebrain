@@ -10,9 +10,28 @@ import { qmdReindexCommand } from './internal/qmd-reindex.js';
 import { registerHooksCommand } from './internal/register-hooks.js';
 import { resolveSessionToken, sessionInitCommand } from './internal/session-init.js';
 
+// BUILD_VERSION and BUILD_DATE are baked in at compile time via --define.
+// The typeof guard provides a dev-time fallback when running without --define.
+declare const BUILD_VERSION: string;
+declare const BUILD_DATE: string;
+const VERSION = typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : '0.0.0-dev';
+const RELEASE_DATE = typeof BUILD_DATE !== 'undefined' ? BUILD_DATE : 'dev';
+
+const VERSION_STRING = `OneBrain v${VERSION} — released ${RELEASE_DATE}`;
+
+// Handle no-args case before commander parses anything.
+if (process.argv.slice(2).length === 0) {
+	console.log(VERSION_STRING);
+	console.log('Run `onebrain help` for available commands.');
+	process.exit(0);
+}
+
 const program = new Command();
 
-program.name('onebrain').description('OneBrain CLI — personal AI OS for Obsidian').version('2.0.0');
+program
+	.name('onebrain')
+	.description('OneBrain CLI — personal AI OS for Obsidian')
+	.version(VERSION_STRING, '-v, --version');
 
 // ── User-facing commands ──────────────────────────────────────────────────────
 
