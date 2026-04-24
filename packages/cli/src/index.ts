@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
 import { checkpointCommand } from './internal/checkpoint.js';
+import { migrateCommand } from './internal/migrate.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
 import { qmdReindexCommand } from './internal/qmd-reindex.js';
 import { registerHooksCommand } from './internal/register-hooks.js';
@@ -89,6 +90,14 @@ program
 	.option('--vault-dir <path>', 'vault root directory (default: cwd)')
 	.action(async (opts: { vaultDir?: string }) => {
 		await registerHooksCommand(opts.vaultDir);
+	});
+
+program
+	.command('migrate', { hidden: true })
+	.description('Run one-time migration scripts')
+	.argument('<name>', 'migration name: backfill-recapped')
+	.action(async (name: string) => {
+		await migrateCommand(name);
 	});
 
 program.parse(process.argv);
