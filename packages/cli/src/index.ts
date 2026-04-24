@@ -10,8 +10,10 @@ import { qmdReindexCommand } from './internal/qmd-reindex.js';
 import { registerHooksCommand } from './internal/register-hooks.js';
 import { resolveSessionToken, sessionInitCommand } from './internal/session-init.js';
 
-// BUILD_VERSION and BUILD_DATE are baked in at compile time via --define.
-// The typeof guard provides a dev-time fallback when running without --define.
+// BUILD_VERSION and BUILD_DATE are injected as string literals at compile time
+// via `bun build --define BUILD_VERSION='"x.y.z"'`. When running without --define
+// (e.g. `bun run src/index.ts` during development), the identifiers are undeclared
+// at runtime, and the typeof guard falls back to the dev placeholder.
 declare const BUILD_VERSION: string;
 declare const BUILD_DATE: string;
 const VERSION = typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : '0.0.0-dev';
