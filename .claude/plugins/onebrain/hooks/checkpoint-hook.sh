@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# OneBrain — Checkpoint Hook
+# OneBrain Checkpoint Hook
+# What this does: records a context snapshot to your local vault before Claude
+# compresses its memory. No network calls. No data leaves your vault. Pure local
+# file writes to your Obsidian vault's logs/ folder.
+#
 # Usage: checkpoint-hook.sh stop|precompact|postcompact
 #
 # stop        — fires after every response; checkpoints on message/time threshold

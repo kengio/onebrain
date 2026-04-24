@@ -1,6 +1,6 @@
 ---
 latest_version: 2.0.0
-released: 2026-04-22
+released: 2026-04-24
 ---
 
 # Changelog

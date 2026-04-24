@@ -165,7 +165,7 @@ print_install_hint() {
 
 check_deps() {
   local missing=()
-  for cmd in curl tar git; do
+  for cmd in curl tar git unzip; do
     command -v "$cmd" &>/dev/null || missing+=("$cmd")
   done
   if [ ${#missing[@]} -gt 0 ]; then
@@ -596,7 +596,20 @@ main() {
   echo
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
-  local download_url="https://github.com/kengio/onebrain/releases/latest/download/onebrain-plugin-latest.zip"
+  # Resolve the latest release version via GitHub API so we can build versioned asset URLs.
+  local latest_tag
+  latest_tag=$(curl -fsSL \
+    -H "Accept: application/vnd.github.v3+json" \
+    "https://api.github.com/repos/kengio/onebrain/releases/latest" 2>/dev/null \
+    | grep '"tag_name"' \
+    | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' \
+    | head -1 || true)
+  if [ -z "$latest_tag" ]; then
+    print_error "Could not resolve latest release version from GitHub API. Check your internet connection."
+    exit 1
+  fi
+  local version="${latest_tag#v}"
+  local download_url="https://github.com/kengio/onebrain/releases/download/${latest_tag}/onebrain-plugin-v${version}.zip"
   trap cleanup EXIT INT TERM
   _install_tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
 
@@ -609,10 +622,14 @@ main() {
   fi
   spinner_stop "$icon_ok" "Downloaded"
 
-  # Verify SHA256 checksum
-  expected_sha=$(curl -fsSL "${download_url}.sha256" 2>/dev/null || true)
+  # Verify SHA256 checksum (Issue 1b)
+  # sha256_url is derived from download_url so the filenames always match.
+  local sha256_url="${download_url%.zip}.sha256"
+  local expected_sha
+  expected_sha=$(curl -fsSL "$sha256_url" 2>/dev/null | awk '{print $1}' || true)
   if [ -n "$expected_sha" ]; then
-    actual_sha=$(sha256sum "$downloaded_file" 2>/dev/null || shasum -a 256 "$downloaded_file" 2>/dev/null | awk '{print $1}')
+    local actual_sha
+    actual_sha=$(sha256sum "$downloaded_file" 2>/dev/null | awk '{print $1}' || shasum -a 256 "$downloaded_file" 2>/dev/null | awk '{print $1}' || true)
     if [ "$actual_sha" != "$expected_sha" ]; then
       print_error "SHA256 mismatch — download may be corrupted. Expected: $expected_sha Got: $actual_sha"
       exit 1
@@ -642,6 +659,16 @@ main() {
   if ! mv "$extracted_dir" "$vault_path"; then
     print_error "Failed to move the extracted vault to '$vault_path'."
     print_error "Check that '$install_location' is writeable and has enough space."
+    exit 1
+  fi
+
+  # Verify manifest identity (Issue 2)
+  local plugin_manifest="$vault_path/.claude-plugin/plugin.json"
+  local manifest_name
+  manifest_name=$(python3 -c "import json,sys; d=json.load(open('$plugin_manifest')); print(d.get('name',''))" 2>/dev/null || true)
+  if [ -n "$manifest_name" ] && [ "$manifest_name" != "onebrain" ]; then
+    print_error "Manifest id mismatch — expected 'onebrain', got '$manifest_name'. Aborting."
+    rm -rf "$vault_path"
     exit 1
   fi
 
