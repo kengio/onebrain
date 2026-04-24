@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
+import { sessionInitCommand } from './internal/session-init.js';
+import { orphanScanCommand } from './internal/orphan-scan.js';
 
 const program = new Command();
 
@@ -43,8 +45,9 @@ program
 program
   .command('session-init', { hidden: true })
   .description('Emit session token and datetime (called by Claude Code hook)')
-  .action(() => {
-    console.log('session-init: not yet implemented');
+  .action(async () => {
+    const vaultRoot = process.cwd();
+    await sessionInitCommand(vaultRoot);
   });
 
 program
@@ -52,8 +55,8 @@ program
   .description('Scan for orphaned checkpoint files in logs folder')
   .argument('<logs_folder>', 'path to logs folder')
   .argument('<session_token>', 'current session token to exclude')
-  .action((_logsFolder: string, _sessionToken: string) => {
-    console.log('orphan-scan: not yet implemented');
+  .action(async (logsFolder: string, sessionToken: string) => {
+    await orphanScanCommand(logsFolder, sessionToken);
   });
 
 program
