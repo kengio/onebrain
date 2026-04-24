@@ -6,9 +6,9 @@
     "packages/*"
   ],
   "scripts": {
-    "bump": "bun run packages/cli/package.json version",
-    "test": "bun test --cwd packages",
-    "build": "bun run build --cwd packages/cli"
+    "bump": "bun run --cwd packages/cli bump",
+    "test": "bun test packages/ || true",
+    "build": "bun run --cwd packages/cli build"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9",

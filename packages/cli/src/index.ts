@@ -41,51 +41,45 @@ program
 // ── Internal hidden commands (not shown in --help) ────────────────────────────
 
 program
-  .command('session-init')
+  .command('session-init', { hidden: true })
   .description('Emit session token and datetime (called by Claude Code hook)')
-  .hideHelp()
   .action(() => {
     console.log('session-init: not yet implemented');
   });
 
 program
-  .command('orphan-scan')
+  .command('orphan-scan', { hidden: true })
   .description('Scan for orphaned checkpoint files in logs folder')
   .argument('<logs_folder>', 'path to logs folder')
   .argument('<session_token>', 'current session token to exclude')
-  .hideHelp()
   .action((_logsFolder: string, _sessionToken: string) => {
     console.log('orphan-scan: not yet implemented');
   });
 
 program
-  .command('checkpoint')
+  .command('checkpoint', { hidden: true })
   .description('Write a checkpoint file for the current session')
-  .hideHelp()
   .action(() => {
     console.log('checkpoint: not yet implemented');
   });
 
 program
-  .command('qmd-reindex')
+  .command('qmd-reindex', { hidden: true })
   .description('Trigger qmd index rebuild')
-  .hideHelp()
   .action(() => {
     console.log('qmd-reindex: not yet implemented');
   });
 
 program
-  .command('vault-sync')
+  .command('vault-sync', { hidden: true })
   .description('Sync vault state to agent context')
-  .hideHelp()
   .action(() => {
     console.log('vault-sync: not yet implemented');
   });
 
 program
-  .command('register-hooks')
+  .command('register-hooks', { hidden: true })
   .description('Install Claude Code hooks into settings.json')
-  .hideHelp()
   .action(() => {
     console.log('register-hooks: not yet implemented');
   });
