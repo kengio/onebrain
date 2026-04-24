@@ -59,6 +59,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	await rm(tempDir, { recursive: true, force: true });
+	process.env.CLAUDE_CODE_HARNESS = undefined;
 });
 
 // ---------------------------------------------------------------------------
@@ -82,7 +83,7 @@ describe('runInit', () => {
 
 		expect(result.ok).toBe(true);
 
-		// All 7 standard folders should exist
+		// All 8 standard folders should exist
 		const folders = [
 			'00-inbox',
 			'01-projects',
@@ -265,5 +266,48 @@ describe('runInit', () => {
 		expect(result.ok).toBe(true);
 		// 9 total (8 standard + imports), 2 already exist → 7 created
 		expect(result.foldersCreated).toBe(7);
+	});
+
+	it('non-TTY output starts with OneBrain Init header', async () => {
+		const lines: string[] = [];
+		const originalWrite = process.stdout.write.bind(process.stdout);
+		process.stdout.write = (chunk: string | Uint8Array, ...args: unknown[]) => {
+			if (typeof chunk === 'string') lines.push(chunk);
+			return originalWrite(chunk, ...(args as Parameters<typeof originalWrite>).slice(1));
+		};
+
+		try {
+			const opts: InitOptions = {
+				vaultDir: tempDir,
+				isTTY: false,
+				vaultSyncFn: noopVaultSync,
+				registerHooksFn: noopRegisterHooks,
+			};
+			const result = await runInit(opts);
+			expect(result.ok).toBe(true);
+		} finally {
+			process.stdout.write = originalWrite;
+		}
+
+		const fullOutput = lines.join('');
+		expect(fullOutput).toMatch(/^OneBrain Init\n/);
+	});
+
+	it('harness auto-detect: CLAUDE_CODE_HARNESS env → uses env value', async () => {
+		process.env.CLAUDE_CODE_HARNESS = 'gemini';
+
+		const opts: InitOptions = {
+			vaultDir: tempDir,
+			vaultSyncFn: noopVaultSync,
+			registerHooksFn: noopRegisterHooks,
+		};
+
+		const result = await runInit(opts);
+
+		expect(result.ok).toBe(true);
+		expect(result.harness).toBe('gemini');
+		const vaultYml = await readVaultYml(tempDir);
+		const runtime = vaultYml.runtime as Record<string, unknown> | undefined;
+		expect(runtime?.harness).toBe('gemini');
 	});
 });

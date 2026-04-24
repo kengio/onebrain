@@ -15,9 +15,9 @@
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { confirm, intro, log, outro } from '@clack/prompts';
 import { stringify as stringifyYaml } from 'yaml';
 
@@ -268,10 +268,7 @@ async function registerPlugin(
 	// Write atomically
 	const tmpPath = `${installedPluginsPath}.tmp`;
 	try {
-		const { mkdir: mkdirSync } = await import('node:fs/promises');
-		const { dirname } = await import('node:path');
-		await mkdirSync(dirname(installedPluginsPath), { recursive: true });
-		const { rename } = await import('node:fs/promises');
+		await mkdir(dirname(installedPluginsPath), { recursive: true });
 		await writeFile(tmpPath, JSON.stringify(data, null, 4), 'utf8');
 		await rename(tmpPath, installedPluginsPath);
 	} catch (err) {
@@ -281,17 +278,6 @@ async function registerPlugin(
 	}
 
 	return { skipped: false };
-}
-
-// ---------------------------------------------------------------------------
-// Hook result type (from register-hooks)
-// ---------------------------------------------------------------------------
-
-type HookStatus = 'added' | 'migrated' | 'ok';
-
-interface RegisterHooksResult {
-	ok: boolean;
-	hooks: Record<string, HookStatus>;
 }
 
 // ---------------------------------------------------------------------------
@@ -366,7 +352,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
 		// TTY: prompt user
 		if (isTTY) {
-			if (isTTY) intro('OneBrain Init');
+			intro('OneBrain Init');
 			const overwrite = await confirm({
 				message: 'vault.yml already exists. Overwrite?',
 			});
@@ -382,6 +368,11 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 	} else if (isTTY && force) {
 		intro('OneBrain Init');
 		log.message('');
+	}
+
+	// Non-TTY header (TTY uses intro() above)
+	if (!isTTY) {
+		writeLine('OneBrain Init');
 	}
 
 	// ── Step 2: Create standard folders ───────────────────────────────────────
@@ -423,20 +414,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
 	// ── Step 6: Register hooks ─────────────────────────────────────────────────
 
-	let hooksLine = 'ok';
+	const hooksLine = 'ok';
 	try {
-		// We need hook status for the output line. For non-injectable path,
-		// call runRegisterHooks directly; for injected, call it and get no detail.
-		if (opts.registerHooksFn) {
-			await registerHooksFn(vaultDir);
-		} else {
-			const { runRegisterHooks } = await import('../internal/register-hooks.js');
-			const hooksResult: RegisterHooksResult = await runRegisterHooks({ vaultDir });
-			if (hooksResult.ok && hooksResult.hooks) {
-				const events = ['Stop', 'PreCompact', 'PostCompact', 'SessionStart'];
-				hooksLine = events.map((e) => `${e}: ✓`).join('  ');
-			}
-		}
+		await registerHooksFn(vaultDir);
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
 		process.stderr.write(`init: register-hooks warning: ${msg}\n`);
