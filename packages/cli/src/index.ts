@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { checkpointCommand } from './internal/checkpoint.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
+import { qmdReindexCommand } from './internal/qmd-reindex.js';
 import { resolveSessionToken, sessionInitCommand } from './internal/session-init.js';
 
 const program = new Command();
@@ -69,8 +70,9 @@ program
 program
 	.command('qmd-reindex', { hidden: true })
 	.description('Trigger qmd index rebuild')
-	.action(() => {
-		console.log('qmd-reindex: not yet implemented');
+	.action(async () => {
+		const vaultRoot = process.cwd();
+		await qmdReindexCommand(vaultRoot);
 	});
 
 program
