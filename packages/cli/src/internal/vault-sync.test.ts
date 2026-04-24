@@ -7,7 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -64,8 +64,8 @@ function buildMockTarball(opts: TarballOpts = {}): Buffer {
 	};
 
 	// Write files to a temp staging directory
-	const stageDir = `${require('node:os').tmpdir()}/onebrain-stage-${process.pid}`;
-	require('node:fs').mkdirSync(stageDir, { recursive: true });
+	const stageDir = `${tmpdir()}/onebrain-stage-${process.pid}`;
+	mkdirSync(stageDir, { recursive: true });
 
 	for (const [relPath, content] of Object.entries(files)) {
 		const fullPath = join(stageDir, relPath);
@@ -79,8 +79,8 @@ function buildMockTarball(opts: TarballOpts = {}): Buffer {
 		throw new Error(`tar failed: ${r.stderr}`);
 	}
 
-	const buf = require('node:fs').readFileSync(tarPath);
-	require('node:fs').rmSync(stageDir, { recursive: true, force: true });
+	const buf = readFileSync(tarPath);
+	rmSync(stageDir, { recursive: true, force: true });
 	return buf as Buffer;
 }
 
@@ -342,5 +342,20 @@ describe('runVaultSync', () => {
 		});
 
 		expect(result.ok).toBe(true);
+	});
+
+	// ── Test 10: fetch failure → result.ok is false ────────────────────────
+
+	it('download failure → result.ok is false', async () => {
+		const vaultDir2 = await mkdtemp(join(tmpdir(), 'vs-fail-'));
+		await writeFile(join(vaultDir2, 'vault.yml'), 'update_channel: stable\n');
+
+		const result = await runVaultSync(vaultDir2, {
+			fetchFn: async () => new Response('Not Found', { status: 404 }),
+		});
+
+		expect(result.ok).toBe(false);
+
+		await rm(vaultDir2, { recursive: true });
 	});
 });

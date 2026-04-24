@@ -6,7 +6,7 @@
  * Steps (in order):
  *   1. Download tarball from GitHub
  *   2. Sync plugin files  (critical — exit 1 on failure)
- *   3. Copy root docs     (critical — exit 1 on failure)
+ *   3. Copy root docs     (non-fatal — docs are optional, skip silently on error)
  *   4. Merge harness files (critical — exit 1 on failure)
  *   5. Write version to vault.yml (critical)
  *   6. Pin to vault       (non-fatal — log stderr, continue)
@@ -17,8 +17,17 @@
  * Non-TTY: plain text prefixed with "vault-sync:"
  */
 
-import { mkdtemp, readFile, readdir, rm, stat, unlink, writeFile } from 'node:fs/promises';
-import { mkdir } from 'node:fs/promises';
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	rename,
+	rm,
+	stat,
+	unlink,
+	writeFile,
+} from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { intro, log, outro, spinner } from '@clack/prompts';
@@ -394,7 +403,7 @@ async function pinToVault(
 			let inCache = false;
 			try {
 				// resolves any symlinks before comparison (normalize)
-				inCache = installPath.startsWith(cacheDir);
+				inCache = installPath.startsWith(`${cacheDir}/`) || installPath === cacheDir;
 			} catch {
 				inCache = false;
 			}
@@ -428,7 +437,6 @@ async function pinToVault(
 	const tmpPath = `${installedPluginsPath}.tmp`;
 	await writeFile(tmpPath, JSON.stringify(data, null, 4), 'utf8');
 	// rename is atomic on POSIX
-	const { rename } = await import('node:fs/promises');
 	await rename(tmpPath, installedPluginsPath);
 
 	return { skipped: false };
@@ -643,15 +651,8 @@ export async function runVaultSync(
 			`${result.filesAdded} file${result.filesAdded !== 1 ? 's' : ''} synced, ${result.filesRemoved} removed`,
 		);
 
-		// ── Step 3: Copy root docs ────────────────────────────────────────────
-		try {
-			await copyRootDocs(extractedDir, vaultRoot);
-		} catch (err) {
-			const msg = err instanceof Error ? err.message : String(err);
-			result.error = msg;
-			process.stderr.write(`vault-sync: root docs copy failed: ${msg}\n`);
-			return result;
-		}
+		// ── Step 3: Copy root docs (non-fatal) ───────────────────────────────
+		await copyRootDocs(extractedDir, vaultRoot);
 
 		// ── Step 4: Merge harness files ───────────────────────────────────────
 		startSpinner('Updating harness files...');
