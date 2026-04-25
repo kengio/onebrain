@@ -358,6 +358,11 @@ export async function handlePrecompact(
     return; // no-op
   }
 
+  // Double-compact guard: if a stub is already pending postcompact will fill it
+  if (state.pending_stub) {
+    return; // no-op — prevents orphaning the existing stub
+  }
+
   const date = formatDate(now);
 
   // Determine logs folder from vault.yml (fallback to '07-logs')

@@ -618,6 +618,29 @@ describe('handlePrecompact', () => {
     expect(state.pending_stub).toMatch(/-checkpoint-04\.md$/);
   });
 
+  it('double-compact guard: pending_stub already set → no-op, existing stub preserved', async () => {
+    const now = 1700001000;
+    writeState(
+      TOKEN,
+      {
+        count: 0,
+        last_ts: now - 600,
+        last_stop_nn: '01',
+        pending_stub: '2023-11-14-41928-checkpoint-02.md',
+      },
+      tmpDir,
+    );
+
+    const cap = captureStdout();
+    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    expect(out).toBe('');
+    // State unchanged — pending_stub still points to original stub
+    const state = readState(TOKEN, tmpDir);
+    expect(state.pending_stub).toBe('2023-11-14-41928-checkpoint-02.md');
+  });
+
   it('no state file (last_ts=0) → recency check fails → writes stub for new session', async () => {
     // No state file → readState returns last_ts=0 → recency guard (last_ts > 0) is false
     // → precompact proceeds and writes a stub (correct: compact on brand-new session)

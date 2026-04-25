@@ -29,7 +29,7 @@ while IFS= read -r -d '' file; do
     # Insert recapped: after the date: line (awk: portable across BSD/GNU; no blank-line issue)
     if grep -q "^date:" "$file"; then
         tmp=$(mktemp)
-        awk -v recap="recapped: ${date_val}" '/^date:/{print; print recap; next}1' "$file" > "$tmp" && mv "$tmp" "$file"
+        awk -v recap="recapped: ${date_val}" 'done{print;next} /^date:/{print;print recap;done=1;next}1' "$file" > "$tmp" && mv "$tmp" "$file"
         count=$((count + 1))
     fi
 done < <(find "$logs" -name "*-session-*.md" -print0 2>/dev/null)
