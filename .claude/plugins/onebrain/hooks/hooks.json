@@ -1,5 +1,13 @@
 {
   "SessionStart": [
-    { "matcher": "", "hooks": [{ "type": "command", "command": "onebrain session-init" }] }
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "onebrain session-init"
+        }
+      ]
+    }
   ]
 }

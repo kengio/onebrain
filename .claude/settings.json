@@ -1,6 +1,15 @@
 {
   "permissions": {
-    "allow": ["Read", "Write", "Edit", "Glob", "Grep", "Bash(git:*)", "WebFetch", "WebSearch"]
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Bash(git:*)",
+      "WebFetch",
+      "WebSearch"
+    ]
   },
   "enabledPlugins": {
     "onebrain@onebrain": true
