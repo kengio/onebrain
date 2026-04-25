@@ -58,9 +58,6 @@ jobs:
           - target: bun-windows-x64
             output: onebrain-windows-x64
             ext: ".exe"
-          - target: bun-windows-arm64
-            output: onebrain-windows-arm64
-            ext: ".exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -209,7 +206,7 @@ jobs:
             ASSETS+=("onebrain-${target}")
             ASSETS+=("onebrain-${target}.sha256")
           done
-          for target in windows-x64 windows-arm64; do
+          for target in windows-x64; do
             ASSETS+=("onebrain-${target}.exe")
             ASSETS+=("onebrain-${target}.sha256")
           done
