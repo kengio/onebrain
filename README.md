@@ -58,6 +58,7 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 | 🪄 | **Smart Memory Review** | `/memory-review` lets you interactively prune, update, or archive memory entries one by one |
 | 🔒 | **Concurrent-session Safe** | Each session generates an isolated 6-char token — multiple parallel sessions never mix checkpoints |
 | 📱 | **Mobile Access** | Send instructions and receive briefings from anywhere via Telegram |
+| ⚙️ | **CLI Binary** | `onebrain` binary handles checkpoints, session init, doctor, vault-sync, and updates — no Python or Node.js required |
 
 ---
 
@@ -163,7 +164,7 @@ OneBrain has three automatic behaviors that run without you doing anything:
 
 **The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
 
-> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook). Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
+> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `bun install -g @onebrain/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
 
 ---
 
@@ -185,6 +186,18 @@ irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
 
 > Or clone manually: `git clone https://github.com/kengio/onebrain.git`
 
+**Install the CLI binary** (required for auto-checkpoints, `/doctor`, and `/update`):
+
+```bash
+# with bun (recommended)
+bun install -g @onebrain/cli
+
+# or with npm
+npm install -g @onebrain/cli
+```
+
+Verify: `onebrain --version`
+
 1. **Open in Obsidian** — Open folder as vault, install community plugins when prompted
 2. **Start your agent** — Open the terminal plugin, run `claude` or `gemini`
 3. **Run `/onboarding`** — 2 minutes to personalize your vault and AI assistant
@@ -200,7 +213,11 @@ Run from within your existing vault in Claude Code:
 /plugin install onebrain@onebrain
 ```
 
-Then run `/onboarding`.
+Then install the CLI binary and run `/onboarding`:
+
+```bash
+bun install -g @onebrain/cli   # or: npm install -g @onebrain/cli
+```
 
 ---
 
@@ -373,7 +390,7 @@ Tasks live inline in your notes — the Tasks plugin surfaces them across the va
 
 Verify with `git --version` before running the installer.
 
-**Recommended for auto-checkpoints:** [Python](https://www.python.org/downloads/) or [Node.js](https://nodejs.org) — used by the checkpoint hook to build JSON. The hook falls back to a pure-bash implementation if neither is found, but having one in your PATH is more reliable. On Windows, install Python from python.org and ensure "Add to PATH" is checked during setup.
+**Required for auto-checkpoints, `/doctor`, and `/update`:** [bun](https://bun.sh) or [npm](https://nodejs.org) — used to install the `onebrain` CLI binary (`bun install -g @onebrain/cli`). The binary handles checkpoints, session init, vault-sync, and doctor without requiring Python or Node.js in your PATH.
 
 **Windows:** Git for Windows (above) includes Git Bash, which provides the `bash` environment required to run all hooks.
 
