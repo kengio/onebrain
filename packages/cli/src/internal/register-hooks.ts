@@ -222,8 +222,12 @@ async function registerGeminiHooks(vaultRoot: string): Promise<void> {
     const settings = JSON.parse(text) as SettingsJson;
     applyHooks(settings);
     await writeSettings(geminiSettingsPath, settings);
-  } catch {
-    // Non-fatal: file doesn't exist or write failed
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      process.stderr.write(
+        `register-hooks: gemini warning: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+    }
   }
 }
 

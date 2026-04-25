@@ -3,9 +3,9 @@
  *
  * Steps:
  *   1. Detect existing vault.yml  (--force, non-TTY exit-1, TTY prompt)
- *   2. Create standard folders    (7 + inbox/imports)
+ *   2. Create standard folders    (8 + inbox/imports)
  *   3. Write vault.yml            (with harness auto-detect)
- *   4. Download plugin files      (skip if .claude/plugins/onebrain/plugin.json exists)
+ *   4. Download plugin files      (skip if .claude/plugins/onebrain/.claude-plugin/plugin.json exists)
  *   5. Register plugin            (skip if source:marketplace entry exists)
  *   6. Run register-hooks
  *
@@ -163,7 +163,7 @@ async function writeVaultYml(vaultDir: string, harness: string): Promise<void> {
 async function downloadPluginFiles(
   vaultDir: string,
   vaultSyncFn: (vaultDir: string, opts: Record<string, unknown>) => Promise<void>,
-): Promise<{ skipped: boolean; driftWarning?: string }> {
+): Promise<{ skipped: boolean; driftWarning?: string; failed?: boolean }> {
   const pluginJsonPath = join(
     vaultDir,
     '.claude',
@@ -198,6 +198,7 @@ async function downloadPluginFiles(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`init: vault-sync warning: ${msg}\n`);
+    return { skipped: false, failed: true };
   }
 
   return { skipped: false };
@@ -400,10 +401,16 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   // ── Step 4: Download plugin files ─────────────────────────────────────────
 
-  const { skipped: pluginSkipped, driftWarning } = await downloadPluginFiles(vaultDir, vaultSyncFn);
+  const {
+    skipped: pluginSkipped,
+    driftWarning,
+    failed: pluginDownloadFailed,
+  } = await downloadPluginFiles(vaultDir, vaultSyncFn);
   result.pluginSkipped = pluginSkipped;
 
-  if (driftWarning) {
+  if (pluginDownloadFailed) {
+    noteInfo('vault-sync failed — run onebrain update to download plugin files');
+  } else if (driftWarning) {
     noteInfo(driftWarning);
   }
 
@@ -421,14 +428,16 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   // ── Step 6: Register hooks ─────────────────────────────────────────────────
 
-  const hooksLine = 'ok';
+  let hooksOk = true;
   try {
     await registerHooksFn(vaultDir);
   } catch (err) {
+    hooksOk = false;
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`init: register-hooks warning: ${msg}\n`);
   }
 
+  const hooksLine = hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update';
   if (isTTY) {
     log.step(`Registering hooks\n│  ${hooksLine}`);
   } else {

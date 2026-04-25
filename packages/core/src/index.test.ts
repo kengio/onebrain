@@ -308,8 +308,7 @@ describe('checkHarnessBinary', () => {
     expect(result.status).toBe('ok');
   });
 
-  it('returns ok when claude-code binary is found', async () => {
-    // "sh" is always in PATH — use it as a mock stand-in for testing binary detection
+  it('whichFn returns null with claude-code harness → status: warn, hint defined', async () => {
     const config: VaultConfig = {
       folders: {
         inbox: '00-inbox',
@@ -325,20 +324,14 @@ describe('checkHarnessBinary', () => {
       update_channel: 'stable',
       runtime: { harness: 'claude-code' },
     };
-    // We can't guarantee "claude" is installed in the test env, so we just
-    // check that the result is a valid DoctorResult with the right shape.
-    const result = await checkHarnessBinary(config);
+    const result = await checkHarnessBinary(config, () => null);
 
-    expect(['ok', 'warn']).toContain(result.status);
+    expect(result.status).toBe('warn');
     expect(result.check).toBe('runtime.harness');
-    if (result.status === 'warn') {
-      expect(result.hint).toBeDefined();
-    }
+    expect(result.hint).toBeDefined();
   });
 
-  it('returns warn when gemini binary is not found (fake harness name forces miss)', async () => {
-    // We patch by creating a config that requests an unlikely binary.
-    // Since "gemini" may or may not be installed, we test the shape only.
+  it('whichFn returns path with claude-code harness → status: ok, message contains found', async () => {
     const config: VaultConfig = {
       folders: {
         inbox: '00-inbox',
@@ -352,12 +345,13 @@ describe('checkHarnessBinary', () => {
       },
       checkpoint: { messages: 15, minutes: 30 },
       update_channel: 'stable',
-      runtime: { harness: 'gemini' },
+      runtime: { harness: 'claude-code' },
     };
-    const result = await checkHarnessBinary(config);
+    const result = await checkHarnessBinary(config, () => '/usr/local/bin/claude');
 
-    expect(['ok', 'warn']).toContain(result.status);
+    expect(result.status).toBe('ok');
     expect(result.check).toBe('runtime.harness');
+    expect(result.message).toContain('found');
   });
 });
 
@@ -443,7 +437,7 @@ describe('checkVersionDrift', () => {
   };
 
   it('returns ok when both versions match', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain');
+    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
     await mkdir(pluginDir, { recursive: true });
     await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.9.0' }), 'utf8');
     const config = { ...baseConfig, onebrain_version: '1.9.0' };
@@ -465,7 +459,7 @@ describe('checkVersionDrift', () => {
   });
 
   it('returns warn when versions differ', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain');
+    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
     await mkdir(pluginDir, { recursive: true });
     await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.8.0' }), 'utf8');
     const config = { ...baseConfig, onebrain_version: '1.9.0' };
@@ -476,6 +470,29 @@ describe('checkVersionDrift', () => {
     expect(result.message).toContain('1.9.0');
     expect(result.message).toContain('1.8.0');
     expect(result.hint).toContain('onebrain update');
+  });
+
+  it('binaryVersion param: checkVersionDrift(dir, config, "2.0.0") with plugin at 1.9.0 → status: warn, message contains binary v2.0.0', async () => {
+    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
+    await mkdir(pluginDir, { recursive: true });
+    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.9.0' }), 'utf8');
+
+    const result = await checkVersionDrift(dir, baseConfig, '2.0.0');
+
+    expect(result.status).toBe('warn');
+    expect(result.message).toContain('binary v2.0.0');
+  });
+
+  it('plugin.json with no version field → status: ok, message contains skip', async () => {
+    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
+    await mkdir(pluginDir, { recursive: true });
+    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ id: 'onebrain' }), 'utf8');
+    const config = { ...baseConfig, onebrain_version: '1.9.0' };
+
+    const result = await checkVersionDrift(dir, config);
+
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('skip');
   });
 });
 

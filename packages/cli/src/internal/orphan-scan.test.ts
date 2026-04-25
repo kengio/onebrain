@@ -209,6 +209,42 @@ describe('runOrphanScan', () => {
     expect(result).toEqual({ orphan_count: 1 });
   });
 
+  it('creates a checkpoint file with today\'s actual date → orphan_count: 0 (today boundary skipped)', async () => {
+    const { thisYear, thisMonth } = getMonthParts();
+    const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
+    const todayStr = `${thisYear}-${thisMonth}-${String(new Date().getDate()).padStart(2, '0')}`;
+    const fname = checkpointName(todayStr, 'todaytoken', 1);
+    await writeFile(join(monthDir, fname), checkpointFrontmatter(false), 'utf8');
+    const result = await runOrphanScan(logsDir, 'current99');
+    // Today's checkpoints must be skipped — not orphans yet
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('today\'s file skipped but a past date in same month still counted', async () => {
+    const { thisYear, thisMonth } = getMonthParts();
+    const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
+    const todayStr = `${thisYear}-${thisMonth}-${String(new Date().getDate()).padStart(2, '0')}`;
+    // Today: should be skipped
+    const todayFname = checkpointName(todayStr, 'todaytoken', 1);
+    await writeFile(join(monthDir, todayFname), checkpointFrontmatter(false), 'utf8');
+
+    // Past date in same month: day 01 (safe to use if today isn't day 01)
+    const todayDay = new Date().getDate();
+    if (todayDay !== 1) {
+      const pastDate = `${thisYear}-${thisMonth}-01`;
+      const pastFname = checkpointName(pastDate, 'pasttoken', 1);
+      await writeFile(join(monthDir, pastFname), checkpointFrontmatter(false), 'utf8');
+
+      const result = await runOrphanScan(logsDir, 'current99');
+      // today skipped, past counted
+      expect(result).toEqual({ orphan_count: 1 });
+    } else {
+      // If today IS day 01, just verify today is skipped
+      const result = await runOrphanScan(logsDir, 'current99');
+      expect(result).toEqual({ orphan_count: 0 });
+    }
+  });
+
   it('combines orphans from both months in total count', async () => {
     const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts();
 

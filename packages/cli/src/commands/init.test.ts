@@ -1,5 +1,5 @@
 /**
- * Integration tests for `onebrain init`
+ * Unit tests for `onebrain init`
  *
  * Tests run against a temp vault dir. Process TTY is always false in test
  * (piped stdout), so all non-TTY paths are exercised directly.
@@ -59,7 +59,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await rm(tempDir, { recursive: true, force: true });
-  process.env.CLAUDE_CODE_HARNESS = undefined;
+  delete process.env.CLAUDE_CODE_HARNESS;
 });
 
 // ---------------------------------------------------------------------------

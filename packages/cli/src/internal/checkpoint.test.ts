@@ -392,6 +392,41 @@ describe('handleStop', () => {
     expect(state.count).toBe(1);
   });
 
+  it('last_ts=0 + count=4 (below threshold=5 after increment to 5) → decision:block, last_ts updated, last_stop_nn incremented', () => {
+    // messagesThreshold is 5 from vault.yml; count=4 → increment to 5 = threshold → emit
+    const now = 1700000800;
+    writeState(TOKEN, { count: 4, last_ts: 0, last_stop_nn: '02' }, tmpDir);
+
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.decision).toBe('block');
+
+    const state = readState(TOKEN, tmpDir);
+    // last_ts must have been updated (was 0, now should be `now`)
+    expect(state.last_ts).toBe(now);
+    expect(state.last_stop_nn).toBe('03');
+  });
+
+  it('last_ts=0 + count=0 → SKIP_WINDOW does NOT fire (guard needs last_ts > 0), out is empty, count increments to 1, last_ts stays 0', () => {
+    // last_ts=0 → the SKIP_WINDOW guard (last_ts > 0 && elapsed < 60) does not fire
+    // count=0 increments to 1, below MIN_ACTIVITY=2 → no emit
+    const now = 1700001500;
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
+
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    expect(out).toBe('');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.count).toBe(1);
+    // last_ts stays 0 when threshold not met
+    expect(state.last_ts).toBe(0);
+  });
+
   it('falls back to defaults when vault.yml is missing (messages=15, minutes=30)', () => {
     // vaultDir has no vault.yml — use separate dir
     const emptyVault = tmpDir; // no vault.yml

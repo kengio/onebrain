@@ -6,7 +6,7 @@
  *
  * Exit behavior:
  * - Always exits 0 (fire-and-forget)
- * - Errors logged to stderr only
+ * - Errors written to stderr, exit code always 0
  * - No stdout output
  */
 
@@ -38,8 +38,7 @@ export async function qmdReindexCommand(vaultRoot: string): Promise<void> {
 
     // Fire-and-forget: do NOT call proc.exited or await anything
     // Process runs in the background
-  } catch {
-    // Silently ignore all errors (config load fail, qmd not in PATH, etc.)
-    // Errors go to stderr (if any) but don't block exit
+  } catch (err) {
+    process.stderr.write(`qmd-reindex: ${err instanceof Error ? err.message : String(err)}\n`);
   }
 }

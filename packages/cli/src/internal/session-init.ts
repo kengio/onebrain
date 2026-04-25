@@ -70,7 +70,7 @@ export function formatDatetime(date: Date): string {
 /**
  * Resolve session token using priority order:
  * 1. WT_SESSION env var (strip non-alphanumeric, first 8 chars)
- * 2. PPID env var if > 1
+ * 2. process.ppid if > 1
  * 3. PowerShell parent PID (Windows fallback — not tested on Mac)
  * 4. Day-scoped cache file: $tmpDir/onebrain-day-YYYYMMDD.token
  */

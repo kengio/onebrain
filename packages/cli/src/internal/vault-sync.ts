@@ -48,6 +48,8 @@ export interface VaultSyncOptions {
   installedPluginsCacheDir?: string;
   /** Override TTY detection for tests — defaults to process.stdout.isTTY. */
   isTTY?: boolean;
+  /** Injectable unlink for tests — defaults to node:fs/promises unlink. */
+  unlinkFn?: typeof unlink;
 }
 
 export interface VaultSyncResult {
@@ -82,7 +84,13 @@ async function downloadTarball(
   const url = `https://api.github.com/repos/kengio/onebrain/tarball/${branch}`;
   const response = await fetchFn(url);
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status} downloading tarball from ${url}`);
+    const hints: Partial<Record<number, string>> = {
+      403: ' — check repo permissions or GITHUB_TOKEN',
+      404: ' — repo or branch not found',
+      429: ' — rate limited, wait and retry',
+    };
+    const hint = hints[response.status] ?? '';
+    throw new Error(`HTTP ${response.status} downloading tarball from ${url}${hint}`);
   }
   const tarball = await response.arrayBuffer();
   const tmpDir = await mkdtemp(join(tmpdir(), 'onebrain-sync-'));
@@ -159,6 +167,7 @@ async function listFilesRecursive(dir: string): Promise<string[]> {
 async function syncPluginFiles(
   extractedDir: string,
   vaultRoot: string,
+  unlinkFn: typeof unlink = unlink,
 ): Promise<{ filesAdded: number; filesRemoved: number }> {
   const sourcePlugin = join(extractedDir, '.claude', 'plugins', 'onebrain');
   const destPlugin = join(vaultRoot, '.claude', 'plugins', 'onebrain');
@@ -192,17 +201,19 @@ async function syncPluginFiles(
     filesAdded++;
   }
 
-  // Remove stale files
+  // Remove stale files — track actual deletions only
+  let filesRemoved = 0;
   for (const rel of staleRels) {
     const destPath = join(destPlugin, rel);
     try {
-      await unlink(destPath);
+      await unlinkFn(destPath);
+      filesRemoved++;
     } catch {
       // Non-fatal within this step — log nothing (best-effort cleanup)
     }
   }
 
-  return { filesAdded, filesRemoved: staleRels.length };
+  return { filesAdded, filesRemoved };
 }
 
 // ---------------------------------------------------------------------------
@@ -538,6 +549,7 @@ export async function runVaultSync(
 ): Promise<VaultSyncResult> {
   const fetchFn = opts.fetchFn ?? globalThis.fetch;
   const isTTY = opts.isTTY ?? process.stdout.isTTY;
+  const unlinkFn = opts.unlinkFn ?? unlink;
 
   // Load vault.yml for config
   let updateChannel = 'stable';
@@ -632,7 +644,7 @@ export async function runVaultSync(
     // ── Step 2: Sync plugin files ─────────────────────────────────────────
     startSpinner('Syncing plugin files...');
     try {
-      const { filesAdded, filesRemoved } = await syncPluginFiles(extractedDir, vaultRoot);
+      const { filesAdded, filesRemoved } = await syncPluginFiles(extractedDir, vaultRoot, unlinkFn);
       result.filesAdded = filesAdded;
       result.filesRemoved = filesRemoved;
     } catch (err) {

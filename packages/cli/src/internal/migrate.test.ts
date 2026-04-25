@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { chmodSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -223,6 +224,63 @@ describe('runBackfillRecapped', () => {
     expect(content).toContain('date: 2026-04-20');
     expect(content).toContain('foo: bar');
     expect(content).toContain(`recapped: ${today}`);
+  });
+
+  it('writeFile failure (EACCES via chmodSync): skipped === 1, backfilled === 1 (other file writable)', async () => {
+    const monthDir = await makeMonthDir(logsDir, '2026', '04');
+
+    // File 1: readable, writable — will be backfilled
+    const file1 = join(monthDir, '2026-04-20-session-01.md');
+    await writeSessionLog(monthDir, '2026-04-20-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-20',
+    });
+
+    // File 2: readable, but write-protected — will cause EACCES on writeFile
+    const file2 = join(monthDir, '2026-04-21-session-01.md');
+    await writeSessionLog(monthDir, '2026-04-21-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-21',
+    });
+    chmodSync(file2, 0o444);
+
+    try {
+      const result = await runBackfillRecapped(logsDir);
+      // One file successfully backfilled, one failed due to EACCES
+      expect(result.backfilled).toBe(1);
+      expect(result.skipped).toBe(1);
+    } finally {
+      // Restore permissions so cleanup works
+      chmodSync(file2, 0o644);
+    }
+  });
+
+  it('all files read-only: backfilled === 0, skipped === 2', async () => {
+    const monthDir = await makeMonthDir(logsDir, '2026', '04');
+
+    const file1 = join(monthDir, '2026-04-20-session-01.md');
+    const file2 = join(monthDir, '2026-04-21-session-01.md');
+
+    await writeSessionLog(monthDir, '2026-04-20-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-20',
+    });
+    await writeSessionLog(monthDir, '2026-04-21-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-21',
+    });
+
+    chmodSync(file1, 0o444);
+    chmodSync(file2, 0o444);
+
+    try {
+      const result = await runBackfillRecapped(logsDir);
+      expect(result.backfilled).toBe(0);
+      expect(result.skipped).toBe(2);
+    } finally {
+      chmodSync(file1, 0o644);
+      chmodSync(file2, 0o644);
+    }
   });
 
   it('handles idempotent re-runs: only first run backfills', async () => {

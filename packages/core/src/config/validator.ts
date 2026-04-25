@@ -117,7 +117,10 @@ const HARNESS_INSTALL_HINT: Record<string, string> = {
  * Check that the configured harness binary is available in PATH.
  * For 'direct' or absent runtime, always returns ok.
  */
-export async function checkHarnessBinary(config: VaultConfig): Promise<DoctorResult> {
+export async function checkHarnessBinary(
+  config: VaultConfig,
+  whichFn: (cmd: string) => string | null = (cmd) => Bun.which(cmd),
+): Promise<DoctorResult> {
   const harness = config.runtime?.harness;
 
   if (!harness || harness === 'direct') {
@@ -137,7 +140,7 @@ export async function checkHarnessBinary(config: VaultConfig): Promise<DoctorRes
     };
   }
 
-  const found = Bun.which(binaryName);
+  const found = whichFn(binaryName);
   if (found) {
     return {
       check: 'runtime.harness',
@@ -250,7 +253,7 @@ export async function checkVersionDrift(
   config: VaultConfig,
   binaryVersion?: string,
 ): Promise<DoctorResult> {
-  const pluginJsonPath = join(vaultRoot, '.claude', 'plugins', 'onebrain', 'plugin.json');
+  const pluginJsonPath = join(vaultRoot, '.claude', 'plugins', 'onebrain', '.claude-plugin', 'plugin.json');
   const pluginFile = Bun.file(pluginJsonPath);
   const exists = await pluginFile.exists();
 
@@ -366,7 +369,7 @@ export async function checkOrphanCheckpoints(
   return {
     check: 'orphan-checkpoints',
     status: 'warn',
-    message: `${orphanCount} pre-v1.10.0 files in ${logsFolder}/ — review manually`,
+    message: `${orphanCount} unmerged checkpoint(s) in ${logsFolder}/`,
     hint: 'Run /wrapup to synthesize and merge them',
   };
 }

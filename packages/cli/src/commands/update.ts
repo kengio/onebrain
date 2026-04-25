@@ -290,18 +290,20 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // ── Step 5: Register hooks (only if 4b passed) ────────────────────────────
 
   let hooksDetail = 'hooks: ✓  PATH: ✓  permissions: ✓';
+  let hooksOk = true;
   try {
     await registerHooksFn(vaultDir);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     hooksDetail = `warning: ${msg}`;
+    hooksOk = false;
     process.stderr.write(`update: register-hooks warning: ${msg}\n`);
   }
 
   if (isTTY) {
     log.step(`Registering hooks\n│  ${hooksDetail}`);
   } else {
-    writeLine('hooks: ok  PATH: ok  permissions: ok');
+    writeLine(hooksOk ? 'hooks: ok  PATH: ok  permissions: ok' : `hooks: warning — ${hooksDetail}`);
   }
 
   // ── Step 6: Write version to vault.yml ───────────────────────────────────
@@ -311,6 +313,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`update: vault.yml version write warning: ${msg}\n`);
+    if (isTTY) {
+      log.warn(`vault.yml not updated — ${msg}`);
+    } else {
+      writeLine(`warning: vault.yml not updated — ${msg}`);
+    }
   }
 
   // ── Done ──────────────────────────────────────────────────────────────────

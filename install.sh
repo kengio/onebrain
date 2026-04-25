@@ -665,7 +665,7 @@ main() {
   # Verify manifest identity (Issue 2)
   local plugin_manifest="$vault_path/.claude-plugin/plugin.json"
   local manifest_name
-  manifest_name=$(python3 -c "import json,sys; d=json.load(open('$plugin_manifest')); print(d.get('name',''))" 2>/dev/null || true)
+  manifest_name=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("name",""))' "$plugin_manifest" 2>/dev/null || true)
   if [ -n "$manifest_name" ] && [ "$manifest_name" != "onebrain" ]; then
     print_error "Manifest id mismatch — expected 'onebrain', got '$manifest_name'. Aborting."
     rm -rf "$vault_path"

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -212,6 +212,67 @@ describe('runSessionInit', () => {
     expect(typeof result.datetime).toMatchSnapshot();
     expect(typeof result.session_token).toMatchSnapshot();
     expect(typeof result.qmd_unembedded).toMatchSnapshot();
+  });
+
+  it('cleanStaleStateFile — no state file → resolves normally with payload', async () => {
+    await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+    // No state file exists in tmpDir
+    const result = await runSessionInit(tmpDir, tmpDir);
+    expect(result).toHaveProperty('datetime');
+    expect(result).toHaveProperty('session_token');
+  });
+
+  it('cleanStaleStateFile — fresh mtime → file NOT deleted (still exists after stat)', async () => {
+    await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+    // Create a state file with a fresh mtime (just written = after process start)
+    const stateFile = join(tmpDir, 'onebrain-77777.state');
+    await writeFile(stateFile, '1:0:00', 'utf8');
+    // Fresh file should NOT be deleted
+    await runSessionInit(tmpDir, tmpDir);
+    // File should still exist (mtime is fresh, after process start)
+    const s = await stat(stateFile);
+    expect(s).toBeDefined();
+  });
+
+  it('cleanStaleStateFile — stale mtime (utimes sets to epoch 0) → file deleted', async () => {
+    await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+    const stateFile = join(tmpDir, 'onebrain-77777.state');
+    await writeFile(stateFile, '1:0:00', 'utf8');
+    // Set mtime to epoch (far in the past) — definitely before process start
+    await utimes(stateFile, 0, 0);
+    // Run session init — stale file should be cleaned up
+    await runSessionInit(tmpDir, tmpDir);
+    // File should be gone
+    await expect(stat(stateFile)).rejects.toThrow();
+  });
+
+  it('cleanStaleStateFile — EACCES from Bun.file().stat() → caught silently, result still has datetime', async () => {
+    await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+    // Spy on Bun.file to simulate stat() throwing EACCES
+    const originalBunFile = Bun.file.bind(Bun);
+    const bunFileSpy = spyOn(Bun, 'file').mockImplementation((path: unknown) => {
+      const f = originalBunFile(path as string);
+      if (typeof path === 'string' && path.endsWith('.state')) {
+        return {
+          ...f,
+          exists: async () => true,
+          stat: async () => {
+            const err = new Error('Permission denied') as NodeJS.ErrnoException;
+            err.code = 'EACCES';
+            throw err;
+          },
+          text: f.text.bind(f),
+        } as unknown as ReturnType<typeof Bun.file>;
+      }
+      return f;
+    });
+
+    try {
+      const result = await runSessionInit(tmpDir, tmpDir);
+      expect(result).toHaveProperty('datetime');
+    } finally {
+      bunFileSpy.mockRestore();
+    }
   });
 
   it('qmd_unembedded reflects unembedded count from qmd status --json', async () => {

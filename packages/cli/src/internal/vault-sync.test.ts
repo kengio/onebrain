@@ -358,4 +358,62 @@ describe('runVaultSync', () => {
 
     await rm(vaultDir2, { recursive: true });
   });
+
+  // ── Test 11: corrupted tarball → result.ok false, error defined ────────
+
+  it('corrupted tarball → result.ok is false, result.error defined', async () => {
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: async () =>
+        new Response(new Uint8Array([0x00, 0x01, 0x02, 0x03, 0xff, 0xfe]).buffer, {
+          status: 200,
+          headers: { 'content-type': 'application/x-gzip' },
+        }),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
+  // ── Test 12: HTTP 403 → result.ok false, error contains '403' ──────────
+
+  it('HTTP 403 response → result.ok is false, error contains 403', async () => {
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: async () => new Response('Forbidden', { status: 403 }),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(result.error).toContain('403');
+  });
+
+  // ── Test 13: filesRemoved counts actual deletions only ─────────────────
+
+  it('filesRemoved counts actual deletions: unlinkFn throws for one of 2 stale files → filesRemoved === 1', async () => {
+    // Pre-populate vault plugin dir with 2 stale files not in tarball
+    const pluginDir = join(vaultDir, '.claude/plugins/onebrain');
+    await mkdir(pluginDir, { recursive: true });
+    await writeFile(join(pluginDir, 'stale-a.md'), '# Stale A\n', 'utf8');
+    await writeFile(join(pluginDir, 'stale-b.md'), '# Stale B\n', 'utf8');
+
+    let callCount = 0;
+    const partialUnlink: typeof import('node:fs/promises').unlink = async (path) => {
+      callCount++;
+      if (String(path).endsWith('stale-a.md')) {
+        const err = new Error('Permission denied') as NodeJS.ErrnoException;
+        err.code = 'EACCES';
+        throw err;
+      }
+      const { unlink: realUnlink } = await import('node:fs/promises');
+      return realUnlink(path as string);
+    };
+
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      unlinkFn: partialUnlink,
+    });
+
+    expect(result.ok).toBe(true);
+    // Only 1 of the 2 stale files was actually deleted
+    expect(result.filesRemoved).toBe(1);
+  });
 });

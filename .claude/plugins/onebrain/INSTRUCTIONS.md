@@ -287,7 +287,7 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 ### Auto Checkpoint (Hook-Triggered)
 
-> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal pane GUID, non-alphanumeric stripped, first 8 chars) → `$PPID` if > 1 (Mac/Linux only) → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
+> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal pane GUID, non-alphanumeric stripped, first 8 chars) → `process.ppid` if > 1 → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
 
 When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse session_token and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
 

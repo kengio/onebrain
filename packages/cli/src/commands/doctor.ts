@@ -22,6 +22,19 @@ export interface DoctorOptions {
   isTTY?: boolean;
   /** Compiled binary version (BUILD_VERSION). When provided, compared against plugin.json instead of vault.yml onebrain_version. */
   binaryVersion?: string;
+  /** Injectable validators — real implementations are used when absent. */
+  checkVaultYmlFn?: (vaultDir: string) => Promise<DoctorResult>;
+  loadVaultConfigFn?: (vaultDir: string) => Promise<VaultConfig>;
+  checkFoldersFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
+  checkHarnessBinaryFn?: (config: VaultConfig) => Promise<DoctorResult>;
+  checkQmdEmbeddingsFn?: (config: VaultConfig) => Promise<DoctorResult>;
+  checkVersionDriftFn?: (
+    vaultDir: string,
+    config: VaultConfig,
+    binaryVersion?: string,
+  ) => Promise<DoctorResult>;
+  checkOrphanCheckpointsFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
+  checkSandboxFn?: (config: VaultConfig) => DoctorResult | Promise<DoctorResult>;
 }
 
 export interface DoctorCommandResult {
@@ -32,18 +45,25 @@ export interface DoctorCommandResult {
 }
 
 // ---------------------------------------------------------------------------
-// Main
+// Main runDoctor (pure, testable)
 // ---------------------------------------------------------------------------
 
-export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
+export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommandResult> {
   const vaultDir = opts.vaultDir ?? process.cwd();
-  const isTTY = opts.isTTY ?? process.stdout.isTTY;
+  const isTTY = opts.isTTY ?? process.stdout.isTTY ?? false;
   const binaryVersion = opts.binaryVersion;
 
-  // Step 1: Run all validators in parallel
-  const vaultYmlResult = await checkVaultYml(vaultDir);
+  const checkVaultYmlFn = opts.checkVaultYmlFn ?? checkVaultYml;
+  const loadVaultConfigFn = opts.loadVaultConfigFn ?? loadVaultConfig;
+  const checkFoldersFn = opts.checkFoldersFn ?? checkFolders;
+  const checkHarnessBinaryFn = opts.checkHarnessBinaryFn ?? checkHarnessBinary;
+  const checkQmdEmbeddingsFn = opts.checkQmdEmbeddingsFn ?? checkQmdEmbeddings;
+  const checkVersionDriftFn = opts.checkVersionDriftFn ?? checkVersionDrift;
+  const checkOrphanCheckpointsFn = opts.checkOrphanCheckpointsFn ?? checkOrphanCheckpoints;
+  const checkSandboxFn = opts.checkSandboxFn ?? checkSandbox;
 
-  // If vault.yml check failed, use empty config for checks that need it
+  const vaultYmlResult = await checkVaultYmlFn(vaultDir);
+
   let config: VaultConfig = {
     folders: {
       inbox: '00-inbox',
@@ -59,13 +79,12 @@ export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
 
   if (vaultYmlResult.status === 'ok') {
     try {
-      config = await loadVaultConfig(vaultDir);
+      config = await loadVaultConfigFn(vaultDir);
     } catch {
       // If loading fails, use default config above
     }
   }
 
-  // Run remaining checks in parallel
   const [
     foldersResult,
     harnessResult,
@@ -74,12 +93,12 @@ export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
     orphanCheckpointsResult,
     sandboxResult,
   ] = await Promise.all([
-    checkFolders(vaultDir, config),
-    checkHarnessBinary(config),
-    checkQmdEmbeddings(config),
-    checkVersionDrift(vaultDir, config, binaryVersion),
-    checkOrphanCheckpoints(vaultDir, config),
-    checkSandbox(config),
+    checkFoldersFn(vaultDir, config),
+    checkHarnessBinaryFn(config),
+    checkQmdEmbeddingsFn(config),
+    checkVersionDriftFn(vaultDir, config, binaryVersion),
+    checkOrphanCheckpointsFn(vaultDir, config),
+    checkSandboxFn(config),
   ]);
 
   const results = [
@@ -92,14 +111,26 @@ export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
     sandboxResult,
   ];
 
-  // Step 2: Format and print output
   const errorCount = results.filter((r) => r.status === 'error').length;
   const warningCount = results.filter((r) => r.status === 'warn').length;
 
   printDoctorOutput(results, isTTY, errorCount, warningCount);
 
-  // Step 3: Exit with appropriate code
-  process.exit(errorCount > 0 ? 1 : 0);
+  return {
+    ok: errorCount === 0,
+    exitCode: errorCount > 0 ? 1 : 0,
+    errorCount,
+    warningCount,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// CLI entry point — thin wrapper, calls process.exit
+// ---------------------------------------------------------------------------
+
+export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
+  const result = await runDoctor(opts);
+  process.exit(result.exitCode);
 }
 
 // ---------------------------------------------------------------------------
@@ -112,31 +143,25 @@ function printDoctorOutput(
   errorCount: number,
   warningCount: number,
 ): void {
-  const title = '  OneBrain Doctor 🔍';
   const lines: string[] = [];
 
   if (isTTY) {
     lines.push('');
-    lines.push(title);
+    lines.push('  OneBrain Doctor 🔍');
     lines.push('');
   } else {
     lines.push('OneBrain Doctor 🔍');
     lines.push('');
   }
 
-  // Print each check result
   for (const result of results) {
     const statusIcon = getStatusIcon(result.status);
-    const line = formatCheckLine(result, statusIcon);
-    lines.push(line);
-
+    lines.push(formatCheckLine(result, statusIcon));
     if (result.hint) {
-      const hintLine = formatHintLine(result.hint);
-      lines.push(hintLine);
+      lines.push(formatHintLine(result.hint));
     }
   }
 
-  // Print summary
   lines.push('');
 
   if (errorCount > 0 && warningCount > 0) {
@@ -170,8 +195,7 @@ function getStatusIcon(status: 'ok' | 'warn' | 'error'): string {
 }
 
 function formatCheckLine(result: DoctorResult, icon: string): string {
-  const checkName = result.check.padEnd(20);
-  return `  ${icon} ${checkName} ${result.message}`;
+  return `  ${icon} ${result.check.padEnd(20)} ${result.message}`;
 }
 
 function formatHintLine(hint: string): string {

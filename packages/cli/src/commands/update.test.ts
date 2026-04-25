@@ -1,5 +1,5 @@
 /**
- * Integration tests for `onebrain update`
+ * Unit tests for `onebrain update`
  *
  * Uses injectable dependencies (mock fetch, vault-sync, binary install/validate,
  * register-hooks) so tests run offline and fast.
