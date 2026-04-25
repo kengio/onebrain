@@ -395,9 +395,9 @@ describe('runVaultSync', () => {
     await writeFile(join(pluginDir, 'stale-a.md'), '# Stale A\n', 'utf8');
     await writeFile(join(pluginDir, 'stale-b.md'), '# Stale B\n', 'utf8');
 
-    let callCount = 0;
+    let _callCount = 0;
     const partialUnlink: typeof import('node:fs/promises').unlink = async (path) => {
-      callCount++;
+      _callCount++;
       if (String(path).endsWith('stale-a.md')) {
         const err = new Error('Permission denied') as NodeJS.ErrnoException;
         err.code = 'EACCES';

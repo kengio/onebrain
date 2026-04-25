@@ -10,8 +10,8 @@ import { mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import type { VaultConfig } from '@onebrain/core';
 import { type DoctorOptions, runDoctor } from './doctor.js';
-import type { DoctorResult, VaultConfig } from '@onebrain/core';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -56,10 +56,22 @@ function makeAllOkValidators(): Required<
     checkVaultYmlFn: async () => ({ check: 'vault.yml', status: 'ok', message: 'valid' }),
     loadVaultConfigFn: async () => DEFAULT_CONFIG,
     checkFoldersFn: async () => ({ check: 'folders', status: 'ok', message: '8/8 present' }),
-    checkHarnessBinaryFn: async () => ({ check: 'runtime.harness', status: 'ok', message: 'claude-code (found)' }),
-    checkQmdEmbeddingsFn: async () => ({ check: 'qmd-embeddings', status: 'ok', message: 'all embedded' }),
+    checkHarnessBinaryFn: async () => ({
+      check: 'runtime.harness',
+      status: 'ok',
+      message: 'claude-code (found)',
+    }),
+    checkQmdEmbeddingsFn: async () => ({
+      check: 'qmd-embeddings',
+      status: 'ok',
+      message: 'all embedded',
+    }),
     checkVersionDriftFn: async () => ({ check: 'version-drift', status: 'ok', message: 'v1.0.0' }),
-    checkOrphanCheckpointsFn: async () => ({ check: 'orphan-checkpoints', status: 'ok', message: '0 orphans' }),
+    checkOrphanCheckpointsFn: async () => ({
+      check: 'orphan-checkpoints',
+      status: 'ok',
+      message: '0 orphans',
+    }),
     checkSandboxFn: async () => ({ check: 'sandbox', status: 'ok', message: 'enabled' }),
   };
 }
@@ -79,13 +91,16 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('runDoctor', () => {
-
   // ── Exit codes ─────────────────────────────────────────────────────────────
 
   describe('exit codes', () => {
     it('returns exitCode 1 when any check returns status error', async () => {
       const validators = makeAllOkValidators();
-      validators.checkVaultYmlFn = async () => ({ check: 'vault.yml', status: 'error', message: 'not found' });
+      validators.checkVaultYmlFn = async () => ({
+        check: 'vault.yml',
+        status: 'error',
+        message: 'not found',
+      });
 
       const result = await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
 
@@ -96,8 +111,16 @@ describe('runDoctor', () => {
 
     it('returns exitCode 0 when checks return only warnings (no errors)', async () => {
       const validators = makeAllOkValidators();
-      validators.checkFoldersFn = async () => ({ check: 'folders', status: 'warn', message: '7/8 present' });
-      validators.checkSandboxFn = async () => ({ check: 'sandbox', status: 'warn', message: 'disabled' });
+      validators.checkFoldersFn = async () => ({
+        check: 'folders',
+        status: 'warn',
+        message: '7/8 present',
+      });
+      validators.checkSandboxFn = async () => ({
+        check: 'sandbox',
+        status: 'warn',
+        message: 'disabled',
+      });
 
       const result = await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
 
@@ -152,25 +175,45 @@ describe('runDoctor', () => {
   describe('summary line selection', () => {
     it('shows "N errors, N warnings" when both errors and warnings exist', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         const validators = makeAllOkValidators();
-        validators.checkVaultYmlFn = async () => ({ check: 'vault.yml', status: 'error', message: 'not found' });
-        validators.checkFoldersFn = async () => ({ check: 'folders', status: 'warn', message: '7/8 present' });
+        validators.checkVaultYmlFn = async () => ({
+          check: 'vault.yml',
+          status: 'error',
+          message: 'not found',
+        });
+        validators.checkFoldersFn = async () => ({
+          check: 'folders',
+          status: 'warn',
+          message: '7/8 present',
+        });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       expect(logLines.join('\n')).toMatch(/Summary: 1 errors, 1 warnings/);
     });
 
     it('shows "N errors" (no warnings mention) when only errors', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         const validators = makeAllOkValidators();
-        validators.checkVaultYmlFn = async () => ({ check: 'vault.yml', status: 'error', message: 'not found' });
+        validators.checkVaultYmlFn = async () => ({
+          check: 'vault.yml',
+          status: 'error',
+          message: 'not found',
+        });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       const output = logLines.join('\n');
       expect(output).toMatch(/Summary: 1 errors$/m);
@@ -179,22 +222,34 @@ describe('runDoctor', () => {
 
     it('shows "N warnings — ok to run" when only warnings (no errors)', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         const validators = makeAllOkValidators();
-        validators.checkSandboxFn = async () => ({ check: 'sandbox', status: 'warn', message: 'disabled' });
+        validators.checkSandboxFn = async () => ({
+          check: 'sandbox',
+          status: 'warn',
+          message: 'disabled',
+        });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       expect(logLines.join('\n')).toMatch(/Summary: 1 warnings — ok to run/);
     });
 
     it('shows "All checks passed" when no errors or warnings', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       expect(logLines.join('\n')).toMatch(/Summary: All checks passed/);
     });
@@ -205,20 +260,28 @@ describe('runDoctor', () => {
   describe('TTY vs non-TTY output', () => {
     it('non-TTY: plain title without leading blank line', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       expect(logLines.join('\n')).toMatch(/^OneBrain Doctor 🔍/);
     });
 
     it('TTY: title is padded with surrounding blank lines', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: true, ...makeAllOkValidators() });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       const output = logLines.join('\n');
       expect(output).toMatch(/^\n\s+OneBrain Doctor 🔍/);
@@ -232,8 +295,14 @@ describe('runDoctor', () => {
     it('continues with default config when loadVaultConfigFn throws after valid vault.yml', async () => {
       let foldersConfigReceived: VaultConfig | undefined;
       const validators = makeAllOkValidators();
-      validators.checkVaultYmlFn = async () => ({ check: 'vault.yml', status: 'ok', message: 'valid' });
-      validators.loadVaultConfigFn = async () => { throw new Error('parse error'); };
+      validators.checkVaultYmlFn = async () => ({
+        check: 'vault.yml',
+        status: 'ok',
+        message: 'valid',
+      });
+      validators.loadVaultConfigFn = async () => {
+        throw new Error('parse error');
+      };
       validators.checkFoldersFn = async (_vaultDir, config) => {
         foldersConfigReceived = config;
         return { check: 'folders', status: 'ok', message: '8/8 present' };
@@ -250,8 +319,15 @@ describe('runDoctor', () => {
     it('skips loadVaultConfigFn when checkVaultYml returns error', async () => {
       let loadCalled = false;
       const validators = makeAllOkValidators();
-      validators.checkVaultYmlFn = async () => ({ check: 'vault.yml', status: 'error', message: 'not found' });
-      validators.loadVaultConfigFn = async () => { loadCalled = true; return DEFAULT_CONFIG; };
+      validators.checkVaultYmlFn = async () => ({
+        check: 'vault.yml',
+        status: 'error',
+        message: 'not found',
+      });
+      validators.loadVaultConfigFn = async () => {
+        loadCalled = true;
+        return DEFAULT_CONFIG;
+      };
 
       await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
 
@@ -264,7 +340,9 @@ describe('runDoctor', () => {
   describe('hint lines', () => {
     it('includes hint line in output when a check returns a hint', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         const validators = makeAllOkValidators();
         validators.checkVaultYmlFn = async () => ({
@@ -274,17 +352,23 @@ describe('runDoctor', () => {
           hint: 'Run onebrain init to create vault.yml',
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       expect(logLines.join('\n')).toContain('→ Run onebrain init to create vault.yml');
     });
 
     it('does not include a hint line when check has no hint', async () => {
       const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => { logLines.push(msg); });
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
-      } finally { spy.mockRestore(); }
+      } finally {
+        spy.mockRestore();
+      }
 
       expect(logLines.join('\n')).not.toContain('→');
     });
@@ -295,10 +379,26 @@ describe('runDoctor', () => {
   describe('result counts', () => {
     it('accurately counts multiple errors and warnings across all checks', async () => {
       const validators = makeAllOkValidators();
-      validators.checkVaultYmlFn = async () => ({ check: 'vault.yml', status: 'error', message: 'not found' });
-      validators.checkFoldersFn = async () => ({ check: 'folders', status: 'error', message: '0/8 present' });
-      validators.checkSandboxFn = async () => ({ check: 'sandbox', status: 'warn', message: 'disabled' });
-      validators.checkHarnessBinaryFn = async () => ({ check: 'runtime.harness', status: 'warn', message: 'not found' });
+      validators.checkVaultYmlFn = async () => ({
+        check: 'vault.yml',
+        status: 'error',
+        message: 'not found',
+      });
+      validators.checkFoldersFn = async () => ({
+        check: 'folders',
+        status: 'error',
+        message: '0/8 present',
+      });
+      validators.checkSandboxFn = async () => ({
+        check: 'sandbox',
+        status: 'warn',
+        message: 'disabled',
+      });
+      validators.checkHarnessBinaryFn = async () => ({
+        check: 'runtime.harness',
+        status: 'warn',
+        message: 'not found',
+      });
 
       const result = await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
 

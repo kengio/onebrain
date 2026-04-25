@@ -230,7 +230,7 @@ describe('runBackfillRecapped', () => {
     const monthDir = await makeMonthDir(logsDir, '2026', '04');
 
     // File 1: readable, writable — will be backfilled
-    const file1 = join(monthDir, '2026-04-20-session-01.md');
+    const _file1 = join(monthDir, '2026-04-20-session-01.md');
     await writeSessionLog(monthDir, '2026-04-20-session-01.md', {
       tags: 'session-log',
       date: '2026-04-20',

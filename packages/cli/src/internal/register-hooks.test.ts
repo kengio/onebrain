@@ -184,7 +184,10 @@ describe('applyPath absolute-path idempotency', () => {
     expect(result.pathStatus).toBe('ok');
 
     // File should be unchanged (path was already set)
-    const afterSettings = JSON.parse(await readFile(settingsPath, 'utf8')) as Record<string, unknown>;
+    const afterSettings = JSON.parse(await readFile(settingsPath, 'utf8')) as Record<
+      string,
+      unknown
+    >;
     const afterEnv = afterSettings.env as { PATH: string };
     expect(afterEnv.PATH).toBe(existingPath);
   });
@@ -198,7 +201,10 @@ describe('registerGeminiHooks', () => {
   let vaultDir: string;
 
   beforeEach(async () => {
-    vaultDir = join(tmpdir(), `ob-gemini-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    vaultDir = join(
+      tmpdir(),
+      `ob-gemini-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
     // Write vault.yml with gemini harness
     await writeFile(
@@ -262,9 +268,10 @@ describe('registerGeminiHooks', () => {
     await runRegisterHooks({ vaultDir });
     await runRegisterHooks({ vaultDir });
 
-    const settings = JSON.parse(
-      await readFile(join(geminiDir, 'settings.json'), 'utf8'),
-    ) as Record<string, unknown>;
+    const settings = JSON.parse(await readFile(join(geminiDir, 'settings.json'), 'utf8')) as Record<
+      string,
+      unknown
+    >;
     const hooks = settings.hooks as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
 
     for (const event of ['Stop', 'PreCompact', 'PostCompact', 'SessionStart']) {
@@ -287,7 +294,10 @@ describe('registerDirectPath', () => {
   // We test the observable behavior: result.ok and idempotency via marker checks.
 
   beforeEach(async () => {
-    vaultDir = join(tmpdir(), `ob-direct-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    vaultDir = join(
+      tmpdir(),
+      `ob-direct-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
     await writeFile(
       join(vaultDir, 'vault.yml'),

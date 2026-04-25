@@ -209,7 +209,7 @@ describe('runOrphanScan', () => {
     expect(result).toEqual({ orphan_count: 1 });
   });
 
-  it('creates a checkpoint file with today\'s actual date → orphan_count: 0 (today boundary skipped)', async () => {
+  it("creates a checkpoint file with today's actual date → orphan_count: 0 (today boundary skipped)", async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
     const todayStr = `${thisYear}-${thisMonth}-${String(new Date().getDate()).padStart(2, '0')}`;
@@ -220,7 +220,7 @@ describe('runOrphanScan', () => {
     expect(result).toEqual({ orphan_count: 0 });
   });
 
-  it('today\'s file skipped but a past date in same month still counted', async () => {
+  it("today's file skipped but a past date in same month still counted", async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
     const todayStr = `${thisYear}-${thisMonth}-${String(new Date().getDate()).padStart(2, '0')}`;

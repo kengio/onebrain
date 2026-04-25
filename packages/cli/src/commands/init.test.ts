@@ -59,6 +59,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await rm(tempDir, { recursive: true, force: true });
+  // biome-ignore lint/performance/noDelete: env cleanup requires delete to unset, not assign "undefined"
   delete process.env.CLAUDE_CODE_HARNESS;
 });
 

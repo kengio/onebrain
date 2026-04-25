@@ -253,7 +253,14 @@ export async function checkVersionDrift(
   config: VaultConfig,
   binaryVersion?: string,
 ): Promise<DoctorResult> {
-  const pluginJsonPath = join(vaultRoot, '.claude', 'plugins', 'onebrain', '.claude-plugin', 'plugin.json');
+  const pluginJsonPath = join(
+    vaultRoot,
+    '.claude',
+    'plugins',
+    'onebrain',
+    '.claude-plugin',
+    'plugin.json',
+  );
   const pluginFile = Bun.file(pluginJsonPath);
   const exists = await pluginFile.exists();
 
