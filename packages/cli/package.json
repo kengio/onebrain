@@ -22,9 +22,7 @@
   },
   "bugs": "https://github.com/kengio/onebrain/issues",
   "license": "MIT",
-  "files": [
-    "dist/onebrain"
-  ],
+  "files": ["dist/onebrain"],
   "type": "module",
   "bin": {
     "onebrain": "dist/onebrain"
