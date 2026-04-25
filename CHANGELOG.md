@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.1
+latest_version: 2.0.0
 released: 2026-04-25
 ---
 
@@ -8,15 +8,20 @@ released: 2026-04-25
 All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+> **Versioning:** `plugin.json` tracks the vault plugin version (skills, INSTRUCTIONS, hooks).
+> The CLI binary (`@onebrain-ai/cli`) has its own independent version tracked in `packages/cli/package.json`.
+> `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
+
 ## [Unreleased]
 
-## v2.0.1 — npm package fix
-
-- fix(cli): move @onebrain/core to devDependencies — bundled into dist at build time
-- fix(release): inject BUILD_VERSION into npm-publish build step so installed binary shows correct version
-- chore: sync version to 2.0.1 across packages/core and plugin.json
-
 ## v2.0.0 — CLI Binary
+
+### CLI v2.0.1
+- fix(cli): move @onebrain/core to devDependencies — bundled into dist/onebrain at build time
+- fix(release): inject BUILD_VERSION into npm-publish build step — `onebrain --version` now shows correct version
+- chore: separate CLI versioning from plugin versioning
+
+### Plugin v2.0.0
 
 - feat: compiled TypeScript binary replaces all bash/Python scripts
 - feat(internal): session-init, orphan-scan, checkpoint, qmd-reindex
