@@ -8,7 +8,7 @@
 
 command -v qmd >/dev/null 2>&1 || exit 0
 
-# Robust collection parser — same logic as qmd-reindex.sh (handles comments, whitespace, quotes)
+# Robust collection parser (handles comments, whitespace, quotes)
 vault_yml="${CLAUDE_PROJECT_DIR:-.}/vault.yml"
 [ -f "$vault_yml" ] || exit 0
 collection=""
