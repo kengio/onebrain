@@ -20,7 +20,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - fix(update): register-hooks.sh gains `--qmd` / `--remove-qmd` flags; migration Step 7 registers PostToolUse hook and adds `Bash(onebrain *)` to permissions.allow when qmd_collection is set
 - fix(qmd): /qmd setup registers PostToolUse hook in settings.json after collection is created; /qmd uninstall removes it
 - fix(doctor): add onebrain CLI binary check (🔴 + install hint if missing); PostToolUse check reads settings.json; hook checks skipped (N/A) when CLI absent
-- fix(skills): replace all `qmd-update.sh` calls with async `onebrain qmd-reindex`; delete qmd-update.sh
+- fix(skills): replace all `qmd-update.sh` calls with async `onebrain qmd-reindex`; delete qmd-update.sh, session-init.sh, orphan-scan.sh (all superseded by CLI)
 
 ## v2.0.1 — Fix: /wrapup session numbering
 
