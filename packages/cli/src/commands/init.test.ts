@@ -151,9 +151,13 @@ describe('runInit', () => {
 
 	it('plugin files already present — skips vault-sync download', async () => {
 		// Pre-create plugin.json to simulate existing plugin files
-		const pluginDir = join(tempDir, '.claude', 'plugins', 'onebrain');
-		await mkdir(pluginDir, { recursive: true });
-		await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.11.0' }), 'utf8');
+		const pluginMetaDir = join(tempDir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
+		await mkdir(pluginMetaDir, { recursive: true });
+		await writeFile(
+			join(pluginMetaDir, 'plugin.json'),
+			JSON.stringify({ version: '1.11.0' }),
+			'utf8',
+		);
 
 		let vaultSyncCalled = false;
 		const mockVaultSync = async (_vaultDir: string, _opts: Record<string, unknown>) => {

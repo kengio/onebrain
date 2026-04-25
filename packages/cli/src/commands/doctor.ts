@@ -1,4 +1,5 @@
 import {
+	type DoctorResult,
 	type VaultConfig,
 	checkFolders,
 	checkHarnessBinary,
@@ -19,9 +20,11 @@ export interface DoctorOptions {
 	vaultDir?: string;
 	/** Whether stdout is a TTY (default: process.stdout.isTTY). */
 	isTTY?: boolean;
+	/** Compiled binary version (BUILD_VERSION). When provided, compared against plugin.json instead of vault.yml onebrain_version. */
+	binaryVersion?: string;
 }
 
-export interface DoctorResult {
+export interface DoctorCommandResult {
 	ok: boolean;
 	exitCode: number;
 	errorCount: number;
@@ -35,6 +38,7 @@ export interface DoctorResult {
 export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
 	const vaultDir = opts.vaultDir ?? process.cwd();
 	const isTTY = opts.isTTY ?? process.stdout.isTTY;
+	const binaryVersion = opts.binaryVersion;
 
 	// Step 1: Run all validators in parallel
 	const vaultYmlResult = await checkVaultYml(vaultDir);
@@ -73,7 +77,7 @@ export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
 		checkFolders(vaultDir, config),
 		checkHarnessBinary(config),
 		checkQmdEmbeddings(config),
-		checkVersionDrift(vaultDir, config),
+		checkVersionDrift(vaultDir, config, binaryVersion),
 		checkOrphanCheckpoints(vaultDir, config),
 		checkSandbox(config),
 	]);

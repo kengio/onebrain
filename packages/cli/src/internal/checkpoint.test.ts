@@ -111,6 +111,9 @@ describe('readState / writeState', () => {
 		expect(state.count).toBe(0);
 		expect(state.last_ts).toBe(0);
 		expect(state.last_stop_nn).toBe('00');
+		// Verify file was eagerly rewritten on disk with 3-field format
+		const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+		expect(raw).toMatch(/^0:\d+:00$/);
 	});
 
 	it('treats malformed state as parse error → resets to 0:0:00', async () => {
@@ -119,6 +122,9 @@ describe('readState / writeState', () => {
 		expect(state.count).toBe(0);
 		expect(state.last_ts).toBe(0);
 		expect(state.last_stop_nn).toBe('00');
+		// Verify file was eagerly rewritten on disk with 3-field format
+		const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+		expect(raw).toMatch(/^0:\d+:00$/);
 	});
 
 	it('writeState writes 3-field format when no pending_stub', () => {
@@ -526,6 +532,33 @@ describe('handlePrecompact', () => {
 		const state = readState(TOKEN, tmpDir);
 		expect(state.pending_stub).toBeTruthy();
 		expect(state.pending_stub).toMatch(/-checkpoint-01\.md$/);
+	});
+
+	it('stop-then-autocompact: precompact no-ops within 5 min of stop checkpoint', async () => {
+		// Step 1: arrange state where stop threshold is met → stop writes checkpoint, last_ts = now
+		const now = 1700001000;
+		writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '02' }, tmpDir);
+
+		// handleStop emits block JSON and resets state with last_ts = now
+		const cap1 = captureStdout();
+		handleStop(TOKEN, vaultDir, now, tmpDir);
+		cap1.stop(); // discard the block output
+
+		// Confirm stop updated last_ts to now
+		const stateAfterStop = readState(TOKEN, tmpDir);
+		expect(stateAfterStop.last_ts).toBe(now);
+		expect(stateAfterStop.count).toBe(0);
+
+		// Step 2: precompact fires 60s later (still within PRECOMPACT_RECENCY = 300s)
+		const nowPlus60 = now + 60;
+		const cap2 = captureStdout();
+		await handlePrecompact(TOKEN, vaultDir, nowPlus60, tmpDir);
+		const out2 = cap2.stop();
+
+		// Assert: precompact no-ops — no stdout, no stub written
+		expect(out2).toBe('');
+		const stateAfterPrecompact = readState(TOKEN, tmpDir);
+		expect(stateAfterPrecompact.pending_stub).toBeUndefined();
 	});
 });
 

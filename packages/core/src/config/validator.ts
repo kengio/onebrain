@@ -198,7 +198,7 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 
 		const stdout = await new Response(proc.stdout).text();
 		const parsed = JSON.parse(stdout) as Record<string, unknown>;
-		const unembedded = parsed['unembedded'];
+		const unembedded = parsed.unembedded;
 
 		if (typeof unembedded !== 'number') {
 			return {
@@ -236,20 +236,28 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 // ---------------------------------------------------------------------------
 
 /**
- * Compare onebrain_version in vault.yml against plugin.json version.
- * Returns ok if either is unavailable.
+ * Compare a version against plugin.json version to detect drift.
+ *
+ * When `binaryVersion` is provided, it is compared against plugin.json version
+ * (detects "binary is newer than installed plugin files").
+ * When `binaryVersion` is absent, falls back to comparing vault.yml
+ * `onebrain_version` against plugin.json version.
+ *
+ * Returns ok if the required data for the selected comparison path is unavailable.
  */
 export async function checkVersionDrift(
 	vaultRoot: string,
 	config: VaultConfig,
+	binaryVersion?: string,
 ): Promise<DoctorResult> {
-	const configVersion = config.onebrain_version;
-
 	const pluginJsonPath = join(vaultRoot, '.claude', 'plugins', 'onebrain', 'plugin.json');
 	const pluginFile = Bun.file(pluginJsonPath);
 	const exists = await pluginFile.exists();
 
-	if (!configVersion || !exists) {
+	// Determine which version to compare against plugin.json
+	const compareVersion = binaryVersion ?? config.onebrain_version;
+
+	if (!compareVersion || !exists) {
 		return {
 			check: 'version-drift',
 			status: 'ok',
@@ -261,7 +269,7 @@ export async function checkVersionDrift(
 	try {
 		const text = await pluginFile.text();
 		const parsed = JSON.parse(text) as Record<string, unknown>;
-		pluginVersion = typeof parsed['version'] === 'string' ? parsed['version'] : undefined;
+		pluginVersion = typeof parsed.version === 'string' ? parsed.version : undefined;
 	} catch {
 		return {
 			check: 'version-drift',
@@ -278,18 +286,22 @@ export async function checkVersionDrift(
 		};
 	}
 
-	if (configVersion === pluginVersion) {
+	if (compareVersion === pluginVersion) {
 		return {
 			check: 'version-drift',
 			status: 'ok',
-			message: `v${configVersion}`,
+			message: `v${compareVersion}`,
 		};
 	}
+
+	const driftMessage = binaryVersion
+		? `binary v${binaryVersion}, plugin files v${pluginVersion}`
+		: `vault v${compareVersion}, plugin files v${pluginVersion}`;
 
 	return {
 		check: 'version-drift',
 		status: 'warn',
-		message: `vault v${configVersion}, plugin files v${pluginVersion}`,
+		message: driftMessage,
 		hint: 'Run onebrain update to sync',
 	};
 }
@@ -377,9 +389,9 @@ async function readMergedField(filePath: string): Promise<boolean | undefined> {
 		const parsed = parse(frontmatter) as Record<string, unknown> | null;
 		if (!parsed) return undefined;
 
-		const merged = parsed['merged'];
-		if (merged === true) return true;
-		if (merged === false) return false;
+		const merged = parsed.merged;
+		if (merged === true || merged === 'true') return true;
+		if (merged === false || merged === 'false') return false;
 		return undefined;
 	} catch {
 		return undefined;

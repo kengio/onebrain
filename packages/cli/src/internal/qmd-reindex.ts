@@ -28,12 +28,13 @@ export async function qmdReindexCommand(vaultRoot: string): Promise<void> {
 		}
 
 		// Spawn detached background process
-		const _proc = Bun.spawn(['qmd', 'update', '-c', collection], {
+		const proc = Bun.spawn(['qmd', 'update', '-c', collection], {
 			detached: true,
 			stdin: 'ignore',
 			stdout: 'ignore',
 			stderr: 'ignore',
 		});
+		proc.unref(); // release parent reference — CLI exits immediately
 
 		// Fire-and-forget: do NOT call proc.exited or await anything
 		// Process runs in the background

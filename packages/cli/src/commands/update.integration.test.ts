@@ -43,10 +43,13 @@ function makeMockFetch(tagName: string): typeof fetch {
 	return async (input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
 		const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 		if (url.includes('/releases/latest')) {
-			return new Response(JSON.stringify({ tag_name: tagName, published_at: '2026-04-24T00:00:00Z' }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' },
-			});
+			return new Response(
+				JSON.stringify({ tag_name: tagName, published_at: '2026-04-24T00:00:00Z' }),
+				{
+					status: 200,
+					headers: { 'Content-Type': 'application/json' },
+				},
+			);
 		}
 		return new Response('Not Found', { status: 404 });
 	};

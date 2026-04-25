@@ -30,7 +30,7 @@ import {
 } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
-import { intro, log, outro, spinner } from '@clack/prompts';
+import { intro, outro, spinner } from '@clack/prompts';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------
@@ -46,6 +46,8 @@ export interface VaultSyncOptions {
 	installedPluginsPath?: string;
 	/** Override path to the plugins cache dir (for tests). */
 	installedPluginsCacheDir?: string;
+	/** Override TTY detection for tests — defaults to process.stdout.isTTY. */
+	isTTY?: boolean;
 }
 
 export interface VaultSyncResult {
@@ -321,7 +323,9 @@ async function updateVaultYml(
 	raw.update_channel = updateChannel;
 
 	const updated = stringifyYaml(raw, { lineWidth: 0 });
-	await writeFile(vaultYmlPath, updated, 'utf8');
+	const tmpPath = `${vaultYmlPath}.tmp`;
+	await writeFile(tmpPath, updated, 'utf8');
+	await rename(tmpPath, vaultYmlPath);
 }
 
 // ---------------------------------------------------------------------------
@@ -333,7 +337,14 @@ async function updateVaultYml(
  */
 async function readPluginVersion(vaultRoot: string): Promise<string> {
 	// plugin.json lives in .claude/plugins/onebrain/.claude-plugin/plugin.json
-	const pluginJsonPath = join(vaultRoot, '.claude', 'plugins', 'onebrain', '.claude-plugin', 'plugin.json');
+	const pluginJsonPath = join(
+		vaultRoot,
+		'.claude',
+		'plugins',
+		'onebrain',
+		'.claude-plugin',
+		'plugin.json',
+	);
 	try {
 		const text = await readFile(pluginJsonPath, 'utf8');
 		const parsed = JSON.parse(text) as Record<string, unknown>;
@@ -526,7 +537,7 @@ export async function runVaultSync(
 	opts: VaultSyncOptions = {},
 ): Promise<VaultSyncResult> {
 	const fetchFn = opts.fetchFn ?? globalThis.fetch;
-	const isTTY = process.stdout.isTTY;
+	const isTTY = opts.isTTY ?? process.stdout.isTTY;
 
 	// Load vault.yml for config
 	let updateChannel = 'stable';
@@ -577,14 +588,6 @@ export async function runVaultSync(
 		if (isTTY && s) {
 			s.stop(msg);
 			s = null;
-		}
-	}
-
-	function note(msg: string) {
-		if (isTTY) {
-			log.info(msg);
-		} else {
-			process.stdout.write(`vault-sync: ${msg}\n`);
 		}
 	}
 

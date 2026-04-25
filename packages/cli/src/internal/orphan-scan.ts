@@ -98,7 +98,7 @@ async function hasManualSessionLog(monthDir: string, date: string): Promise<bool
 			const content = await readFile(join(monthDir, logName), 'utf8');
 			const fm = parseFrontmatter(content);
 			// auto-saved: true → written by auto-summary, NOT a wrapup log → keep scanning
-			if (fm && fm['auto-saved'] === true) continue;
+			if (fm && (fm['auto-saved'] === true || fm['auto-saved'] === 'true')) continue;
 			// Either no frontmatter or auto-saved is false/absent → this is a manual wrapup log
 			return true;
 		} catch {
@@ -149,7 +149,7 @@ async function scanMonthDir(
 		try {
 			const content = await readFile(join(monthDir, fname), 'utf8');
 			const fm = parseFrontmatter(content);
-			if (fm && fm.merged === true) continue;
+			if (fm && (fm.merged === true || fm.merged === 'true')) continue;
 		} catch {
 			// Can't read frontmatter — treat as unmerged orphan
 		}

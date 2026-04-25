@@ -89,7 +89,7 @@ describe('runOrphanScan', () => {
 		const pastDate = `${thisYear}-${thisMonth}-01`;
 		await writeFile(
 			join(monthDir, `${pastDate}-snaptoken-checkpoint-01.md`),
-			`---\ntags: [checkpoint]\nmerged: false\n---\n\nContent.`,
+			'---\ntags: [checkpoint]\nmerged: false\n---\n\nContent.',
 			'utf8',
 		);
 		const oneResult = await runOrphanScan(logsDir, 'differenttoken');
@@ -108,6 +108,18 @@ describe('runOrphanScan', () => {
 		const pastDate = `${thisYear}-${thisMonth}-01`;
 		const fname = checkpointName(pastDate, 'token11', 1);
 		await writeFile(join(monthDir, fname), checkpointFrontmatter(true), 'utf8');
+		const result = await runOrphanScan(logsDir, 'current99');
+		expect(result).toEqual({ orphan_count: 0 });
+	});
+
+	it('skips checkpoint files with merged: "true" (quoted string in YAML)', async () => {
+		const { thisYear, thisMonth } = getMonthParts();
+		const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
+		const pastDate = `${thisYear}-${thisMonth}-01`;
+		const fname = checkpointName(pastDate, 'tokenStrTrue', 1);
+		// Write frontmatter with merged as a quoted string (YAML string "true", not boolean)
+		const content = `---\ntags: [checkpoint, session-log]\ndate: ${pastDate}\ncheckpoint: 01\ntrigger: stop\nmerged: "true"\n---\n\n## What We Worked On\n\nTest content.`;
+		await writeFile(join(monthDir, fname), content, 'utf8');
 		const result = await runOrphanScan(logsDir, 'current99');
 		expect(result).toEqual({ orphan_count: 0 });
 	});

@@ -1,13 +1,13 @@
 {
-  "name": "onebrain",
-  "owner": {
-    "name": "OneBrain Contributors"
-  },
-  "plugins": [
-    {
-      "name": "onebrain",
-      "source": "./.claude/plugins/onebrain",
-      "description": "OneBrain — Where human and AI thinking become one"
-    }
-  ]
+	"name": "onebrain",
+	"owner": {
+		"name": "OneBrain Contributors"
+	},
+	"plugins": [
+		{
+			"name": "onebrain",
+			"source": "./.claude/plugins/onebrain",
+			"description": "OneBrain — Where human and AI thinking become one"
+		}
+	]
 }

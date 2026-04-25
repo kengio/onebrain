@@ -1,19 +1,23 @@
 {
-  "name": "@onebrain/cli",
-  "version": "2.0.0",
-  "type": "module",
-  "bin": {
-    "onebrain": "dist/onebrain"
-  },
-  "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target node --outfile onebrain",
-    "typecheck": "tsc --noEmit",
-    "bump": "echo 'bump not yet implemented'"
-  },
-  "dependencies": {
-    "@onebrain/core": "workspace:*",
-    "@clack/prompts": "^0.9",
-    "commander": "^12",
-    "yaml": "^2"
-  }
+	"name": "@onebrain/cli",
+	"version": "2.0.0",
+	"type": "module",
+	"bin": {
+		"onebrain": "dist/onebrain"
+	},
+	"scripts": {
+		"build": "bun build src/index.ts --outfile dist/onebrain --target node",
+		"typecheck": "tsc --noEmit",
+		"bump": "echo 'bump not yet implemented'"
+	},
+	"dependencies": {
+		"@onebrain/core": "workspace:*",
+		"@clack/prompts": "^0.9",
+		"commander": "^12",
+		"yaml": "^2"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/node": "^20"
+	}
 }

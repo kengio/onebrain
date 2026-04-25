@@ -102,6 +102,19 @@ describe('runBackfillRecapped', () => {
 		expect(result).toEqual({ backfilled: 0, skipped: 0 });
 	});
 
+	it('skips session log with recapped: false (field present, falsy value)', async () => {
+		// recapped: false means "field exists" → !== undefined → skip
+		// A falsy check (!recapped) would incorrectly backfill this file
+		const monthDir = await makeMonthDir(logsDir, '2026', '04');
+		await writeSessionLog(monthDir, '2026-04-21-session-01.md', {
+			tags: 'session-log',
+			recapped: false,
+		});
+
+		const result = await runBackfillRecapped(logsDir);
+		expect(result).toEqual({ backfilled: 0, skipped: 0 });
+	});
+
 	it('adds recapped field to session log missing it', async () => {
 		const monthDir = await makeMonthDir(logsDir, '2026', '04');
 		await writeSessionLog(monthDir, '2026-04-20-session-01.md', {
@@ -163,6 +176,34 @@ describe('runBackfillRecapped', () => {
 
 		const result = await runBackfillRecapped(logsDir);
 		expect(result).toEqual({ backfilled: 0, skipped: 1 });
+	});
+
+	it('does not treat ---something as a closing frontmatter delimiter', async () => {
+		const monthDir = await makeMonthDir(logsDir, '2026', '04');
+		// Body contains a line starting with ---foo which must NOT close the frontmatter.
+		// The real closing --- (bare, followed by newline) appears later.
+		const content = [
+			'---',
+			'tags: session-log',
+			'date: 2026-04-20',
+			'---',
+			'',
+			'## Session',
+			'',
+			'---some-separator',
+			'',
+			'Content below separator.',
+		].join('\n');
+		await writeFile(join(monthDir, '2026-04-20-session-01.md'), content);
+
+		const result = await runBackfillRecapped(logsDir);
+		// File has valid frontmatter (no recapped), should be backfilled
+		expect(result).toEqual({ backfilled: 1, skipped: 0 });
+
+		// Verify frontmatter was updated correctly without corrupting the body
+		const updated = await Bun.file(join(monthDir, '2026-04-20-session-01.md')).text();
+		expect(updated).toContain(`recapped: ${today}`);
+		expect(updated).toContain('---some-separator');
 	});
 
 	it('preserves existing frontmatter fields when adding recapped', async () => {

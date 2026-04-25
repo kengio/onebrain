@@ -80,7 +80,9 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
 		try {
 			writeFileSync(stateFilePath(token, tmpDir), `0:${now}:00`, 'utf8');
 		} catch (writeErr) {
-			process.stderr.write(`checkpoint: failed to rewrite state file for token ${token}: ${writeErr}\n`);
+			process.stderr.write(
+				`checkpoint: failed to rewrite state file for token ${token}: ${writeErr}\n`,
+			);
 		}
 		return {
 			count: 0,

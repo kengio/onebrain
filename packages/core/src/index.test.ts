@@ -517,7 +517,7 @@ describe('checkOrphanCheckpoints', () => {
 	it('returns ok when all checkpoints have merged: true', async () => {
 		const logsDir = join(dir, '07-logs', '2026', '04');
 		await mkdir(logsDir, { recursive: true });
-		const content = `---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nDone.`;
+		const content = '---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nDone.';
 		await writeFile(join(logsDir, '2026-04-24-abc123-checkpoint-01.md'), content, 'utf8');
 
 		const result = await checkOrphanCheckpoints(dir, baseConfig);
@@ -528,8 +528,9 @@ describe('checkOrphanCheckpoints', () => {
 	it('returns warn when unmerged checkpoint files exist', async () => {
 		const logsDir = join(dir, '07-logs', '2026', '04');
 		await mkdir(logsDir, { recursive: true });
-		const unmerged = `---\ntags: [checkpoint]\nmerged: false\n---\n\n## What We Worked On\nPending.`;
-		const merged = `---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nDone.`;
+		const unmerged =
+			'---\ntags: [checkpoint]\nmerged: false\n---\n\n## What We Worked On\nPending.';
+		const merged = '---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nDone.';
 		await writeFile(join(logsDir, '2026-04-24-abc123-checkpoint-01.md'), unmerged, 'utf8');
 		await writeFile(join(logsDir, '2026-04-24-abc456-checkpoint-01.md'), merged, 'utf8');
 
@@ -544,7 +545,7 @@ describe('checkOrphanCheckpoints', () => {
 		const logsDir = join(dir, '07-logs', '2026', '04');
 		await mkdir(logsDir, { recursive: true });
 		// No merged field in frontmatter
-		const content = `---\ntags: [checkpoint]\n---\n\n## What We Worked On\nMissing merged field.`;
+		const content = '---\ntags: [checkpoint]\n---\n\n## What We Worked On\nMissing merged field.';
 		await writeFile(join(logsDir, '2026-04-24-def789-checkpoint-01.md'), content, 'utf8');
 
 		const result = await checkOrphanCheckpoints(dir, baseConfig);

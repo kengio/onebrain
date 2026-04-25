@@ -164,7 +164,14 @@ async function downloadPluginFiles(
 	vaultDir: string,
 	vaultSyncFn: (vaultDir: string, opts: Record<string, unknown>) => Promise<void>,
 ): Promise<{ skipped: boolean; driftWarning?: string }> {
-	const pluginJsonPath = join(vaultDir, '.claude', 'plugins', 'onebrain', 'plugin.json');
+	const pluginJsonPath = join(
+		vaultDir,
+		'.claude',
+		'plugins',
+		'onebrain',
+		'.claude-plugin',
+		'plugin.json',
+	);
 
 	if (await pathExists(pluginJsonPath)) {
 		// Check version drift

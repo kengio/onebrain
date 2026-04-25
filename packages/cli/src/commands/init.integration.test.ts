@@ -182,10 +182,10 @@ describe('init integration: existing vault.yml, no --force (non-TTY)', () => {
 describe('init integration: plugin files present (skip vault-sync)', () => {
 	it('skips vault-sync when .claude/plugins/onebrain/plugin.json already exists', async () => {
 		// Pre-create plugin.json to simulate existing plugin files
-		const pluginDir = join(tempDir, '.claude', 'plugins', 'onebrain');
-		await mkdir(pluginDir, { recursive: true });
+		const pluginMetaDir = join(tempDir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
+		await mkdir(pluginMetaDir, { recursive: true });
 		await writeFile(
-			join(pluginDir, 'plugin.json'),
+			join(pluginMetaDir, 'plugin.json'),
 			JSON.stringify({ version: '1.11.0' }),
 			'utf8',
 		);
@@ -214,11 +214,7 @@ describe('init integration: plugin files present (skip vault-sync)', () => {
 	it('still creates folders and vault.yml even when vault-sync is skipped', async () => {
 		const pluginDir = join(tempDir, '.claude', 'plugins', 'onebrain');
 		await mkdir(pluginDir, { recursive: true });
-		await writeFile(
-			join(pluginDir, 'plugin.json'),
-			JSON.stringify({ version: '1.11.0' }),
-			'utf8',
-		);
+		await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.11.0' }), 'utf8');
 
 		// Pre-create vault.yml so --force is needed
 		await writeFile(join(tempDir, 'vault.yml'), 'method: legacy\n', 'utf8');

@@ -37,11 +37,14 @@ function parseFrontmatterWithRest(rawText: string): {
 	const text = rawText.replace(/\r\n/g, '\n');
 	if (!text.startsWith('---')) return null;
 
-	const endIdx = text.indexOf('\n---', 3);
-	if (endIdx === -1) return null;
+	// Require closing --- to be followed by newline or end-of-string (bare --- line only).
+	// Rejects lines like ---foo or ---some-separator as false closers.
+	const endMatch = /\n---(\n|$)/.exec(text.slice(3));
+	if (!endMatch) return null;
+	const endIdx = 3 + endMatch.index;
+	const rest = text.slice(endIdx + endMatch[0].length);
 
 	const fmText = text.slice(3, endIdx).trim();
-	const rest = text.slice(endIdx + 4);
 
 	try {
 		const parsed = parse(fmText);
@@ -124,7 +127,7 @@ export async function runBackfillRecapped(logsFolder: string): Promise<MigrateRe
 
 					if (!parsed) {
 						// No frontmatter or malformed
-						console.error(`migrate: ${fname} — malformed frontmatter`);
+						process.stderr.write(`migrate: ${fname} — malformed frontmatter\n`);
 						skipped++;
 						continue;
 					}
@@ -146,7 +149,7 @@ export async function runBackfillRecapped(logsFolder: string): Promise<MigrateRe
 					await writeFile(fpath, updatedContent, 'utf8');
 					backfilled++;
 				} catch (error) {
-					console.error(`migrate: error processing ${fname}: ${error}`);
+					process.stderr.write(`migrate: error processing ${fname}: ${error}\n`);
 					skipped++;
 				}
 			}
@@ -175,12 +178,9 @@ export async function migrateCommand(migrationName: string): Promise<void> {
 			const result = await runBackfillRecapped(logsFolder);
 			process.stdout.write(`backfilled: ${result.backfilled} files, skipped: ${result.skipped}\n`);
 		} else {
-			console.error(`migrate: unknown migration '${migrationName}'`);
+			process.stderr.write(`migrate: unknown migration '${migrationName}'\n`);
 		}
 	} catch (error) {
-		console.error(`migrate: ${error}`);
+		process.stderr.write(`migrate: ${error}\n`);
 	}
-
-	// Always exit 0 (internal pattern)
-	process.exit(0);
 }

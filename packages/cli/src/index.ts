@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
+import { doctorCommand } from './commands/doctor.js';
 import { initCommand } from './commands/init.js';
 import { updateCommand } from './commands/update.js';
-import { doctorCommand } from './commands/doctor.js';
 import { checkpointCommand } from './internal/checkpoint.js';
 import { migrateCommand } from './internal/migrate.js';
 import { orphanScanCommand } from './internal/orphan-scan.js';
@@ -69,7 +69,7 @@ program
 	.description('Run vault health checks and report issues')
 	.action(async () => {
 		const vaultRoot = process.cwd();
-		await doctorCommand({ vaultDir: vaultRoot });
+		await doctorCommand({ vaultDir: vaultRoot, binaryVersion: VERSION });
 	});
 
 program

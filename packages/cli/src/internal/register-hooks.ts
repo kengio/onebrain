@@ -351,7 +351,7 @@ export async function runRegisterHooks(
 
 		result.pathStatus = applyPath(settings);
 
-		pathSpinner?.stop('Registering PATH...');
+		pathSpinner?.stop('PATH registered');
 
 		if (isTTY) {
 			note('env.PATH in .claude/settings.json: ✓');
