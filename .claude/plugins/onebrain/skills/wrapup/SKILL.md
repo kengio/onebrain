@@ -216,6 +216,44 @@ This writes `0:<epoch>:00` into the session state file, triggering a 60-second s
 
 ---
 
+## Step 4b: Route Action Items to Project Notes
+
+After the session log is written, automatically move action items to the appropriate project note so the startup task scan picks them up.
+
+Store `routed_tasks = []` and `skipped_tasks = []` for use in Step 8.
+
+**4b-1. Extract tasks.** Parse the `## Action Items` section of the session log just written. Collect all lines matching `- [ ] ...`. If none, skip this step entirely.
+
+**4b-2. Discover project notes.** Glob `[projects_folder]/**/*.md`. For each file, collect the folder name (first path segment under `[projects_folder]`) and the filename stem as candidate keywords.
+
+**4b-3. Score and group tasks by target.**
+
+For each task line:
+  - Score each candidate project note: split the folder name and filename stem on hyphens and underscores to produce individual keyword tokens, then count how many tokens appear as case-insensitive whole-word matches in the task text.
+  - Select the highest-scoring candidate. **Require score ≥ 1 and a unique winner (no tie at the top score)** to route.
+  - If score = 0 or two files tie → add to `skipped_tasks`; leave task in session log only.
+  - Otherwise → assign the task to the winning project note.
+
+Group all assigned tasks by their target file path. This avoids repeated reads and writes to the same note.
+
+**4b-4. Write each target file once.**
+
+For each target file with one or more assigned tasks:
+  - Read the file once.
+  - For each task assigned to this file:
+    - **Dedup check:** strip the trailing `📅 YYYY-MM-DD` suffix from both the candidate task and all existing task lines (lines matching `- [ ]` or `- [x]`) before comparing. If a task with the same text (open or completed) already exists in the file, skip this task; add to `skipped_tasks`.
+    - **Insertion point (priority order):**
+      1. Find an existing `## Action Items` section — append after the last `- [ ]` line in it, or after the heading if the section is empty.
+      2. If no `## Action Items` section: insert one before `## Open Questions` if present, otherwise before `## Related`, otherwise at the end of the file. Add a blank line before and after the new heading.
+    - Collect all non-skipped tasks for this file.
+  - If no non-skipped tasks remain after dedup, skip the write entirely for this file.
+  - Otherwise write the updated file once. On write error, move all non-deduped tasks for this file to `skipped_tasks` and continue.
+  - Store the vault-relative path (e.g. `01-projects/onebrain/OneBrain.md`) as `relative_path`. Append each successfully inserted task as `{task_text, relative_path}` to `routed_tasks`.
+
+**4b-5. This step must never fail /wrapup.** All errors (read/write failures, no project notes found) are silently handled per task or per file. The session log is always the source of truth.
+
+---
+
 ## Step 5: Mark Checkpoints as Merged
 
 If the Step 1 checkpoint list is non-empty (i.e., at least one file was read and incorporated):
@@ -275,8 +313,16 @@ Say:
 ──────────────────────────────────────────────────────────────
 `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
 
-I logged {N} action items — they'll appear in your Tasks view.
+I logged {N} action items.
 (omit this line if no action items)
+
+Routed {R} action item(s) to project notes:
+  → [task text] → `01-projects/…/Note.md`
+(omit this block if routed_tasks is empty; list one line per routed task, using the vault-relative path stored in routed_tasks)
+
+Skipped routing (no match / tie):
+  · [task text]
+(omit this block if skipped_tasks is empty; list one line per skipped task)
 
 Auto-recovered {S} orphan session(s):
   {YYYY-MM-DD} → `session-NN.md` ({C} checkpoints)
