@@ -1,0 +1,13 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`runOrphanScan output shape matches snapshot { orphan_count: N } 1`] = `
+{
+  "orphan_count": 0,
+}
+`;
+
+exports[`runOrphanScan output shape matches snapshot { orphan_count: N } 2`] = `
+{
+  "orphan_count": 1,
+}
+`;

@@ -1,0 +1,232 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # ─── Step 1: verify tag matches package.json version ──────────────────────
+  verify-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      release_date: ${{ steps.check.outputs.release_date }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches package.json version
+        id: check
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Strip leading 'v'
+          TAG_VERSION="${TAG#v}"
+          PKG_VERSION=$(node -p "require('./packages/cli/package.json').version")
+
+          echo "Tag version:  $TAG_VERSION"
+          echo "package.json: $PKG_VERSION"
+
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $TAG does not match packages/cli/package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+  # ─── Step 2: build binaries (6 targets in parallel) ───────────────────────
+  build-binaries:
+    needs: verify-tag
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: bun-darwin-arm64
+            output: onebrain-darwin-arm64
+            ext: ""
+          - target: bun-darwin-x64
+            output: onebrain-darwin-x64
+            ext: ""
+          - target: bun-linux-arm64
+            output: onebrain-linux-arm64
+            ext: ""
+          - target: bun-linux-x64
+            output: onebrain-linux-x64
+            ext: ""
+          - target: bun-windows-x64
+            output: onebrain-windows-x64
+            ext: ".exe"
+          - target: bun-windows-arm64
+            output: onebrain-windows-arm64
+            ext: ".exe"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binary
+        env:
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+          RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
+          TARGET: ${{ matrix.target }}
+          OUTFILE: ${{ matrix.output }}${{ matrix.ext }}
+        run: |
+          bun build --compile \
+            --target="$TARGET" \
+            --define BUILD_VERSION="\"$VERSION\"" \
+            --define BUILD_DATE="\"$RELEASE_DATE\"" \
+            packages/cli/src/index.ts \
+            --outfile "$OUTFILE"
+
+          echo "Built: $OUTFILE ($(du -sh "$OUTFILE" | cut -f1))"
+
+      - name: Generate checksum
+        env:
+          OUTPUT: ${{ matrix.output }}
+          EXT: ${{ matrix.ext }}
+        run: |
+          sha256sum "${OUTPUT}${EXT}" > "${OUTPUT}.sha256"
+          cat "${OUTPUT}.sha256"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.output }}
+          path: |
+            ${{ matrix.output }}${{ matrix.ext }}
+            ${{ matrix.output }}.sha256
+
+  # ─── Step 3: package plugin ZIP ───────────────────────────────────────────
+  package-plugin:
+    needs: verify-tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package plugin ZIP
+        env:
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+        run: |
+          ZIP_NAME="onebrain-plugin-v${VERSION}.zip"
+          zip -r "$ZIP_NAME" \
+            .claude/plugins/onebrain/ \
+            install.sh \
+            install.ps1
+          echo "Packaged: $ZIP_NAME ($(du -sh "$ZIP_NAME" | cut -f1))"
+
+      - name: Generate checksum
+        env:
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+        run: |
+          sha256sum "onebrain-plugin-v${VERSION}.zip" > "onebrain-plugin-v${VERSION}.sha256"
+          cat "onebrain-plugin-v${VERSION}.sha256"
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-zip
+          path: |
+            onebrain-plugin-v${{ needs.verify-tag.outputs.version }}.zip
+            onebrain-plugin-v${{ needs.verify-tag.outputs.version }}.sha256
+
+  # ─── Step 4: npm publish ──────────────────────────────────────────────────
+  npm-publish:
+    needs: [verify-tag, build-binaries, package-plugin]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Compile TypeScript
+        run: bun run build
+        working-directory: packages/cli
+
+      - name: Publish to npm
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        working-directory: packages/cli
+        run: |
+          # Write auth to ~/.npmrc (global) — bun publish reads this before any project-level .npmrc
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          bun publish --access public
+
+  # ─── Step 5: generate marketplace.json + create GitHub release ────────────
+  create-release:
+    needs: [verify-tag, build-binaries, package-plugin, npm-publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Generate marketplace.json
+        env:
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+          RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
+          REPO: ${{ github.repository }}
+        run: bun run scripts/generate-marketplace-json.js
+
+      - name: Extract CHANGELOG entry
+        id: changelog
+        env:
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+        run: |
+          # Extract section for this version: ## [2.0.0] or ## 2.0.0
+          NOTES=$(awk -v ver="$VERSION" 'BEGIN{pat="^## \\[?" ver "\\]?"} $0~pat{found=1;next} found && /^## /{exit} found{print}' CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="See [CHANGELOG.md](CHANGELOG.md) for details."
+          fi
+          echo "$NOTES" > release_notes.txt
+          echo "Extracted $(wc -l < release_notes.txt) lines from CHANGELOG.md"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+        run: |
+          ASSETS=()
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            ASSETS+=("onebrain-${target}")
+            ASSETS+=("onebrain-${target}.sha256")
+          done
+          for target in windows-x64 windows-arm64; do
+            ASSETS+=("onebrain-${target}.exe")
+            ASSETS+=("onebrain-${target}.sha256")
+          done
+          ASSETS+=("onebrain-plugin-v${VERSION}.zip")
+          ASSETS+=("onebrain-plugin-v${VERSION}.sha256")
+          ASSETS+=("marketplace.json")
+
+          ATTACH_FLAGS=()
+          for asset in "${ASSETS[@]}"; do
+            if [ -f "$asset" ]; then
+              ATTACH_FLAGS+=("--attach" "$asset")
+            else
+              echo "::warning::Asset not found: $asset"
+            fi
+          done
+
+          gh release create "v${VERSION}" \
+            --title "OneBrain v${VERSION}" \
+            --notes-file release_notes.txt \
+            "${ATTACH_FLAGS[@]}"

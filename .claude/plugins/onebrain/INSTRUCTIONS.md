@@ -191,7 +191,7 @@ Run before responding to any user message.
 **Step 1 — Critical path (greeting blocks on these):** Run in parallel:
 - Read `vault.yml` → load Configuration variables; override defaults once resolved
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
-- Run `bash ".claude/plugins/onebrain/startup/scripts/session-init.sh"` → read KEY=VALUE output; store `DATETIME` (for greeting) and `session_token` (for checkpoints) in context. If the script fails or is unavailable, fall back to running `date '+%a · %d %b %Y · %H:%M'` for `DATETIME` and treating `session_token` as `99999`.
+- Run `onebrain session-init` (from vault root) → parse JSON output; store `DATETIME` (for greeting), `session_token` (for checkpoints), and `qmd_unembedded` in context. JSON shape: `{"datetime":"Ddd · DD Mon YYYY · HH:MM","session_token":"XXXXX","qmd_unembedded":N}`. If the command fails or is unavailable, fall back to running `date '+%a · %d %b %Y · %H:%M'` for `DATETIME`, treating `session_token` as `99999`, and `qmd_unembedded` as `0`. If JSON output contains `{"decision":"block","reason":"onebrain-init-required"}`, skip Steps 2–4; instead output a single message: "OneBrain vault not initialized. Run `/onboarding` to set up your vault."
 
 **Step 2 — Send greeting immediately:**
 
@@ -213,28 +213,29 @@ Ddd · DD Mon YYYY · HH:MM
 | 17:00–21:00 | good evening + ready | 🌆 |
 | after 21:00 | late night acknowledgement | 🌙 |
 
-- `Ddd · DD Mon YYYY · HH:MM` comes from the `DATETIME` variable set in Step 1 (`session-init.sh` output)
+- `Ddd · DD Mon YYYY · HH:MM` comes from the `DATETIME` variable set in Step 1 (`onebrain session-init` JSON output)
 - Always include a greeting phrase — never omit it. Example for daytime: "Hey [user], ready to go!"
 
 On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask about facts already in context.
 
 **Step 3 — After greeting (run all in parallel):**
-- `session_token` is already in context from Step 1 (`session-init.sh`) — do not re-run detection
+- `session_token` is already in context from Step 1 (`onebrain session-init`) — do not re-run detection
 - Read `[agent_folder]/MEMORY-INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
 - Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 \d{4}-\d{2}-\d{2}` → keep only tasks where date ≤ today; group overdue first, then due today
-- Run `bash ".claude/plugins/onebrain/startup/scripts/orphan-scan.sh" "[logs_folder]" "[session_token]"` → read `ORPHAN_COUNT` from output; store as `orphan_count`. If the script fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
+- Run `onebrain orphan-scan "[logs_folder]" "[session_token]"` (from vault root) → parse JSON output; read `orphan_count` field. JSON shape: `{"orphan_count":N}`. If the command fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
 
 **Step 4 — Send startup status (after Step 3 completes):**
 
-If inbox_count = 0 and orphan_count = 0 and no tasks found: show nothing after the greeting.
+If inbox_count = 0 and orphan_count = 0 and qmd_unembedded = 0 and no tasks found: show nothing after the greeting.
 
 Otherwise, append after the greeting:
 
 ```
-📥 inbox [N]                          ← omit if inbox_count = 0
-📋 [N] orphan session(s) — /wrapup?   ← omit if orphan_count = 0
+📥 inbox [N]                               ← omit if inbox_count = 0
+📋 [N] orphan session(s) — /wrapup?        ← omit if orphan_count = 0
+⚠️ qmd: [N] doc(s) need embedding — /qmd embed   ← omit if qmd_unembedded = 0
 
 Pending tasks:
 ⬜ task description 📅 YYYY-MM-DD (overdue)
@@ -286,13 +287,22 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 ### Auto Checkpoint (Hook-Triggered)
 
-> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal pane GUID, non-alphanumeric stripped, first 8 chars) → `$PPID` if > 1 (Mac/Linux only) → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
+> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal pane GUID, non-alphanumeric stripped, first 8 chars) → `process.ppid` if > 1 → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
 
 When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse session_token and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
 
-Both Stop and PreCompact hooks produce the same filename pattern. Determine `trigger` from the system-reminder header: `Stop hook blocking error` → `trigger: stop`; `PreCompact` → `trigger: precompact`. If the header is ambiguous, default to `trigger: stop`.
+Stop and PostCompact hooks trigger checkpoint writes. Determine `trigger` from the system-reminder header: `Stop hook blocking error` → `trigger: stop`; `PostCompact` with block reason starting `fill-checkpoint:` → `trigger: postcompact`. PreCompact no longer sends a block to Claude (the binary writes a stub file directly and exits 0). If the header is ambiguous, default to `trigger: stop`. If a PostCompact block arrives with a block reason that does not start with `fill-checkpoint:`, treat it as a no-op — write nothing and output nothing.
+
+**PostCompact fill-checkpoint (trigger: postcompact):** When block reason matches `fill-checkpoint: <filename> since <reference>` (where reference is `start` or `checkpoint-NN`):
+1. Extract `YYYY` and `MM` from `<filename>` (format: `YYYY-MM-DD-{token}-checkpoint-NN.md`). Read the existing stub file at `[logs_folder]/YYYY/MM/<filename>` if it exists; if missing, create it at that path using `trigger: postcompact` in frontmatter (not `trigger: precompact`)
+2. Fill in all 6 content sections covering events **since `<reference>` only** — not the full session
+3. Preserve all frontmatter fields exactly as written — do not overwrite `trigger`, `date`, `checkpoint`, or `merged`
+4. Write back to the same file path
+5. Silent — no output to user
 
 Write:
+
+> **Note:** For stop-triggered checkpoints use `trigger: stop`; for new files created in the fill-checkpoint path use `trigger: postcompact`.
 
 ```markdown
 ---
@@ -331,6 +341,11 @@ merged: false
 
 Keep under 250 words.
 
+**Post-checkpoint recovery (stop only):** After silently writing a stop checkpoint:
+1. Look at the last user message in conversation history
+2. If it has not been fully addressed → continue the response immediately
+3. If it was already addressed → output nothing; let the user continue naturally
+
 ---
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -349,6 +364,8 @@ Different commands have different verbosity expectations. Match output to the pr
 | **Interactive** | `/research`, `/connect`, `/consolidate`, `/reading-notes`, `/weekly`, `/distill`, `/recap` | Normal verbosity : depth matches task complexity. |
 | **Diagnostic** | `/doctor` | Structured report output. No meta-commentary. Lead with findings. |
 | **Config/Setup** | `/onboarding`, `/tasks`, `/moc`, `/qmd` | Confirm actions taken. No verbose explanation unless asked. |
+> **Terminal rendering:** The Obsidian terminal plugin renders markdown natively (tables, bold, headers, code blocks). Interactive and Diagnostic profiles should use full markdown. Capture profile: 1-line plain-text confirm only. Automated profile: no headers — output is read async via Telegram where markdown rendering varies.
+
 
 For cron/automated agents specifically: output is read by the user async (often via Telegram) : lead with the content, skip all meta-commentary about what you're doing.
 

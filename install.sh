@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# SECURITY: 2-step install (recommended):
+#   curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh -o install.sh
+#   cat install.sh    # review
+#   bash install.sh
+# Convenience (less secure): curl -fsSL ... | bash
+
 # ─── Colors ───────────────────────────────────────────────────────────────────
 # Color variables are gated on stdout (fd 1) being a TTY. When run as `curl | bash`,
 # stdout is the pipe and is not a TTY, so all colors are disabled — including stderr-bound
@@ -30,6 +36,8 @@ if locale charmap 2>/dev/null | grep -qi 'utf-8'; then
 else
   icon_dl="[DL]" icon_extract="[EX]" icon_ok="[OK]" icon_fail="[FAIL]" icon_done="[DONE]"
 fi
+
+# Third-party plugin — review source at https://github.com/kengio/onebrain
 
 # ─── Banner ───────────────────────────────────────────────────────────────────
 print_banner() {
@@ -157,7 +165,7 @@ print_install_hint() {
 
 check_deps() {
   local missing=()
-  for cmd in curl tar git; do
+  for cmd in curl tar git unzip; do
     command -v "$cmd" &>/dev/null || missing+=("$cmd")
   done
   if [ ${#missing[@]} -gt 0 ]; then
@@ -246,6 +254,7 @@ install_plugins() {
   # Accept header is included in the array (not hardcoded on the curl line) so both
   # authenticated and unauthenticated calls send identical headers, and the array is
   # never expanded empty (which would be a no-op, but is cleaner to avoid).
+  # GITHUB_TOKEN: needs public_repo (read-only) scope only
   local curl_auth_args=(-H "Accept: application/vnd.github.v3+json")
   if [ -n "${GITHUB_TOKEN:-}" ]; then
     curl_auth_args+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
@@ -410,6 +419,8 @@ register_onebrain_hooks() {
     return 0
   fi
 
+  # What this hook does: records context snapshots to your vault before Claude compresses
+  # its memory. No network calls. No data leaves your vault. Pure local file writes.
   local result=""
   if command -v python3 &>/dev/null; then
     result=$(python3 - "$settings" "$hook_script" <<'PYEOF'
@@ -533,6 +544,10 @@ main() {
   # Expand a leading ~ to $HOME (note: ~username forms are not expanded)
   install_location="${install_location/#\~/$HOME}"
 
+  if [[ "$install_location" == *" "* ]]; then
+    print_info "Warning: Install path contains spaces — some shell hooks may not work correctly: $install_location"
+  fi
+
   if [ ! -d "$install_location" ]; then
     print_prompt "Directory '$install_location' does not exist. Create it? [Y/n]:"
     if ! read -r confirm <&"$tty_fd"; then
@@ -558,9 +573,13 @@ main() {
   local vault_name
   vault_name=$(prompt_with_default 2 "Vault name?" "onebrain")
 
-  # Validate: no spaces or path-breaking characters
-  if [[ "$vault_name" =~ [[:space:]/\\] ]]; then
-    print_error "Vault name must not contain spaces or slashes. Got: '$vault_name'"
+  # Validate: only alphanumerics, underscores, hyphens, and dots; no leading dot; no '..'
+  if ! [[ "$vault_name" =~ ^[a-zA-Z0-9_.-]+$ ]] || [[ "$vault_name" == ..* ]] || [[ "$vault_name" == .* ]]; then
+    print_error "Vault name must start with a letter, digit, or underscore and contain only [a-zA-Z0-9_.-]. Got: '$vault_name'"
+    exit 1
+  fi
+  if [[ "$vault_name" == *..* ]]; then
+    print_error "Vault name must not contain '..'. Got: '$vault_name'"
     exit 1
   fi
 
@@ -577,28 +596,48 @@ main() {
   echo
 
   # ── Step 3: Download and extract ────────────────────────────────────────────
-  local repo_url="https://github.com/kengio/onebrain/archive/refs/heads/main.tar.gz"
+  # Resolve the latest release version via GitHub API so we can build versioned asset URLs.
+  local latest_tag
+  latest_tag=$(curl -fsSL \
+    -H "Accept: application/vnd.github.v3+json" \
+    "https://api.github.com/repos/kengio/onebrain/releases/latest" 2>/dev/null \
+    | grep '"tag_name"' \
+    | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' \
+    | head -1 || true)
+  if [ -z "$latest_tag" ]; then
+    print_error "Could not resolve latest release version from GitHub API. Check your internet connection."
+    exit 1
+  fi
+  local version="${latest_tag#v}"
+  local download_url="https://github.com/kengio/onebrain/releases/download/${latest_tag}/onebrain-plugin-v${version}.zip"
   trap cleanup EXIT INT TERM
   _install_tmpdir=$(mktemp -d) || { print_error "Could not create a temporary directory. Check that '${TMPDIR:-/tmp}' is writeable and has space."; exit 1; }
 
+  local downloaded_file="$_install_tmpdir/onebrain.zip"
   spinner_start "$icon_dl Downloading OneBrain..."
-  if ! curl -fsSL "$repo_url" -o "$_install_tmpdir/onebrain.tar.gz"; then
+  if ! curl -fsSL "$download_url" -o "$downloaded_file"; then
     spinner_stop "$icon_fail" ""
     print_error "Download failed. Check your internet connection and try again."
     exit 1
   fi
   spinner_stop "$icon_ok" "Downloaded"
 
-  # Verify the downloaded file is actually a valid tar archive, not an HTML error page
-  if ! tar tzf "$_install_tmpdir/onebrain.tar.gz" >/dev/null; then
-    print_error "Downloaded file is not a valid archive."
-    print_error "The repository may not be published yet, or the URL may have changed."
-    print_error "URL: $repo_url"
-    exit 1
+  # Verify SHA256 checksum (Issue 1b)
+  # sha256_url is derived from download_url so the filenames always match.
+  local sha256_url="${download_url%.zip}.sha256"
+  local expected_sha
+  expected_sha=$(curl -fsSL "$sha256_url" 2>/dev/null | awk '{print $1}' || true)
+  if [ -n "$expected_sha" ]; then
+    local actual_sha
+    actual_sha=$(sha256sum "$downloaded_file" 2>/dev/null | awk '{print $1}' || shasum -a 256 "$downloaded_file" 2>/dev/null | awk '{print $1}' || true)
+    if [ "$actual_sha" != "$expected_sha" ]; then
+      print_error "SHA256 mismatch — download may be corrupted. Expected: $expected_sha Got: $actual_sha"
+      exit 1
+    fi
   fi
 
   spinner_start "$icon_extract Extracting..."
-  if ! tar xzf "$_install_tmpdir/onebrain.tar.gz" -C "$_install_tmpdir"; then
+  if ! unzip -q "$downloaded_file" -d "$_install_tmpdir"; then
     spinner_stop "$icon_fail" ""
     print_error "Extraction failed. The archive may be corrupted or your disk may be full."
     exit 1
@@ -623,6 +662,16 @@ main() {
     exit 1
   fi
 
+  # Verify manifest identity (Issue 2)
+  local plugin_manifest="$vault_path/.claude-plugin/plugin.json"
+  local manifest_name
+  manifest_name=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("name",""))' "$plugin_manifest" 2>/dev/null || true)
+  if [ -n "$manifest_name" ] && [ "$manifest_name" != "onebrain" ]; then
+    print_error "Manifest id mismatch — expected 'onebrain', got '$manifest_name'. Aborting."
+    rm -rf "$vault_path"
+    exit 1
+  fi
+
   # ── Step 4: Clean up installed vault ────────────────────────────────────────
   # Remove install scripts, README and assets from the vault — they belong to the repo, not the vault.
   # rm -f silently succeeds if they are absent; the if-guard catches permission errors only.
@@ -644,6 +693,8 @@ main() {
   fi
 
   # ── Step 4b: Register OneBrain hooks in .claude/settings.json ───────────
+  echo "OneBrain needs to register hooks in Claude Code settings.json"
+  echo "This grants permission to run: onebrain checkpoint, onebrain session-init"
   register_onebrain_hooks "$vault_path"
 
   # ── Step 4c: Install community plugins ───────────────────────────────────
@@ -654,6 +705,7 @@ main() {
   echo "${green}  $icon_done OneBrain is ready!${reset}"
   echo
   print_success "Vault path: ${vault_path}"
+  echo "This is a third-party plugin — not affiliated with Anthropic."
   echo
   echo "${bold}${cyan}Next steps:${reset}"
   echo
