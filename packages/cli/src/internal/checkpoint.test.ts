@@ -714,33 +714,43 @@ describe('handlePrecompact', () => {
 
 describe('handlePostcompact', () => {
   let tmpDir: string;
+  let vaultDir: string;
+  // Use date consistent with now=1700001000 (2023-11-14) so disk paths align
+  const now = 1700001000;
+  const stubDate = '2023-11-14';
+  const logsDir = () => join(vaultDir, '07-logs', '2023', '11');
 
   beforeEach(async () => {
     tmpDir = await makeTmpDir();
+    vaultDir = await makeTmpDir();
+    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
   });
   afterEach(async () => {
     await rm(tmpDir, { recursive: true, force: true });
+    await rm(vaultDir, { recursive: true, force: true });
   });
 
+  async function writeCheckpointOnDisk(nn: string) {
+    await mkdir(logsDir(), { recursive: true });
+    await writeFile(join(logsDir(), `${stubDate}-${TOKEN}-checkpoint-${nn}.md`), `---\ntrigger: stop\nmerged: false\n---\n`, 'utf8');
+  }
+
   it('no pending stub (3-field state) → preserve last_ts, write 3-field, no stdout', async () => {
-    const now = 1700001000;
     const ts = 1699999000;
     writeState(TOKEN, { count: 2, last_ts: ts, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, now, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     expect(out).toBe('');
     const raw = await readStateRaw(tmpDir, TOKEN);
-    // 3-field, last_ts preserved
     expect(raw).toBe(`0:${ts}:02`);
   });
 
   it('no state file → write 3-field with last_ts=0, no stdout', () => {
-    const now = 1700001000;
     const cap = captureStdout();
-    handlePostcompact(TOKEN, now, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
@@ -749,21 +759,12 @@ describe('handlePostcompact', () => {
   });
 
   it('pending stub found → emit fill-checkpoint block, clear pending_stub, last_ts=now', async () => {
-    const now = 1700001000;
     const ts = 1699999000;
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: ts,
-        last_stop_nn: '02',
-        pending_stub: '2026-04-23-41928-checkpoint-03.md',
-      },
-      tmpDir,
-    );
+    await writeCheckpointOnDisk('02'); // predecessor on disk
+    writeState(TOKEN, { count: 0, last_ts: ts, last_stop_nn: '02', pending_stub: `${stubDate}-${TOKEN}-checkpoint-03.md` }, tmpDir);
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, now, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim());
@@ -772,26 +773,15 @@ describe('handlePostcompact', () => {
     expect(parsed.reason).toContain('checkpoint-03.md');
     expect(parsed.reason).toMatch(/since checkpoint-02$/);
 
-    // State cleared: last_ts=now (protects recency guard), last_stop_nn advanced to stubNn (03)
     const raw = await readStateRaw(tmpDir, TOKEN);
     expect(raw).toBe(`0:${now}:03`);
   });
 
-  it('"since start" format when last_stop_nn="00" → advances last_stop_nn to 01', async () => {
-    const now = 1700001000;
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '00',
-        pending_stub: '2026-04-23-41928-checkpoint-01.md',
-      },
-      tmpDir,
-    );
+  it('"since start" format when no predecessor on disk → advances last_stop_nn to 01', async () => {
+    writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '00', pending_stub: `${stubDate}-${TOKEN}-checkpoint-01.md` }, tmpDir);
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, now, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim());
@@ -800,21 +790,12 @@ describe('handlePostcompact', () => {
     expect(raw).toBe(`0:${now}:01`);
   });
 
-  it('"since checkpoint-NN" format when last_stop_nn non-zero → advances last_stop_nn to 04', async () => {
-    const now = 1700001000;
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '03',
-        pending_stub: '2026-04-23-41928-checkpoint-04.md',
-      },
-      tmpDir,
-    );
+  it('"since checkpoint-NN" format → predecessor derived from disk, not arithmetic', async () => {
+    await writeCheckpointOnDisk('03'); // predecessor on disk
+    writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '03', pending_stub: `${stubDate}-${TOKEN}-checkpoint-04.md` }, tmpDir);
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, now, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim());
@@ -823,21 +804,24 @@ describe('handlePostcompact', () => {
     expect(raw).toBe(`0:${now}:04`);
   });
 
-  it('missing stub file on disk → still emit fill-checkpoint (Claude creates it)', () => {
-    // Stub filename referenced in state but no actual file on disk
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '01',
-        pending_stub: 'nonexistent-checkpoint-02.md',
-      },
-      tmpDir,
-    );
+  it('gap in disk: stub is checkpoint-04 but only checkpoint-02 exists → since checkpoint-02', async () => {
+    await writeCheckpointOnDisk('02'); // checkpoint-03 was never written
+    writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '02', pending_stub: `${stubDate}-${TOKEN}-checkpoint-04.md` }, tmpDir);
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, 1700001000, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim());
+    // arithmetic would say checkpoint-03 (which doesn't exist); disk scan correctly says checkpoint-02
+    expect(parsed.reason).toMatch(/since checkpoint-02$/);
+  });
+
+  it('missing stub file on disk → still emit fill-checkpoint (Claude creates it)', () => {
+    writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '01', pending_stub: `${stubDate}-${TOKEN}-checkpoint-02.md` }, tmpDir);
+
+    const cap = captureStdout();
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim());
@@ -846,66 +830,45 @@ describe('handlePostcompact', () => {
   });
 
   it('4-field state with empty pending_stub → treat as no pending stub', async () => {
-    // Manually write edge case: 4-field with empty 4th
     await writeFile(stateFile(tmpDir, TOKEN), '0:1699999000:02:', 'utf8');
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, 1700001000, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     expect(out).toBe('');
   });
 
   it('pending_stub NN inconsistent with last_stop_nn → uses NN from filename (authoritative)', async () => {
-    // State corruption: last_stop_nn says 02 but stub filename says checkpoint-04
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '02',
-        pending_stub: '2026-04-23-41928-checkpoint-04.md',
-      },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '02', pending_stub: `${stubDate}-${TOKEN}-checkpoint-04.md` }, tmpDir);
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, 1700001000, tmpDir);
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     cap.stop();
 
-    // Filename wins: last_stop_nn advances to 04 (from filename), not 03 (from last_stop_nn+1)
-    const now = 1700001000;
     const raw = await readStateRaw(tmpDir, TOKEN);
     expect(raw).toBe(`0:${now}:04`);
   });
 
   it('postcompact last_ts=now blocks precompact re-fire within 5 min', async () => {
-    // Postcompact sets last_ts=now; immediate second precompact must be blocked by recency guard
-    const now = 1700001000;
-    const vaultDir = await makeTmpDir();
-    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-    try {
-      writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '01', pending_stub: '2023-11-14-41928-checkpoint-02.md' }, tmpDir);
+    writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '01', pending_stub: `${stubDate}-${TOKEN}-checkpoint-02.md` }, tmpDir);
 
-      const cap = captureStdout();
-      handlePostcompact(TOKEN, now, tmpDir);
-      cap.stop();
+    const cap = captureStdout();
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
+    cap.stop();
 
-      const stateAfterPost = readState(TOKEN, tmpDir);
-      expect(stateAfterPost.last_ts).toBe(now);
-      expect(stateAfterPost.pending_stub).toBeUndefined();
+    const stateAfterPost = readState(TOKEN, tmpDir);
+    expect(stateAfterPost.last_ts).toBe(now);
+    expect(stateAfterPost.pending_stub).toBeUndefined();
 
-      // Precompact fires 30s later (within PRECOMPACT_RECENCY=300s) — must be no-op
-      const cap2 = captureStdout();
-      await handlePrecompact(TOKEN, vaultDir, now + 30, tmpDir);
-      const out2 = cap2.stop();
+    // Precompact fires 30s later (within PRECOMPACT_RECENCY=300s) — must be no-op
+    const cap2 = captureStdout();
+    await handlePrecompact(TOKEN, vaultDir, now + 30, tmpDir);
+    const out2 = cap2.stop();
 
-      expect(out2).toBe('');
-      const stateAfterPre = readState(TOKEN, tmpDir);
-      expect(stateAfterPre.pending_stub).toBeUndefined();
-    } finally {
-      await rm(vaultDir, { recursive: true, force: true });
-    }
+    expect(out2).toBe('');
+    const stateAfterPre = readState(TOKEN, tmpDir);
+    expect(stateAfterPre.pending_stub).toBeUndefined();
   });
 });
 
@@ -1023,12 +986,18 @@ describe('postcompactFallback', () => {
 
   it('pending_stub in state → delegates to handlePostcompact, not disk scan', async () => {
     const stubFilename = `${date}-${TOKEN}-checkpoint-02.md`;
+    await writeStubFile('01', 'stop', 'true'); // predecessor on disk
     writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '01', pending_stub: stubFilename }, tmpDir);
     const cap = captureStdout();
     postcompactFallback(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     const parsed = JSON.parse(out.trim());
     expect(parsed.reason).toMatch(/fill-checkpoint:.*checkpoint-02\.md since checkpoint-01$/);
+    // State must be cleared: pending_stub gone, last_ts=now
+    const state = readState(TOKEN, tmpDir);
+    expect(state.pending_stub).toBeUndefined();
+    expect(state.last_ts).toBe(now);
+    expect(state.last_stop_nn).toBe('02');
   });
 });
 

@@ -419,10 +419,12 @@ export async function handlePrecompact(
 /**
  * Postcompact hook: handle pending stub from precompact.
  * If pending stub: emit fill-checkpoint block, set last_ts=now.
+ * Predecessor NN derived from disk scan — correct even when there are gaps.
  * Sync. Called only when state has pending_stub set.
  */
 export function handlePostcompact(
   token: string,
+  vaultRoot: string,
   now: number = Math.floor(Date.now() / 1000),
   tmpDir: string = osTmpdir(),
 ): void {
@@ -433,11 +435,32 @@ export function handlePostcompact(
     return;
   }
 
-  // Derive "since" reference from stub filename (NN - 1)
   const stubNnMatch = state.pending_stub.match(/-checkpoint-(\d{2})\.md$/);
   const stubNn = stubNnMatch?.[1] ?? '01';
-  const prevNn = Number(stubNn) - 1;
-  const since = prevNn === 0 ? ' since start' : ` since checkpoint-${String(prevNn).padStart(2, '0')}`;
+  const stubNnNum = Number(stubNn);
+
+  // Derive predecessor from disk — correct even when there are gaps in numbering
+  const { logsFolder } = loadVaultSettings(vaultRoot);
+  const date = state.pending_stub.slice(0, 10); // YYYY-MM-DD prefix
+  const yyyy = date.slice(0, 4);
+  const mm = date.slice(5, 7);
+  const dir = join(vaultRoot, logsFolder, yyyy, mm);
+  const prefix = `${date}-${token}-checkpoint-`;
+  let predecessorNn = 0;
+  try {
+    for (const f of readdirSync(dir)) {
+      if (!f.startsWith(prefix) || !f.endsWith('.md')) continue;
+      const m = f.match(/-checkpoint-(\d{2})\.md$/);
+      if (m) {
+        const nn = Number(m[1]);
+        if (nn < stubNnNum) predecessorNn = Math.max(predecessorNn, nn);
+      }
+    }
+  } catch {
+    // dir missing or unreadable — predecessorNn stays 0 → 'since start'
+  }
+
+  const since = predecessorNn === 0 ? ' since start' : ` since checkpoint-${String(predecessorNn).padStart(2, '0')}`;
   emitBlock(`fill-checkpoint: ${state.pending_stub}${since}`);
 
   // last_ts=now: recency guard in handlePrecompact blocks re-fire within 5 min
@@ -466,7 +489,7 @@ export function postcompactFallback(
   const state = readState(token, tmpDir);
 
   if (state.pending_stub) {
-    handlePostcompact(token, now, tmpDir);
+    handlePostcompact(token, vaultRoot, now, tmpDir);
     return;
   }
 
