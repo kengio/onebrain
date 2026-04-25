@@ -420,14 +420,13 @@ export async function handlePrecompact(
  * Postcompact hook: handle pending stub from precompact.
  * If no pending stub: preserve last_ts, write clean 3-field state.
  * If pending stub: emit fill-checkpoint block (since reference derived from stub
- * filename), clear pending_stub, set last_ts=0.
- * Subsequent stop/precompact hooks compute NN from disk — no special advancement needed.
+ * filename), clear pending_stub, set last_ts=now so precompact recency guard
+ * protects the 5-minute window after a compact cycle completes.
  * Sync.
  */
 export function handlePostcompact(
   token: string,
-  // _now kept for API symmetry with handleStop/handlePrecompact so call sites can pass now as 2nd arg
-  _now: number = Math.floor(Date.now() / 1000),
+  now: number = Math.floor(Date.now() / 1000),
   tmpDir: string = osTmpdir(),
 ): void {
   const state = readState(token, tmpDir);
@@ -450,8 +449,8 @@ export function handlePostcompact(
   const since = prevNn === 0 ? ' since start' : ` since checkpoint-${String(prevNn).padStart(2, '0')}`;
   emitBlock(`fill-checkpoint: ${state.pending_stub}${since}`);
 
-  // Clear pending_stub, set last_ts=0 sentinel, record stub NN for debugging
-  writeState(token, { count: 0, last_ts: 0, last_stop_nn: stubNn }, tmpDir);
+  // last_ts=now: recency guard in handlePrecompact blocks re-fire within 5 min
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: stubNn }, tmpDir);
 }
 
 // ---------------------------------------------------------------------------

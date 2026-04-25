@@ -722,7 +722,7 @@ describe('handlePostcompact', () => {
     expect(state.last_ts).toBe(0);
   });
 
-  it('pending stub found → emit fill-checkpoint block, clear pending_stub, last_ts=0', async () => {
+  it('pending stub found → emit fill-checkpoint block, clear pending_stub, last_ts=now', async () => {
     const now = 1700001000;
     const ts = 1699999000;
     writeState(
@@ -746,12 +746,13 @@ describe('handlePostcompact', () => {
     expect(parsed.reason).toContain('checkpoint-03.md');
     expect(parsed.reason).toMatch(/since checkpoint-02$/);
 
-    // State cleared: last_ts=0, pending_stub gone, last_stop_nn advanced to stubNn (03)
+    // State cleared: last_ts=now (protects recency guard), last_stop_nn advanced to stubNn (03)
     const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe('0:0:03');
+    expect(raw).toBe(`0:${now}:03`);
   });
 
   it('"since start" format when last_stop_nn="00" → advances last_stop_nn to 01', async () => {
+    const now = 1700001000;
     writeState(
       TOKEN,
       {
@@ -764,16 +765,17 @@ describe('handlePostcompact', () => {
     );
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, 1700001000, tmpDir);
+    handlePostcompact(TOKEN, now, tmpDir);
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.reason).toMatch(/since start$/);
     const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe('0:0:01');
+    expect(raw).toBe(`0:${now}:01`);
   });
 
   it('"since checkpoint-NN" format when last_stop_nn non-zero → advances last_stop_nn to 04', async () => {
+    const now = 1700001000;
     writeState(
       TOKEN,
       {
@@ -786,13 +788,13 @@ describe('handlePostcompact', () => {
     );
 
     const cap = captureStdout();
-    handlePostcompact(TOKEN, 1700001000, tmpDir);
+    handlePostcompact(TOKEN, now, tmpDir);
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.reason).toMatch(/since checkpoint-03$/);
     const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe('0:0:04');
+    expect(raw).toBe(`0:${now}:04`);
   });
 
   it('missing stub file on disk → still emit fill-checkpoint (Claude creates it)', () => {
@@ -846,8 +848,38 @@ describe('handlePostcompact', () => {
     cap.stop();
 
     // Filename wins: last_stop_nn advances to 04 (from filename), not 03 (from last_stop_nn+1)
+    const now = 1700001000;
     const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe('0:0:04');
+    expect(raw).toBe(`0:${now}:04`);
+  });
+
+  it('postcompact last_ts=now blocks precompact re-fire within 5 min', async () => {
+    // Postcompact sets last_ts=now; immediate second precompact must be blocked by recency guard
+    const now = 1700001000;
+    const vaultDir = await makeTmpDir();
+    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+    try {
+      writeState(TOKEN, { count: 0, last_ts: 1699999000, last_stop_nn: '01', pending_stub: '2023-11-14-41928-checkpoint-02.md' }, tmpDir);
+
+      const cap = captureStdout();
+      handlePostcompact(TOKEN, now, tmpDir);
+      cap.stop();
+
+      const stateAfterPost = readState(TOKEN, tmpDir);
+      expect(stateAfterPost.last_ts).toBe(now);
+      expect(stateAfterPost.pending_stub).toBeUndefined();
+
+      // Precompact fires 30s later (within PRECOMPACT_RECENCY=300s) — must be no-op
+      const cap2 = captureStdout();
+      await handlePrecompact(TOKEN, vaultDir, now + 30, tmpDir);
+      const out2 = cap2.stop();
+
+      expect(out2).toBe('');
+      const stateAfterPre = readState(TOKEN, tmpDir);
+      expect(stateAfterPre.pending_stub).toBeUndefined();
+    } finally {
+      await rm(vaultDir, { recursive: true, force: true });
+    }
   });
 });
 
