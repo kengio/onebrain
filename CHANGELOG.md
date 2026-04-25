@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.0
+latest_version: 2.0.1
 released: 2026-04-25
 ---
 
@@ -13,6 +13,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.1 — Fix: /wrapup session numbering
+
+- fix(wrapup): Step 2 glob now requires today's date as a literal prefix — prevents counting all sessions in the month when determining session number for the current day
 
 ## v2.0.0 — CLI Binary
 
