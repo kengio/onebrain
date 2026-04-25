@@ -137,6 +137,7 @@ jobs:
   npm-publish:
     needs: [verify-tag, build-binaries, package-plugin]
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -163,6 +164,7 @@ jobs:
   create-release:
     needs: [verify-tag, build-binaries, package-plugin, npm-publish]
     runs-on: ubuntu-latest
+    if: ${{ always() && needs.build-binaries.result == 'success' && needs.package-plugin.result == 'success' }}
     permissions:
       contents: write
     steps:
