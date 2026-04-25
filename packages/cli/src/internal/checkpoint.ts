@@ -298,8 +298,8 @@ export function handleStop(
   const filename = `${date}-${token}-checkpoint-${nextNn}.md`;
   emitBlock(`${filename}${since}`);
 
-  // Reset state (last_stop_nn recorded for debugging; not used for NN computation)
-  writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn }, tmpDir);
+  // Reset state; preserve pending_stub so postcompact can still fill the precompact stub
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn, pending_stub: state.pending_stub }, tmpDir);
 }
 
 // ---------------------------------------------------------------------------

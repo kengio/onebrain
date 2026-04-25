@@ -409,6 +409,22 @@ describe('handleStop', () => {
     expect(state.last_stop_nn).toBe('02');
   });
 
+  it('preserves pending_stub when stop fires while precompact stub is waiting for postcompact', async () => {
+    const now = 1700001000;
+    const stubFile = '2023-11-14-41928-checkpoint-03.md';
+    // State has pending_stub set (precompact wrote stub, postcompact hasn't run yet)
+    await createCheckpointFile(vaultDir, now, TOKEN, 3);
+    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '03', pending_stub: stubFile }, tmpDir);
+
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    cap.stop();
+
+    const state = readState(TOKEN, tmpDir);
+    // pending_stub must survive so postcompact can still fill stub-03
+    expect(state.pending_stub).toBe(stubFile);
+  });
+
   it('elapsed calc: last_ts=0 → elapsed=0, never triggers time threshold alone', () => {
     const now = 1700001000;
     // last_ts=0 sentinel (post-compact), count=1 (below min_activity)
