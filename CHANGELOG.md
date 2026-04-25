@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.0
+latest_version: 2.0.1
 released: 2026-04-25
 ---
 
@@ -9,6 +9,12 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## v2.0.1 — npm package fix
+
+- fix(cli): move @onebrain/core to devDependencies — bundled into dist at build time
+- fix(release): inject BUILD_VERSION into npm-publish build step so installed binary shows correct version
+- chore: sync version to 2.0.1 across packages/core and plugin.json
 
 ## v2.0.0 — CLI Binary
 

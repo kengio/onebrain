@@ -148,8 +148,14 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Compile TypeScript
-        run: bun run build
+        env:
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+          RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
         working-directory: packages/cli
+        run: |
+          bun build src/index.ts --outfile dist/onebrain --target node \
+            --define BUILD_VERSION="\"$VERSION\"" \
+            --define BUILD_DATE="\"$RELEASE_DATE\""
 
       - name: Publish to npm
         env:
