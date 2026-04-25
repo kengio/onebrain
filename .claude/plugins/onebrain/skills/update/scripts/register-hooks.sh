@@ -35,9 +35,9 @@ with open(path) as f:
         sys.exit(1)
 
 hooks_to_register = {
-    "Stop":        'bash ".claude/plugins/onebrain/hooks/checkpoint-hook.sh" stop',
-    "PreCompact":  'bash ".claude/plugins/onebrain/hooks/checkpoint-hook.sh" precompact',
-    "PostCompact": 'bash ".claude/plugins/onebrain/hooks/checkpoint-hook.sh" postcompact',
+    "Stop":        'onebrain checkpoint stop',
+    "PreCompact":  'onebrain checkpoint precompact',
+    "PostCompact": 'onebrain checkpoint postcompact',
 }
 
 if with_qmd:
@@ -48,7 +48,7 @@ registered = []
 
 for event, cmd in hooks_to_register.items():
     entries = hooks.setdefault(event, [])
-    marker = "qmd-reindex" if event == "PostToolUse" else "checkpoint-hook.sh"
+    marker = "qmd-reindex" if event == "PostToolUse" else "checkpoint"
     found = False
     for entry in entries:
         for h in entry.get("hooks", []):

@@ -14,11 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.0.2 — Fix: PostToolUse qmd hook missing
+## v2.0.2 — Fix: complete hook migration to CLI
 
 - fix(hooks): add PostToolUse entry to hooks.json — qmd-reindex.sh existed but was never wired up (gap from v2.0.0)
+- fix(hooks): migrate Stop/PreCompact/PostCompact hooks to `onebrain checkpoint` CLI — removes last bash script dependency from hook layer
+- fix(hooks): remove qmd-reindex.sh — superseded by `onebrain qmd-reindex` CLI (same pattern as session-init)
 - fix(update): register-hooks.sh now accepts --qmd flag to also register the PostToolUse hook in settings.json
 - fix(update): migration Step 7 now actively registers PostToolUse hook when qmd_collection is set, instead of only checking hooks.json
+- fix(doctor): update hook checks to match new CLI command strings
 
 ## v2.0.1 — Fix: /wrapup session numbering
 
