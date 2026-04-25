@@ -108,6 +108,9 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
 - If `qmd_collection` is present: run `bash ".claude/plugins/onebrain/skills/update/scripts/register-hooks.sh" ".claude/settings.json" --qmd`
   - Check output: "all hooks already registered" → ✅ done; "added PostToolUse" → ✅ registered
 
+**Bash permission for onebrain CLI:**
+- Read `[vault]/.claude/settings.json`; check `permissions.allow` contains `"Bash(onebrain *)"` — if missing, add it (additive, never remove existing entries)
+
 **Step 8: Verify migration**
 - Run /doctor (newly-synced version) automatically
 - Expected: 0 orphans, 0 dead links, 0 non-compliant names, MEMORY-INDEX.md present
