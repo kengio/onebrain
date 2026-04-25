@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.3
+latest_version: 2.0.4
 released: 2026-04-25
 ---
 
@@ -13,6 +13,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.4 — feat: /wrapup auto-routes action items to project notes
+
+- feat(wrapup): Step 4b — after writing the session log, extract `- [ ]` action items and route each to the most relevant project note via keyword scoring (folder name + filename stem match against task text)
+- feat(wrapup): dedup guard — skips appending if identical task line already exists in the target file
+- feat(wrapup): routing report in Step 8 confirmation — lists each task and its destination note
+- feat(wrapup): non-blocking — routing errors are silently skipped per task; session log always written first
 
 ## v2.0.3 — Fix: checkpoint numbering + backfill-recapped cutoff
 
