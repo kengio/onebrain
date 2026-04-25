@@ -1,5 +1,5 @@
 {
-  "name": "@onebrain/cli",
+  "name": "@onebrain-ai/cli",
   "version": "2.0.0",
   "type": "module",
   "bin": {

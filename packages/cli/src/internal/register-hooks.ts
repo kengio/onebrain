@@ -61,8 +61,8 @@ const HOOK_EVENTS = ['Stop', 'PreCompact', 'PostCompact', 'SessionStart'] as con
 
 const PERMISSIONS_TO_ADD = [
   'Bash(onebrain:*)',
-  'Bash(bun install -g @onebrain/cli:*)',
-  'Bash(npm install -g @onebrain/cli:*)',
+  'Bash(bun install -g @onebrain-ai/cli:*)',
+  'Bash(npm install -g @onebrain-ai/cli:*)',
 ];
 
 const BUN_BIN = join(homedir(), '.bun', 'bin');

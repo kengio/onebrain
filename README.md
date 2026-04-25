@@ -164,7 +164,7 @@ OneBrain has three automatic behaviors that run without you doing anything:
 
 **The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
 
-> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `bun install -g @onebrain/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
+> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `bun install -g @onebrain-ai/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
 
 ---
 
@@ -190,10 +190,10 @@ irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
 
 ```bash
 # with bun (recommended)
-bun install -g @onebrain/cli
+bun install -g @onebrain-ai/cli
 
 # or with npm
-npm install -g @onebrain/cli
+npm install -g @onebrain-ai/cli
 ```
 
 Verify: `onebrain --version`
@@ -216,7 +216,7 @@ Run from within your existing vault in Claude Code:
 Then install the CLI binary and run `/onboarding`:
 
 ```bash
-bun install -g @onebrain/cli   # or: npm install -g @onebrain/cli
+bun install -g @onebrain-ai/cli   # or: npm install -g @onebrain-ai/cli
 ```
 
 ---
@@ -390,7 +390,7 @@ Tasks live inline in your notes — the Tasks plugin surfaces them across the va
 
 Verify with `git --version` before running the installer.
 
-**Required for auto-checkpoints, `/doctor`, and `/update`:** [bun](https://bun.sh) or [npm](https://nodejs.org) — used to install the `onebrain` CLI binary (`bun install -g @onebrain/cli`). The binary handles checkpoints, session init, vault-sync, and doctor without requiring Python or Node.js in your PATH.
+**Required for auto-checkpoints, `/doctor`, and `/update`:** [bun](https://bun.sh) or [npm](https://nodejs.org) — used to install the `onebrain` CLI binary (`bun install -g @onebrain-ai/cli`). The binary handles checkpoints, session init, vault-sync, and doctor without requiring Python or Node.js in your PATH.
 
 **Windows:** Git for Windows (above) includes Git Bash, which provides the `bash` environment required to run all hooks.
 

@@ -119,8 +119,8 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
 async function defaultInstallBinary(version: string): Promise<void> {
   const isWindows = process.platform === 'win32';
   const cmd = isWindows
-    ? ['npm', 'install', '-g', `@onebrain/cli@${version}`]
-    : ['bun', 'install', '-g', `@onebrain/cli@${version}`];
+    ? ['npm', 'install', '-g', `@onebrain-ai/cli@${version}`]
+    : ['bun', 'install', '-g', `@onebrain-ai/cli@${version}`];
 
   const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
   const exitCode = await proc.exited;
@@ -275,7 +275,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     return result;
   }
 
-  noteStep('upgrading', `@onebrain/cli ${latestVersion} installed`);
+  noteStep('upgrading', `@onebrain-ai/cli ${latestVersion} installed`);
 
   // ── Step 4b: Validate binary (ATOMIC GATE) ────────────────────────────────
 
