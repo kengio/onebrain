@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.1
+latest_version: 2.0.2
 released: 2026-04-25
 ---
 
@@ -13,6 +13,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.2 — Fix: complete hook migration to CLI
+
+- fix(hooks): migrate Stop/PreCompact/PostCompact to `onebrain checkpoint` CLI; remove PostToolUse from hooks.json (conditional on qmd_collection — belongs in settings.json only); delete qmd-reindex.sh
+- fix(update): register-hooks.sh gains `--qmd` / `--remove-qmd` flags; migration Step 7 registers PostToolUse hook and adds `Bash(onebrain *)` to permissions.allow when qmd_collection is set
+- fix(qmd): /qmd setup registers PostToolUse hook in settings.json after collection is created; /qmd uninstall removes it
+- fix(doctor): add onebrain CLI binary check (🔴 + install hint if missing); PostToolUse check reads settings.json; hook checks skipped (N/A) when CLI absent
+- fix(skills): replace all `qmd-update.sh` calls with async `onebrain qmd-reindex`; delete qmd-update.sh, session-init.sh, orphan-scan.sh (all superseded by CLI)
 
 ## v2.0.1 — Fix: /wrapup session numbering
 

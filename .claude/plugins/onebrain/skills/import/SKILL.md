@@ -162,8 +162,8 @@ Ask using AskUserQuestion:
 
 4. After processing all suggestions for this note: confirm what was linked or appended.
 
-```bash
-bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+onebrain qmd-reindex
 ```
 
 ### Supported File Types

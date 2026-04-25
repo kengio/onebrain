@@ -38,7 +38,7 @@ synthesized_from_checkpoints: true      # only if synthesized from checkpoints
 ## Step 1: Gather Checkpoint Context
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
-2. Use `session_token` from context if already loaded (set by `session-init.sh` at startup); if absent, run `bash ".claude/plugins/onebrain/startup/scripts/session-init.sh"` and use the `SESSION_TOKEN` value.
+2. Use `session_token` from context if already loaded (set by `onebrain session-init` at startup); if absent, run `onebrain session-init` and use the `SESSION_TOKEN` value.
 3. Glob checkpoint files:
    - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`
    - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`

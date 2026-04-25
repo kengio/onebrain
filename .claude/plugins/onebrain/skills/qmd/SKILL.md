@@ -101,13 +101,19 @@ folders:
 
 If the write fails, show the error. Tell the user to manually add `qmd_collection: <collection-name>` to vault.yml. Stop.
 
-### Step 8: Run initial index
+### Step 8: Run initial index and register hook
 
-```bash
-bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+onebrain qmd-reindex
 ```
 
-Report progress. If it fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
+Then register the PostToolUse hook so the index stays in sync automatically (run from vault root):
+
+```bash
+bash ".claude/plugins/onebrain/skills/update/scripts/register-hooks.sh" ".claude/settings.json" --qmd
+```
+
+If the reindex fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
 
 ### Step 9: Confirm completion
 
@@ -217,8 +223,8 @@ Stop.
 
 ### Step 2: Run update
 
-```bash
-bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+onebrain qmd-reindex
 ```
 
 Report progress and any errors.
@@ -267,6 +273,14 @@ If qmd is not installed or the command fails, report the error but continue to S
 Read vault.yml. Remove the `qmd_collection: ...` line. Write the full updated vault.yml back.
 
 If the write fails, show the error. Tell the user to manually remove the `qmd_collection` line from vault.yml.
+
+### Step 4b: Remove PostToolUse hook from settings.json
+
+```bash
+bash ".claude/plugins/onebrain/skills/update/scripts/register-hooks.sh" ".claude/settings.json" --remove-qmd
+```
+
+Run from vault root. This removes the `onebrain qmd-reindex` PostToolUse hook that was registered during `/qmd setup`. If the hook is not present, the script exits cleanly.
 
 ### Step 5: Confirm
 

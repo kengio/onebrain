@@ -66,6 +66,11 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 ### Config Checks (`--config`)
 
+**onebrain CLI binary:**
+- Check `which onebrain` (macOS/Linux) or `where onebrain` (Windows)
+- If not found: 🔴 "onebrain CLI not installed — hooks (checkpoint, qmd-reindex) will not fire; run /onboarding or `npm install -g @onebrain-ai/cli` to install" — then **skip the OneBrain hooks and qmd PostToolUse hook checks below** (mark them as N/A — root cause is the missing CLI, not the hooks)
+- If found: ✅ (no output in clean state)
+
 **vault.yml:**
 - Verify all declared folder paths exist in the vault
 - Check `qmd_collection` is present (warn if absent — qmd search won't work)
@@ -92,17 +97,16 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **OneBrain hooks:**
 - Read `[vault]/.claude/settings.json` (vault-level settings — the `.claude/` folder inside the vault, not `~/.claude/settings.json`)
-- Check `Stop` hook: entry exists under `hooks.Stop` and command contains `checkpoint-hook.sh stop` → ✅ / 🔴 missing or wrong
-- Check `PreCompact` hook: entry exists under `hooks.PreCompact` and command contains `checkpoint-hook.sh precompact` → ✅ / 🔴 missing or wrong
-- Check `PostCompact` hook: entry exists under `hooks.PostCompact` and command contains `checkpoint-hook.sh postcompact` → ✅ / 🔴 missing or wrong
+- Check `Stop` hook: entry exists under `hooks.Stop` and command contains `checkpoint stop` → ✅ / 🔴 missing or wrong
+- Check `PreCompact` hook: entry exists under `hooks.PreCompact` and command contains `checkpoint precompact` → ✅ / 🔴 missing or wrong
+- Check `PostCompact` hook: entry exists under `hooks.PostCompact` and command contains `checkpoint postcompact` → ✅ / 🔴 missing or wrong
 - Any missing or wrong entry: include in issue count, suggest running /update to fix
 
 **qmd PostToolUse hook (only when `qmd_collection` is set in vault.yml):**
 - If `qmd_collection` is absent in vault.yml: skip this entire check
 - If `qmd_collection` is present:
   - Check `which qmd` (macOS/Linux) or `where qmd` (Windows): qmd binary must be installed → ✅ / 🔴 "qmd not installed — qmd_collection is set but binary is missing; run `/qmd setup` to reinstall"
-  - Read `[vault]/.claude/plugins/onebrain/hooks/hooks.json`; if missing → 🔴 "hooks.json not found — run /update to restore"
-  - Check that `hooks.PostToolUse` contains an entry whose `command` contains `qmd-reindex.sh` → ✅ / 🔴 "PostToolUse qmd hook missing or wrong — run /update to restore"
+  - Read `[vault]/.claude/settings.json` (same file used for Stop/PreCompact/PostCompact hooks); check that `hooks.PostToolUse` contains an entry whose `command` contains `qmd-reindex` → ✅ / 🔴 "PostToolUse qmd hook missing in settings.json — run /update to register"
 
 ---
 
@@ -121,6 +125,7 @@ Use this format:
   🟢 Checkpoints: all merged
 
 ⚙️ Config
+  🔴 onebrain CLI: not installed — run /onboarding or npm install -g @onebrain-ai/cli
   🟢 vault.yml: OK
   🟢 plugin.json: OK (vX.X.X)
   ✅ Plugin: vault-level (.claude/plugins/onebrain/)
@@ -133,8 +138,7 @@ Use this format:
   🔴 OneBrain hooks: PostCompact missing or wrong — run /update to register
   🟢 OneBrain hooks: all 3 registered correctly
   🔴 qmd: binary not installed — run /qmd setup
-  🔴 qmd: hooks.json missing — run /update to restore
-  🔴 qmd: PostToolUse hook missing or wrong — run /update to restore
+  🔴 qmd: PostToolUse hook missing in settings.json — run /update to register
   🟢 qmd: PostToolUse hook registered correctly
 
 🧠 Memory
@@ -157,7 +161,7 @@ If no issues:
 ## Step 4: Auto-fix (`--fix` flag only)
 
 Read `references/autofix-procedures.md` and run Pass A, Pass B, Pass C, and Pass D in order.
-Each pass confirms with the user before writing. Run the Final step (qmd-update.sh) after all passes.
+Each pass confirms with the user before writing. Run the Final step (`onebrain qmd-reindex`) after all passes.
 
 ---
 

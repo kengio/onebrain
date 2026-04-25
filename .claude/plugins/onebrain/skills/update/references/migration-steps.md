@@ -105,9 +105,20 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
 
 **PostToolUse qmd hook (only when `qmd_collection` is set in vault.yml):**
 - If `qmd_collection` is absent in vault.yml: skip
-- If `qmd_collection` is present: read `[vault]/.claude/plugins/onebrain/hooks/hooks.json`
-  - If missing or `PostToolUse` entry does not contain `qmd-reindex.sh`: the file was already synced in bootstrap step 3b (vault-sync.sh) — re-verify the sync completed successfully and flag the issue
-  - If correct: ✅ PostToolUse qmd hook registered
+- If `qmd_collection` is present: run `bash ".claude/plugins/onebrain/skills/update/scripts/register-hooks.sh" ".claude/settings.json" --qmd`
+  - Check output: "all hooks already registered" → ✅ done; "added PostToolUse" → ✅ registered
+
+**Bash permission for onebrain CLI:**
+- Read `[vault]/.claude/settings.json` fresh (after the register-hooks.sh calls above have written to it); check `permissions.allow` contains `"Bash(onebrain *)"` — if missing, add it using an inline Python snippet or targeted JSON edit. Never rewrite the entire file. Example:
+  ```python
+  import json
+  path = ".claude/settings.json"
+  with open(path) as f: cfg = json.load(f)
+  allow = cfg.setdefault("permissions", {}).setdefault("allow", [])
+  if "Bash(onebrain *)" not in allow:
+      allow.append("Bash(onebrain *)")
+      with open(path, "w") as f: json.dump(cfg, f, indent=2)
+  ```
 
 **Step 8: Verify migration**
 - Run /doctor (newly-synced version) automatically
