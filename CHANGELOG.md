@@ -19,6 +19,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - fix(checkpoint): derive checkpoint NN from disk scan (`maxCheckpointNnSync`) in both stop and precompact hooks — guarantees sequential numbering even when Claude fails to write a file
 - fix(checkpoint): `handlePostcompact` writes `last_ts=now` so precompact recency guard blocks re-fire within 5 minutes after a compact cycle; prevents stub overwrite on back-to-back compacts
 - fix(checkpoint): `handlePrecompact` double-compact guard — returns early if `pending_stub` already set, preventing orphaned stubs on consecutive compact events
+- fix(checkpoint): `handleStop` preserves `pending_stub` in state write — was clearing it with a 3-field write, causing postcompact to miss the stub when stop fires before compact
+- fix(checkpoint): `postcompactFallback` — disk scans for unmerged `trigger: precompact` stubs when state has no `pending_stub` (e.g. state lost or expired); called from `checkpointCommand` dispatch
 - fix(checkpoint): `loadVaultSettings` regex strips surrounding quotes from `logs:` folder value — was capturing literal quote characters as part of the path
 - fix(wrapup): `reset-checkpoint-counter.sh` writes 3-field state (`0:<epoch>:00`) — was writing 2-field (v1 format) which bypassed the 60-second skip window after /wrapup; fix stale comment in SKILL.md
 - fix(update): `backfill-recapped.sh` accepts optional `[cutoff_date]` arg; migration Step 6 reads `stats.last_recap` from vault.yml and passes it as cutoff — prevents /update from re-marking recent sessions on every run
