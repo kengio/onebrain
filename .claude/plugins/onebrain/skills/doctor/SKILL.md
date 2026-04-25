@@ -66,6 +66,11 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 ### Config Checks (`--config`)
 
+**onebrain CLI binary:**
+- Check `which onebrain` (macOS/Linux) or `where onebrain` (Windows)
+- If not found: 🔴 "onebrain CLI not installed — hooks (checkpoint, qmd-reindex) will not fire; run /onboarding or `npm install -g @onebrain-ai/cli` to install"
+- If found: ✅ (no output in clean state)
+
 **vault.yml:**
 - Verify all declared folder paths exist in the vault
 - Check `qmd_collection` is present (warn if absent — qmd search won't work)
@@ -120,6 +125,7 @@ Use this format:
   🟢 Checkpoints: all merged
 
 ⚙️ Config
+  🔴 onebrain CLI: not installed — run /onboarding or npm install -g @onebrain-ai/cli
   🟢 vault.yml: OK
   🟢 plugin.json: OK (vX.X.X)
   ✅ Plugin: vault-level (.claude/plugins/onebrain/)
