@@ -25,7 +25,7 @@ python_cmd=$(command -v python3 2>/dev/null || command -v python 2>/dev/null) ||
 import json, sys
 
 path = sys.argv[1]
-with_qmd = sys.argv[2] == "1"
+with_qmd = len(sys.argv) > 2 and sys.argv[2] == "1"
 
 with open(path) as f:
     try:

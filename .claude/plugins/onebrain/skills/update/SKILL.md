@@ -99,7 +99,7 @@ Steps:
    - [x] Step 4: Restructured MEMORY.md → 3 sections
    - [x] Step 5: Created MEMORY-INDEX.md (N active entries)
    - [x] Step 6: Backfilled recapped: on N session logs
-   - [x] Step 7: Registered Stop/PreCompact/PostCompact hooks in [vault]/.claude/settings.json
+   - [x] Step 7: Registered Stop/PreCompact/PostCompact hooks in [vault]/.claude/settings.json (+ PostToolUse qmd hook if qmd_collection set)
    - [x] Step 8: /doctor — N issues
    - [x] Step 9: Initialized vault.yml stats + recap block
 
