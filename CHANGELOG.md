@@ -16,13 +16,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.0.0 — CLI Binary
 
-### CLI v2.0.1
-- fix(cli): move @onebrain/core to devDependencies — bundled into dist/onebrain at build time
-- fix(release): inject BUILD_VERSION into npm-publish build step — `onebrain --version` now shows correct version
-- chore: separate CLI versioning from plugin versioning
-
-### Plugin v2.0.0
-
 - feat: compiled TypeScript binary replaces all bash/Python scripts
 - feat(internal): session-init, orphan-scan, checkpoint, qmd-reindex
 - feat(ops): vault-sync, register-hooks, migrate

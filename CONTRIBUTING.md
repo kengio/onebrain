@@ -267,6 +267,8 @@ Both scripts download the repo tarball, extract it, remove themselves from the v
 - If adding a skill, show an example interaction in the PR description
 - Keep skill files readable — they're prompts, not code
 - **Never commit directly to `main`** — all changes go through a PR with a worktree branch
+- **Minimum 3 review rounds** before merging — dispatch review agents in parallel, fix all findings before opening the PR
+- Update PR title and description after every new commit pushed to an open PR
 
 ## Versioning
 
