@@ -9,16 +9,5 @@
         }
       ]
     }
-  ],
-  "PostToolUse": [
-    {
-      "matcher": "Write|Edit",
-      "hooks": [
-        {
-          "type": "command",
-          "command": "onebrain qmd-reindex"
-        }
-      ]
-    }
   ]
 }

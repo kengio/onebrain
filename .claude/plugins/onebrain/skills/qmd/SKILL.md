@@ -101,13 +101,19 @@ folders:
 
 If the write fails, show the error. Tell the user to manually add `qmd_collection: <collection-name>` to vault.yml. Stop.
 
-### Step 8: Run initial index
+### Step 8: Run initial index and register hook
 
 ```
 onebrain qmd-reindex
 ```
 
-Report progress. If it fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
+Then register the PostToolUse hook so the index stays in sync automatically:
+
+```bash
+bash ".claude/plugins/onebrain/skills/update/scripts/register-hooks.sh" ".claude/settings.json" --qmd
+```
+
+If the reindex fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
 
 ### Step 9: Confirm completion
 
