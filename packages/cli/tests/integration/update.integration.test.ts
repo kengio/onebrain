@@ -12,7 +12,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { type UpdateOptions, runUpdate } from './update.js';
+import { type UpdateOptions, runUpdate } from '../../src/commands/update.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

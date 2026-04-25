@@ -14,7 +14,7 @@ import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { type InitOptions, runInit } from './init.js';
+import { type InitOptions, runInit } from '../../src/commands/init.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
