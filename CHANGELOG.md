@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.0
+latest_version: 2.0.2
 released: 2026-04-25
 ---
 
@@ -13,6 +13,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.2 — npm Package Metadata
+
+- chore(cli): add description, keywords, homepage, repository, bugs, and license to package.json
+- chore(cli): npm package page no longer appears empty — searchable via pkm, obsidian, claude keywords
+
+## v2.0.1 — Package Name & Build Fixes
+
+- fix: rename npm package from @onebrain/cli to @onebrain-ai/cli
+- fix(cli): move @onebrain/core to devDependencies — bundled into dist at build time
+- fix(ci): split version-sync check into CLI track and Plugin track
+- fix(release): inject BUILD_VERSION and BUILD_DATE at compile time via --define
 
 ## v2.0.0 — CLI Binary
 
