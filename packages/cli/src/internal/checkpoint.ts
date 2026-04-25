@@ -361,7 +361,9 @@ export async function handlePrecompact(
 /**
  * Postcompact hook: handle pending stub from precompact.
  * If no pending stub: preserve last_ts, write clean 3-field state.
- * If pending stub: emit fill-checkpoint block, clear pending_stub, set last_ts=0.
+ * If pending stub: emit fill-checkpoint block, advance last_stop_nn to stubNn,
+ * clear pending_stub, set last_ts=0. Advancing last_stop_nn prevents subsequent
+ * stop hooks from reusing the stub's NN and overwriting the filled file.
  * Sync.
  */
 export function handlePostcompact(
@@ -387,8 +389,12 @@ export function handlePostcompact(
     state.last_stop_nn === '00' ? ' since start' : ` since checkpoint-${state.last_stop_nn}`;
   emitBlock(`fill-checkpoint: ${state.pending_stub}${since}`);
 
+  // Advance last_stop_nn to the stub's NN so subsequent stop checkpoints
+  // don't reuse the same number and overwrite the filled stub.
+  const stubNn = String(Number(state.last_stop_nn) + 1).padStart(2, '0');
+
   // Clear pending_stub, set last_ts=0 sentinel
-  writeState(token, { count: 0, last_ts: 0, last_stop_nn: state.last_stop_nn }, tmpDir);
+  writeState(token, { count: 0, last_ts: 0, last_stop_nn: stubNn }, tmpDir);
 }
 
 // ---------------------------------------------------------------------------

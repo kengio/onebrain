@@ -661,12 +661,12 @@ describe('handlePostcompact', () => {
     expect(parsed.reason).toContain('checkpoint-03.md');
     expect(parsed.reason).toMatch(/since checkpoint-02$/);
 
-    // State cleared: last_ts=0, pending_stub gone
+    // State cleared: last_ts=0, pending_stub gone, last_stop_nn advanced to stubNn (03)
     const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe('0:0:02');
+    expect(raw).toBe('0:0:03');
   });
 
-  it('"since start" format when last_stop_nn="00"', () => {
+  it('"since start" format when last_stop_nn="00" → advances last_stop_nn to 01', async () => {
     writeState(
       TOKEN,
       {
@@ -684,9 +684,11 @@ describe('handlePostcompact', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.reason).toMatch(/since start$/);
+    const raw = await readStateRaw(tmpDir, TOKEN);
+    expect(raw).toBe('0:0:01');
   });
 
-  it('"since checkpoint-NN" format when last_stop_nn non-zero', () => {
+  it('"since checkpoint-NN" format when last_stop_nn non-zero → advances last_stop_nn to 04', async () => {
     writeState(
       TOKEN,
       {
@@ -704,6 +706,8 @@ describe('handlePostcompact', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.reason).toMatch(/since checkpoint-03$/);
+    const raw = await readStateRaw(tmpDir, TOKEN);
+    expect(raw).toBe('0:0:04');
   });
 
   it('missing stub file on disk → still emit fill-checkpoint (Claude creates it)', () => {

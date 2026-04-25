@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.2
+latest_version: 2.0.3
 released: 2026-04-25
 ---
 
@@ -13,6 +13,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.3 — Fix: checkpoint numbering + backfill-recapped cutoff
+
+- fix(checkpoint): `handlePostcompact` now advances `last_stop_nn` to the stub's NN after emitting fill-checkpoint block — prevents subsequent stop hooks from reusing the same NN and overwriting the filled stub
+- fix(wrapup): `reset-checkpoint-counter.sh` writes 3-field state (`0:<epoch>:00`) — was writing 2-field (v1 format) which bypassed the 60-second skip window after /wrapup
+- fix(update): `backfill-recapped.sh` accepts optional `[cutoff_date]` arg; migration Step 6 reads `stats.last_recap` from vault.yml and passes it as cutoff — prevents /update from re-marking recent sessions on every run
 
 ## v2.0.2 — Fix: complete hook migration to CLI
 
