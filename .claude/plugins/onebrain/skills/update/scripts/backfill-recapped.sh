@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# backfill-recapped.sh <logs_folder>
+# backfill-recapped.sh <logs_folder> [cutoff_date]
 # Adds recapped: <date> to session logs that don't have it.
-# Used once during migration — idempotent (skips files already having recapped:).
+# cutoff_date (YYYY-MM-DD): only mark logs on or before this date.
+# If absent, marks all logs (initial migration scenario).
+# Idempotent — skips files already having recapped:.
 
 set -euo pipefail
 
-logs="${1:?Usage: backfill-recapped.sh <logs_folder>}"
+logs="${1:?Usage: backfill-recapped.sh <logs_folder> [cutoff_date]}"
+cutoff="${2:-}"
 
 if [ ! -d "$logs" ]; then
   echo "backfill-recapped: no logs folder, skipping"
@@ -16,15 +19,17 @@ count=0
 while IFS= read -r -d '' file; do
     grep -q "^recapped:" "$file" 2>/dev/null && continue
 
-    date_val=$(grep "^date:" "$file" 2>/dev/null | head -1 | sed 's/date:[[:space:]]*//')
+    date_val=$(grep "^date:" "$file" 2>/dev/null | head -1 | sed 's/date:[[:space:]]*//' | tr -d '\r\n ')
     [ -z "$date_val" ] && date_val=$(basename "$file" | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2}' || true)
     [ -z "$date_val" ] && continue
 
-    # Insert recapped: after the date: line (portable: avoid sed -i '' macOS-only syntax)
+    # Skip logs newer than cutoff (string comparison works for YYYY-MM-DD)
+    [ -n "$cutoff" ] && [[ "$date_val" > "$cutoff" ]] && continue
+
+    # Insert recapped: after the date: line (awk: portable across BSD/GNU; no blank-line issue)
     if grep -q "^date:" "$file"; then
         tmp=$(mktemp)
-        sed "/^date:/a\\
-recapped: ${date_val}" "$file" > "$tmp" && mv "$tmp" "$file"
+        awk -v recap="recapped: ${date_val}" 'done{print;next} /^date:/{print;print recap;done=1;next}1' "$file" > "$tmp" && mv "$tmp" "$file"
         count=$((count + 1))
     fi
 done < <(find "$logs" -name "*-session-*.md" -print0 2>/dev/null)

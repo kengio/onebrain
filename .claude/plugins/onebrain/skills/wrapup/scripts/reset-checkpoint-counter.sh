@@ -18,4 +18,4 @@ else
   _token=$(cat "$_f" 2>/dev/null || echo '99999')
 fi
 
-[ -n "${_token:-}" ] && echo "0:$(date +%s)" > "${tmpdir_safe}/onebrain-${_token}.state" 2>/dev/null
+[ -n "${_token:-}" ] && echo "0:$(date +%s):00" > "${tmpdir_safe}/onebrain-${_token}.state" 2>/dev/null

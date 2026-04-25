@@ -6,12 +6,16 @@
  * State file: $TMPDIR/onebrain-{session_token}.state
  * Format: count:last_ts:last_stop_nn[:pending_stub_filename]
  *
+ * Note: last_stop_nn is kept for backward compat/debugging only.
+ * Checkpoint NN is always derived from actual files on disk — this guarantees
+ * sequential numbering even when Claude fails to write a file (e.g. context full).
+ *
  * Exit code always 0. Errors go to stderr only.
  * JSON decision blocks go to process.stdout.write (no console.log).
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir as osTmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadVaultConfig } from '@onebrain/core';
@@ -116,22 +120,26 @@ export function writeState(
 // Config helper
 // ---------------------------------------------------------------------------
 
+const DEFAULT_LOGS_FOLDER = '07-logs';
+
 /**
- * Load messages and minutes thresholds from vault.yml.
+ * Load vault settings from vault.yml (thresholds + logs folder).
  * Returns defaults if vault.yml is missing or throws.
- * Sync via readFileSync + yaml inline parse — avoids async in hot path.
+ * Sync via readFileSync + regex parse — avoids async in stop hook hot path.
  */
-function loadThresholds(vaultRoot: string): {
+function loadVaultSettings(vaultRoot: string): {
   messagesThreshold: number;
   minutesThreshold: number;
+  logsFolder: string;
 } {
   try {
     const vaultYml = join(vaultRoot, 'vault.yml');
     const raw = readFileSync(vaultYml, 'utf8');
-    // Find checkpoint block then parse keys within it
-    const checkpointBlock = raw.match(/^checkpoint:\s*\n((?:[ \t]+[^\n]+\n?)*)/m);
     let messages = DEFAULT_MESSAGES_THRESHOLD;
     let minutes = DEFAULT_MINUTES_THRESHOLD;
+    let logsFolder = DEFAULT_LOGS_FOLDER;
+
+    const checkpointBlock = raw.match(/^checkpoint:\s*\n((?:[ \t]+[^\n]+\n?)*)/m);
     if (checkpointBlock?.[1]) {
       const block = checkpointBlock[1];
       const msgMatch = block.match(/messages:\s*(\d+)/);
@@ -140,12 +148,47 @@ function loadThresholds(vaultRoot: string): {
       if (minMatch?.[1]) minutes = Number(minMatch[1]);
     }
 
-    return { messagesThreshold: messages, minutesThreshold: minutes };
+    const foldersBlock = raw.match(/^folders:\s*\n((?:[ \t]+[^\n]+\n?)*)/m);
+    if (foldersBlock?.[1]) {
+      const logsMatch = foldersBlock[1].match(/logs:\s*['"]?([^'"\s]+)['"]?/);
+      if (logsMatch?.[1]) logsFolder = logsMatch[1];
+    }
+
+    return { messagesThreshold: messages, minutesThreshold: minutes, logsFolder };
   } catch {
     return {
       messagesThreshold: DEFAULT_MESSAGES_THRESHOLD,
       minutesThreshold: DEFAULT_MINUTES_THRESHOLD,
+      logsFolder: DEFAULT_LOGS_FOLDER,
     };
+  }
+}
+
+/**
+ * Scan the logs directory and return the highest checkpoint NN for this session.
+ * Returns 0 if no checkpoint files exist (i.e. next NN should be 01).
+ * Sync — safe to use in handleStop's hot path.
+ */
+export function maxCheckpointNnSync(
+  vaultRoot: string,
+  date: string,
+  token: string,
+  logsFolder: string,
+): number {
+  const yyyy = date.slice(0, 4);
+  const mm = date.slice(5, 7);
+  const dir = join(vaultRoot, logsFolder, yyyy, mm);
+  const prefix = `${date}-${token}-checkpoint-`;
+  try {
+    let max = 0;
+    for (const f of readdirSync(dir)) {
+      if (!f.startsWith(prefix) || !f.endsWith('.md')) continue;
+      const m = f.match(/-checkpoint-(\d{2})\.md$/);
+      if (m) max = Math.max(max, Number(m[1]));
+    }
+    return max;
+  } catch {
+    return 0;
   }
 }
 
@@ -217,7 +260,7 @@ export function handleStop(
   // Increment count
   state.count += 1;
 
-  const { messagesThreshold, minutesThreshold } = loadThresholds(vaultRoot);
+  const { messagesThreshold, minutesThreshold, logsFolder } = loadVaultSettings(vaultRoot);
   const timeThreshold = minutesThreshold * 60;
 
   // Elapsed: last_ts=0 is post-compact sentinel → treat as 0 elapsed
@@ -246,16 +289,22 @@ export function handleStop(
     return;
   }
 
-  // Emit checkpoint
-  const nextNn = String(Number(state.last_stop_nn) + 1).padStart(2, '0');
+  // Derive NN from disk — guarantees sequential numbering even if a previous
+  // checkpoint block fired but Claude never wrote the file.
   const date = formatDate(now);
-  const filename = `${date}-${token}-checkpoint-${nextNn}.md`;
+  const maxNn = maxCheckpointNnSync(vaultRoot, date, token, logsFolder);
+  const nextNn = String(maxNn + 1).padStart(2, '0');
   const since =
-    state.last_stop_nn === '00' ? ' since start' : ` since checkpoint-${state.last_stop_nn}`;
+    maxNn === 0 ? ' since start' : ` since checkpoint-${String(maxNn).padStart(2, '0')}`;
+  const filename = `${date}-${token}-checkpoint-${nextNn}.md`;
   emitBlock(`${filename}${since}`);
 
-  // Reset state
-  writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn }, tmpDir);
+  // Reset state; preserve pending_stub so postcompact can still fill the precompact stub
+  writeState(
+    token,
+    { count: 0, last_ts: now, last_stop_nn: nextNn, pending_stub: state.pending_stub },
+    tmpDir,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -314,13 +363,15 @@ export async function handlePrecompact(
     return; // no-op
   }
 
-  // Compute stub NN (last_stop_nn + 1, does NOT update last_stop_nn in state)
-  const stubNn = String(Number(state.last_stop_nn) + 1).padStart(2, '0');
+  // Double-compact guard: if a stub is already pending postcompact will fill it
+  if (state.pending_stub) {
+    return; // no-op — prevents orphaning the existing stub
+  }
+
   const date = formatDate(now);
-  const stubFilename = `${date}-${token}-checkpoint-${stubNn}.md`;
 
   // Determine logs folder from vault.yml (fallback to '07-logs')
-  let logsFolder = '07-logs';
+  let logsFolder = DEFAULT_LOGS_FOLDER;
   try {
     const config = await loadVaultConfig(vaultRoot);
     logsFolder = config.folders.logs;
@@ -331,6 +382,18 @@ export async function handlePrecompact(
   const yyyy = formatYYYY(now);
   const mm = formatMM(now);
   const stubDir = join(vaultRoot, logsFolder, yyyy, mm);
+
+  // Derive stub NN from disk — same guarantee as handleStop: sequential, no gaps
+  const existingFiles = await readdir(stubDir).catch(() => [] as string[]);
+  const prefix = `${date}-${token}-checkpoint-`;
+  const maxNn = existingFiles.reduce((max, f) => {
+    if (!f.startsWith(prefix) || !f.endsWith('.md')) return max;
+    const m = f.match(/-checkpoint-(\d{2})\.md$/);
+    return m ? Math.max(max, Number(m[1])) : max;
+  }, 0);
+  const stubNn = String(maxNn + 1).padStart(2, '0');
+
+  const stubFilename = `${date}-${token}-checkpoint-${stubNn}.md`;
   const stubPath = join(stubDir, stubFilename);
 
   try {
@@ -360,20 +423,19 @@ export async function handlePrecompact(
 
 /**
  * Postcompact hook: handle pending stub from precompact.
- * If no pending stub: preserve last_ts, write clean 3-field state.
- * If pending stub: emit fill-checkpoint block, clear pending_stub, set last_ts=0.
- * Sync.
+ * If pending stub: emit fill-checkpoint block, set last_ts=now.
+ * Predecessor NN derived from disk scan — correct even when there are gaps.
+ * Sync. Called only when state has pending_stub set.
  */
 export function handlePostcompact(
   token: string,
-  // _now kept for API symmetry with handleStop/handlePrecompact so call sites can pass now as 2nd arg
-  _now: number = Math.floor(Date.now() / 1000),
+  vaultRoot: string,
+  now: number = Math.floor(Date.now() / 1000),
   tmpDir: string = osTmpdir(),
 ): void {
   const state = readState(token, tmpDir);
 
   if (!state.pending_stub) {
-    // No pending stub — preserve last_ts, write 3-field
     writeState(
       token,
       { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
@@ -382,13 +444,114 @@ export function handlePostcompact(
     return;
   }
 
-  // Pending stub found — emit fill-checkpoint block
+  const stubNnMatch = state.pending_stub.match(/-checkpoint-(\d{2})\.md$/);
+  const stubNn = stubNnMatch?.[1] ?? '01';
+  const stubNnNum = Number(stubNn);
+
+  // Derive predecessor from disk — correct even when there are gaps in numbering
+  const { logsFolder } = loadVaultSettings(vaultRoot);
+  const date = state.pending_stub.slice(0, 10); // YYYY-MM-DD prefix
+  const yyyy = date.slice(0, 4);
+  const mm = date.slice(5, 7);
+  const dir = join(vaultRoot, logsFolder, yyyy, mm);
+  const prefix = `${date}-${token}-checkpoint-`;
+  let predecessorNn = 0;
+  try {
+    for (const f of readdirSync(dir)) {
+      if (!f.startsWith(prefix) || !f.endsWith('.md')) continue;
+      const m = f.match(/-checkpoint-(\d{2})\.md$/);
+      if (m) {
+        const nn = Number(m[1]);
+        if (nn < stubNnNum) predecessorNn = Math.max(predecessorNn, nn);
+      }
+    }
+  } catch {
+    // dir missing or unreadable — predecessorNn stays 0 → 'since start'
+  }
+
   const since =
-    state.last_stop_nn === '00' ? ' since start' : ` since checkpoint-${state.last_stop_nn}`;
+    predecessorNn === 0
+      ? ' since start'
+      : ` since checkpoint-${String(predecessorNn).padStart(2, '0')}`;
   emitBlock(`fill-checkpoint: ${state.pending_stub}${since}`);
 
-  // Clear pending_stub, set last_ts=0 sentinel
-  writeState(token, { count: 0, last_ts: 0, last_stop_nn: state.last_stop_nn }, tmpDir);
+  // last_ts=now: recency guard in handlePrecompact blocks re-fire within 5 min
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: stubNn }, tmpDir);
+}
+
+// ---------------------------------------------------------------------------
+// postcompact fallback
+// ---------------------------------------------------------------------------
+
+/**
+ * Postcompact entry point: reads state once and dispatches to the correct path.
+ * - pending_stub present → delegates to handlePostcompact (fills known stub)
+ * - pending_stub absent  → scans disk for unmerged precompact stubs (state lost/expired)
+ *
+ * Single state read here; handlePostcompact also reads state internally (benign
+ * double-read — postcompact is never called concurrently).
+ * Sync.
+ */
+export function postcompactFallback(
+  token: string,
+  vaultRoot: string,
+  now: number = Math.floor(Date.now() / 1000),
+  tmpDir: string = osTmpdir(),
+): void {
+  const state = readState(token, tmpDir);
+
+  if (state.pending_stub) {
+    handlePostcompact(token, vaultRoot, now, tmpDir);
+    return;
+  }
+
+  // No pending_stub — scan disk for unmerged precompact stubs for this session today.
+  const { logsFolder } = loadVaultSettings(vaultRoot);
+  const date = formatDate(now);
+  const yyyy = date.slice(0, 4);
+  const mm = date.slice(5, 7);
+  const dir = join(vaultRoot, logsFolder, yyyy, mm);
+  const prefix = `${date}-${token}-checkpoint-`;
+
+  const stubs: string[] = [];
+  const allNns: number[] = [];
+  try {
+    for (const f of readdirSync(dir)) {
+      if (!f.startsWith(prefix) || !f.endsWith('.md')) continue;
+      const m = f.match(/-checkpoint-(\d{2})\.md$/);
+      if (!m) continue;
+      allNns.push(Number(m[1]));
+      const content = readFileSync(join(dir, f), 'utf8');
+      if (/^trigger:\s*precompact/m.test(content) && !/^merged:\s*true/m.test(content)) {
+        stubs.push(f);
+      }
+    }
+  } catch {
+    // dir missing or unreadable — fall through to clean state write
+  }
+
+  if (stubs.length === 0) {
+    writeState(
+      token,
+      { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
+      tmpDir,
+    );
+    return;
+  }
+
+  stubs.sort();
+  const stubFilename = stubs[stubs.length - 1];
+  const stubNnMatch = stubFilename.match(/-checkpoint-(\d{2})\.md$/);
+  const stubNn = stubNnMatch?.[1] ?? '01';
+  const stubNnNum = Number(stubNn);
+  // Derive predecessor from disk — correct even when there are gaps in numbering
+  const predecessorNn = allNns.filter((n) => n < stubNnNum).reduce((max, n) => Math.max(max, n), 0);
+  const since =
+    predecessorNn === 0
+      ? ' since start'
+      : ` since checkpoint-${String(predecessorNn).padStart(2, '0')}`;
+  emitBlock(`fill-checkpoint: ${stubFilename}${since}`);
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: stubNn }, tmpDir);
 }
 
 // ---------------------------------------------------------------------------
@@ -413,7 +576,7 @@ export async function checkpointCommand(
         await handlePrecompact(token, vaultRoot);
         break;
       case 'postcompact':
-        handlePostcompact(token);
+        postcompactFallback(token, vaultRoot);
         break;
       case 'reset':
         handleReset(token);

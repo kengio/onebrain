@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.2
+latest_version: 2.0.3
 released: 2026-04-25
 ---
 
@@ -13,6 +13,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.3 — Fix: checkpoint numbering + backfill-recapped cutoff
+
+- fix(checkpoint): derive checkpoint NN from disk scan (`maxCheckpointNnSync`) in both stop and precompact hooks — guarantees sequential numbering even when Claude fails to write a file
+- fix(checkpoint): `handlePostcompact` writes `last_ts=now` so precompact recency guard blocks re-fire within 5 minutes after a compact cycle; prevents stub overwrite on back-to-back compacts
+- fix(checkpoint): `handlePrecompact` double-compact guard — returns early if `pending_stub` already set, preventing orphaned stubs on consecutive compact events
+- fix(checkpoint): `handleStop` preserves `pending_stub` in state write — was clearing it with a 3-field write, causing postcompact to miss the stub when stop fires before compact
+- fix(checkpoint): `postcompactFallback` — disk scans for unmerged `trigger: precompact` stubs when state has no `pending_stub` (e.g. state lost or expired); `handlePostcompact` and `postcompactFallback` both derive `since` predecessor from disk scan (not arithmetic) — correct even when there are gaps in checkpoint numbering
+- fix(checkpoint): `loadVaultSettings` regex strips surrounding quotes from `logs:` folder value — was capturing literal quote characters as part of the path
+- fix(wrapup): `reset-checkpoint-counter.sh` writes 3-field state (`0:<epoch>:00`) — was writing 2-field (v1 format) which bypassed the 60-second skip window after /wrapup; fix stale comment in SKILL.md
+- fix(update): `backfill-recapped.sh` accepts optional `[cutoff_date]` arg; migration Step 6 reads `stats.last_recap` from vault.yml and passes it as cutoff — prevents /update from re-marking recent sessions on every run
 
 ## v2.0.2 — Fix: complete hook migration to CLI
 
