@@ -14,6 +14,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## v2.0.3 — CLI README
+
+- docs(cli): add README.md for npm package page — install instructions, user-facing commands, internal commands, and link to main repo
+
 ## v2.0.2 — npm Package Metadata
 
 - chore(cli): add description, keywords, homepage, repository, bugs, and license to package.json

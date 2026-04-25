@@ -16,18 +16,20 @@ Verify: `onebrain --version`
 
 ## What it does
 
-The `onebrain` binary handles the low-level operations that keep your vault running:
+The `onebrain` binary handles the low-level operations that keep your vault running.
+
+**User-facing commands:**
 
 | Command | Purpose |
 |---------|---------|
-| `onebrain session-init` | Initialize a session — returns datetime, session token, and qmd status |
-| `onebrain orphan-scan` | Detect unmerged checkpoint files from previous sessions |
-| `onebrain checkpoint` | Write a checkpoint file mid-session |
-| `onebrain qmd-reindex` | Rebuild the semantic search index |
-| `onebrain doctor` | Audit vault health — orphans, version drift, missing config |
 | `onebrain init` | First-time vault initialization |
+| `onebrain update` | Pull latest plugin files from GitHub |
+| `onebrain doctor` | Audit vault health — orphans, version drift, missing config |
+| `onebrain help` | List all available commands |
 
-These commands are called automatically by OneBrain's hooks and skills — you don't run them directly.
+**Internal commands** (called automatically by Claude Code hooks — not meant to be run directly):
+
+`session-init` · `orphan-scan` · `checkpoint` · `qmd-reindex`
 
 ## Requirements
 
