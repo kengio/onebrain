@@ -24,17 +24,18 @@ The `onebrain` binary handles the low-level operations that keep your vault runn
 |---------|---------|
 | `onebrain init` | First-time vault initialization |
 | `onebrain update` | Pull latest plugin files from GitHub |
-| `onebrain doctor` | Audit vault health — orphans, version drift, missing config |
+| `onebrain doctor` | Audit vault health — orphan checkpoints, version drift, qmd embedding status, missing config |
 | `onebrain help` | List all available commands |
 
-**Internal commands** (called automatically by Claude Code hooks — not meant to be run directly):
+**Internal commands** (not meant to be run directly):
 
-`session-init` · `orphan-scan` · `checkpoint` · `qmd-reindex`
+`session-init` · `orphan-scan` · `checkpoint` · `qmd-reindex` · `vault-sync` · `register-hooks` · `migrate`
 
 ## Requirements
 
 - macOS, Linux, or Windows (Git Bash)
-- No Python or Node.js required — the binary is self-contained
+- Bun or Node.js required (used as the runtime for the npm package)
+- For a self-contained binary with no runtime dependency, download from [GitHub Releases](https://github.com/kengio/onebrain/releases)
 
 ## OneBrain
 
