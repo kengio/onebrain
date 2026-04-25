@@ -49,16 +49,18 @@ registered = []
 for event, cmd in hooks_to_register.items():
     entries = hooks.setdefault(event, [])
     marker = "qmd-reindex" if event == "PostToolUse" else "checkpoint"
+    expected_matcher = "Write|Edit" if event == "PostToolUse" else ""
     found = False
     for entry in entries:
         for h in entry.get("hooks", []):
             if marker in h.get("command", ""):
                 if h["command"] != cmd:
                     h["command"] = cmd
+                if entry.get("matcher", "") != expected_matcher:
+                    entry["matcher"] = expected_matcher
                 found = True
     if not found:
-        matcher = "Write|Edit" if event == "PostToolUse" else ""
-        entries.append({"matcher": matcher, "hooks": [{"type": "command", "command": cmd}]})
+        entries.append({"matcher": expected_matcher, "hooks": [{"type": "command", "command": cmd}]})
         registered.append(event)
 
 with open(path, "w") as f:

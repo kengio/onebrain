@@ -101,8 +101,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - If `qmd_collection` is absent in vault.yml: skip this entire check
 - If `qmd_collection` is present:
   - Check `which qmd` (macOS/Linux) or `where qmd` (Windows): qmd binary must be installed → ✅ / 🔴 "qmd not installed — qmd_collection is set but binary is missing; run `/qmd setup` to reinstall"
-  - Read `[vault]/.claude/plugins/onebrain/hooks/hooks.json`; if missing → 🔴 "hooks.json not found — run /update to restore"
-  - Check that `hooks.PostToolUse` contains an entry whose `command` contains `qmd-reindex` → ✅ / 🔴 "PostToolUse qmd hook missing or wrong — run /update to restore"
+  - Read `[vault]/.claude/settings.json` (same file used for Stop/PreCompact/PostCompact hooks); check that `hooks.PostToolUse` contains an entry whose `command` contains `qmd-reindex` → ✅ / 🔴 "PostToolUse qmd hook missing in settings.json — run /update to register"
 
 ---
 
@@ -133,8 +132,7 @@ Use this format:
   🔴 OneBrain hooks: PostCompact missing or wrong — run /update to register
   🟢 OneBrain hooks: all 3 registered correctly
   🔴 qmd: binary not installed — run /qmd setup
-  🔴 qmd: hooks.json missing — run /update to restore
-  🔴 qmd: PostToolUse hook missing or wrong — run /update to restore
+  🔴 qmd: PostToolUse hook missing in settings.json — run /update to register
   🟢 qmd: PostToolUse hook registered correctly
 
 🧠 Memory
