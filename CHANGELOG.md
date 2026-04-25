@@ -1,6 +1,6 @@
 ---
 latest_version: 2.0.0
-released: 2026-04-24
+released: 2026-04-25
 ---
 
 # Changelog
@@ -21,6 +21,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - feat(release): 6-platform binaries, npm package, marketplace.json
 - feat(instructions): JSON parsing, qmd embed warning, PostCompact fill-checkpoint
 - feat(marketplace): hooks/hooks.json for /plugin install auto-registration
+- style: 2-space indentation throughout; config JSON excluded from biome
+- refactor(tests): unit tests co-located, integration tests in tests/integration/
 
 ## v1.10.18 — Fix: session logs must not include recapped: in frontmatter
 
