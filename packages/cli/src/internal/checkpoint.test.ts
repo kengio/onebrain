@@ -954,6 +954,7 @@ describe('postcompactFallback', () => {
   });
 
   it('unmerged precompact stub found → emits fill-checkpoint, writes state', async () => {
+    await writeStubFile('01', 'stop', 'true'); // prior merged checkpoint on disk
     await writeStubFile('02', 'precompact', false);
     writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '01' }, tmpDir);
     const cap = captureStdout();
@@ -993,7 +994,8 @@ describe('postcompactFallback', () => {
     postcompactFallback(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     const parsed = JSON.parse(out.trim());
-    expect(parsed.reason).toMatch(/checkpoint-03\.md since checkpoint-02$/);
+    // predecessor derived from disk: stub-01 is highest NN < 03
+    expect(parsed.reason).toMatch(/checkpoint-03\.md since checkpoint-01$/);
   });
 
   it('first stub (NN=01) → since reference is "start"', async () => {
@@ -1004,6 +1006,29 @@ describe('postcompactFallback', () => {
     const out = cap.stop();
     const parsed = JSON.parse(out.trim());
     expect(parsed.reason).toMatch(/since start$/);
+  });
+
+  it('gap in checkpoint numbering → predecessor derived from disk, not arithmetic', async () => {
+    // checkpoint-03 was never written by Claude; stop-triggered -04 exists; stub is -05
+    await writeStubFile('04', 'stop', 'true'); // merged stop checkpoint
+    await writeStubFile('05', 'precompact', false); // unmerged precompact stub
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '04' }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    const parsed = JSON.parse(out.trim());
+    // arithmetic would say checkpoint-04; disk scan correctly finds checkpoint-04 as predecessor
+    expect(parsed.reason).toMatch(/checkpoint-05\.md since checkpoint-04$/);
+  });
+
+  it('pending_stub in state → delegates to handlePostcompact, not disk scan', async () => {
+    const stubFilename = `${date}-${TOKEN}-checkpoint-02.md`;
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '01', pending_stub: stubFilename }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.reason).toMatch(/fill-checkpoint:.*checkpoint-02\.md since checkpoint-01$/);
   });
 });
 
