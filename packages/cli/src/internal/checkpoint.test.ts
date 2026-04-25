@@ -12,6 +12,7 @@ import {
   handleReset,
   handleStop,
   maxCheckpointNnSync,
+  postcompactFallback,
   readState,
   writeState,
 } from './checkpoint.js';
@@ -905,6 +906,104 @@ describe('handlePostcompact', () => {
     } finally {
       await rm(vaultDir, { recursive: true, force: true });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// postcompactFallback
+// ---------------------------------------------------------------------------
+
+describe('postcompactFallback', () => {
+  let tmpDir: string;
+  let vaultDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await makeTmpDir();
+    vaultDir = await makeTmpDir();
+    await mkdir(join(vaultDir, 'vault.yml', '..'), { recursive: true });
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+    await rm(vaultDir, { recursive: true, force: true });
+  });
+
+  const now = 1700002000;
+  const date = '2023-11-14';
+  const logsDir = () => join(vaultDir, '07-logs', '2023', '11');
+
+  async function writeStubFile(nn: string, trigger: string, merged: string | false = false) {
+    await mkdir(logsDir(), { recursive: true });
+    const mergedLine = merged === false ? 'merged: false' : `merged: ${merged}`;
+    await writeFile(
+      join(logsDir(), `${date}-${TOKEN}-checkpoint-${nn}.md`),
+      `---\ntrigger: ${trigger}\n${mergedLine}\n---\n`,
+      'utf8',
+    );
+  }
+
+  it('no stubs on disk → writes clean 3-field state, no emit', () => {
+    writeState(TOKEN, { count: 0, last_ts: 999, last_stop_nn: '02' }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe('');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.count).toBe(0);
+    expect(state.last_ts).toBe(999); // preserved
+    expect(state.last_stop_nn).toBe('02');
+  });
+
+  it('unmerged precompact stub found → emits fill-checkpoint, writes state', async () => {
+    await writeStubFile('02', 'precompact', false);
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '01' }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.decision).toBe('block');
+    expect(parsed.reason).toMatch(/fill-checkpoint:.*checkpoint-02\.md since checkpoint-01$/);
+    const state = readState(TOKEN, tmpDir);
+    expect(state.last_ts).toBe(now);
+    expect(state.last_stop_nn).toBe('02');
+  });
+
+  it('stop-triggered stub → ignored, no emit', async () => {
+    await writeStubFile('02', 'stop', false);
+    writeState(TOKEN, { count: 0, last_ts: 500, last_stop_nn: '01' }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe('');
+  });
+
+  it('merged precompact stub → ignored, no emit', async () => {
+    await writeStubFile('02', 'precompact', 'true');
+    writeState(TOKEN, { count: 0, last_ts: 500, last_stop_nn: '01' }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe('');
+  });
+
+  it('multiple stubs → processes latest (highest NN)', async () => {
+    await writeStubFile('01', 'precompact', false);
+    await writeStubFile('03', 'precompact', false);
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.reason).toMatch(/checkpoint-03\.md since checkpoint-02$/);
+  });
+
+  it('first stub (NN=01) → since reference is "start"', async () => {
+    await writeStubFile('01', 'precompact', false);
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.reason).toMatch(/since start$/);
   });
 });
 

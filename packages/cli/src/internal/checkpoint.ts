@@ -418,11 +418,8 @@ export async function handlePrecompact(
 
 /**
  * Postcompact hook: handle pending stub from precompact.
- * If no pending stub: preserve last_ts, write clean 3-field state.
- * If pending stub: emit fill-checkpoint block (since reference derived from stub
- * filename), clear pending_stub, set last_ts=now so precompact recency guard
- * protects the 5-minute window after a compact cycle completes.
- * Sync.
+ * If pending stub: emit fill-checkpoint block, set last_ts=now.
+ * Sync. Called only when state has pending_stub set.
  */
 export function handlePostcompact(
   token: string,
@@ -432,17 +429,11 @@ export function handlePostcompact(
   const state = readState(token, tmpDir);
 
   if (!state.pending_stub) {
-    // No pending stub — preserve last_ts, write 3-field
-    writeState(
-      token,
-      { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
-      tmpDir,
-    );
+    writeState(token, { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn }, tmpDir);
     return;
   }
 
-  // Pending stub found — derive "since" reference from stub filename (NN - 1)
-  // No dependency on last_stop_nn: stop hooks now compute NN from disk too.
+  // Derive "since" reference from stub filename (NN - 1)
   const stubNnMatch = state.pending_stub.match(/-checkpoint-(\d{2})\.md$/);
   const stubNn = stubNnMatch?.[1] ?? '01';
   const prevNn = Number(stubNn) - 1;
@@ -450,6 +441,60 @@ export function handlePostcompact(
   emitBlock(`fill-checkpoint: ${state.pending_stub}${since}`);
 
   // last_ts=now: recency guard in handlePrecompact blocks re-fire within 5 min
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: stubNn }, tmpDir);
+}
+
+// ---------------------------------------------------------------------------
+// postcompact fallback
+// ---------------------------------------------------------------------------
+
+/**
+ * Fallback for postcompact when state has no pending_stub (e.g. state was lost
+ * or stop hook fired before compact cleared pending_stub from an older session).
+ * Scans disk for unmerged precompact stubs belonging to this session today.
+ * If found: emits fill-checkpoint for the latest one.
+ * If not found: writes clean 3-field state preserving last_ts.
+ * Sync.
+ */
+export function postcompactFallback(
+  token: string,
+  vaultRoot: string,
+  now: number = Math.floor(Date.now() / 1000),
+  tmpDir: string = osTmpdir(),
+): void {
+  const state = readState(token, tmpDir);
+  const { logsFolder } = loadVaultSettings(vaultRoot);
+  const date = formatDate(now);
+  const yyyy = date.slice(0, 4);
+  const mm = date.slice(5, 7);
+  const dir = join(vaultRoot, logsFolder, yyyy, mm);
+  const prefix = `${date}-${token}-checkpoint-`;
+
+  const stubs: string[] = [];
+  try {
+    for (const f of readdirSync(dir)) {
+      if (!f.startsWith(prefix) || !f.endsWith('.md')) continue;
+      const content = readFileSync(join(dir, f), 'utf8');
+      if (/^trigger:\s*precompact/m.test(content) && !/^merged:\s*true/m.test(content)) {
+        stubs.push(f);
+      }
+    }
+  } catch {
+    // dir missing or unreadable — fall through to clean state write
+  }
+
+  if (stubs.length === 0) {
+    writeState(token, { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn }, tmpDir);
+    return;
+  }
+
+  stubs.sort();
+  const stubFilename = stubs[stubs.length - 1];
+  const stubNnMatch = stubFilename.match(/-checkpoint-(\d{2})\.md$/);
+  const stubNn = stubNnMatch?.[1] ?? '01';
+  const prevNn = Number(stubNn) - 1;
+  const since = prevNn === 0 ? ' since start' : ` since checkpoint-${String(prevNn).padStart(2, '0')}`;
+  emitBlock(`fill-checkpoint: ${stubFilename}${since}`);
   writeState(token, { count: 0, last_ts: now, last_stop_nn: stubNn }, tmpDir);
 }
 
@@ -474,9 +519,15 @@ export async function checkpointCommand(
       case 'precompact':
         await handlePrecompact(token, vaultRoot);
         break;
-      case 'postcompact':
-        handlePostcompact(token);
+      case 'postcompact': {
+        const { pending_stub } = readState(token);
+        if (pending_stub) {
+          handlePostcompact(token);
+        } else {
+          postcompactFallback(token, vaultRoot);
+        }
         break;
+      }
       case 'reset':
         handleReset(token);
         break;
