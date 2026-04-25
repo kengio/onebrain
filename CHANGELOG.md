@@ -23,8 +23,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - fix: rename npm package from @onebrain/cli to @onebrain-ai/cli
 - fix(cli): move @onebrain/core to devDependencies — bundled into dist at build time
-- fix(ci): split version-sync check into CLI track and Plugin track
-- fix(release): inject BUILD_VERSION and BUILD_DATE at compile time via --define
 
 ## v2.0.0 — CLI Binary
 
