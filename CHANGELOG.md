@@ -19,11 +19,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - fix(hooks): migrate Stop/PreCompact/PostCompact hooks to `onebrain checkpoint` CLI — removes last bash script dependency from hook layer
 - fix(hooks): remove qmd-reindex.sh — superseded by `onebrain qmd-reindex` CLI (same pattern as session-init)
 - fix(hooks): remove PostToolUse from hooks.json — qmd hook is conditional on qmd_collection and belongs in settings.json only
-- fix(update): register-hooks.sh now accepts --qmd flag to register the PostToolUse qmd hook in settings.json
-- fix(update): migration Step 7 now actively registers PostToolUse hook when qmd_collection is set, instead of only checking
-- fix(qmd): /qmd setup now registers PostToolUse hook in settings.json after creating the collection
-- fix(doctor): PostToolUse hook check now reads settings.json (consistent with Stop/PreCompact/PostCompact checks)
-- fix(doctor): update hook checks to match new CLI command strings
+- fix(update): register-hooks.sh now accepts `--qmd` flag to register and `--remove-qmd` flag to remove the PostToolUse qmd hook in settings.json
+- fix(update): migration Step 7 now actively registers PostToolUse hook when qmd_collection is set; adds `Bash(onebrain *)` to permissions.allow
+- fix(qmd): /qmd setup registers PostToolUse hook in settings.json after creating the collection; /qmd uninstall removes it
+- fix(doctor): PostToolUse hook check reads settings.json (consistent with Stop/PreCompact/PostCompact); skips hook checks if onebrain CLI is not installed
+- fix(doctor): add onebrain CLI binary check — 🔴 with install instructions if missing
+- fix(doctor): update hook check strings to match CLI command format
 - fix(skills): replace all `qmd-update.sh` calls with `onebrain qmd-reindex` across 8 skill/reference files
 - fix(startup): remove qmd-update.sh — all callers now use async `onebrain qmd-reindex` (fire-and-forget background reindex)
 

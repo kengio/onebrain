@@ -109,7 +109,16 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
   - Check output: "all hooks already registered" → ✅ done; "added PostToolUse" → ✅ registered
 
 **Bash permission for onebrain CLI:**
-- Read `[vault]/.claude/settings.json`; check `permissions.allow` contains `"Bash(onebrain *)"` — if missing, add it (additive, never remove existing entries)
+- Read `[vault]/.claude/settings.json` fresh (after the register-hooks.sh calls above have written to it); check `permissions.allow` contains `"Bash(onebrain *)"` — if missing, add it using an inline Python snippet or targeted JSON edit. Never rewrite the entire file. Example:
+  ```python
+  import json
+  path = ".claude/settings.json"
+  with open(path) as f: cfg = json.load(f)
+  allow = cfg.setdefault("permissions", {}).setdefault("allow", [])
+  if "Bash(onebrain *)" not in allow:
+      allow.append("Bash(onebrain *)")
+      with open(path, "w") as f: json.dump(cfg, f, indent=2)
+  ```
 
 **Step 8: Verify migration**
 - Run /doctor (newly-synced version) automatically

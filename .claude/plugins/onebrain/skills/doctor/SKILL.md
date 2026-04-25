@@ -68,7 +68,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **onebrain CLI binary:**
 - Check `which onebrain` (macOS/Linux) or `where onebrain` (Windows)
-- If not found: 🔴 "onebrain CLI not installed — hooks (checkpoint, qmd-reindex) will not fire; run /onboarding or `npm install -g @onebrain-ai/cli` to install"
+- If not found: 🔴 "onebrain CLI not installed — hooks (checkpoint, qmd-reindex) will not fire; run /onboarding or `npm install -g @onebrain-ai/cli` to install" — then **skip the OneBrain hooks and qmd PostToolUse hook checks below** (mark them as N/A — root cause is the missing CLI, not the hooks)
 - If found: ✅ (no output in clean state)
 
 **vault.yml:**
