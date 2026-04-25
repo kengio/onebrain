@@ -14,16 +14,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.0.2 — npm Package Metadata
-
-- chore(cli): add description, keywords, homepage, repository, bugs, and license to package.json
-- chore(cli): npm package page no longer appears empty — searchable via pkm, obsidian, claude keywords
-
-## v2.0.1 — Package Name & Build Fixes
-
-- fix: rename npm package from @onebrain/cli to @onebrain-ai/cli
-- fix(cli): move @onebrain/core to devDependencies — bundled into dist at build time
-
 ## v2.0.0 — CLI Binary
 
 - feat: compiled TypeScript binary replaces all bash/Python scripts
