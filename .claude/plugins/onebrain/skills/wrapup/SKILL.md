@@ -139,8 +139,8 @@ auto-recovered: true
 
 ## Step 2: Determine Session File Name
 
-1. Using the date from Step 1, extract `YYYY` and `MM` (zero-padded month).
-2. List files in `[logs_folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md`
+1. Using the date from Step 1, extract `YYYY`, `MM` (zero-padded month), and `DD` (zero-padded day).
+2. List files in `[logs_folder]/YYYY/MM/` matching **`YYYY-MM-DD-session-*.md`** — use today's actual date as a literal prefix (e.g. `2026-04-25-session-*.md`), not as a wildcard. Only count sessions from today.
 3. The next session number = count of matches + 1 (zero-padded to 2 digits: 01, 02, etc.)
 4. Verify `YYYY-MM-DD-session-NN.md` does not already exist before writing; if it does, increment NN until a free slot is found.
 5. File name: `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
