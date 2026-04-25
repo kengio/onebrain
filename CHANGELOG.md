@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.1
+latest_version: 2.0.2
 released: 2026-04-25
 ---
 
@@ -13,6 +13,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.2 — Fix: PostToolUse qmd hook missing
+
+- fix(hooks): add PostToolUse entry to hooks.json — qmd-reindex.sh existed but was never wired up (gap from v2.0.0)
+- fix(update): register-hooks.sh now accepts --qmd flag to also register the PostToolUse hook in settings.json
+- fix(update): migration Step 7 now actively registers PostToolUse hook when qmd_collection is set, instead of only checking hooks.json
 
 ## v2.0.1 — Fix: /wrapup session numbering
 

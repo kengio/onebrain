@@ -9,5 +9,16 @@
         }
       ]
     }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \".claude/plugins/onebrain/hooks/qmd-reindex.sh\""
+        }
+      ]
+    }
   ]
 }
