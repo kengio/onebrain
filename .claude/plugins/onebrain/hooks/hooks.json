@@ -16,7 +16,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "bash \".claude/plugins/onebrain/hooks/qmd-reindex.sh\""
+          "command": "onebrain qmd-reindex"
         }
       ]
     }

@@ -41,14 +41,14 @@ hooks_to_register = {
 }
 
 if with_qmd:
-    hooks_to_register["PostToolUse"] = 'bash ".claude/plugins/onebrain/hooks/qmd-reindex.sh"'
+    hooks_to_register["PostToolUse"] = 'onebrain qmd-reindex'
 
 hooks = cfg.setdefault("hooks", {})
 registered = []
 
 for event, cmd in hooks_to_register.items():
     entries = hooks.setdefault(event, [])
-    marker = "qmd-reindex.sh" if event == "PostToolUse" else "checkpoint-hook.sh"
+    marker = "qmd-reindex" if event == "PostToolUse" else "checkpoint-hook.sh"
     found = False
     for entry in entries:
         for h in entry.get("hooks", []):
