@@ -16,8 +16,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.0.3 — Fix: checkpoint numbering + backfill-recapped cutoff
 
-- fix(checkpoint): `handlePostcompact` now advances `last_stop_nn` to the stub's NN after emitting fill-checkpoint block — prevents subsequent stop hooks from reusing the same NN and overwriting the filled stub
-- fix(wrapup): `reset-checkpoint-counter.sh` writes 3-field state (`0:<epoch>:00`) — was writing 2-field (v1 format) which bypassed the 60-second skip window after /wrapup
+- fix(checkpoint): derive checkpoint NN from disk scan (`maxCheckpointNnSync`) in both stop and precompact hooks — guarantees sequential numbering even when Claude fails to write a file
+- fix(checkpoint): `handlePostcompact` writes `last_ts=now` so precompact recency guard blocks re-fire within 5 minutes after a compact cycle; prevents stub overwrite on back-to-back compacts
+- fix(checkpoint): `handlePrecompact` double-compact guard — returns early if `pending_stub` already set, preventing orphaned stubs on consecutive compact events
+- fix(checkpoint): `loadVaultSettings` regex strips surrounding quotes from `logs:` folder value — was capturing literal quote characters as part of the path
+- fix(wrapup): `reset-checkpoint-counter.sh` writes 3-field state (`0:<epoch>:00`) — was writing 2-field (v1 format) which bypassed the 60-second skip window after /wrapup; fix stale comment in SKILL.md
 - fix(update): `backfill-recapped.sh` accepts optional `[cutoff_date]` arg; migration Step 6 reads `stats.last_recap` from vault.yml and passes it as cutoff — prevents /update from re-marking recent sessions on every run
 
 ## v2.0.2 — Fix: complete hook migration to CLI
