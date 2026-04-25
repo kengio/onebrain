@@ -93,8 +93,9 @@ Always: update `updated:` frontmatter to today.
 
 **Step 6: Backfill recapped: on existing session logs**
 - **Skip if:** `[logs_folder]/` does not exist
-- Run `bash ".claude/plugins/onebrain/skills/update/scripts/backfill-recapped.sh" "[logs_folder]"` — adds `recapped: YYYY-MM-DD` to session logs that don't have it; idempotent
-- **Note:** This marks all pre-migration logs as recapped so /recap does not reprocess them. Historical patterns were already in MEMORY.md Key Learnings (now migrated to memory/ in Step 1). If the user wishes to retroactively promote insights from a specific old log, they can clear its `recapped:` field before running /recap.
+- Read `stats.last_recap` from vault.yml (may be absent — treat as empty string if missing)
+- Run `bash ".claude/plugins/onebrain/skills/update/scripts/backfill-recapped.sh" "[logs_folder]" "[last_recap]"` — adds `recapped: YYYY-MM-DD` to session logs that don't have it; skips logs newer than `[last_recap]` if provided; idempotent
+- **Note:** The cutoff prevents /update from incorrectly marking recent sessions as recapped. Only logs on or before the last recap date are marked — newer sessions remain available for /recap to process.
 
 **Step 7: Register OneBrain hooks in `[vault]/.claude/settings.json`**
 
