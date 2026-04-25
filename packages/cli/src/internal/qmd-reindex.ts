@@ -17,29 +17,29 @@ import { loadVaultConfig } from '@onebrain/core';
  * Spawns detached background process, always exits 0.
  */
 export async function qmdReindexCommand(vaultRoot: string): Promise<void> {
-	try {
-		// Load vault config
-		const config = await loadVaultConfig(vaultRoot);
-		const collection = config.qmd_collection;
+  try {
+    // Load vault config
+    const config = await loadVaultConfig(vaultRoot);
+    const collection = config.qmd_collection;
 
-		// If qmd_collection not set, exit silently (no-op)
-		if (!collection) {
-			return;
-		}
+    // If qmd_collection not set, exit silently (no-op)
+    if (!collection) {
+      return;
+    }
 
-		// Spawn detached background process
-		const proc = Bun.spawn(['qmd', 'update', '-c', collection], {
-			detached: true,
-			stdin: 'ignore',
-			stdout: 'ignore',
-			stderr: 'ignore',
-		});
-		proc.unref(); // release parent reference — CLI exits immediately
+    // Spawn detached background process
+    const proc = Bun.spawn(['qmd', 'update', '-c', collection], {
+      detached: true,
+      stdin: 'ignore',
+      stdout: 'ignore',
+      stderr: 'ignore',
+    });
+    proc.unref(); // release parent reference — CLI exits immediately
 
-		// Fire-and-forget: do NOT call proc.exited or await anything
-		// Process runs in the background
-	} catch {
-		// Silently ignore all errors (config load fail, qmd not in PATH, etc.)
-		// Errors go to stderr (if any) but don't block exit
-	}
+    // Fire-and-forget: do NOT call proc.exited or await anything
+    // Process runs in the background
+  } catch {
+    // Silently ignore all errors (config load fail, qmd not in PATH, etc.)
+    // Errors go to stderr (if any) but don't block exit
+  }
 }

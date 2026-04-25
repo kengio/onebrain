@@ -1,16 +1,16 @@
 {
-	"permissions": {
-		"allow": ["Read", "Write", "Edit", "Glob", "Grep", "Bash(git:*)", "WebFetch", "WebSearch"]
-	},
-	"enabledPlugins": {
-		"onebrain@onebrain": true
-	},
-	"extraKnownMarketplaces": {
-		"onebrain": {
-			"source": {
-				"source": "directory",
-				"path": "."
-			}
-		}
-	}
+  "permissions": {
+    "allow": ["Read", "Write", "Edit", "Glob", "Grep", "Bash(git:*)", "WebFetch", "WebSearch"]
+  },
+  "enabledPlugins": {
+    "onebrain@onebrain": true
+  },
+  "extraKnownMarketplaces": {
+    "onebrain": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
+  }
 }

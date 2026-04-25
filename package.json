@@ -1,15 +1,15 @@
 {
-	"name": "onebrain",
-	"version": "2.0.0",
-	"private": true,
-	"workspaces": ["packages/*"],
-	"scripts": {
-		"bump": "bun run --cwd packages/cli bump",
-		"test": "bun test --pass-with-no-tests packages/",
-		"build": "bun run --cwd packages/cli build"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^1.9",
-		"typescript": "^5.7"
-	}
+  "name": "onebrain",
+  "version": "2.0.0",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "bump": "bun run --cwd packages/cli bump",
+    "test": "bun test --pass-with-no-tests packages/",
+    "build": "bun run --cwd packages/cli build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9",
+    "typescript": "^5.7"
+  }
 }
