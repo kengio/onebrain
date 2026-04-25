@@ -153,9 +153,11 @@ jobs:
 
       - name: Publish to npm
         env:
-          BUN_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/cli
-        run: bun publish --access public
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
+          npm publish --access public
 
   # ─── Step 5: generate marketplace.json + create GitHub release ────────────
   create-release:
