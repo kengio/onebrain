@@ -266,7 +266,22 @@ Both scripts download the repo tarball, extract it, remove themselves from the v
 - Include a brief description of what changed and why
 - If adding a skill, show an example interaction in the PR description
 - Keep skill files readable — they're prompts, not code
-- Bump `plugin.json` version for every PR — use patch for docs/fixes, minor for new skills/agents/hooks
+- **Never commit directly to `main`** — all changes go through a PR with a worktree branch
+- Update PR title and description after every new commit pushed to an open PR
+
+## Versioning
+
+Two independent version tracks — bump only the track that changed:
+
+| Track | Files | Bump when |
+|---|---|---|
+| **Plugin** | `plugin.json` · `CHANGELOG.md` frontmatter | Skills, INSTRUCTIONS.md, hooks, vault structure |
+| **CLI** | `packages/cli/package.json` · `packages/core/package.json` | TypeScript source changes only |
+
+**Plugin bump:** patch for fixes/docs, minor for new skills/agents/hooks
+**CLI bump:** patch for bug fixes, minor for new commands, major for breaking changes
+
+After merging a CLI change → push tag `v{cli-version}` to trigger release workflow (builds binaries + publishes npm).
 
 ## Reporting Issues
 
