@@ -208,6 +208,15 @@ describe('handleReset', () => {
     const out = cap.stop();
     expect(out).toBe('');
   });
+
+  it('clears pending_stub from 4-field state', async () => {
+    writeState(TOKEN, { count: 3, last_ts: 999, last_stop_nn: '02', pending_stub: 'some-checkpoint.md' }, tmpDir);
+    handleReset(TOKEN, 1700000000, tmpDir);
+    const raw = await readStateRaw(tmpDir, TOKEN);
+    expect(raw).toBe('0:1700000000:00');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.pending_stub).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

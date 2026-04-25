@@ -212,7 +212,7 @@ After writing the session log, reset the checkpoint hook counter to prevent spur
 bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"
 ```
 
-This writes `0:<epoch>` into the session state file, triggering a 60-second skip window and resetting the message counter.
+This writes `0:<epoch>:00` into the session state file, triggering a 60-second skip window and resetting the message counter.
 
 ---
 

@@ -150,7 +150,7 @@ function loadVaultSettings(vaultRoot: string): {
 
     const foldersBlock = raw.match(/^folders:\s*\n((?:[ \t]+[^\n]+\n?)*)/m);
     if (foldersBlock?.[1]) {
-      const logsMatch = foldersBlock[1].match(/logs:\s*(\S+)/);
+      const logsMatch = foldersBlock[1].match(/logs:\s*['"]?([^'"\s]+)['"]?/);
       if (logsMatch?.[1]) logsFolder = logsMatch[1];
     }
 
