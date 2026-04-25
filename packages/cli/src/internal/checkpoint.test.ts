@@ -11,6 +11,7 @@ import {
   handlePrecompact,
   handleReset,
   handleStop,
+  maxCheckpointNnSync,
   readState,
   writeState,
 } from './checkpoint.js';
@@ -43,6 +44,27 @@ function stateFile(tmpDir: string, token: string): string {
 
 async function readStateRaw(tmpDir: string, token: string): Promise<string> {
   return readFile(stateFile(tmpDir, token), 'utf8');
+}
+
+async function createCheckpointFile(
+  vaultDir: string,
+  now: number,
+  token: string,
+  nn: number,
+): Promise<void> {
+  const d = new Date(now * 1000);
+  const yyyy = d.getFullYear().toString();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const date = `${yyyy}-${mm}-${dd}`;
+  const dir = join(vaultDir, '07-logs', yyyy, mm);
+  await mkdir(dir, { recursive: true });
+  const nnStr = String(nn).padStart(2, '0');
+  await writeFile(
+    join(dir, `${date}-${token}-checkpoint-${nnStr}.md`),
+    `---\ndate: ${date}\ncheckpoint: ${nnStr}\nmerged: false\n---\n`,
+    'utf8',
+  );
 }
 
 // Capture stdout written via process.stdout.write
@@ -309,10 +331,13 @@ describe('handleStop', () => {
     expect(String(parsed.reason)).toMatch(/-checkpoint-\d{2}\.md since /);
   });
 
-  it('threshold met by elapsed time, emits block JSON', () => {
+  it('threshold met by elapsed time, emits block JSON', async () => {
     // elapsed > minutes_threshold (10 min = 600s), count >= 2
     const now = 1700001000;
     const oldTs = now - 700; // 700s elapsed
+    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 2, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
@@ -339,8 +364,12 @@ describe('handleStop', () => {
     expect(parsed.reason).toMatch(/since start$/);
   });
 
-  it('"since checkpoint-NN" format when last_stop_nn is non-zero', () => {
+  it('"since checkpoint-NN" format when last_stop_nn is non-zero', async () => {
     const now = 1700001000;
+    // Create 3 existing checkpoints so disk scan returns maxNn=3 → next NN=04
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    await createCheckpointFile(vaultDir, now, TOKEN, 2);
+    await createCheckpointFile(vaultDir, now, TOKEN, 3);
     writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '03' }, tmpDir);
 
     const cap = captureStdout();
@@ -351,6 +380,24 @@ describe('handleStop', () => {
     expect(parsed.reason).toMatch(/since checkpoint-03$/);
     // next NN should be 04
     expect(parsed.reason).toMatch(/checkpoint-04\.md/);
+  });
+
+  it('disk scan wins over state: last_stop_nn="02" but only checkpoint-01 on disk → creates checkpoint-02', async () => {
+    const now = 1700001000;
+    // Only checkpoint-01 exists on disk — state says last_stop_nn='02' but disk is authoritative
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '02' }, tmpDir);
+
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.decision).toBe('block');
+    // disk maxNn=1 → next NN=02 (not 03 from state)
+    expect(parsed.reason).toMatch(/checkpoint-02\.md since checkpoint-01$/);
+    const state = readState(TOKEN, tmpDir);
+    expect(state.last_stop_nn).toBe('02');
   });
 
   it('elapsed calc: last_ts=0 → elapsed=0, never triggers time threshold alone', () => {
@@ -392,9 +439,12 @@ describe('handleStop', () => {
     expect(state.count).toBe(1);
   });
 
-  it('last_ts=0 + count=4 (below threshold=5 after increment to 5) → decision:block, last_ts updated, last_stop_nn incremented', () => {
+  it('last_ts=0 + count=4 (below threshold=5 after increment to 5) → decision:block, last_ts updated, last_stop_nn incremented', async () => {
     // messagesThreshold is 5 from vault.yml; count=4 → increment to 5 = threshold → emit
     const now = 1700000800;
+    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 4, last_ts: 0, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
@@ -480,6 +530,9 @@ describe('handlePrecompact', () => {
   it('no recent checkpoint → writes stub file and updates state to 4-field format', async () => {
     const now = 1700001000;
     const oldTs = now - 600; // 600s > 300s
+    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 3, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
@@ -493,12 +546,15 @@ describe('handlePrecompact', () => {
     expect(state.last_ts).toBe(oldTs); // NOT updated by precompact
     expect(state.last_stop_nn).toBe('02'); // NOT incremented
     expect(state.pending_stub).toBeTruthy();
-    // stub NN should be 03 (last_stop_nn '02' + 1)
+    // stub NN should be 03 (disk scan maxNn=2 → next=03)
     expect(state.pending_stub).toMatch(/checkpoint-03\.md$/);
   });
 
-  it('NN derivation: last_stop_nn="02" → stub NN="03"', async () => {
+  it('NN derivation: disk scan maxNn=2 → stub NN="03"', async () => {
     const now = 1700001000;
+    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
 
     await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
@@ -531,7 +587,9 @@ describe('handlePrecompact', () => {
     const date = new Date(now * 1000);
     const yyyy = date.getFullYear().toString();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
-    // last_stop_nn='02' → stub NN='03'
+    // Create 2 existing checkpoints so disk scan returns maxNn=2 → stub NN='03'
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
 
     await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
@@ -547,6 +605,10 @@ describe('handlePrecompact', () => {
 
   it('last_stop_nn NOT updated (stays same in state after precompact)', async () => {
     const now = 1700001000;
+    // Create 3 existing checkpoints so disk scan returns maxNn=3 → stub NN=04
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    await createCheckpointFile(vaultDir, now, TOKEN, 2);
+    await createCheckpointFile(vaultDir, now, TOKEN, 3);
     writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '03' }, tmpDir);
 
     await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
@@ -741,5 +803,74 @@ describe('handlePostcompact', () => {
     const out = cap.stop();
 
     expect(out).toBe('');
+  });
+
+  it('pending_stub NN inconsistent with last_stop_nn → uses NN from filename (authoritative)', async () => {
+    // State corruption: last_stop_nn says 02 but stub filename says checkpoint-04
+    writeState(
+      TOKEN,
+      {
+        count: 0,
+        last_ts: 1699999000,
+        last_stop_nn: '02',
+        pending_stub: '2026-04-23-41928-checkpoint-04.md',
+      },
+      tmpDir,
+    );
+
+    const cap = captureStdout();
+    handlePostcompact(TOKEN, 1700001000, tmpDir);
+    cap.stop();
+
+    // Filename wins: last_stop_nn advances to 04 (from filename), not 03 (from last_stop_nn+1)
+    const raw = await readStateRaw(tmpDir, TOKEN);
+    expect(raw).toBe('0:0:04');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// maxCheckpointNnSync
+// ---------------------------------------------------------------------------
+
+describe('maxCheckpointNnSync', () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await makeTmpDir();
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  const VAULT = () => tmpDir;
+  const DATE = '2023-11-14';
+  const LOGS = '07-logs';
+
+  it('returns 0 when directory does not exist', () => {
+    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(0);
+  });
+
+  it('returns 0 when directory has no checkpoint files', async () => {
+    await mkdir(join(VAULT(), LOGS, '2023', '11'), { recursive: true });
+    await writeFile(join(VAULT(), LOGS, '2023', '11', '2023-11-14-session-01.md'), '', 'utf8');
+    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(0);
+  });
+
+  it('returns the highest NN from matching checkpoint files', async () => {
+    const dir = join(VAULT(), LOGS, '2023', '11');
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-01.md`), '', 'utf8');
+    await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-03.md`), '', 'utf8');
+    await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-02.md`), '', 'utf8');
+    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(3);
+  });
+
+  it('ignores files with wrong token or wrong format', async () => {
+    const dir = join(VAULT(), LOGS, '2023', '11');
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, `${DATE}-99999-checkpoint-05.md`), '', 'utf8'); // wrong token
+    await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-01.md`), '', 'utf8'); // correct
+    await writeFile(join(dir, `${DATE}-${TOKEN}-session-01.md`), '', 'utf8'); // not checkpoint
+    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(1);
   });
 });
