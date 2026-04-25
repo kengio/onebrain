@@ -294,12 +294,17 @@ export function handleStop(
   const date = formatDate(now);
   const maxNn = maxCheckpointNnSync(vaultRoot, date, token, logsFolder);
   const nextNn = String(maxNn + 1).padStart(2, '0');
-  const since = maxNn === 0 ? ' since start' : ` since checkpoint-${String(maxNn).padStart(2, '0')}`;
+  const since =
+    maxNn === 0 ? ' since start' : ` since checkpoint-${String(maxNn).padStart(2, '0')}`;
   const filename = `${date}-${token}-checkpoint-${nextNn}.md`;
   emitBlock(`${filename}${since}`);
 
   // Reset state; preserve pending_stub so postcompact can still fill the precompact stub
-  writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn, pending_stub: state.pending_stub }, tmpDir);
+  writeState(
+    token,
+    { count: 0, last_ts: now, last_stop_nn: nextNn, pending_stub: state.pending_stub },
+    tmpDir,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -431,7 +436,11 @@ export function handlePostcompact(
   const state = readState(token, tmpDir);
 
   if (!state.pending_stub) {
-    writeState(token, { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn }, tmpDir);
+    writeState(
+      token,
+      { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
+      tmpDir,
+    );
     return;
   }
 
@@ -460,7 +469,10 @@ export function handlePostcompact(
     // dir missing or unreadable — predecessorNn stays 0 → 'since start'
   }
 
-  const since = predecessorNn === 0 ? ' since start' : ` since checkpoint-${String(predecessorNn).padStart(2, '0')}`;
+  const since =
+    predecessorNn === 0
+      ? ' since start'
+      : ` since checkpoint-${String(predecessorNn).padStart(2, '0')}`;
   emitBlock(`fill-checkpoint: ${state.pending_stub}${since}`);
 
   // last_ts=now: recency guard in handlePrecompact blocks re-fire within 5 min
@@ -502,7 +514,7 @@ export function postcompactFallback(
   const prefix = `${date}-${token}-checkpoint-`;
 
   const stubs: string[] = [];
-  let allNns: number[] = [];
+  const allNns: number[] = [];
   try {
     for (const f of readdirSync(dir)) {
       if (!f.startsWith(prefix) || !f.endsWith('.md')) continue;
@@ -519,7 +531,11 @@ export function postcompactFallback(
   }
 
   if (stubs.length === 0) {
-    writeState(token, { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn }, tmpDir);
+    writeState(
+      token,
+      { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
+      tmpDir,
+    );
     return;
   }
 
@@ -530,7 +546,10 @@ export function postcompactFallback(
   const stubNnNum = Number(stubNn);
   // Derive predecessor from disk — correct even when there are gaps in numbering
   const predecessorNn = allNns.filter((n) => n < stubNnNum).reduce((max, n) => Math.max(max, n), 0);
-  const since = predecessorNn === 0 ? ' since start' : ` since checkpoint-${String(predecessorNn).padStart(2, '0')}`;
+  const since =
+    predecessorNn === 0
+      ? ' since start'
+      : ` since checkpoint-${String(predecessorNn).padStart(2, '0')}`;
   emitBlock(`fill-checkpoint: ${stubFilename}${since}`);
   writeState(token, { count: 0, last_ts: now, last_stop_nn: stubNn }, tmpDir);
 }
