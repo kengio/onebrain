@@ -19,18 +19,17 @@ count=0
 while IFS= read -r -d '' file; do
     grep -q "^recapped:" "$file" 2>/dev/null && continue
 
-    date_val=$(grep "^date:" "$file" 2>/dev/null | head -1 | sed 's/date:[[:space:]]*//')
+    date_val=$(grep "^date:" "$file" 2>/dev/null | head -1 | sed 's/date:[[:space:]]*//' | tr -d '\r\n')
     [ -z "$date_val" ] && date_val=$(basename "$file" | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2}' || true)
     [ -z "$date_val" ] && continue
 
     # Skip logs newer than cutoff (string comparison works for YYYY-MM-DD)
     [ -n "$cutoff" ] && [[ "$date_val" > "$cutoff" ]] && continue
 
-    # Insert recapped: after the date: line (portable: avoid sed -i '' macOS-only syntax)
+    # Insert recapped: after the date: line (awk: portable across BSD/GNU; no blank-line issue)
     if grep -q "^date:" "$file"; then
         tmp=$(mktemp)
-        sed "/^date:/a\\
-recapped: ${date_val}" "$file" > "$tmp" && mv "$tmp" "$file"
+        awk -v recap="recapped: ${date_val}" '/^date:/{print; print recap; next}1' "$file" > "$tmp" && mv "$tmp" "$file"
         count=$((count + 1))
     fi
 done < <(find "$logs" -name "*-session-*.md" -print0 2>/dev/null)
