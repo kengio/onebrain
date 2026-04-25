@@ -17,11 +17,11 @@
       },
       "dependencies": {
         "@clack/prompts": "^0.9",
-        "@onebrain/core": "workspace:*",
         "commander": "^12",
         "yaml": "^2",
       },
       "devDependencies": {
+        "@onebrain/core": "workspace:*",
         "@types/bun": "latest",
         "@types/node": "^20",
       },

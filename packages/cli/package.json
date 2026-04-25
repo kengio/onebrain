@@ -11,12 +11,12 @@
     "bump": "echo 'bump not yet implemented'"
   },
   "dependencies": {
-    "@onebrain/core": "workspace:*",
     "@clack/prompts": "^0.9",
     "commander": "^12",
     "yaml": "^2"
   },
   "devDependencies": {
+    "@onebrain/core": "workspace:*",
     "@types/bun": "latest",
     "@types/node": "^20"
   }
