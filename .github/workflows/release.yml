@@ -153,12 +153,9 @@ jobs:
 
       - name: Publish to npm
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          BUN_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: packages/cli
-        run: |
-          # Write auth to ~/.npmrc (global) — bun publish reads this before any project-level .npmrc
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          bun publish --access public
+        run: bun publish --access public
 
   # ─── Step 5: generate marketplace.json + create GitHub release ────────────
   create-release:
@@ -216,10 +213,10 @@ jobs:
           ASSETS+=("onebrain-plugin-v${VERSION}.sha256")
           ASSETS+=("marketplace.json")
 
-          ATTACH_FLAGS=()
+          FILE_ARGS=()
           for asset in "${ASSETS[@]}"; do
             if [ -f "$asset" ]; then
-              ATTACH_FLAGS+=("--attach" "$asset")
+              FILE_ARGS+=("$asset")
             else
               echo "::warning::Asset not found: $asset"
             fi
@@ -228,4 +225,4 @@ jobs:
           gh release create "v${VERSION}" \
             --title "OneBrain v${VERSION}" \
             --notes-file release_notes.txt \
-            "${ATTACH_FLAGS[@]}"
+            "${FILE_ARGS[@]}"
