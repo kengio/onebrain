@@ -147,8 +147,8 @@ Say:
 
 ## Step 6: Update qmd Index
 
-```bash
-bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+onebrain qmd-reindex
 ```
 
 ---

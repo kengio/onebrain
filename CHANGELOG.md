@@ -22,6 +22,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - fix(update): register-hooks.sh now accepts --qmd flag to also register the PostToolUse hook in settings.json
 - fix(update): migration Step 7 now actively registers PostToolUse hook when qmd_collection is set, instead of only checking hooks.json
 - fix(doctor): update hook checks to match new CLI command strings
+- fix(skills): replace all `qmd-update.sh` calls with `onebrain qmd-reindex` across 8 skill/reference files
+- fix(startup): remove qmd-update.sh — all callers now use async `onebrain qmd-reindex` (fire-and-forget background reindex)
 
 ## v2.0.1 — Fix: /wrapup session numbering
 

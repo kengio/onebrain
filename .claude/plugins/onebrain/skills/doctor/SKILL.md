@@ -157,7 +157,7 @@ If no issues:
 ## Step 4: Auto-fix (`--fix` flag only)
 
 Read `references/autofix-procedures.md` and run Pass A, Pass B, Pass C, and Pass D in order.
-Each pass confirms with the user before writing. Run the Final step (qmd-update.sh) after all passes.
+Each pass confirms with the user before writing. Run the Final step (`onebrain qmd-reindex`) after all passes.
 
 ---
 

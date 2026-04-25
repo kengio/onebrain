@@ -29,7 +29,6 @@ Good contributions include:
 │   └── scripts/                         Predefined shell scripts called by INSTRUCTIONS.md
 │       ├── session-init.sh              Outputs DATETIME + SESSION_TOKEN in one Bash call
 │       ├── orphan-scan.sh               Counts unmerged checkpoint sessions (orphans)
-│       ├── qmd-update.sh                Runs qmd index update (reads collection from vault.yml)
 │       └── open-in-obsidian.sh          Opens a vault file in the Obsidian app
 ├── skills/                              One directory per slash command (25 skills)
 │   └── [name]/

@@ -103,8 +103,8 @@ If the write fails, show the error. Tell the user to manually add `qmd_collectio
 
 ### Step 8: Run initial index
 
-```bash
-bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+onebrain qmd-reindex
 ```
 
 Report progress. If it fails, show the error : the collection is created but not indexed. User can run `/qmd reindex` to retry.
@@ -217,8 +217,8 @@ Stop.
 
 ### Step 2: Run update
 
-```bash
-bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+onebrain qmd-reindex
 ```
 
 Report progress and any errors.

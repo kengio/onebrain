@@ -148,8 +148,8 @@ Kept in inbox ({M}):
 Empty state:
 ✅ Inbox is empty — nothing to process.
 
-```bash
-bash ".claude/plugins/onebrain/startup/scripts/qmd-update.sh"
+```
+onebrain qmd-reindex
 ```
 
 ---
