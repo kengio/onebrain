@@ -22,3 +22,4 @@ docs/superpowers/
 node_modules/
 dist/
 *.tsbuildinfo
+*.bun-build

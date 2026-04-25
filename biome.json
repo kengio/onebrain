@@ -33,6 +33,6 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", "dist", "*.js"]
+    "ignore": ["node_modules", "dist", "*.js", ".obsidian"]
   }
 }
