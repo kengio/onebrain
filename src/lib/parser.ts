@@ -6,7 +6,6 @@ import type {
   VaultFolders,
   VaultRecap,
   VaultRuntime,
-  VaultSandbox,
   VaultStats,
 } from './types.js';
 
@@ -92,10 +91,6 @@ export async function loadVaultConfig(vaultRoot: string): Promise<VaultConfig> {
 
   if (raw['runtime'] !== undefined) {
     config.runtime = raw['runtime'] as VaultRuntime;
-  }
-
-  if (raw['sandbox'] !== undefined) {
-    config.sandbox = raw['sandbox'] as VaultSandbox;
   }
 
   if (raw['stats'] !== undefined) {

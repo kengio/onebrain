@@ -8,7 +8,6 @@ import {
   checkHarnessBinary,
   checkOrphanCheckpoints,
   checkQmdEmbeddings,
-  checkSandbox,
   checkVaultYml,
   checkVersionDrift,
   loadVaultConfig,
@@ -145,8 +144,6 @@ describe('loadVaultConfig', () => {
   it('preserves optional fields when present', async () => {
     const yaml = `
 onebrain_version: "1.9.0"
-sandbox:
-  enabled: true
 runtime:
   harness: claude-code
 recap:
@@ -157,7 +154,6 @@ recap:
     const config = await loadVaultConfig(dir);
 
     expect(config.onebrain_version).toBe('1.9.0');
-    expect(config.sandbox?.enabled).toBe(true);
     expect(config.runtime?.harness).toBe('claude-code');
     expect(config.recap?.min_sessions).toBe(3);
     expect(config.recap?.min_frequency).toBe(7);
@@ -569,50 +565,5 @@ describe('checkOrphanCheckpoints', () => {
 
     expect(result.status).toBe('warn');
     expect(result.message).toContain('1');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// checkSandbox
-// ---------------------------------------------------------------------------
-
-describe('checkSandbox', () => {
-  const baseConfig: VaultConfig = {
-    folders: {
-      inbox: '00-inbox',
-      projects: '01-projects',
-      areas: '02-areas',
-      knowledge: '03-knowledge',
-      resources: '04-resources',
-      agent: '05-agent',
-      archive: '06-archive',
-      logs: '07-logs',
-    },
-    checkpoint: { messages: 15, minutes: 30 },
-    update_channel: 'stable',
-  };
-
-  it('returns ok when sandbox.enabled is true', () => {
-    const config = { ...baseConfig, sandbox: { enabled: true } };
-    const result = checkSandbox(config);
-
-    expect(result.status).toBe('ok');
-    expect(result.check).toBe('sandbox');
-  });
-
-  it('returns warn when sandbox is absent', () => {
-    const result = checkSandbox(baseConfig);
-
-    expect(result.status).toBe('warn');
-    expect(result.message).toBe('disabled');
-    expect(result.hint).toContain('vault.yml');
-  });
-
-  it('returns warn when sandbox.enabled is false', () => {
-    const config = { ...baseConfig, sandbox: { enabled: false } };
-    const result = checkSandbox(config);
-
-    expect(result.status).toBe('warn');
-    expect(result.message).toBe('disabled');
   });
 });

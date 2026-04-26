@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.10
+latest_version: 2.0.11
 released: 2026-04-26
 ---
 
@@ -12,6 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.11 — fix: remove unimplemented sandbox doctor check
+
+- fix(doctor): remove `checkSandbox` — sandbox feature not yet implemented; the check produced a permanent warn for all vaults without benefit
+- fix(types): remove `VaultSandbox` interface and `sandbox?: VaultSandbox` from `VaultConfig`
+- test(doctor): replace sandbox-based warning fixtures with orphan-checkpoints warn in affected tests
 
 ## v2.0.10 — fix: doctor no longer warns on CLI-vs-plugin version difference
 
