@@ -108,7 +108,7 @@ def sync_plugin():
 
 def copy_root_docs():
     copied = 0
-    for fname in ("README.md", "CONTRIBUTING.md", "CHANGELOG.md"):
+    for fname in ("README.md", "CONTRIBUTING.md", "CHANGELOG.md", "PLUGIN-CHANGELOG.md"):
         src = tmp_dir / fname
         if src.exists():
             shutil.copy2(src, vault_root / fname)

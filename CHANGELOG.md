@@ -3,14 +3,13 @@ latest_version: 2.0.8
 released: 2026-04-26
 ---
 
-# Changelog
+# CLI Changelog
 
-All notable changes to OneBrain are documented here.
+All notable changes to the OneBrain CLI binary (`@onebrain-ai/cli`).
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-> **Versioning:** `plugin.json` tracks the vault plugin version (skills, INSTRUCTIONS, hooks).
-> The CLI binary (`@onebrain-ai/cli`) has its own independent version tracked in `package.json`.
-> `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
+> **Versioning:** CLI version is tracked in `package.json`. Bump only when TypeScript source changes.
+> For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
 
@@ -20,317 +19,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - refactor(src): domain logic lives in src/lib/, commands in src/commands/, hidden internals in src/commands/internal/
 - refactor(build): single bun build entry point (src/index.ts → dist/onebrain); no workspace hoisting
 - refactor(config): merge root tsconfig, biome.json, and package.json — no per-package configs
+- fix(output): force UTF-8 encoding unconditionally — fixes emoji/arrow rendering on macOS terminals
+- feat(doctor): TTY mode now shows emoji status icons (✅ / ⚠️ / ❌) and a spinner during health checks
 
-## v2.0.5 — fix: vault skill fixes (grep encoding, PostCompact, /update CLI migration, auto-summary routing)
+## v2.0.3 — fix: checkpoint binary correctness
 
-- fix(startup): task scan grep pattern — replaced `\d` with `[0-9]` for POSIX grep compatibility on macOS
-- fix(checkpoint): replace fill-checkpoint PostCompact handler with auto-wrapup — when block reason matches `auto-wrapup: <token>`, recover orphan checkpoints for that token into a session log
-- fix(update): Step 7 standard hooks now use `onebrain register-hooks` CLI; qmd PostToolUse hook still via register-hooks.sh (no CLI support yet)
-- feat(update): CLI version check — after vault update, compare installed `onebrain` CLI against npm latest; prompt to update via npm or bun if newer is available
-- feat(auto-summary): add action item routing (Step 4b parity with /wrapup) — after writing session log, route tasks to matching project notes via keyword scoring
+- fix(checkpoint): derive checkpoint NN from disk scan in both stop and precompact hooks — guarantees sequential numbering even when Claude fails to write a file
+- fix(checkpoint): handlePostcompact writes last_ts=now so precompact recency guard blocks re-fire within 5 minutes after a compact cycle
+- fix(checkpoint): handlePrecompact double-compact guard — returns early if pending_stub already set
+- fix(checkpoint): handleStop preserves pending_stub in state write
+- fix(checkpoint): postcompactFallback — disk scan for unmerged precompact stubs when state has no pending_stub
+- fix(checkpoint): loadVaultSettings regex strips surrounding quotes from logs: folder value
 
-## v2.0.4 — feat: /wrapup auto-routes action items to project notes
+## v2.0.2 — fix: complete hook migration to CLI
 
-- feat(wrapup): Step 4b — after writing the session log, extract `- [ ]` action items and route each to the most relevant project note via keyword scoring (folder name + filename stem match against task text)
-- feat(wrapup): dedup guard — skips appending if identical task line already exists in the target file
-- feat(wrapup): routing report in Step 8 confirmation — lists each task and its destination note
-- feat(wrapup): non-blocking — routing errors are silently skipped per task; session log always written first
+- fix(hooks): migrate Stop/PreCompact/PostCompact to onebrain checkpoint CLI; delete qmd-reindex.sh
+- fix(register-hooks): gains --qmd / --remove-qmd flags; migration Step 7 registers PostToolUse hook when qmd_collection is set
+- feat(session-init): expose session token and qmd status via JSON output
+- feat(orphan-scan): CLI-based orphan detection replaces inline bash
 
-## v2.0.3 — Fix: checkpoint numbering + backfill-recapped cutoff
-
-- fix(checkpoint): derive checkpoint NN from disk scan (`maxCheckpointNnSync`) in both stop and precompact hooks — guarantees sequential numbering even when Claude fails to write a file
-- fix(checkpoint): `handlePostcompact` writes `last_ts=now` so precompact recency guard blocks re-fire within 5 minutes after a compact cycle; prevents stub overwrite on back-to-back compacts
-- fix(checkpoint): `handlePrecompact` double-compact guard — returns early if `pending_stub` already set, preventing orphaned stubs on consecutive compact events
-- fix(checkpoint): `handleStop` preserves `pending_stub` in state write — was clearing it with a 3-field write, causing postcompact to miss the stub when stop fires before compact
-- fix(checkpoint): `postcompactFallback` — disk scans for unmerged `trigger: precompact` stubs when state has no `pending_stub` (e.g. state lost or expired); `handlePostcompact` and `postcompactFallback` both derive `since` predecessor from disk scan (not arithmetic) — correct even when there are gaps in checkpoint numbering
-- fix(checkpoint): `loadVaultSettings` regex strips surrounding quotes from `logs:` folder value — was capturing literal quote characters as part of the path
-- fix(wrapup): `reset-checkpoint-counter.sh` writes 3-field state (`0:<epoch>:00`) — was writing 2-field (v1 format) which bypassed the 60-second skip window after /wrapup; fix stale comment in SKILL.md
-- fix(update): `backfill-recapped.sh` accepts optional `[cutoff_date]` arg; migration Step 6 reads `stats.last_recap` from vault.yml and passes it as cutoff — prevents /update from re-marking recent sessions on every run
-
-## v2.0.2 — Fix: complete hook migration to CLI
-
-- fix(hooks): migrate Stop/PreCompact/PostCompact to `onebrain checkpoint` CLI; remove PostToolUse from hooks.json (conditional on qmd_collection — belongs in settings.json only); delete qmd-reindex.sh
-- fix(update): register-hooks.sh gains `--qmd` / `--remove-qmd` flags; migration Step 7 registers PostToolUse hook and adds `Bash(onebrain *)` to permissions.allow when qmd_collection is set
-- fix(qmd): /qmd setup registers PostToolUse hook in settings.json after collection is created; /qmd uninstall removes it
-- fix(doctor): add onebrain CLI binary check (🔴 + install hint if missing); PostToolUse check reads settings.json; hook checks skipped (N/A) when CLI absent
-- fix(skills): replace all `qmd-update.sh` calls with async `onebrain qmd-reindex`; delete qmd-update.sh, session-init.sh, orphan-scan.sh (all superseded by CLI)
-
-## v2.0.1 — Fix: /wrapup session numbering
-
-- fix(wrapup): Step 2 glob now requires today's date as a literal prefix — prevents counting all sessions in the month when determining session number for the current day
-
-## v2.0.0 — CLI Binary
+## v2.0.0 — CLI Binary (initial release)
 
 - feat: compiled TypeScript binary replaces all bash/Python scripts
 - feat(internal): session-init, orphan-scan, checkpoint, qmd-reindex
 - feat(ops): vault-sync, register-hooks, migrate
-- feat(init): onebrain init — covers Scenarios 1-7 including marketplace
+- feat(init): onebrain init — covers fresh vault and existing vault scenarios
 - feat(update): atomic update with binary validation
 - feat(doctor): qmd-embeddings check, version drift, orphan checkpoints
-- feat(release): 6-platform binaries, npm package, marketplace.json
-- feat(instructions): JSON parsing, qmd embed warning, PostCompact fill-checkpoint
-- feat(marketplace): hooks/hooks.json for /plugin install auto-registration
-- style: 2-space indentation throughout; config JSON excluded from biome
-- refactor(tests): unit tests co-located, integration tests in tests/integration/
-
-## v1.10.18 — Fix: session logs must not include recapped: in frontmatter
-
-- fix(auto-summary): add explicit prohibition against writing `recapped:` or `topics:` in session log frontmatter
-- fix(auto-summary): add Known Gotchas section documenting that writing `recapped:` causes /recap to silently skip the log
-- fix(wrapup): strengthen `recapped:` prohibition from descriptive to directive with consequence clause
-
-## v1.10.17 — Revert onebrain@kengio → onebrain@onebrain
-
-- fix: revert plugin identifier back to onebrain@onebrain (reverts v1.10.12/v1.10.15 rename that broke vault installs)
-- fix: rename extraKnownMarketplaces key back to "onebrain" (was "kengio") — restores original dev marketplace for repo context
-- fix(update): skip extraKnownMarketplaces and onebrain@kengio during settings merge — vault context cannot resolve repo-local directory marketplace
-- fix(onboarding): update install command back to /plugin install onebrain@onebrain
-- fix(README): update install command back to /plugin install onebrain@onebrain
-
-## v1.10.16 — Vault-level plugin loading enforcement
-
-- feat(update): add pin-to-vault.sh — pins installed_plugins.json installPath to vault directory, preventing Claude Code from loading plugin from user cache
-- fix(update): pin-to-vault.sh — fix loop early exit, move plugin.json read outside loop, add empty installPath guard, fix file-missing error message
-- fix(update): clean-plugin-cache.sh now deletes ALL onebrain cache versions on every /update (not just stale), ensuring cache never becomes authoritative source
-- feat(update): vault-sync.sh runs pin-to-vault.sh sequentially after sync (reads plugin.json written by sync); clean-plugin-cache.sh is called separately by /update orchestrator
-- feat(doctor): Config check detects when plugin is loading from user cache and warns to run /doctor --fix
-- feat(doctor): /doctor --fix Pass A pins installPath to vault and clears cache (sequential)
-- feat(onboarding): post-Step 0 calls pin-to-vault.sh then clean-plugin-cache.sh to enforce vault-level from first install
-- refactor(update): remove legacy update.sh — superseded by vault-sync.sh (tarball-based sync); 5 active scripts remain in scripts/
-- fix(update): step 5 display format wrapped in code block so separator lines render correctly in GitHub preview
-
-## v1.10.15 — Fix plugin marketplace key mismatch
-
-- fix: extraKnownMarketplaces key renamed "onebrain" → "kengio" to match enabledPlugins identifier onebrain@kengio — fixes "Plugin onebrain not found in marketplace kengio" error on every plugin reload (regression from v1.10.12 rename)
-
-## v1.10.14 — Fix stale "source repo" refs, plugin load error, H1 heading consistency
-
-- fix(update): description and body heading now say "from GitHub" instead of "from the source repo"
-- fix(update): Version Check step 5 now specifies WebFetch URL for CHANGELOG.md instead of ambiguous "read from repo"
-- fix(startup): remove YAML frontmatter from QMD.md — was incorrectly registered as a skill by the plugin loader, causing "1 error during load" on every plugin reload
-- fix(skills): standardise H1 headings — update/daily/help/qmd were using /command format; now consistent plain titles matching all other skills
-
-## v1.10.13 — Fix /update: CHANGELOG sync, stale file cleanup, predefined scripts, lazy loading
-
-- fix(update): root file sync now explicitly copies README, CONTRIBUTING, CHANGELOG from repo root to vault root — fixes vault root CHANGELOG never being updated
-- fix(update): plugin folder sync now deletes stale vault files absent from source repo — fixes CHANGELOG.md accumulating in plugin folder
-- refactor(update): bootstrap reordered — early-bootstrap copies skills/update/ first so predefined scripts are available before full sync runs
-- feat(update): add 3 predefined scripts: vault-sync.sh (curl+tar download, Python sync, stale cleanup, root files), register-hooks.sh (idempotent JSON hook registration), backfill-recapped.sh (session log frontmatter)
-- refactor(update): extract Vault Migration Steps 1–9 to references/migration-steps.md for lazy loading — SKILL.md reduced from 273 to 158 lines
-- refactor(update): add Skip conditions to all 9 migration steps for fast-exit on already-current vaults
-- refactor(update): parallelize bootstrap sync sub-steps (plugin sync + settings merge run concurrently)
-- fix(update): remove redundant /doctor run from outer steps — already covered by migration Step 8
-- feat(update): add clean-plugin-cache.sh — removes stale onebrain cache versions; no-op for local directory installs, future-ready for remote marketplace distribution
-- feat(update): vault-sync.sh merges CLAUDE.md, GEMINI.md, AGENTS.md on update — absent files are created, identical files are skipped, changed files are updated while preserving user-added @ imports
-
-## v1.10.12 — Skill Quality: Authoring Patterns, Progressive Loading, Predefined Scripts
-
-- docs(skills): add Known Gotchas, Explain-the-Why, and In-Skill Examples to all 24 applicable skills
-- refactor(skills): split large skills into `references/` subdirectories — import 587→196, doctor 311→185, onboarding 531→446 lines
-- refactor(scripts): add `startup/scripts/` with 4 predefined shell scripts (session-init, orphan-scan, qmd-update, open-in-obsidian) replacing inline bash across INSTRUCTIONS.md and multiple skills
-- refactor(wrapup): extract 14-line session token reset to `wrapup/scripts/reset-checkpoint-counter.sh`
-- feat(import): add optional Step 6 — integrate imported notes into related vault notes after import
-- fix: rename plugin identifier onebrain@onebrain → onebrain@kengio (README, settings.json, onboarding skill)
-- docs(contributing): update project structure to show startup/scripts/ and skill scripts/ patterns
-
-## v1.10.11 — Skill Exclusion Clauses + Multi-Harness Entrypoints
-
-- docs(skills): add "Do NOT use for:" exclusion clause to all 25 skill descriptions to prevent skill routing errors between overlapping skills (capture/braindump/bookmark/summarize/research, wrapup/recap/distill, etc.)
-- feat(harness): add `references/gemini-tools.md` — Gemini CLI tool name mapping for INSTRUCTIONS.md
-- feat(harness): add `references/codex-tools.md` — Codex CLI tool name mapping and sub-agent dispatch guide
-- fix(harness): update GEMINI.md to load gemini-tools.md before INSTRUCTIONS.md
-- fix(harness): update AGENTS.md to load codex-tools.md before INSTRUCTIONS.md
-- docs(contributing): add Multi-Harness Support section documenting entrypoint structure
-
-## v1.10.10 — MEMORY-INDEX Rename + README Memory Layer
-
-- rename: `INDEX.md` → `MEMORY-INDEX.md` across all plugin files — name now clearly conveys "registry of the memory system" in graph view and wikilink autocomplete
-- README: four-tier table restructured — `05-agent/memory/` split into Semantic (lazy-loaded) sub-row; `MEMORY-INDEX.md` added as always-loaded enabler; `/memory-review` added to lazy-loaded Promoted by
-- `MEMORY.md`: new `## Memory Files` section with `[[MEMORY-INDEX]]` wikilink for Obsidian graph connection
-- fix: stale bare `INDEX` shorthand in memory-review (heading, error strings, delete dialog), doctor, and clone skills
-
-## v1.10.9
-
-- fix(ps1): write settings.json without UTF-8 BOM on PowerShell 5 (issue 14)
-- fix(ps1): exit early with clear message in non-interactive sessions (issue 15)
-- fix(ps1): validate ZIP archive before Expand-Archive to catch HTML error pages (issue 16)
-- fix(ps1): add -UseBasicParsing to all Invoke-WebRequest calls for Server Core compatibility (issue 17)
-- fix(ps1): Set-StrictMode -Version Latest to catch undefined variables
-- fix(ps1): force [object[]] cast on hook array to prevent PS5 serialisation bug
-- fix(ps1/docs): relative hook path + tilde expansion; correct "absolute path required" claim in 3 files
-- fix(update): use WebFetch for version check instead of git commands (prevents hang on Windows)
-
-## v1.10.8 — /memory-review Redesign
-
-- `/memory-review`: entry display redesigned — description first, status emoji (🟢/🟡/⚫), 📅 verified date, 🏷️ topics, backtick filename as footer with separator line
-- `/memory-review`: split into Primary (keep/update/manage.../stop) and Manage (skip/needs-review/deprecate/delete) to respect 4-option AskUserQuestion limit
-- `/memory-review`: safe-default principle — non-destructive option listed first in every menu: skip (Manage), conf-unchanged (Call 1), cancel (Call 2, Call 3a, delete confirm)
-- `/memory-review`: update uses staged model — conf in Call 1, edits in Call 2; nothing written until explicit confirm; change-type split into Call 3a/3b for 4-option limit
-- `/memory-review`: Data Source pre-reads all entry frontmatter before starting (conf + verified not in INDEX.md)
-- `/memory-review`: delete cancel returns to Manage menu; completion summary adds skipped + flagged counters
-- `/memory-review`: Edge Cases rewritten with per-action commit rules (update uses staged model, not immediate commit)
-
-## v1.10.7 — Documentation Reorganization
-
-- INSTRUCTIONS.md restructured into 5 logical groups with comment headers for human and agent readability
-- Added Working Principles section: think before acting, minimal footprint, surgical changes, define success first
-- Permissions rewritten: inside-vault allowlist vs. outside-vault rule; shell/git commands now covered explicitly
-- Session Behavior subsections reordered to match runtime sequence; Auto Checkpoint labeled as Hook-Triggered
-- Boundaries: softened "always prefer adding to existing notes" to "when a suitable note already exists"
-- CONTRIBUTING.md: sections reordered for contributor flow; Memory System paths use variable form; Recall Order and version bump requirement added
-
-## v1.10.6 — Cross-Platform Session Token + Hook Fixes
-
-- Cross-platform session token priority: `$WT_SESSION` → `$PPID > 1` → PowerShell parent PID → day-scoped cache
-- Checkpoint filenames now use alphanumeric `{session_token}` instead of numeric `{PPID}`
-- PreCompact infinite-block fix: mtime check on latest checkpoint replaces state-file skip check
-- PostCompact writes `0:0` sentinel so Stop hook SKIP_WINDOW does not activate after compact
-- Hooks moved to vault-level `.claude/settings.json` with relative paths — fixes iCloud path spaces
-- `wrapup` and `AUTO-SUMMARY` state-file reset uses resolved session token; WT_SESSION sanitized to alphanumeric
-
-## v1.10.5 — Terminal Output Formatting
-
-- All 24 skill outputs use terminal-safe formatting: `─` separators, emoji headers, `⬜` checkboxes, `→` hints
-- Replaces `**bold**`, `## headers`, `> blockquotes`, `- [ ]`, `| tables |` that rendered as literal text in CLI
-- `/tasks` and `/moc` open the file in Obsidian after writing
-- Interactive conflict flows in `/learn` and `/recap` use `AskUserQuestion`
-- `/help` output replaced with grouped plain-text command list
-
-## v1.10.4 — PPID Session Identity + PreCompact/PostCompact Hooks + Orphan Recovery
-
-- **Breaking:** checkpoint filenames change to `YYYY-MM-DD-{PPID}-checkpoint-NN.md`; old files recovered automatically by `/wrapup`
-- Session token is now `$PPID` — loaded once at startup, cached in context, survives compact
-- `precompact` / `postcompact` hook modes: checkpoint before compaction, reset counter after
-- `/wrapup` auto-detects and merges orphan checkpoints from previous sessions
-- `/update`, `/doctor`, `install.sh`, `install.ps1` register all 3 hooks (Stop, PreCompact, PostCompact)
-
-## v1.10.3 — Auto Session Summary Alignment
-
-- Delete merged checkpoint files after session log write (write-success guard + safety-net scan)
-- Check yesterday's folder for cross-midnight sessions
-- Explicit frontmatter spec: `session: NN` field added; all `merged:` variants handled
-- `## What Worked / Didn't Work` omit rule inlined — no longer relies on /wrapup cross-reference
-
-## v1.10.2 — Instant Startup + Greeting Redesign
-
-- Startup: Phase 2 background sub-agent removed; inline parallel tool calls replace it — no UI block
-- Greeting: plain-text card format — Unicode line, time-based phrase, user name, date/time
-- `/daily` morning mode: uses most recent session log (today or earlier) instead of strictly before today
-- `/wrapup`: `## Related Notes` removed; all three session files now share the same 6-section structure
-- `/update`: changelog displayed verbatim before confirmation; backup renamed `MEMORY-YYYY-MM-DD.md`
-- `PHASE2.md` deleted; all references cleaned up from `/doctor`, `AUTO-SUMMARY.md`, `INSTRUCTIONS.md`
-
-## v1.10.1 — Migration Hardening + Cross-Skill Consistency
-
-- `/update` Step 3: explicit memory file rename rules; INDEX.md wikilinks updated after rename
-- `/update` Step 4: compact MEMORY.md Identity format; skip-rewrite checks field labels not just headings
-- `/update` Step 5: exact column spec enforced; existing Description values preserved on rewrite
-- `/doctor`: stale check reads `memory/` frontmatter; new check detects old Identity format; `--fix` rewrites in-place
-- `INSTRUCTIONS.md`: startup reads `## Identity & Personality` — fixes silent personality fallback after migration
-- `/clone`, `/distill`, `/weekly`: updated to reference `memory/` files and `## Identity & Personality`
-- Checkpoint hook: per-session NN counter in state file; fixed glob quoting for iCloud paths
-
-## v1.10.0 — Memory System Redesign
-
-**New command: `/memory-review`** — interactive pruning of memory files (keep / update / deprecate / delete / archive)
-
-- `memory/` folder replaces MEMORY.md Key Learnings; `INDEX.md` as lazy-load index with typed per-concept frontmatter
-- Session token isolation: concurrent sessions never mix checkpoints (`YYYY-MM-DD-{token}-checkpoint-NN.md`)
-- `/learn`: contradiction detection, INDEX.md sync, type inference (5 categories), filename collision check
-- `/recap`: promotes to `memory/` only; frequency filter (`min_frequency`) and run threshold (`min_sessions`)
-- `/doctor`: 11 new memory health checks; `--fix` rebuilds INDEX.md and auto-renames non-compliant files
-- `/update`: `--dry-run` preview, 8-step vault migration, read-new-execute-in-place bootstrap; `update_channel` field added
-- MEMORY.md restructured to 3 sections: Identity & Personality, Active Projects, Critical Behaviors
-- Phase 1 startup latency reduced; INSTRUCTIONS.md reduced ~456 → ~323 lines
-
-## v1.9.5 — Update Reliability Fixes
-
-- `/update` reliability fixes for Windows and cross-platform environments
-
-## v1.9.3 — Phase 2 Background Agents
-
-- Phase 2 startup extended with 5 background sub-agents: context pre-loading, stale note scanning, task horizon (next 3 days), MEMORY.md overflow guard, link suggestion after `/learn` and `/capture`
-- Multiple Phase 2 and briefing edge-case fixes
-
-## v1.9.0 — Memory Lifecycle System
-
-**New command: `/distill`** — crystallize a completed topic thread into a permanent knowledge note in `03-knowledge/`
-
-**New command: `/doctor`** — vault health check: broken links, orphan notes, stale memory, inbox backlog; `--fix` auto-repairs
-
-- Confidence metadata on MEMORY.md Key Learnings: `[conf:high/medium/low]` + `[verified:YYYY-MM-DD]`
-- `/learn`: contradiction detection — conflict menu (update / supersede / separate)
-- `/recap`: confidence scoring; auto-sort by confidence tier
-- Typed relationship frontmatter (`uses:`, `depends_on:`, `contradicts:`, `supersedes:`, `caused_by:`)
-- Hardcoded folder paths replaced with config placeholders across all skills and agents
-
-## v1.8.8 — Skill Routing + Checkpoint Hardening
-
-**New feature: skill routing** — agent auto-invokes skills based on user intent without a slash command
-
-- `/wrapup`: enforce full checkpoint incorporation before marking merged
-- Checkpoint hook: Windows bash compatibility; fixed NN counting; removed broken PreCompact hook
-- `/tasks`: exclude logs, archive, and resources folders from dashboard
-- Windows timezone and terminal output fixes (v1.8.9–v1.8.11)
-
-## v1.8.5 — Two-Phase Session Startup
-
-- Greet immediately; background sub-agent handles inbox count and orphan checkpoint detection
-
-## v1.8.0 — Checkpoint System
-
-- Stop hook: auto-checkpoint every 15 messages or 30 minutes
-- `/wrapup`: merge all unmerged checkpoints before writing session log
-- Deferred Obsidian file open via Stop hook; `/update` injects checkpoint config into `vault.yml`
-
-## v1.7.0 — Import Office Formats
-
-**New capability: `/import` Office formats** — Word (.docx), PowerPoint (.pptx), Excel (.xlsx) via `markitdown`; lazy-installs on first use
-
-## v1.6.0 — Daily Briefing + Session Enhancements
-
-**New command: `/daily`** — daily briefing: tasks due today, overdue tasks, open items from last session
-
-- Time-aware greeting with emoji; proactive insight from recent session logs at startup
-- Command Response Profiles added to INSTRUCTIONS.md (verbosity per command type)
-- `/update` refactored to shell script + Windows PowerShell
-- `/wrapup`: "What Worked / What Didn't Work" retrospective section added (v1.6.2)
-
-## v1.5.7 — Recap Command
-
-**New command: `/recap`** — cross-session synthesis: reads session logs, deduplicates insights, promotes Key Learnings to MEMORY.md
-
-## v1.5.6 — Map of Content
-
-**New command: `/moc`** — vault portal: create or update MOC.md linking all major vault sections; opens in Obsidian
-
-## v1.5.5 — QMD Semantic Search
-
-**New command: `/qmd`** — set up and manage qmd semantic search index over vault content
-
-- `/tasks` fixes: query syntax, keyword quoting, logs/archive exclusion (v1.5.1–v1.5.4)
-- `/help`: show plugin version; dynamic version badge in README
-
-## v1.5.0 — Update Import Style
-
-- `/update`: migrate instruction files to `@import` style during update
-
-## v1.4.0 — Task Dashboard
-
-**New command: `/tasks`** — live Obsidian task dashboard (TASKS.md) with keyword filtering; opens in Obsidian after write
-
-## v1.3.0 — Dual Install
-
-- Fresh vault and existing vault install via plugin marketplace
-
-## v1.2.x — Update + Input Hardening
-
-- `/update` cache improvements; `AskUserQuestion` required for all user input prompts
-
-## v1.0.0 — Initial Release
-
-**Commands:** /onboarding, /braindump, /capture, /bookmark, /consolidate, /connect, /research, /summarize, /import, /reading-notes, /weekly, /wrapup, /learn, /update, /help
-
-- Auto-save session summary on Stop hook
-- `/onboarding`: note-taking method selection; vault folder creation; `vault.yml` generation
-- Install scripts for macOS/Linux and Windows
+- feat(release): 6-platform binaries, npm package (@onebrain-ai/cli)

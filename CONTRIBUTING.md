@@ -272,8 +272,8 @@ Two independent version tracks — bump only the track that changed:
 
 | Track | Files | Bump when |
 |---|---|---|
-| **Plugin** | `plugin.json` · `CHANGELOG.md` frontmatter | Skills, INSTRUCTIONS.md, hooks, vault structure |
-| **CLI** | `package.json` | TypeScript source changes only |
+| **Plugin** | `plugin.json` · `PLUGIN-CHANGELOG.md` | Skills, INSTRUCTIONS.md, hooks, vault structure |
+| **CLI** | `package.json` · `CHANGELOG.md` | TypeScript source changes only |
 
 **Plugin bump:** patch for fixes/docs, minor for new skills/agents/hooks
 **CLI bump:** patch for bug fixes, minor for new commands, major for breaking changes
