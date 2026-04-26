@@ -14,8 +14,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.0.5 — fix: Windows compatibility — PowerShell spawn, permission format, Unicode stdout (#110)
-
 ## v2.0.4 — feat: /wrapup auto-routes action items to project notes
 
 - feat(wrapup): Step 4b — after writing the session log, extract `- [ ]` action items and route each to the most relevant project note via keyword scoring (folder name + filename stem match against task text)
