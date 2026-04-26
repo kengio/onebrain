@@ -40,7 +40,7 @@ async function readVaultYml(vaultDir: string): Promise<Record<string, unknown>> 
 
 /** Build a mock fetch that returns a fake GitHub releases/latest response. */
 function makeMockFetch(tagName: string): typeof fetch {
-  return async (input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+  const fn = async (input: string | URL | Request, _init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     if (url.includes('/releases/latest')) {
       return new Response(
@@ -53,12 +53,17 @@ function makeMockFetch(tagName: string): typeof fetch {
     }
     return new Response('Not Found', { status: 404 });
   };
+  return fn as typeof fetch;
 }
 
 /** Mock fetch that throws (simulates network unavailable). */
-const throwingFetch: typeof fetch = async (_input: RequestInfo | URL) => {
-  throw new Error('fetch failed: network unavailable');
-};
+function makeThrowingFetch(): typeof fetch {
+  const fn = async (_input: string | URL | Request, _init?: RequestInit): Promise<Response> => {
+    throw new Error('fetch failed: network unavailable');
+  };
+  return fn as typeof fetch;
+}
+const throwingFetch = makeThrowingFetch();
 
 /** Noop mocks with required return shapes. */
 const noopVaultSync = async (
@@ -147,7 +152,7 @@ describe('update integration: --check dry-run mode', () => {
 
     // vault.yml onebrain_version unchanged
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v1.10.18');
+    expect(vaultYml['onebrain_version']).toBe('v1.10.18');
   });
 
   it('result carries both current and latest version in dry-run mode', async () => {
@@ -209,7 +214,7 @@ describe('update integration: network unavailable (fetch throws)', () => {
     await runUpdate(opts);
 
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v1.10.18');
+    expect(vaultYml['onebrain_version']).toBe('v1.10.18');
   });
 });
 
@@ -258,7 +263,7 @@ describe('update integration: full end-to-end success', () => {
 
     // vault.yml has the new version
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v2.0.0');
+    expect(vaultYml['onebrain_version']).toBe('v2.0.0');
   });
 });
 

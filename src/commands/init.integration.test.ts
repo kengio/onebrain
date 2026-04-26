@@ -107,13 +107,13 @@ describe('init integration: fresh vault (non-TTY)', () => {
 
     const parsed = await readVaultYml(tempDir);
     expect(parsed).toHaveProperty('folders');
-    expect(typeof parsed.folders).toBe('object');
+    expect(typeof parsed['folders']).toBe('object');
     // Verify all expected folder keys are present
-    const folders = parsed.folders as Record<string, string>;
-    expect(folders.inbox).toBe('00-inbox');
-    expect(folders.logs).toBe('07-logs');
-    expect(parsed.method).toBe('onebrain');
-    expect(parsed.update_channel).toBe('stable');
+    const folders = parsed['folders'] as Record<string, string>;
+    expect(folders['inbox']).toBe('00-inbox');
+    expect(folders['logs']).toBe('07-logs');
+    expect(parsed['method']).toBe('onebrain');
+    expect(parsed['update_channel']).toBe('stable');
   });
 
   it('command completes without throwing, result.ok is true', async () => {
@@ -238,7 +238,7 @@ describe('init integration: plugin files present (skip vault-sync)', () => {
 
     // vault.yml updated (method now onebrain, not legacy)
     const parsed = await readVaultYml(tempDir);
-    expect(parsed.method).toBe('onebrain');
+    expect(parsed['method']).toBe('onebrain');
   });
 });
 
