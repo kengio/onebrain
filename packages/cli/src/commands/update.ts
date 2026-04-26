@@ -116,11 +116,23 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
 // Step 4: Install binary
 // ---------------------------------------------------------------------------
 
+// On Windows, .cmd/.ps1 scripts require a shell wrapper. Prefer pwsh (PowerShell 7,
+// available on ARM64/Server Core) with fallback to powershell.exe (Windows PowerShell 5.1).
+function windowsShell(): string {
+  try {
+    const r = Bun.spawnSync(['pwsh', '--version'], { stdout: 'pipe', stderr: 'pipe' });
+    if (r.exitCode === 0) return 'pwsh';
+  } catch {}
+  return 'powershell.exe';
+}
+
 async function defaultInstallBinary(version: string): Promise<void> {
   const isWindows = process.platform === 'win32';
-  // On Windows, npm is installed as npm.cmd/.ps1 — route through PowerShell
+  // Escape single quotes for PowerShell literal string; semver won't contain them but
+  // keeps parity with the escaping applied in buildQmdSpawnArgs.
+  const safeVersion = version.replace(/'/g, "''");
   const cmd = isWindows
-    ? ['powershell.exe', '-NoProfile', '-Command', `npm install -g '@onebrain-ai/cli@${version}'`]
+    ? [windowsShell(), '-NoProfile', '-Command', `npm install -g '@onebrain-ai/cli@${safeVersion}'`]
     : ['bun', 'install', '-g', `@onebrain-ai/cli@${version}`];
 
   const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
@@ -137,11 +149,15 @@ async function defaultInstallBinary(version: string): Promise<void> {
 
 async function defaultValidateBinary(): Promise<boolean> {
   try {
-    const proc = Bun.spawn(['onebrain', '--version'], { stdout: 'pipe', stderr: 'pipe' });
+    // On Windows, onebrain is installed as onebrain.cmd — must invoke via shell
+    const isWindows = process.platform === 'win32';
+    const cmd = isWindows
+      ? [windowsShell(), '-NoProfile', '-Command', 'onebrain --version']
+      : ['onebrain', '--version'];
+    const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
     const exitCode = await proc.exited;
     if (exitCode !== 0) return false;
     const stdout = await new Response(proc.stdout).text();
-    // Expect version-like output (digits)
     return /^\d+\.\d+/.test(stdout.trim());
   } catch {
     return false;
