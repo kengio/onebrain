@@ -45,6 +45,23 @@ Minor/patch bumps (1.10.0 → 1.10.1, 1.10.0 → 1.11.0): proceed without major 
    Options: `update / cancel`
 7. If confirmed → proceed to bootstrap below
 
+## CLI Version Check
+
+After confirming the vault update (step 7 above), also check if the installed `onebrain` CLI is up to date.
+
+1. Run `onebrain --version 2>/dev/null` → parse installed version (e.g. `2.0.4`). If command not found → skip this section entirely.
+2. Fetch latest from npm: `npm view @onebrain-ai/cli version 2>/dev/null` → parse version string. If npm unavailable or fetch fails → skip.
+3. If installed = latest → skip (no output needed).
+4. If newer version available:
+   a. Detect available package managers: `which bun 2>/dev/null` and `which npm 2>/dev/null`
+   b. AskUserQuestion: "Update onebrain CLI from v{installed} to v{latest}?"
+      - Both bun and npm available: options `npm / bun / skip` (npm as default)
+      - Only bun: options `bun / skip`
+      - Only npm: options `npm / skip`
+   c. If `npm` selected: run `npm install -g @onebrain-ai/cli`
+   d. If `bun` selected: run `bun install -g @onebrain-ai/cli`
+   e. Verify: run `onebrain --version` → confirm output matches `{latest}`
+
 ## Self-Update Bootstrap (Read-New, Execute-In-Place)
 
 Skills are markdown instructions — the agent can read the new SKILL.md from GitHub and
@@ -59,10 +76,9 @@ Steps:
 
    Raw URL: `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/plugins/onebrain/{path}`
 
-   Download and write all six files:
+   Download and write all five files:
    - `skills/update/SKILL.md`
    - `skills/update/scripts/vault-sync.sh`
-   - `skills/update/scripts/register-hooks.sh`
    - `skills/update/scripts/backfill-recapped.sh`
    - `skills/update/scripts/clean-plugin-cache.sh`
    - `skills/update/scripts/pin-to-vault.sh`
