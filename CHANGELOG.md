@@ -1,6 +1,6 @@
 ---
 latest_version: 2.0.4
-released: 2026-04-26
+released: 2026-04-25
 ---
 
 # Changelog
@@ -13,16 +13,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
-
-## v2.0.6 — fix: postcompact auto-wrapup, update vault guard, vault root auto-detect
-
-- fix(checkpoint): replace `fill-checkpoint` with `auto-wrapup: <token>` in postcompact — emits block so Claude runs wrapup synthesis while compact summary is fresh
-- fix(checkpoint): precompact no longer writes stub files — just resets message count; postcompact uses same recency guard (5 min) to skip emit if stop checkpoint was very recent
-- fix(checkpoint): remove `pending_stub` from state format — 3-field only; legacy 4-field files silently ignored on read
-- fix(update): vault.yml existence guard — exits 1 with clear error if `vault.yml` not found; prevents running outside a vault
-- fix(update): skip binary install step when `latestVersion === currentVersion` — vault-sync and hook registration still run
-- fix(update): add spinners (TTY) for vault-sync and binary install steps
-- fix(cli): `session-init` and `checkpoint` auto-detect vault root by walking up from cwd — no `cd` to vault required; `--vault-dir` option added for explicit override
 
 ## v2.0.5 — fix: Windows compatibility — PowerShell spawn, permission format, Unicode stdout (#110)
 
