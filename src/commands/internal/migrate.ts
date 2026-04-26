@@ -125,7 +125,7 @@ export async function runBackfillRecapped(logsFolder: string, cutoffDate?: strin
         // Skip logs newer than cutoff (YYYY-MM-DD prefix from filename)
         if (cutoffDate) {
           const dateMatch = fname.match(/^(\d{4}-\d{2}-\d{2})/);
-          if (dateMatch && dateMatch[1] > cutoffDate) {
+          if (dateMatch?.[1] !== undefined && dateMatch[1] > cutoffDate) {
             continue;
           }
         }

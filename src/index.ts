@@ -172,7 +172,10 @@ program
   .option('--qmd', 'also register PostToolUse qmd-reindex hook')
   .option('--remove-qmd', 'remove PostToolUse qmd-reindex hook')
   .action(async (opts: { vaultDir?: string; qmd?: boolean; removeQmd?: boolean }) => {
-    await registerHooksCommand(opts.vaultDir, { qmd: opts.qmd, removeQmd: opts.removeQmd });
+    await registerHooksCommand(opts.vaultDir, {
+      ...(opts.qmd !== undefined ? { qmd: opts.qmd } : {}),
+      ...(opts.removeQmd !== undefined ? { removeQmd: opts.removeQmd } : {}),
+    });
   });
 
 program
