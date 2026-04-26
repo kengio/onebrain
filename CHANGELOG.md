@@ -9,7 +9,7 @@ All notable changes to OneBrain are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Versioning:** `plugin.json` tracks the vault plugin version (skills, INSTRUCTIONS, hooks).
-> The CLI binary (`@onebrain-ai/cli`) has its own independent version tracked in `packages/cli/package.json`.
+> The CLI binary (`@onebrain-ai/cli`) has its own independent version tracked in `package.json`.
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
