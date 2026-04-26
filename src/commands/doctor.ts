@@ -1,3 +1,4 @@
+import { spinner as createSpinner } from '@clack/prompts';
 import {
   type DoctorResult,
   type VaultConfig,
@@ -85,21 +86,36 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     }
   }
 
-  const [
-    foldersResult,
-    harnessResult,
-    qmdResult,
-    versionDriftResult,
-    orphanCheckpointsResult,
-    sandboxResult,
-  ] = await Promise.all([
-    checkFoldersFn(vaultDir, config),
-    checkHarnessBinaryFn(config),
-    checkQmdEmbeddingsFn(config),
-    checkVersionDriftFn(vaultDir, config, binaryVersion),
-    checkOrphanCheckpointsFn(vaultDir, config),
-    checkSandboxFn(config),
-  ]);
+  const sp = isTTY ? createSpinner() : null;
+  sp?.start('Running vault health checks…');
+
+  let foldersResult: DoctorResult,
+    harnessResult: DoctorResult,
+    qmdResult: DoctorResult,
+    versionDriftResult: DoctorResult,
+    orphanCheckpointsResult: DoctorResult,
+    sandboxResult: DoctorResult;
+  try {
+    [
+      foldersResult,
+      harnessResult,
+      qmdResult,
+      versionDriftResult,
+      orphanCheckpointsResult,
+      sandboxResult,
+    ] = await Promise.all([
+      checkFoldersFn(vaultDir, config),
+      checkHarnessBinaryFn(config),
+      checkQmdEmbeddingsFn(config),
+      checkVersionDriftFn(vaultDir, config, binaryVersion),
+      checkOrphanCheckpointsFn(vaultDir, config),
+      checkSandboxFn(config),
+    ]);
+    sp?.stop('Done');
+  } catch (err) {
+    sp?.stop('Health check failed');
+    throw err;
+  }
 
   const results = [
     vaultYmlResult,
@@ -155,7 +171,7 @@ function printDoctorOutput(
   }
 
   for (const result of results) {
-    const statusIcon = getStatusIcon(result.status);
+    const statusIcon = getStatusIcon(result.status, isTTY);
     lines.push(formatCheckLine(result, statusIcon));
     if (result.hint) {
       lines.push(formatHintLine(result.hint));
@@ -164,14 +180,24 @@ function printDoctorOutput(
 
   lines.push('');
 
-  if (errorCount > 0 && warningCount > 0) {
-    lines.push(`Summary: ${errorCount} errors, ${warningCount} warnings`);
-  } else if (errorCount > 0) {
-    lines.push(`Summary: ${errorCount} errors`);
-  } else if (warningCount > 0) {
-    lines.push(`Summary: ${warningCount} warnings — ok to run`);
+  if (isTTY) {
+    if (errorCount > 0) {
+      lines.push(`❌ ${errorCount} error(s), ${warningCount} warning(s)`);
+    } else if (warningCount > 0) {
+      lines.push(`⚠️  ${warningCount} warning(s) — ok to run`);
+    } else {
+      lines.push('✅ All checks passed');
+    }
   } else {
-    lines.push('Summary: All checks passed');
+    if (errorCount > 0 && warningCount > 0) {
+      lines.push(`Summary: ${errorCount} errors, ${warningCount} warnings`);
+    } else if (errorCount > 0) {
+      lines.push(`Summary: ${errorCount} errors`);
+    } else if (warningCount > 0) {
+      lines.push(`Summary: ${warningCount} warnings — ok to run`);
+    } else {
+      lines.push('Summary: All checks passed');
+    }
   }
 
   if (isTTY) {
@@ -181,7 +207,19 @@ function printDoctorOutput(
   console.log(lines.join('\n'));
 }
 
-function getStatusIcon(status: 'ok' | 'warn' | 'error'): string {
+function getStatusIcon(status: 'ok' | 'warn' | 'error', isTTY: boolean): string {
+  if (isTTY) {
+    switch (status) {
+      case 'ok':
+        return '✅';
+      case 'warn':
+        return '⚠️ ';
+      case 'error':
+        return '❌';
+      default:
+        return '❓';
+    }
+  }
   switch (status) {
     case 'ok':
       return '[✓]';

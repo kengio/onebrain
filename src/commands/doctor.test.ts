@@ -285,7 +285,7 @@ describe('runDoctor', () => {
 
       const output = logLines.join('\n');
       expect(output).toMatch(/^\n\s+OneBrain Doctor 🔍/);
-      expect(output).toMatch(/Summary: All checks passed\n$/);
+      expect(output).toMatch(/✅ All checks passed\n$/);
     });
   });
 
