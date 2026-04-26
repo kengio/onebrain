@@ -85,19 +85,14 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   let versionDriftResult: DoctorResult;
   let orphanCheckpointsResult: DoctorResult;
   try {
-    [
-      foldersResult,
-      harnessResult,
-      qmdResult,
-      versionDriftResult,
-      orphanCheckpointsResult,
-    ] = await Promise.all([
-      checkFoldersFn(vaultDir, config),
-      checkHarnessBinaryFn(config),
-      checkQmdEmbeddingsFn(config),
-      checkVersionDriftFn(vaultDir, config),
-      checkOrphanCheckpointsFn(vaultDir, config),
-    ]);
+    [foldersResult, harnessResult, qmdResult, versionDriftResult, orphanCheckpointsResult] =
+      await Promise.all([
+        checkFoldersFn(vaultDir, config),
+        checkHarnessBinaryFn(config),
+        checkQmdEmbeddingsFn(config),
+        checkVersionDriftFn(vaultDir, config),
+        checkOrphanCheckpointsFn(vaultDir, config),
+      ]);
     sp?.stop();
   } catch (err) {
     sp?.stop('Health check failed');

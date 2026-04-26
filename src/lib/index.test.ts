@@ -567,4 +567,3 @@ describe('checkOrphanCheckpoints', () => {
     expect(result.message).toContain('1');
   });
 });
-

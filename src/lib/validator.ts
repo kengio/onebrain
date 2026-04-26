@@ -405,4 +405,3 @@ async function readMergedField(filePath: string): Promise<boolean | undefined> {
     return undefined;
   }
 }
-
