@@ -340,14 +340,16 @@ Keep under 250 words.
 
 **PostCompact auto-wrapup:** When block reason matches `auto-wrapup: <token>`:
 1. Parse `<token>` from the block reason
-2. Find all unmerged checkpoint files for this token:
+2. Glob candidate checkpoint files:
    - Current month: `[logs_folder]/YYYY/MM/*-{token}-checkpoint-*.md` (using today's YYYY/MM)
    - Previous month: decrement MM (if MM=01, also decrement YYYY and set MM=12)
+   - After globbing, parse the token segment from each filename (`YYYY-MM-DD-{token}-checkpoint-NN.md`) and discard files where the parsed token does not exactly equal `<token>`
    - Keep only files where frontmatter `merged` is absent or not `true`
 3. If no files found → no-op; output nothing
-4. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD)
-5. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` for that date; NN = count + 1 (zero-padded); verify slot is free
-6. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`:
+4. Read all matched checkpoint files and extract their content for synthesis in step 6
+5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
+6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free
+7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM):
 
 ```markdown
 ---
@@ -379,9 +381,11 @@ auto-recovered: true
 - [Open questions from checkpoints]
 ```
 
-7. Mark each checkpoint file `merged: true` (handle all variants: `merged: false`, `merged: null`, absent → set `merged: true`)
-8. Delete checkpoint files — only AFTER session log write confirmed AND all files marked merged
-9. Silent — no output to user
+8. Verify the session log file exists and is non-empty before continuing
+9. Reset the checkpoint hook counter: `bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"`
+10. Mark each checkpoint file `merged: true` (handle all variants: `merged: false`, `merged: null`, absent → set `merged: true`). If any individual write fails, do not delete that file — skip it and continue
+11. Delete checkpoint files — only AFTER session log write confirmed (step 8) AND file successfully marked merged (step 10); never delete a file whose `merged: true` write failed
+12. Silent — no output to user
 
 **Post-checkpoint recovery (stop only):** After silently writing a stop checkpoint:
 1. Look at the last user message in conversation history

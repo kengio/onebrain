@@ -29,8 +29,8 @@ If conditions are met:
   4. Group assigned tasks by target file. For each target file:
      - Read the file once.
      - Dedup: strip `📅 YYYY-MM-DD` suffix from candidate and existing `- [ ]`/`- [x]` lines before comparing; skip if same text already exists (open or completed).
-     - Insert at first available point: after last `- [ ]` in `## Action Items` section → or before `## Open Questions` → or before `## Related` → or at end of file.
-     - Write the file once. On write error, skip all tasks for this file silently.
+     - Insert at first available point: after last `- [ ]` in `## Action Items` section (or after the `## Action Items` heading if the section exists but is empty) → or before `## Open Questions` → or before `## Related` → or at end of file.
+     - Write the file once. On write error, skip all tasks for this file silently and continue to the next target file.
 - Mark as `merged: true` the checkpoint files that were read and incorporated above. Handle all frontmatter variants: `merged: false` → replace with `merged: true`; `merged: null` or bare `merged:` → replace with `merged: true`; key absent → add `merged: true`.
 - Guard: only delete checkpoint files AFTER confirming the session log file was successfully written. Never delete before or during the write.
 - After confirming the session log was written, reset the checkpoint hook counter to prevent spurious post-summary checkpoints:

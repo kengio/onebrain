@@ -58,6 +58,7 @@ After confirming the vault update (step 7 above), also check if the installed `o
       - Both bun and npm available: options `npm / bun / skip` (npm as default)
       - Only bun: options `bun / skip`
       - Only npm: options `npm / skip`
+      - Neither available: output `⚠️ CLI v{installed} is outdated (latest: v{latest}) — install npm or bun to update.` and skip
    c. If `npm` selected: run `npm install -g @onebrain-ai/cli`
    d. If `bun` selected: run `bun install -g @onebrain-ai/cli`
    e. Verify: run `onebrain --version` → confirm output matches `{latest}`
