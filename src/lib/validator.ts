@@ -1,4 +1,4 @@
-import { glob, stat } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import type { DoctorResult, VaultConfig } from './types.js';
@@ -205,7 +205,7 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 
     const stdout = await new Response(proc.stdout).text();
     const parsed = JSON.parse(stdout) as Record<string, unknown>;
-    const unembedded = parsed.unembedded;
+    const unembedded = parsed['unembedded'];
 
     if (typeof unembedded !== 'number') {
       return {
@@ -283,7 +283,7 @@ export async function checkVersionDrift(
   try {
     const text = await pluginFile.text();
     const parsed = JSON.parse(text) as Record<string, unknown>;
-    pluginVersion = typeof parsed.version === 'string' ? parsed.version : undefined;
+    pluginVersion = typeof parsed['version'] === 'string' ? parsed['version'] : undefined;
   } catch {
     return {
       check: 'version-drift',
@@ -337,9 +337,9 @@ export async function checkOrphanCheckpoints(
   let checkpointFiles: string[] = [];
 
   try {
-    const pattern = join(logsPath, '**', '*-checkpoint-*.md');
+    const globber = new Bun.Glob('**/*-checkpoint-*.md');
     const matched: string[] = [];
-    for await (const f of glob(pattern)) {
+    for await (const f of globber.scan({ cwd: logsPath, absolute: true })) {
       matched.push(f);
     }
     checkpointFiles = matched;
@@ -403,7 +403,7 @@ async function readMergedField(filePath: string): Promise<boolean | undefined> {
     const parsed = parse(frontmatter) as Record<string, unknown> | null;
     if (!parsed) return undefined;
 
-    const merged = parsed.merged;
+    const merged = parsed['merged'];
     if (merged === true || merged === 'true') return true;
     if (merged === false || merged === 'false') return false;
     return undefined;

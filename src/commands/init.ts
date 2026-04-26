@@ -97,7 +97,7 @@ async function pathExists(p: string): Promise<boolean> {
  * Priority: CLAUDE_CODE_HARNESS env → .claude/ directory → 'direct'
  */
 async function detectHarness(vaultDir: string): Promise<string> {
-  const envHarness = process.env.CLAUDE_CODE_HARNESS;
+  const envHarness = process.env['CLAUDE_CODE_HARNESS'];
   if (envHarness) return envHarness;
 
   if (await pathExists(join(vaultDir, '.claude'))) return 'claude-code';
@@ -179,7 +179,7 @@ async function downloadPluginFiles(
     try {
       const text = await readFile(pluginJsonPath, 'utf8');
       const parsed = JSON.parse(text) as Record<string, unknown>;
-      pluginVersion = typeof parsed.version === 'string' ? parsed.version : undefined;
+      pluginVersion = typeof parsed['version'] === 'string' ? parsed['version'] : undefined;
     } catch {
       // Non-fatal
     }
@@ -189,7 +189,7 @@ async function downloadPluginFiles(
       driftWarning = `Plugin files v${pluginVersion}, binary v${binaryVersion} — run onebrain update to sync.`;
     }
 
-    return { skipped: true, driftWarning };
+    return driftWarning !== undefined ? { skipped: true, driftWarning } : { skipped: true };
   }
 
   // Plugin files not present — run vault-sync (non-fatal)
@@ -222,15 +222,15 @@ async function registerPlugin(
     data = { plugins: {} };
   }
 
-  const plugins = (data.plugins ?? {}) as Record<string, unknown[]>;
-  data.plugins = plugins;
+  const plugins = (data['plugins'] ?? {}) as Record<string, unknown[]>;
+  data['plugins'] = plugins;
 
   // Check if any onebrain@ key has a marketplace entry
   const hasMarketplace = Object.keys(plugins)
     .filter((k) => k.startsWith('onebrain@'))
     .some((k) => {
       const entries = plugins[k] as Array<Record<string, unknown>>;
-      return entries.some((e) => e.source === 'marketplace');
+      return entries.some((e) => e['source'] === 'marketplace');
     });
 
   if (hasMarketplace) {
@@ -247,8 +247,8 @@ async function registerPlugin(
     try {
       const text = await readFile(p, 'utf8');
       const parsed = JSON.parse(text) as Record<string, unknown>;
-      if (typeof parsed.version === 'string') {
-        pluginVersion = parsed.version;
+      if (typeof parsed['version'] === 'string') {
+        pluginVersion = parsed['version'];
         break;
       }
     } catch {
@@ -264,11 +264,14 @@ async function registerPlugin(
     plugins[key] = [];
   }
   const entries = plugins[key] as Array<Record<string, unknown>>;
-  const existingIdx = entries.findIndex((e) => e.source !== 'marketplace');
+  const existingIdx = entries.findIndex((e) => e['source'] !== 'marketplace');
 
   if (existingIdx >= 0) {
-    entries[existingIdx].installPath = installPath;
-    entries[existingIdx].version = pluginVersion;
+    const existing = entries[existingIdx];
+    if (existing) {
+      existing['installPath'] = installPath;
+      existing['version'] = pluginVersion;
+    }
   } else {
     entries.push({ source: 'local', installPath, version: pluginVersion });
   }

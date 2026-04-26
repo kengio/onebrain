@@ -38,7 +38,7 @@ async function readVaultYml(vaultDir: string): Promise<Record<string, unknown>> 
 
 /** Build a mock fetch that returns a fake GitHub releases/latest response. */
 function makeMockFetch(tagName: string): typeof fetch {
-  return async (input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+  const fn = async (input: string | URL | Request, _init?: RequestInit): Promise<Response> => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     if (url.includes('/releases/latest')) {
       return new Response(JSON.stringify({ tag_name: tagName }), {
@@ -48,6 +48,7 @@ function makeMockFetch(tagName: string): typeof fetch {
     }
     return new Response('Not Found', { status: 404 });
   };
+  return fn as typeof fetch;
 }
 
 /** Noop mocks */
@@ -121,7 +122,7 @@ describe('runUpdate', () => {
 
     // vault.yml updated with new version
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v2.0.0');
+    expect(vaultYml['onebrain_version']).toBe('v2.0.0');
   });
 
   it('--check flag — dry run exits 0, makes no changes', async () => {
@@ -161,7 +162,7 @@ describe('runUpdate', () => {
 
     // vault.yml not modified
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v1.10.18');
+    expect(vaultYml['onebrain_version']).toBe('v1.10.18');
   });
 
   it('atomic guarantee — validateBinaryFn fails → register-hooks NOT called, exit 1', async () => {
@@ -202,12 +203,12 @@ describe('runUpdate', () => {
 
     // vault.yml NOT updated
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v1.10.18');
+    expect(vaultYml['onebrain_version']).toBe('v1.10.18');
   });
 
   it('GitHub fetch failure → exits 1 with error', async () => {
-    const failFetch: typeof fetch = async () =>
-      new Response('Service Unavailable', { status: 503 });
+    const failFetch = (async () =>
+      new Response('Service Unavailable', { status: 503 })) as unknown as typeof fetch;
 
     const opts: UpdateOptions = {
       vaultDir: tempDir,
@@ -246,15 +247,20 @@ describe('runUpdate', () => {
     const result = await runUpdate(opts);
 
     expect(result.ok).toBe(true);
-    expect(syncOptsReceived.branch).toBe('next');
+    expect(syncOptsReceived['branch']).toBe('next');
   });
 
   it('non-TTY output format — includes key status lines', async () => {
     const lines: string[] = [];
     const originalWrite = process.stdout.write.bind(process.stdout);
-    process.stdout.write = (chunk: string | Uint8Array, ...args: unknown[]) => {
+    // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+    (process.stdout as any).write = (
+      chunk: string | Uint8Array,
+      encoding?: BufferEncoding,
+      cb?: (err?: Error | null) => void,
+    ): boolean => {
       if (typeof chunk === 'string') lines.push(chunk);
-      return originalWrite(chunk, ...(args as Parameters<typeof originalWrite>).slice(1));
+      return originalWrite(chunk, encoding as BufferEncoding, cb);
     };
 
     try {
@@ -312,7 +318,7 @@ describe('runUpdate', () => {
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       vaultSyncFn: async (vaultDir, syncOpts) => {
-        syncBranchUsed = syncOpts.branch as string;
+        syncBranchUsed = syncOpts['branch'] as string;
         return noopVaultSync(vaultDir, syncOpts);
       },
       installBinaryFn: noopInstallBinary,
@@ -336,7 +342,7 @@ describe('runUpdate', () => {
       channel: 'stable',
       fetchFn: makeMockFetch('v2.0.0'),
       vaultSyncFn: async (vaultDir, syncOpts) => {
-        syncBranchUsed = syncOpts.branch as string;
+        syncBranchUsed = syncOpts['branch'] as string;
         return noopVaultSync(vaultDir, syncOpts);
       },
       installBinaryFn: noopInstallBinary,
@@ -371,7 +377,7 @@ describe('runUpdate', () => {
 
     // vault.yml updated with new version despite hooks failure
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v2.0.0');
+    expect(vaultYml['onebrain_version']).toBe('v2.0.0');
   });
 
   it('binary validation failure → register-hooks NOT called AND vault.yml unchanged', async () => {
@@ -408,7 +414,7 @@ describe('runUpdate', () => {
 
     // vault.yml unchanged
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.onebrain_version).toBe('v1.10.18');
+    expect(vaultYml['onebrain_version']).toBe('v1.10.18');
   });
 
   it('vault.yml missing → exits 1 with clear error before any network call', async () => {
@@ -424,10 +430,10 @@ describe('runUpdate', () => {
       const opts: UpdateOptions = {
         vaultDir: emptyDir,
         isTTY: false,
-        fetchFn: async (...args) => {
+        fetchFn: (async (...args: Parameters<typeof fetch>) => {
           fetchCalled = true;
           return makeMockFetch('v2.0.0')(...args);
-        },
+        }) as typeof fetch,
         vaultSyncFn: noopVaultSync,
         installBinaryFn: noopInstallBinary,
         validateBinaryFn: noopValidateBinary,

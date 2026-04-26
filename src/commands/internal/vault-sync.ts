@@ -330,8 +330,8 @@ async function updateVaultYml(
   }
 
   const raw = (parseYaml(text) ?? {}) as Record<string, unknown>;
-  raw.onebrain_version = version;
-  raw.update_channel = updateChannel;
+  raw['onebrain_version'] = version;
+  raw['update_channel'] = updateChannel;
 
   const updated = stringifyYaml(raw, { lineWidth: 0 });
   const tmpPath = `${vaultYmlPath}.tmp`;
@@ -359,7 +359,7 @@ async function readPluginVersion(vaultRoot: string): Promise<string> {
   try {
     const text = await readFile(pluginJsonPath, 'utf8');
     const parsed = JSON.parse(text) as Record<string, unknown>;
-    return typeof parsed.version === 'string' ? parsed.version : 'unknown';
+    return typeof parsed['version'] === 'string' ? parsed['version'] : 'unknown';
   } catch {
     return 'unknown';
   }
@@ -389,7 +389,7 @@ async function pinToVault(
     throw new Error(`installed_plugins.json is not valid JSON: ${installedPluginsPath}`);
   }
 
-  const plugins = data.plugins as Record<string, unknown[]> | undefined;
+  const plugins = data['plugins'] as Record<string, unknown[]> | undefined;
   if (!plugins) {
     return { skipped: true };
   }
@@ -409,7 +409,7 @@ async function pinToVault(
   // If ANY onebrain entry has source: marketplace, Claude Code owns it — skip entirely.
   const hasMarketplace = onebrainKeys.some((k) => {
     const entries = plugins[k] as Array<Record<string, unknown>>;
-    return entries.some((e) => e.source === 'marketplace');
+    return entries.some((e) => e['source'] === 'marketplace');
   });
   if (hasMarketplace) {
     return { skipped: true };
@@ -419,7 +419,7 @@ async function pinToVault(
   for (const key of onebrainKeys) {
     const entries = plugins[key] as Array<Record<string, unknown>>;
     for (const entry of entries) {
-      const installPath = entry.installPath;
+      const installPath = entry['installPath'];
       if (typeof installPath !== 'string') {
         continue;
       }
@@ -437,8 +437,8 @@ async function pinToVault(
         continue;
       }
 
-      entry.installPath = vaultPluginDir;
-      entry.version = pluginVersion;
+      entry['installPath'] = vaultPluginDir;
+      entry['version'] = pluginVersion;
       changed = true;
     }
   }
@@ -478,7 +478,7 @@ async function cleanPluginCache(
   try {
     const text = await readFile(installedPluginsPath, 'utf8');
     const data = JSON.parse(text) as Record<string, unknown>;
-    const plugins = data.plugins as Record<string, unknown[]> | undefined;
+    const plugins = data['plugins'] as Record<string, unknown[]> | undefined;
     if (plugins) {
       for (const key of Object.keys(plugins)) {
         if (!key.startsWith('onebrain@')) continue;
@@ -557,12 +557,12 @@ export async function runVaultSync(
   try {
     const vaultYmlText = await readFile(join(vaultRoot, 'vault.yml'), 'utf8');
     const vaultYml = (parseYaml(vaultYmlText) ?? {}) as Record<string, unknown>;
-    if (typeof vaultYml.update_channel === 'string') {
-      updateChannel = vaultYml.update_channel;
+    if (typeof vaultYml['update_channel'] === 'string') {
+      updateChannel = vaultYml['update_channel'];
     }
-    const runtime = vaultYml.runtime as Record<string, unknown> | undefined;
-    if (runtime && typeof runtime.harness === 'string') {
-      harness = runtime.harness;
+    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
+    if (runtime && typeof runtime['harness'] === 'string') {
+      harness = runtime['harness'];
     }
   } catch {
     // vault.yml not found — use defaults
@@ -632,8 +632,8 @@ export async function runVaultSync(
         'utf8',
       );
       const pj = JSON.parse(pjText) as Record<string, unknown>;
-      if (typeof pj.version === 'string') {
-        result.version = pj.version;
+      if (typeof pj['version'] === 'string') {
+        result.version = pj['version'];
       }
     } catch {
       // Keep 'unknown'

@@ -85,7 +85,7 @@ async function readVaultYmlRaw(vaultDir: string): Promise<Record<string, unknown
 /** Write onebrain_version field to vault.yml atomically (in-place merge). */
 async function writeVersionToVaultYml(vaultDir: string, version: string): Promise<void> {
   const raw = await readVaultYmlRaw(vaultDir);
-  raw.onebrain_version = version;
+  raw['onebrain_version'] = version;
   const content = stringifyYaml(raw, { lineWidth: 0 });
   const vaultYmlPath = join(vaultDir, 'vault.yml');
   const tmpPath = `${vaultYmlPath}.tmp`;
@@ -105,7 +105,7 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
     throw new Error(`GitHub API returned HTTP ${response.status}`);
   }
   const json = (await response.json()) as Record<string, unknown>;
-  const tagName = json.tag_name;
+  const tagName = json['tag_name'];
   if (typeof tagName !== 'string' || !tagName) {
     throw new Error('GitHub response missing tag_name');
   }
@@ -257,14 +257,16 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // Read current version from vault.yml
   const vaultYmlRaw = await readVaultYmlRaw(vaultDir);
   const currentVersion =
-    typeof vaultYmlRaw.onebrain_version === 'string' ? vaultYmlRaw.onebrain_version : 'unknown';
+    typeof vaultYmlRaw['onebrain_version'] === 'string'
+      ? vaultYmlRaw['onebrain_version']
+      : 'unknown';
   result.currentVersion = currentVersion;
 
   // Resolve channel/branch
   const channel =
     opts.channel ??
-    (typeof vaultYmlRaw.update_channel === 'string'
-      ? (vaultYmlRaw.update_channel as 'stable' | 'next')
+    (typeof vaultYmlRaw['update_channel'] === 'string'
+      ? (vaultYmlRaw['update_channel'] as 'stable' | 'next')
       : 'stable');
   const branch = resolveBranch(channel);
 

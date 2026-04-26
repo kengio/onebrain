@@ -163,7 +163,7 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
           npm publish --access public
 
-  # ─── Step 5: generate marketplace.json + create GitHub release ────────────
+  # ─── Step 5: create GitHub release ───────────────────────────────────────
   create-release:
     needs: [verify-tag, build-binaries, package-plugin, npm-publish]
     runs-on: ubuntu-latest
@@ -180,13 +180,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-
-      - name: Generate marketplace.json
-        env:
-          VERSION: ${{ needs.verify-tag.outputs.version }}
-          RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
-          REPO: ${{ github.repository }}
-        run: bun run scripts/generate-marketplace-json.js
 
       - name: Extract CHANGELOG entry
         id: changelog
@@ -217,7 +210,6 @@ jobs:
           done
           ASSETS+=("onebrain-plugin-v${VERSION}.zip")
           ASSETS+=("onebrain-plugin-v${VERSION}.sha256")
-          ASSETS+=("marketplace.json")
 
           FILE_ARGS=()
           for asset in "${ASSETS[@]}"; do

@@ -52,56 +52,58 @@ export async function loadVaultConfig(vaultRoot: string): Promise<VaultConfig> {
   }
   const raw = parsed as Record<string, unknown>;
 
-  const rawFolders = (raw.folders ?? {}) as Partial<Record<string, string>>;
+  const rawFolders = (raw['folders'] ?? {}) as Partial<Record<string, string>>;
   const folders: VaultFolders = {
     ...DEFAULT_FOLDERS,
     // Only override keys that are actually present in raw yaml
-    ...(rawFolders.inbox !== undefined ? { inbox: rawFolders.inbox } : {}),
-    ...(rawFolders.projects !== undefined ? { projects: rawFolders.projects } : {}),
-    ...(rawFolders.areas !== undefined ? { areas: rawFolders.areas } : {}),
-    ...(rawFolders.knowledge !== undefined ? { knowledge: rawFolders.knowledge } : {}),
-    ...(rawFolders.resources !== undefined ? { resources: rawFolders.resources } : {}),
-    ...(rawFolders.agent !== undefined ? { agent: rawFolders.agent } : {}),
-    ...(rawFolders.archive !== undefined ? { archive: rawFolders.archive } : {}),
-    ...(rawFolders.logs !== undefined ? { logs: rawFolders.logs } : {}),
-    ...(rawFolders.import_inbox !== undefined ? { import_inbox: rawFolders.import_inbox } : {}),
-    ...(rawFolders.attachments !== undefined ? { attachments: rawFolders.attachments } : {}),
+    ...(rawFolders['inbox'] !== undefined ? { inbox: rawFolders['inbox'] } : {}),
+    ...(rawFolders['projects'] !== undefined ? { projects: rawFolders['projects'] } : {}),
+    ...(rawFolders['areas'] !== undefined ? { areas: rawFolders['areas'] } : {}),
+    ...(rawFolders['knowledge'] !== undefined ? { knowledge: rawFolders['knowledge'] } : {}),
+    ...(rawFolders['resources'] !== undefined ? { resources: rawFolders['resources'] } : {}),
+    ...(rawFolders['agent'] !== undefined ? { agent: rawFolders['agent'] } : {}),
+    ...(rawFolders['archive'] !== undefined ? { archive: rawFolders['archive'] } : {}),
+    ...(rawFolders['logs'] !== undefined ? { logs: rawFolders['logs'] } : {}),
+    ...(rawFolders['import_inbox'] !== undefined
+      ? { import_inbox: rawFolders['import_inbox'] }
+      : {}),
+    ...(rawFolders['attachments'] !== undefined ? { attachments: rawFolders['attachments'] } : {}),
   };
 
-  const rawCheckpoint = (raw.checkpoint ?? {}) as Partial<Record<string, number>>;
+  const rawCheckpoint = (raw['checkpoint'] ?? {}) as Partial<Record<string, number>>;
   const checkpoint: VaultCheckpoint = {
-    messages: rawCheckpoint.messages ?? DEFAULT_CHECKPOINT.messages,
-    minutes: rawCheckpoint.minutes ?? DEFAULT_CHECKPOINT.minutes,
+    messages: rawCheckpoint['messages'] ?? DEFAULT_CHECKPOINT.messages,
+    minutes: rawCheckpoint['minutes'] ?? DEFAULT_CHECKPOINT.minutes,
   };
 
   const config: VaultConfig = {
     folders,
     checkpoint,
-    update_channel: (raw.update_channel as 'stable' | 'next' | undefined) ?? 'stable',
+    update_channel: (raw['update_channel'] as 'stable' | 'next' | undefined) ?? 'stable',
   };
 
-  if (raw.qmd_collection !== undefined) {
-    config.qmd_collection = raw.qmd_collection as string;
+  if (raw['qmd_collection'] !== undefined) {
+    config.qmd_collection = raw['qmd_collection'] as string;
   }
 
-  if (raw.onebrain_version !== undefined) {
-    config.onebrain_version = raw.onebrain_version as string;
+  if (raw['onebrain_version'] !== undefined) {
+    config.onebrain_version = raw['onebrain_version'] as string;
   }
 
-  if (raw.runtime !== undefined) {
-    config.runtime = raw.runtime as VaultRuntime;
+  if (raw['runtime'] !== undefined) {
+    config.runtime = raw['runtime'] as VaultRuntime;
   }
 
-  if (raw.sandbox !== undefined) {
-    config.sandbox = raw.sandbox as VaultSandbox;
+  if (raw['sandbox'] !== undefined) {
+    config.sandbox = raw['sandbox'] as VaultSandbox;
   }
 
-  if (raw.stats !== undefined) {
-    config.stats = raw.stats as VaultStats;
+  if (raw['stats'] !== undefined) {
+    config.stats = raw['stats'] as VaultStats;
   }
 
-  if (raw.recap !== undefined) {
-    config.recap = raw.recap as VaultRecap;
+  if (raw['recap'] !== undefined) {
+    config.recap = raw['recap'] as VaultRecap;
   }
 
   return config;

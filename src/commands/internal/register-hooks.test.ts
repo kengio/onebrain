@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runRegisterHooks } from './register-hooks';
+import { runRegisterHooks } from './register-hooks.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -59,10 +59,10 @@ describe('runRegisterHooks', () => {
 
     // Verify written file structure
     const settings = await readSettingsFile(tempDir);
-    const hooks = settings.hooks as Record<string, unknown[]>;
+    const hooks = settings['hooks'] as Record<string, unknown[]>;
     expect(Object.keys(hooks)).toHaveLength(4);
 
-    const perms = (settings.permissions as { allow: string[] }).allow;
+    const perms = (settings['permissions'] as { allow: string[] }).allow;
     expect(perms).toHaveLength(3);
   });
 
@@ -103,7 +103,7 @@ describe('runRegisterHooks', () => {
 
     // PATH should not have been modified (no duplicate absolute paths appended)
     const settings = await readSettingsFile(tempDir);
-    const envPath = (settings.env as { PATH: string }).PATH;
+    const envPath = (settings['env'] as { PATH: string }).PATH;
     expect(envPath).toBe('$HOME/.bun/bin:$HOME/.npm-global/bin:${PATH}');
   });
 
@@ -126,12 +126,14 @@ describe('runRegisterHooks', () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
-    expect(result.hooks.Stop).toBe('migrated');
+    expect(result.hooks['Stop']).toBe('migrated');
 
     // Verify the migration was written
     const settings = await readSettingsFile(tempDir);
-    const stopGroups = (settings.hooks as Record<string, { hooks: { command: string }[] }[]>).Stop;
-    const commands = stopGroups.flatMap((g) => g.hooks.map((h) => h.command));
+    const stopGroups = (settings['hooks'] as Record<string, { hooks: { command: string }[] }[]>)[
+      'Stop'
+    ];
+    const commands = (stopGroups ?? []).flatMap((g) => g.hooks.map((h) => h.command));
     expect(commands).toContain('onebrain checkpoint stop');
     expect(commands.some((c) => c.includes('checkpoint-hook.sh'))).toBe(false);
   });
@@ -188,7 +190,7 @@ describe('applyPath absolute-path idempotency', () => {
       string,
       unknown
     >;
-    const afterEnv = afterSettings.env as { PATH: string };
+    const afterEnv = afterSettings['env'] as { PATH: string };
     expect(afterEnv.PATH).toBe(existingPath);
   });
 });
@@ -243,7 +245,7 @@ describe('registerGeminiHooks', () => {
     expect(result.ok).toBe(true);
 
     const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
-    const hooks = settings.hooks as Record<string, unknown[]>;
+    const hooks = settings['hooks'] as Record<string, unknown[]>;
     for (const event of ['Stop', 'PreCompact', 'PostCompact', 'SessionStart']) {
       expect(hooks[event]).toBeDefined();
       expect(Array.isArray(hooks[event])).toBe(true);
@@ -272,10 +274,10 @@ describe('registerGeminiHooks', () => {
       string,
       unknown
     >;
-    const hooks = settings.hooks as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
 
     for (const event of ['Stop', 'PreCompact', 'PostCompact', 'SessionStart']) {
-      const groups = hooks[event];
+      const groups = hooks[event] ?? [];
       const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
       const unique = new Set(allCommands);
       expect(unique.size).toBe(allCommands.length);

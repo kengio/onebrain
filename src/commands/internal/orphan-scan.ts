@@ -149,7 +149,7 @@ async function scanMonthDir(
     try {
       const content = await readFile(join(monthDir, fname), 'utf8');
       const fm = parseFrontmatter(content);
-      if (fm && (fm.merged === true || fm.merged === 'true')) continue;
+      if (fm && (fm['merged'] === true || fm['merged'] === 'true')) continue;
     } catch {
       // Can't read frontmatter — treat as unmerged orphan
     }

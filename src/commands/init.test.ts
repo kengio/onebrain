@@ -60,7 +60,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(tempDir, { recursive: true, force: true });
   // biome-ignore lint/performance/noDelete: env cleanup requires delete to unset, not assign "undefined"
-  delete process.env.CLAUDE_CODE_HARNESS;
+  delete process.env['CLAUDE_CODE_HARNESS'];
 });
 
 // ---------------------------------------------------------------------------
@@ -105,8 +105,8 @@ describe('runInit', () => {
     // vault.yml written
     expect(await fileExists(join(tempDir, 'vault.yml'))).toBe(true);
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.method).toBe('onebrain');
-    expect(vaultYml.update_channel).toBe('stable');
+    expect(vaultYml['method']).toBe('onebrain');
+    expect(vaultYml['update_channel']).toBe('stable');
 
     // folders count: 8 standard + inbox/imports = 9 total
     expect(result.foldersCreated).toBe(9);
@@ -147,7 +147,7 @@ describe('runInit', () => {
 
     expect(result.ok).toBe(true);
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml.method).toBe('onebrain');
+    expect(vaultYml['method']).toBe('onebrain');
   });
 
   it('plugin files already present — skips vault-sync download', async () => {
@@ -219,8 +219,8 @@ describe('runInit', () => {
 
     expect(result.ok).toBe(true);
     const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml.runtime as Record<string, unknown> | undefined;
-    expect(runtime?.harness).toBe('claude-code');
+    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
+    expect(runtime?.['harness']).toBe('claude-code');
   });
 
   it('harness auto-detect: no .claude/ dir → direct', async () => {
@@ -235,8 +235,8 @@ describe('runInit', () => {
 
     expect(result.ok).toBe(true);
     const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml.runtime as Record<string, unknown> | undefined;
-    expect(runtime?.harness).toBe('direct');
+    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
+    expect(runtime?.['harness']).toBe('direct');
   });
 
   it('--harness flag overrides auto-detect', async () => {
@@ -251,8 +251,8 @@ describe('runInit', () => {
 
     expect(result.ok).toBe(true);
     const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml.runtime as Record<string, unknown> | undefined;
-    expect(runtime?.harness).toBe('gemini');
+    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
+    expect(runtime?.['harness']).toBe('gemini');
   });
 
   it('existing folders not double-counted in foldersCreated', async () => {
@@ -276,9 +276,14 @@ describe('runInit', () => {
   it('non-TTY output starts with OneBrain Init header', async () => {
     const lines: string[] = [];
     const originalWrite = process.stdout.write.bind(process.stdout);
-    process.stdout.write = (chunk: string | Uint8Array, ...args: unknown[]) => {
+    // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+    (process.stdout as any).write = (
+      chunk: string | Uint8Array,
+      encoding?: BufferEncoding,
+      cb?: (err?: Error | null) => void,
+    ): boolean => {
       if (typeof chunk === 'string') lines.push(chunk);
-      return originalWrite(chunk, ...(args as Parameters<typeof originalWrite>).slice(1));
+      return originalWrite(chunk, encoding as BufferEncoding, cb);
     };
 
     try {
@@ -299,7 +304,7 @@ describe('runInit', () => {
   });
 
   it('harness auto-detect: CLAUDE_CODE_HARNESS env → uses env value', async () => {
-    process.env.CLAUDE_CODE_HARNESS = 'gemini';
+    process.env['CLAUDE_CODE_HARNESS'] = 'gemini';
 
     const opts: InitOptions = {
       vaultDir: tempDir,
@@ -312,7 +317,7 @@ describe('runInit', () => {
     expect(result.ok).toBe(true);
     expect(result.harness).toBe('gemini');
     const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml.runtime as Record<string, unknown> | undefined;
-    expect(runtime?.harness).toBe('gemini');
+    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
+    expect(runtime?.['harness']).toBe('gemini');
   });
 });

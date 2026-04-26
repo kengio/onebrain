@@ -10,8 +10,8 @@
 
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { loadVaultConfig } from '../../lib/index.js';
 import { parse, stringify } from 'yaml';
+import { loadVaultConfig } from '../../lib/index.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -135,12 +135,12 @@ export async function runBackfillRecapped(logsFolder: string): Promise<MigrateRe
           const { frontmatter, rest } = parsed;
 
           // Skip if already has recapped
-          if (frontmatter.recapped !== undefined) {
+          if (frontmatter['recapped'] !== undefined) {
             continue;
           }
 
           // Add recapped field
-          frontmatter.recapped = today;
+          frontmatter['recapped'] = today;
 
           // Rebuild file with updated frontmatter
           const updatedFm = stringify(frontmatter);

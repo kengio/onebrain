@@ -12,7 +12,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { type VaultSyncOptions, runVaultSync } from './vault-sync.js';
+import { runVaultSync } from './vault-sync.js';
 
 // ---------------------------------------------------------------------------
 // Tarball builder helpers (uses tar CLI — available on macOS/Linux)
@@ -87,13 +87,14 @@ function buildMockTarball(opts: TarballOpts = {}): Buffer {
 /**
  * Create a mock fetch that returns the tarball buffer as a Response.
  */
-function mockFetchWithTarball(tarball: Buffer): VaultSyncOptions['fetchFn'] {
-  return async (_url: string | URL | Request) => {
+function mockFetchWithTarball(tarball: Buffer): typeof fetch {
+  const fn = async (_url: string | URL | Request) => {
     return new Response(tarball, {
       status: 200,
       headers: { 'content-type': 'application/x-gzip' },
     });
   };
+  return fn as typeof fetch;
 }
 
 // ---------------------------------------------------------------------------
@@ -351,7 +352,7 @@ describe('runVaultSync', () => {
     await writeFile(join(vaultDir2, 'vault.yml'), 'update_channel: stable\n');
 
     const result = await runVaultSync(vaultDir2, {
-      fetchFn: async () => new Response('Not Found', { status: 404 }),
+      fetchFn: (async () => new Response('Not Found', { status: 404 })) as unknown as typeof fetch,
     });
 
     expect(result.ok).toBe(false);
@@ -363,11 +364,11 @@ describe('runVaultSync', () => {
 
   it('corrupted tarball → result.ok is false, result.error defined', async () => {
     const result = await runVaultSync(vaultDir, {
-      fetchFn: async () =>
+      fetchFn: (async () =>
         new Response(new Uint8Array([0x00, 0x01, 0x02, 0x03, 0xff, 0xfe]).buffer, {
           status: 200,
           headers: { 'content-type': 'application/x-gzip' },
-        }),
+        })) as unknown as typeof fetch,
     });
 
     expect(result.ok).toBe(false);
@@ -378,7 +379,7 @@ describe('runVaultSync', () => {
 
   it('HTTP 403 response → result.ok is false, error contains 403', async () => {
     const result = await runVaultSync(vaultDir, {
-      fetchFn: async () => new Response('Forbidden', { status: 403 }),
+      fetchFn: (async () => new Response('Forbidden', { status: 403 })) as unknown as typeof fetch,
     });
 
     expect(result.ok).toBe(false);

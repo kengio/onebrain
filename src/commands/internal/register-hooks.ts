@@ -123,6 +123,7 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
 
   for (const event of HOOK_EVENTS) {
     const cmd = HOOK_COMMANDS[event];
+    if (!cmd) continue; // HOOK_COMMANDS covers all HOOK_EVENTS — this is a safety guard
     if (!hooks[event]) hooks[event] = [];
     const groups = hooks[event];
     const presence = checkHookPresence(groups, cmd);
@@ -292,9 +293,9 @@ export async function runRegisterHooks(
   try {
     const vaultYmlText = await readFile(join(vaultRoot, 'vault.yml'), 'utf8');
     const vaultYml = (parseYaml(vaultYmlText) ?? {}) as Record<string, unknown>;
-    const runtime = vaultYml.runtime as Record<string, unknown> | undefined;
-    if (runtime && typeof runtime.harness === 'string') {
-      harness = runtime.harness;
+    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
+    if (runtime && typeof runtime['harness'] === 'string') {
+      harness = runtime['harness'];
     }
   } catch {
     // vault.yml missing — use default harness
@@ -411,7 +412,7 @@ export async function runRegisterHooks(
 // ---------------------------------------------------------------------------
 
 export async function registerHooksCommand(vaultDir?: string): Promise<void> {
-  const result = await runRegisterHooks({ vaultDir });
+  const result = await runRegisterHooks(vaultDir !== undefined ? { vaultDir } : {});
   if (!result.ok) {
     process.exit(1);
   }

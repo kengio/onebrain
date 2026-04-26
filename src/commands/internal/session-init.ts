@@ -76,7 +76,7 @@ export function formatDatetime(date: Date): string {
  */
 export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<string> {
   // 1. WT_SESSION
-  const wtSession = process.env.WT_SESSION;
+  const wtSession = process.env['WT_SESSION'];
   if (wtSession) {
     const stripped = wtSession.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
     if (stripped.length > 0) return stripped;
@@ -210,7 +210,7 @@ async function queryQmdUnembedded(): Promise<number> {
 
     const stdout = await new Response(proc.stdout).text();
     const parsed = JSON.parse(stdout) as Record<string, unknown>;
-    const unembedded = parsed.unembedded;
+    const unembedded = parsed['unembedded'];
     return typeof unembedded === 'number' ? unembedded : 0;
   } catch {
     return 0;
