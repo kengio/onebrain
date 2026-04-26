@@ -118,12 +118,17 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
 
 // On Windows, .cmd/.ps1 scripts require a shell wrapper. Prefer pwsh (PowerShell 7,
 // available on ARM64/Server Core) with fallback to powershell.exe (Windows PowerShell 5.1).
+// Memoized — detection runs once per process.
+let _windowsShell: string | undefined;
 function windowsShell(): string {
+  if (_windowsShell !== undefined) return _windowsShell;
   try {
     const r = Bun.spawnSync(['pwsh', '--version'], { stdout: 'pipe', stderr: 'pipe' });
-    if (r.exitCode === 0) return 'pwsh';
-  } catch {}
-  return 'powershell.exe';
+    _windowsShell = r.exitCode === 0 ? 'pwsh' : 'powershell.exe';
+  } catch {
+    _windowsShell = 'powershell.exe';
+  }
+  return _windowsShell;
 }
 
 async function defaultInstallBinary(version: string): Promise<void> {
