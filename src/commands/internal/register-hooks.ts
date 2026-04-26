@@ -60,9 +60,6 @@ const PERMISSIONS_TO_ADD = [
   'Bash(npm install -g @onebrain-ai/cli*)',
 ];
 
-const BUN_BIN = join(homedir(), '.bun', 'bin');
-const NPM_GLOBAL_BIN = join(homedir(), '.npm-global', 'bin');
-
 const ONEBRAIN_MARKER = '# onebrain';
 const PATH_EXPORT = 'export PATH="$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"';
 
@@ -154,7 +151,8 @@ const QMD_MATCHER = 'Write|Edit';
 
 function applyQmdHook(settings: SettingsJson): HookStatus {
   if (!settings.hooks) settings.hooks = {};
-  const groups = (settings.hooks['PostToolUse'] ??= []);
+  if (!settings.hooks['PostToolUse']) settings.hooks['PostToolUse'] = [];
+  const groups = settings.hooks['PostToolUse'];
   const already = groups.some((g) => g.hooks?.some((h) => h.command === QMD_CMD));
   if (already) return 'ok';
   groups.push({ matcher: QMD_MATCHER, hooks: [{ type: 'command', command: QMD_CMD }] });
@@ -164,11 +162,19 @@ function applyQmdHook(settings: SettingsJson): HookStatus {
 function removeQmdHook(settings: SettingsJson): 'removed' | 'ok' {
   if (!settings.hooks?.['PostToolUse']) return 'ok';
   const before = settings.hooks['PostToolUse'].length;
-  settings.hooks['PostToolUse'] = settings.hooks['PostToolUse'].filter(
+  const filtered = settings.hooks['PostToolUse'].filter(
     (g) => !g.hooks?.some((h) => (h.command ?? '').includes('qmd-reindex')),
   );
-  if (settings.hooks['PostToolUse'].length === 0) delete settings.hooks['PostToolUse'];
-  return before !== (settings.hooks['PostToolUse']?.length ?? 0) ? 'removed' : 'ok';
+  if (filtered.length === 0) {
+    const remaining: HooksMap = {};
+    for (const [key, val] of Object.entries(settings.hooks)) {
+      if (key !== 'PostToolUse') remaining[key] = val;
+    }
+    settings.hooks = remaining;
+  } else {
+    settings.hooks['PostToolUse'] = filtered;
+  }
+  return before !== filtered.length ? 'removed' : 'ok';
 }
 
 // ---------------------------------------------------------------------------
@@ -323,9 +329,7 @@ export async function runRegisterHooks(
       const hookLine = HOOK_EVENTS.map((e) => {
         const status = result.hooks[e];
         const label =
-          status === 'ok' || status === 'added' || status === 'migrated'
-            ? 'ok'
-            : (status ?? 'ok');
+          status === 'ok' || status === 'added' || status === 'migrated' ? 'ok' : (status ?? 'ok');
         return `${e} ${label}`;
       }).join('  ');
       note(hookLine);
@@ -334,7 +338,9 @@ export async function runRegisterHooks(
     // ── Step 1b: qmd PostToolUse hook (optional) ─────────────────────────
     if (opts.removeQmd) {
       const status = removeQmdHook(settings);
-      note(status === 'removed' ? 'PostToolUse qmd hook removed' : 'PostToolUse qmd hook not found');
+      note(
+        status === 'removed' ? 'PostToolUse qmd hook removed' : 'PostToolUse qmd hook not found',
+      );
     } else if (opts.qmd) {
       const status = applyQmdHook(settings);
       note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: already registered');
