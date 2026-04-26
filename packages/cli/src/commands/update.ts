@@ -163,7 +163,7 @@ async function defaultValidateBinary(): Promise<boolean> {
     const exitCode = await proc.exited;
     if (exitCode !== 0) return false;
     const stdout = await new Response(proc.stdout).text();
-    return /^\d+\.\d+/.test(stdout.trim());
+    return /v\d+\.\d+/.test(stdout.trim());
   } catch {
     return false;
   }

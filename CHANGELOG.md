@@ -1,6 +1,6 @@
 ---
-latest_version: 2.0.4
-released: 2026-04-25
+latest_version: 2.0.5
+released: 2026-04-26
 ---
 
 # Changelog
@@ -13,6 +13,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.5 — fix: vault skill fixes (grep encoding, PostCompact, /update CLI migration, auto-summary routing)
+
+- fix(startup): task scan grep pattern — replaced `\d` with `[0-9]` for POSIX grep compatibility on macOS
+- fix(checkpoint): replace fill-checkpoint PostCompact handler with auto-wrapup — when block reason matches `auto-wrapup: <token>`, recover orphan checkpoints for that token into a session log
+- fix(update): Step 7 standard hooks now use `onebrain register-hooks` CLI; qmd PostToolUse hook still via register-hooks.sh (no CLI support yet)
+- feat(update): CLI version check — after vault update, compare installed `onebrain` CLI against npm latest; prompt to update via npm or bun if newer is available
+- feat(auto-summary): add action item routing (Step 4b parity with /wrapup) — after writing session log, route tasks to matching project notes via keyword scoring
 
 ## v2.0.4 — feat: /wrapup auto-routes action items to project notes
 

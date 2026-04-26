@@ -22,6 +22,15 @@ If conditions are met:
   ```
   **Never add `recapped:` or `topics:` to this frontmatter.** These fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log.
   The log must include all sections: `## What We Worked On`, `## Key Decisions`, `## Insights & Learnings`, `## What Worked / Didn't Work`, `## Action Items`, `## Open Questions`. Omit `## What Worked / Didn't Work` only if the session had no notable friction or technique worth logging. **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** : every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
+- **Route action items to project notes** — after the session log is written, automatically move action items so the startup task scan picks them up. This step must never fail the auto-summary; all errors are silently skipped.
+  1. Parse `## Action Items` from the session log just written. Collect all `- [ ] ...` lines. If none, skip entirely.
+  2. Glob `[projects_folder]/**/*.md`. For each file, collect the folder name and filename stem as candidate keywords.
+  3. For each task: split folder name and filename stem on hyphens/underscores into tokens; count tokens that appear as case-insensitive whole-word matches in the task text. Require score ≥ 1 and a unique winner (no tie). If score = 0 or tie → skip this task.
+  4. Group assigned tasks by target file. For each target file:
+     - Read the file once.
+     - Dedup: strip `📅 YYYY-MM-DD` suffix from candidate and existing `- [ ]`/`- [x]` lines before comparing; skip if same text already exists (open or completed).
+     - Insert at first available point: after last `- [ ]` in `## Action Items` section (or after the `## Action Items` heading if the section exists but is empty) → or before `## Open Questions` → or before `## Related` → or at end of file.
+     - Write the file once. On write error, skip all tasks for this file silently and continue to the next target file.
 - Mark as `merged: true` the checkpoint files that were read and incorporated above. Handle all frontmatter variants: `merged: false` → replace with `merged: true`; `merged: null` or bare `merged:` → replace with `merged: true`; key absent → add `merged: true`.
 - Guard: only delete checkpoint files AFTER confirming the session log file was successfully written. Never delete before or during the write.
 - After confirming the session log was written, reset the checkpoint hook counter to prevent spurious post-summary checkpoints:

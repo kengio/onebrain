@@ -99,9 +99,9 @@ Always: update `updated:` frontmatter to today.
 
 **Step 7: Register OneBrain hooks in `[vault]/.claude/settings.json`**
 
-Runs every /update — idempotent. Ensures all 3 hooks point to the correct script.
+Runs every /update — idempotent. Ensures all hooks point to the correct script.
 
-- Run `bash ".claude/plugins/onebrain/skills/update/scripts/register-hooks.sh" ".claude/settings.json"` — registers Stop, PreCompact, PostCompact hooks; never removes user-added hooks in the same event key
+- Run `onebrain register-hooks` — registers Stop, PreCompact, PostCompact, and SessionStart hooks; never removes user-added hooks in the same event key
 - Check output: "all hooks already registered" → ✅ done; "added X" → ✅ registered
 
 **PostToolUse qmd hook (only when `qmd_collection` is set in vault.yml):**
@@ -110,7 +110,7 @@ Runs every /update — idempotent. Ensures all 3 hooks point to the correct scri
   - Check output: "all hooks already registered" → ✅ done; "added PostToolUse" → ✅ registered
 
 **Bash permission for onebrain CLI:**
-- Read `[vault]/.claude/settings.json` fresh (after the register-hooks.sh calls above have written to it); check `permissions.allow` contains `"Bash(onebrain *)"` — if missing, add it using an inline Python snippet or targeted JSON edit. Never rewrite the entire file. Example:
+- Read `[vault]/.claude/settings.json` fresh (after `onebrain register-hooks` has written to it); check `permissions.allow` contains `"Bash(onebrain *)"` — if missing, add it using an inline Python snippet or targeted JSON edit. Never rewrite the entire file. Example:
   ```python
   import json
   path = ".claude/settings.json"

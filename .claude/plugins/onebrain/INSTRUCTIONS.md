@@ -223,7 +223,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 - Read `[agent_folder]/MEMORY-INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
-- Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 \d{4}-\d{2}-\d{2}` → keep only tasks where date ≤ today; group overdue first, then due today
+- Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 [0-9]{4}-[0-9]{2}-[0-9]{2}` → keep only tasks where date ≤ today; group overdue first, then due today
 - Run `onebrain orphan-scan "[logs_folder]" "[session_token]"` (from vault root) → parse JSON output; read `orphan_count` field. JSON shape: `{"orphan_count":N}`. If the command fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
 
 **Step 4 — Send startup status (after Step 3 completes):**
@@ -291,18 +291,15 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse session_token and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
 
-Stop and PostCompact hooks trigger checkpoint writes. Determine `trigger` from the system-reminder header: `Stop hook blocking error` → `trigger: stop`; `PostCompact` with block reason starting `fill-checkpoint:` → `trigger: postcompact`. PreCompact no longer sends a block to Claude (the binary writes a stub file directly and exits 0). If the header is ambiguous, default to `trigger: stop`. If a PostCompact block arrives with a block reason that does not start with `fill-checkpoint:`, treat it as a no-op — write nothing and output nothing.
+Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapup for the previous session. Determine action from the system-reminder header:
+- `Stop hook blocking error` → write stop checkpoint (format below)
+- `PostCompact` with block reason starting `auto-wrapup:` → run auto-wrapup for that session token (see below)
+- `PostCompact` with any other block reason → no-op; write nothing and output nothing
+- Ambiguous header → default to stop checkpoint
 
-**PostCompact fill-checkpoint (trigger: postcompact):** When block reason matches `fill-checkpoint: <filename> since <reference>` (where reference is `start` or `checkpoint-NN`):
-1. Extract `YYYY` and `MM` from `<filename>` (format: `YYYY-MM-DD-{token}-checkpoint-NN.md`). Read the existing stub file at `[logs_folder]/YYYY/MM/<filename>` if it exists; if missing, create it at that path using `trigger: postcompact` in frontmatter (not `trigger: precompact`)
-2. Fill in all 6 content sections covering events **since `<reference>` only** — not the full session
-3. Preserve all frontmatter fields exactly as written — do not overwrite `trigger`, `date`, `checkpoint`, or `merged`
-4. Write back to the same file path
-5. Silent — no output to user
+PreCompact no longer sends a block to Claude (the binary writes a stub file directly and exits 0).
 
-Write:
-
-> **Note:** For stop-triggered checkpoints use `trigger: stop`; for new files created in the fill-checkpoint path use `trigger: postcompact`.
+**Stop checkpoint format:**
 
 ```markdown
 ---
@@ -340,6 +337,55 @@ merged: false
 ```
 
 Keep under 250 words.
+
+**PostCompact auto-wrapup:** When block reason matches `auto-wrapup: <token>`:
+1. Parse `<token>` from the block reason
+2. Glob candidate checkpoint files:
+   - Current month: `[logs_folder]/YYYY/MM/*-{token}-checkpoint-*.md` (using today's YYYY/MM)
+   - Previous month: decrement MM (if MM=01, also decrement YYYY and set MM=12)
+   - After globbing, parse the token segment from each filename (`YYYY-MM-DD-{token}-checkpoint-NN.md`) and discard files where the parsed token does not exactly equal `<token>`
+   - Keep only files where frontmatter `merged` is absent or not `true`
+3. If no files found → no-op; output nothing
+4. Read all matched checkpoint files and extract their content for synthesis in step 6
+5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
+6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free
+7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM):
+
+```markdown
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+synthesized_from_checkpoints: true
+auto-recovered: true
+---
+
+# Session Summary : [Month DD, YYYY] (Session N)
+
+## What We Worked On
+[1-3 sentences synthesized from checkpoint content]
+
+## Key Decisions
+- [All key decisions from checkpoints]
+
+## Insights & Learnings
+- [Insights from checkpoints]
+
+## What Worked / Didn't Work
+- ✅ / ❌ [From checkpoints — omit section if none noted]
+
+## Action Items
+- [ ] [Action items from checkpoints] 📅 YYYY-MM-DD
+
+## Open Questions
+- [Open questions from checkpoints]
+```
+
+8. Verify the session log file exists and is non-empty before continuing
+9. Reset the checkpoint hook counter: `bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"`
+10. Mark each checkpoint file `merged: true` (handle all variants: `merged: false`, `merged: null`, absent → set `merged: true`). If any individual write fails, do not delete that file — skip it and continue
+11. Delete checkpoint files — only AFTER session log write confirmed (step 8) AND file successfully marked merged (step 10); never delete a file whose `merged: true` write failed
+12. Silent — no output to user
 
 **Post-checkpoint recovery (stop only):** After silently writing a stop checkpoint:
 1. Look at the last user message in conversation history
