@@ -127,9 +127,9 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    // Verify file was eagerly rewritten on disk with 3-field format
+    // Eager rewrite matches the returned last_ts=0 (not `now`) so disk/return stay in sync
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toMatch(/^0:\d+:00$/);
+    expect(raw).toBe('0:0:00');
   });
 
   it('treats malformed state as parse error → resets to 0:0:00', async () => {
@@ -138,9 +138,9 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    // Verify file was eagerly rewritten on disk with 3-field format
+    // Eager rewrite matches the returned last_ts=0 (not `now`) so disk/return stay in sync
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toMatch(/^0:\d+:00$/);
+    expect(raw).toBe('0:0:00');
   });
 
   it('writeState writes 3-field format', () => {
@@ -440,7 +440,7 @@ describe('handlePrecompact', () => {
     expect(state.last_stop_nn).toBe('02'); // NOT changed
   });
 
-  it('no state file (last_ts=0) → recency guard fails → resets count', () => {
+  it('no state file (last_ts=0) → recency guard fails → resets count, last_ts stays 0', () => {
     const now = 1700001000;
     const cap = captureStdout();
     handlePrecompact(TOKEN, vaultDir, now, tmpDir);
@@ -448,6 +448,7 @@ describe('handlePrecompact', () => {
     expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
+    expect(state.last_ts).toBe(0); // precompact preserves last_ts; default state has last_ts=0
   });
 
   it('stop-then-autocompact: precompact no-ops within 5 min of stop checkpoint', () => {

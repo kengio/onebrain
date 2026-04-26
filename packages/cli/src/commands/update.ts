@@ -17,8 +17,7 @@
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { existsSync } from 'node:fs';
-import { readFile, rename, writeFile } from 'node:fs/promises';
+import { access, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spinner as createSpinner, intro, log, outro } from '@clack/prompts';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
@@ -227,7 +226,9 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 
   // ── Step 0: Guard — vault.yml must exist ─────────────────────────────────
 
-  if (!existsSync(join(vaultDir, 'vault.yml'))) {
+  try {
+    await access(join(vaultDir, 'vault.yml'));
+  } catch {
     const msg = `vault.yml not found in ${vaultDir}. Run 'onebrain update' from inside an OneBrain vault.`;
     if (isTTY) {
       log.error(msg);

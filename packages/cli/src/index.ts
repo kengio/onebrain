@@ -49,6 +49,7 @@ if (process.argv.slice(2).length === 0) {
  * Returns the first directory containing vault.yml, or startDir if not found.
  */
 function findVaultRoot(startDir: string): string {
+  if (!startDir) return process.cwd();
   let dir = startDir;
   while (true) {
     if (existsSync(join(dir, 'vault.yml'))) return dir;
@@ -90,8 +91,10 @@ program
   .description('Update OneBrain plugin files from GitHub')
   .option('--check', 'show what would change and exit without making changes')
   .option('--channel <channel>', 'update channel: stable | next')
-  .action(async (opts: { check?: boolean; channel?: string }) => {
+  .option('--vault-dir <path>', 'vault root directory (default: auto-detect from cwd)')
+  .action(async (opts: { check?: boolean; channel?: string; vaultDir?: string }) => {
     await updateCommand({
+      vaultDir: opts.vaultDir ?? findVaultRoot(process.cwd()),
       check: opts.check,
       channel: opts.channel as 'stable' | 'next' | undefined,
     });

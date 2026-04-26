@@ -78,9 +78,10 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
     // last_ts=0: avoids SKIP_WINDOW on first run (guard requires last_ts > 0)
     // and avoids false "recent checkpoint" in precompact (guard requires last_ts > 0)
     // Eagerly rewrite the state file so v1/malformed files don't accumulate.
-    const now = Math.floor(Date.now() / 1000);
+    // Use last_ts=0 to match the returned value — callers rely on last_ts=0 to
+    // disable SKIP_WINDOW and recency guards on the first run.
     try {
-      writeFileSync(stateFilePath(token, tmpDir), `0:${now}:00`, 'utf8');
+      writeFileSync(stateFilePath(token, tmpDir), '0:0:00', 'utf8');
     } catch (writeErr) {
       process.stderr.write(
         `checkpoint: failed to rewrite state file for token ${token}: ${writeErr}\n`,
@@ -307,7 +308,9 @@ export function handlePrecompact(
 ): void {
   const state = readState(token, tmpDir);
 
-  // Recency check: if last checkpoint < 5 minutes ago, let compact proceed
+  // Recency check: if last checkpoint < 5 minutes ago, let compact proceed.
+  // Invariant: handleStop resets count=0 when it writes last_ts, so count is
+  // already 0 when we reach this path — no write needed.
   if (state.last_ts > 0 && now - state.last_ts < PRECOMPACT_RECENCY) {
     return; // no-op
   }

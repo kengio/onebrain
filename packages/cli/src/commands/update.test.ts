@@ -419,28 +419,30 @@ describe('runUpdate', () => {
     );
     await mkdir(emptyDir, { recursive: true });
 
-    let fetchCalled = false;
-    const opts: UpdateOptions = {
-      vaultDir: emptyDir,
-      isTTY: false,
-      fetchFn: async (...args) => {
-        fetchCalled = true;
-        return makeMockFetch('v2.0.0')(...args);
-      },
-      vaultSyncFn: noopVaultSync,
-      installBinaryFn: noopInstallBinary,
-      validateBinaryFn: noopValidateBinary,
-      registerHooksFn: noopRegisterHooks,
-    };
+    try {
+      let fetchCalled = false;
+      const opts: UpdateOptions = {
+        vaultDir: emptyDir,
+        isTTY: false,
+        fetchFn: async (...args) => {
+          fetchCalled = true;
+          return makeMockFetch('v2.0.0')(...args);
+        },
+        vaultSyncFn: noopVaultSync,
+        installBinaryFn: noopInstallBinary,
+        validateBinaryFn: noopValidateBinary,
+        registerHooksFn: noopRegisterHooks,
+      };
 
-    const result = await runUpdate(opts);
+      const result = await runUpdate(opts);
 
-    expect(result.ok).toBe(false);
-    expect(result.exitCode).toBe(1);
-    expect(result.error).toMatch(/vault\.yml not found/);
-    expect(fetchCalled).toBe(false); // guard fires before fetch
-
-    await rm(emptyDir, { recursive: true, force: true });
+      expect(result.ok).toBe(false);
+      expect(result.exitCode).toBe(1);
+      expect(result.error).toMatch(/vault\.yml not found/);
+      expect(fetchCalled).toBe(false); // guard fires before fetch
+    } finally {
+      await rm(emptyDir, { recursive: true, force: true });
+    }
   });
 
   it('same version — vault-sync runs, binary install skipped', async () => {
