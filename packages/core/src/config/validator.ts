@@ -174,7 +174,11 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
   }
 
   try {
-    const proc = Bun.spawn(['qmd', 'status', '--json'], {
+    const qmdArgs =
+      process.platform === 'win32'
+        ? ['powershell.exe', '-NoProfile', '-Command', 'qmd status --json']
+        : ['qmd', 'status', '--json'];
+    const proc = Bun.spawn(qmdArgs, {
       stdout: 'pipe',
       stderr: 'pipe',
     });

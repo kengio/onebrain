@@ -118,8 +118,9 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
 
 async function defaultInstallBinary(version: string): Promise<void> {
   const isWindows = process.platform === 'win32';
+  // On Windows, npm is installed as npm.cmd/.ps1 — route through PowerShell
   const cmd = isWindows
-    ? ['npm', 'install', '-g', `@onebrain-ai/cli@${version}`]
+    ? ['powershell.exe', '-NoProfile', '-Command', `npm install -g '@onebrain-ai/cli@${version}'`]
     : ['bun', 'install', '-g', `@onebrain-ai/cli@${version}`];
 
   const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
