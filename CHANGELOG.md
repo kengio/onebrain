@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.5
+latest_version: 2.0.8
 released: 2026-04-26
 ---
 
@@ -13,6 +13,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.8 — refactor: collapse monorepo into single package
+
+- refactor: remove packages/ workspace structure — CLI and core are now one package at repo root
+- refactor(src): domain logic lives in src/lib/, commands in src/commands/, hidden internals in src/commands/internal/
+- refactor(build): single bun build entry point (src/index.ts → dist/onebrain); no workspace hoisting
+- refactor(config): merge root tsconfig, biome.json, and package.json — no per-package configs
 
 ## v2.0.5 — fix: vault skill fixes (grep encoding, PostCompact, /update CLI migration, auto-summary routing)
 
