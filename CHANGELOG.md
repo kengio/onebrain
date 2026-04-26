@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.9
+latest_version: 2.0.10
 released: 2026-04-26
 ---
 
@@ -12,6 +12,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.10 — fix: doctor no longer warns on CLI-vs-plugin version difference
+
+- fix(doctor): `checkVersionDrift` now compares `vault.yml onebrain_version` vs `plugin.json version` only — CLI binary version is on an independent release track and must not be compared against plugin files
+- fix(doctor): remove `binaryVersion` param from `checkVersionDriftFn` signature — CLI version was never a valid input for plugin-track drift detection
+- test(doctor): remove `binaryVersion forwarding` test suite — parameter no longer exists
+- test(lib): remove `checkVersionDrift binary-vs-plugin warn` test case
 
 ## v2.0.9 — fix: register-hooks drops SessionStart and env, adds type/matcher to hook entries
 
