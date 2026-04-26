@@ -522,3 +522,16 @@ describe('runUpdate', () => {
     expect(calls).toContain('install:v2.0.0'); // binary install called
   });
 });
+
+describe('defaultValidateBinary regex', () => {
+  const regex = /v\d+\.\d+/;
+
+  it('matches actual onebrain --version output format', () => {
+    expect(regex.test('OneBrain v2.0.7 — released 2026-04-26')).toBe(true);
+  });
+
+  it('old regex /^\\d+\\.\\d+/ would not match the same output', () => {
+    const oldRegex = /^\d+\.\d+/;
+    expect(oldRegex.test('OneBrain v2.0.7 — released 2026-04-26')).toBe(false);
+  });
+});
