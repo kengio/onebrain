@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path';
 import { Command } from 'commander';
 import { doctorCommand } from './commands/doctor.js';
 import { initCommand } from './commands/init.js';
-import { updateCommand } from './commands/update.js';
 import { checkpointCommand } from './commands/internal/checkpoint.js';
 import { migrateCommand } from './commands/internal/migrate.js';
 import { orphanScanCommand } from './commands/internal/orphan-scan.js';
@@ -12,6 +11,7 @@ import { qmdReindexCommand } from './commands/internal/qmd-reindex.js';
 import { registerHooksCommand } from './commands/internal/register-hooks.js';
 import { resolveSessionToken, sessionInitCommand } from './commands/internal/session-init.js';
 import { vaultSyncCommand } from './commands/internal/vault-sync.js';
+import { updateCommand } from './commands/update.js';
 
 // BUILD_VERSION and BUILD_DATE are injected as string literals at compile time
 // via `bun build --define BUILD_VERSION='"x.y.z"'`. When running without --define
@@ -22,14 +22,13 @@ declare const BUILD_DATE: string;
 const VERSION = typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : '0.0.0-dev';
 const RELEASE_DATE = typeof BUILD_DATE !== 'undefined' ? BUILD_DATE : 'dev';
 
-// Force UTF-8 for string writes to stdout/stderr on Windows.
-// Fixes garbling of unicode chars (·, —) in piped output (e.g. JSON read by Claude).
-// Does not change the console code page — Windows Terminal handles UTF-8 natively;
-// legacy cmd.exe consoles require `chcp 65001` separately.
-if (process.platform === 'win32') {
-  process.stdout.setDefaultEncoding('utf8');
-  process.stderr.setDefaultEncoding('utf8');
-}
+// Force UTF-8 for string writes to stdout/stderr unconditionally.
+// Fixes garbling of unicode chars (✓, ·, —) on terminals that default to Latin-1
+// or other single-byte encodings (e.g. some macOS/Linux locales, all Windows consoles).
+// On Windows, does not change the console code page — Windows Terminal handles UTF-8
+// natively; legacy cmd.exe consoles require `chcp 65001` separately.
+process.stdout.setDefaultEncoding('utf8');
+process.stderr.setDefaultEncoding('utf8');
 
 const VERSION_STRING = `OneBrain v${VERSION} — released ${RELEASE_DATE}`;
 
@@ -80,9 +79,11 @@ program
   .option('--force', 'overwrite existing vault.yml without prompting')
   .action(async (opts: { vaultDir?: string; harness?: string; force?: boolean }) => {
     await initCommand({
-      vaultDir: opts.vaultDir,
-      harness: opts.harness as 'claude-code' | 'gemini' | 'direct' | undefined,
-      force: opts.force,
+      ...(opts.vaultDir !== undefined ? { vaultDir: opts.vaultDir } : {}),
+      ...(opts.harness !== undefined
+        ? { harness: opts.harness as 'claude-code' | 'gemini' | 'direct' }
+        : {}),
+      ...(opts.force !== undefined ? { force: opts.force } : {}),
     });
   });
 
@@ -95,8 +96,8 @@ program
   .action(async (opts: { check?: boolean; channel?: string; vaultDir?: string }) => {
     await updateCommand({
       vaultDir: opts.vaultDir ?? findVaultRoot(process.cwd()),
-      check: opts.check,
-      channel: opts.channel as 'stable' | 'next' | undefined,
+      ...(opts.check !== undefined ? { check: opts.check } : {}),
+      ...(opts.channel !== undefined ? { channel: opts.channel as 'stable' | 'next' } : {}),
     });
   });
 
@@ -161,7 +162,7 @@ program
   .option('--branch <branch>', 'override branch (main | next)')
   .action(async (vaultRoot: string | undefined, opts: { branch?: string }) => {
     const root = vaultRoot ?? process.cwd();
-    await vaultSyncCommand(root, { branch: opts.branch });
+    await vaultSyncCommand(root, opts.branch !== undefined ? { branch: opts.branch } : {});
   });
 
 program
