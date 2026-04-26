@@ -4,8 +4,7 @@
  * Steps:
  *   0. Guard: vault.yml must exist (prevents running outside a vault)
  *   1. Fetch latest release from GitHub (parse tag_name)
- *   2. Sync plugin files (vault-sync)
- *   3. (Handled by vault-sync Step 4 — merge harness files)
+ *   2. Sync plugin files (vault-sync, includes harness file merge)
  *   4. Install binary — skipped if already at latest version
  *   4b. Validate binary (ATOMIC GATE — register-hooks blocked if this fails)
  *   5. Register hooks (only if 4b passed)
