@@ -127,9 +127,11 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
       result[event] = 'ok';
     } else if (presence === 'migrate') {
       for (const group of groups) {
+        if (group.matcher === undefined) group.matcher = '';
         for (const entry of group.hooks ?? []) {
           if ((entry.command ?? '').includes('checkpoint-hook.sh')) {
             entry.command = cmd;
+            if (!entry.type) entry.type = 'command';
           }
         }
       }
@@ -293,7 +295,7 @@ export async function runRegisterHooks(
       const hookLine = HOOK_EVENTS.map((e) => {
         const status = result.hooks[e];
         const label =
-          status === 'ok' || status === 'added' || status === 'migrated' || status === 'found'
+          status === 'ok' || status === 'added' || status === 'migrated'
             ? 'ok'
             : (status ?? 'ok');
         return `${e} ${label}`;

@@ -121,14 +121,21 @@ describe('runRegisterHooks', () => {
     expect(result.ok).toBe(true);
     expect(result.hooks['Stop']).toBe('migrated');
 
-    // Verify the migration was written
+    // Verify the migration was written with correct command, type, and matcher
     const settings = await readSettingsFile(tempDir);
-    const stopGroups = (settings['hooks'] as Record<string, { hooks: { command: string }[] }[]>)[
-      'Stop'
-    ];
+    const stopGroups = (
+      settings['hooks'] as Record<string, { matcher: string; hooks: { type: string; command: string }[] }[]>
+    )['Stop'];
     const commands = (stopGroups ?? []).flatMap((g) => g.hooks.map((h) => h.command));
     expect(commands).toContain('onebrain checkpoint stop');
     expect(commands.some((c) => c.includes('checkpoint-hook.sh'))).toBe(false);
+    // Migrated entries must also have type and matcher (same requirement as new entries)
+    for (const group of stopGroups ?? []) {
+      expect(group.matcher).toBe('');
+      for (const entry of group.hooks) {
+        expect(entry.type).toBe('command');
+      }
+    }
   });
 
   test('readSettings with malformed JSON → runRegisterHooks returns error, does not swallow', async () => {
