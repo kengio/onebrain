@@ -116,10 +116,28 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
 // Step 4: Install binary
 // ---------------------------------------------------------------------------
 
+// On Windows, .cmd/.ps1 scripts require a shell wrapper. Prefer pwsh (PowerShell 7,
+// available on ARM64/Server Core) with fallback to powershell.exe (Windows PowerShell 5.1).
+// Memoized — detection runs once per process.
+let _windowsShell: string | undefined;
+function windowsShell(): string {
+  if (_windowsShell !== undefined) return _windowsShell;
+  try {
+    const r = Bun.spawnSync(['pwsh', '--version'], { stdout: 'pipe', stderr: 'pipe' });
+    _windowsShell = r.exitCode === 0 ? 'pwsh' : 'powershell.exe';
+  } catch {
+    _windowsShell = 'powershell.exe';
+  }
+  return _windowsShell;
+}
+
 async function defaultInstallBinary(version: string): Promise<void> {
   const isWindows = process.platform === 'win32';
+  // Escape single quotes for PowerShell literal string; semver won't contain them but
+  // keeps parity with the escaping applied in buildQmdSpawnArgs.
+  const safeVersion = version.replace(/'/g, "''");
   const cmd = isWindows
-    ? ['npm', 'install', '-g', `@onebrain-ai/cli@${version}`]
+    ? [windowsShell(), '-NoProfile', '-Command', `npm install -g '@onebrain-ai/cli@${safeVersion}'`]
     : ['bun', 'install', '-g', `@onebrain-ai/cli@${version}`];
 
   const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
@@ -136,11 +154,15 @@ async function defaultInstallBinary(version: string): Promise<void> {
 
 async function defaultValidateBinary(): Promise<boolean> {
   try {
-    const proc = Bun.spawn(['onebrain', '--version'], { stdout: 'pipe', stderr: 'pipe' });
+    // On Windows, onebrain is installed as onebrain.cmd — must invoke via shell
+    const isWindows = process.platform === 'win32';
+    const cmd = isWindows
+      ? [windowsShell(), '-NoProfile', '-Command', 'onebrain --version']
+      : ['onebrain', '--version'];
+    const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
     const exitCode = await proc.exited;
     if (exitCode !== 0) return false;
     const stdout = await new Response(proc.stdout).text();
-    // Expect version-like output (digits)
     return /^\d+\.\d+/.test(stdout.trim());
   } catch {
     return false;

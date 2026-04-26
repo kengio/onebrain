@@ -20,6 +20,15 @@ declare const BUILD_DATE: string;
 const VERSION = typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : '0.0.0-dev';
 const RELEASE_DATE = typeof BUILD_DATE !== 'undefined' ? BUILD_DATE : 'dev';
 
+// Force UTF-8 for string writes to stdout/stderr on Windows.
+// Fixes garbling of unicode chars (·, —) in piped output (e.g. JSON read by Claude).
+// Does not change the console code page — Windows Terminal handles UTF-8 natively;
+// legacy cmd.exe consoles require `chcp 65001` separately.
+if (process.platform === 'win32') {
+  process.stdout.setDefaultEncoding('utf8');
+  process.stderr.setDefaultEncoding('utf8');
+}
+
 const VERSION_STRING = `OneBrain v${VERSION} — released ${RELEASE_DATE}`;
 
 // Handle no-args case before commander parses anything.

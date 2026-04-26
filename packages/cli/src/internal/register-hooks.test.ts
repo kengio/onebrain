@@ -53,9 +53,9 @@ describe('runRegisterHooks', () => {
 
     // 3 permissions added
     expect(result.permissionsAdded).toHaveLength(3);
-    expect(result.permissionsAdded).toContain('Bash(onebrain:*)');
-    expect(result.permissionsAdded).toContain('Bash(bun install -g @onebrain-ai/cli:*)');
-    expect(result.permissionsAdded).toContain('Bash(npm install -g @onebrain-ai/cli:*)');
+    expect(result.permissionsAdded).toContain('Bash(onebrain *)');
+    expect(result.permissionsAdded).toContain('Bash(bun install -g @onebrain-ai/cli*)');
+    expect(result.permissionsAdded).toContain('Bash(npm install -g @onebrain-ai/cli*)');
 
     // Verify written file structure
     const settings = await readSettingsFile(tempDir);

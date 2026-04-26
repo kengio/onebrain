@@ -7,7 +7,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { qmdReindexCommand } from './qmd-reindex.js';
+import { buildQmdSpawnArgs, qmdReindexCommand } from './qmd-reindex.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -91,7 +91,7 @@ describe('qmdReindexCommand', () => {
 
     expect(spawnSpy).toHaveBeenCalledTimes(1);
     const [cmd, spawnOpts] = spawnSpy.mock.calls[0] as [string[], Record<string, unknown>];
-    expect(cmd).toEqual(['qmd', 'update', '-c', 'test-collection-123']);
+    expect(cmd).toEqual(['qmd', 'update', '-c', 'test-collection-123']); // non-Windows path
     expect(spawnOpts).toMatchObject({
       detached: true,
       stdin: 'ignore',
@@ -101,6 +101,25 @@ describe('qmdReindexCommand', () => {
     expect(mockUnref.called).toBe(true);
 
     spawnSpy.mockRestore();
+  });
+
+  it('buildQmdSpawnArgs: non-Windows returns direct qmd invocation', () => {
+    const args = buildQmdSpawnArgs('my-collection', 'linux');
+    expect(args).toEqual(['qmd', 'update', '-c', 'my-collection']);
+  });
+
+  it('buildQmdSpawnArgs: Windows returns powershell.exe -Command with quoted collection', () => {
+    const args = buildQmdSpawnArgs('my-collection', 'win32');
+    expect(args[0]).toBe('powershell.exe');
+    expect(args[1]).toBe('-NoProfile');
+    expect(args[2]).toBe('-Command');
+    expect(args[3]).toContain('my-collection');
+    expect(args[3]).toMatch(/^qmd update -c '/);
+  });
+
+  it('buildQmdSpawnArgs: Windows doubles embedded single-quotes in collection', () => {
+    const args = buildQmdSpawnArgs("col'lection", 'win32');
+    expect(args[3]).toContain("col''lection");
   });
 
   it('resolves without throwing when Bun.spawn throws', async () => {

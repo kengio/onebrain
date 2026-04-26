@@ -6,7 +6,10 @@
       "Edit",
       "Glob",
       "Grep",
-      "Bash(git:*)",
+      "Bash(git *)",
+      "Bash(bun *)",
+      "Bash(gh *)",
+      "Bash(node *)",
       "WebFetch",
       "WebSearch"
     ]

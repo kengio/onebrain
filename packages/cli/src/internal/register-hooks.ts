@@ -60,9 +60,9 @@ const HOOK_COMMANDS: Record<string, string> = {
 const HOOK_EVENTS = ['Stop', 'PreCompact', 'PostCompact', 'SessionStart'] as const;
 
 const PERMISSIONS_TO_ADD = [
-  'Bash(onebrain:*)',
-  'Bash(bun install -g @onebrain-ai/cli:*)',
-  'Bash(npm install -g @onebrain-ai/cli:*)',
+  'Bash(onebrain *)',
+  'Bash(bun install -g @onebrain-ai/cli*)',
+  'Bash(npm install -g @onebrain-ai/cli*)',
 ];
 
 const BUN_BIN = join(homedir(), '.bun', 'bin');
