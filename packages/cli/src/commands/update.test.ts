@@ -410,4 +410,115 @@ describe('runUpdate', () => {
     const vaultYml = await readVaultYml(tempDir);
     expect(vaultYml.onebrain_version).toBe('v1.10.18');
   });
+
+  it('vault.yml missing → exits 1 with clear error before any network call', async () => {
+    // Use a directory with no vault.yml
+    const emptyDir = join(
+      tmpdir(),
+      `onebrain-update-test-novault-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    await mkdir(emptyDir, { recursive: true });
+
+    try {
+      let fetchCalled = false;
+      const opts: UpdateOptions = {
+        vaultDir: emptyDir,
+        isTTY: false,
+        fetchFn: async (...args) => {
+          fetchCalled = true;
+          return makeMockFetch('v2.0.0')(...args);
+        },
+        vaultSyncFn: noopVaultSync,
+        installBinaryFn: noopInstallBinary,
+        validateBinaryFn: noopValidateBinary,
+        registerHooksFn: noopRegisterHooks,
+      };
+
+      const result = await runUpdate(opts);
+
+      expect(result.ok).toBe(false);
+      expect(result.exitCode).toBe(1);
+      expect(result.error).toMatch(/vault\.yml not found/);
+      expect(fetchCalled).toBe(false); // guard fires before fetch
+    } finally {
+      await rm(emptyDir, { recursive: true, force: true });
+    }
+  });
+
+  it('same version — vault-sync runs, binary install skipped', async () => {
+    // Set vault.yml currentVersion to match latestVersion
+    await writeVaultYml(tempDir, {
+      method: 'onebrain',
+      update_channel: 'stable',
+      onebrain_version: 'v2.0.0',
+    });
+
+    const calls: string[] = [];
+
+    const opts: UpdateOptions = {
+      vaultDir: tempDir,
+      isTTY: false,
+      fetchFn: makeMockFetch('v2.0.0'),
+      vaultSyncFn: async (vaultDir, syncOpts) => {
+        calls.push('vault-sync');
+        return noopVaultSync(vaultDir, syncOpts);
+      },
+      installBinaryFn: async (version) => {
+        calls.push(`install:${version}`);
+      },
+      validateBinaryFn: async () => {
+        calls.push('validate');
+        return true;
+      },
+      registerHooksFn: async (vaultDir) => {
+        calls.push('register-hooks');
+        return noopRegisterHooks(vaultDir);
+      },
+    };
+
+    const result = await runUpdate(opts);
+
+    expect(result.ok).toBe(true);
+    expect(result.latestVersion).toBe('v2.0.0');
+    expect(result.currentVersion).toBe('v2.0.0');
+
+    // vault-sync ran; binary install did NOT
+    expect(calls).toContain('vault-sync');
+    expect(calls).not.toContain('install:v2.0.0');
+
+    // validate and register-hooks still ran
+    expect(calls).toContain('validate');
+    expect(calls).toContain('register-hooks');
+  });
+
+  it('different versions — binary install IS called', async () => {
+    // tempDir already has onebrain_version: 'v1.10.18', latest is 'v2.0.0'
+    const calls: string[] = [];
+
+    const opts: UpdateOptions = {
+      vaultDir: tempDir,
+      isTTY: false,
+      fetchFn: makeMockFetch('v2.0.0'),
+      vaultSyncFn: async (vaultDir, syncOpts) => {
+        calls.push('vault-sync');
+        return noopVaultSync(vaultDir, syncOpts);
+      },
+      installBinaryFn: async (version) => {
+        calls.push(`install:${version}`);
+      },
+      validateBinaryFn: async () => {
+        calls.push('validate');
+        return true;
+      },
+      registerHooksFn: async (vaultDir) => {
+        calls.push('register-hooks');
+        return noopRegisterHooks(vaultDir);
+      },
+    };
+
+    const result = await runUpdate(opts);
+
+    expect(result.ok).toBe(true);
+    expect(calls).toContain('install:v2.0.0'); // binary install called
+  });
 });
