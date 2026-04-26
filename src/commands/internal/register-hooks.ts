@@ -39,10 +39,6 @@ interface SettingsJson {
     [key: string]: unknown;
   };
   hooks?: HooksMap;
-  env?: {
-    PATH?: string;
-    [key: string]: unknown;
-  };
   [key: string]: unknown;
 }
 
@@ -54,19 +50,15 @@ const HOOK_COMMANDS: Record<string, string> = {
   Stop: 'onebrain checkpoint stop',
   PreCompact: 'onebrain checkpoint precompact',
   PostCompact: 'onebrain checkpoint postcompact',
-  SessionStart: 'onebrain session-init',
 };
 
-const HOOK_EVENTS = ['Stop', 'PreCompact', 'PostCompact', 'SessionStart'] as const;
+const HOOK_EVENTS = ['Stop', 'PreCompact', 'PostCompact'] as const;
 
 const PERMISSIONS_TO_ADD = [
   'Bash(onebrain *)',
   'Bash(bun install -g @onebrain-ai/cli*)',
   'Bash(npm install -g @onebrain-ai/cli*)',
 ];
-
-const BUN_BIN = join(homedir(), '.bun', 'bin');
-const NPM_GLOBAL_BIN = join(homedir(), '.npm-global', 'bin');
 
 const ONEBRAIN_MARKER = '# onebrain';
 const PATH_EXPORT = 'export PATH="$HOME/.bun/bin:$HOME/.npm-global/bin:$PATH"';
@@ -132,15 +124,17 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
       result[event] = 'ok';
     } else if (presence === 'migrate') {
       for (const group of groups) {
+        if (group.matcher === undefined) group.matcher = '';
         for (const entry of group.hooks ?? []) {
           if ((entry.command ?? '').includes('checkpoint-hook.sh')) {
             entry.command = cmd;
+            if (!entry.type) entry.type = 'command';
           }
         }
       }
       result[event] = 'migrated';
     } else {
-      groups.push({ hooks: [{ command: cmd }] });
+      groups.push({ matcher: '', hooks: [{ type: 'command', command: cmd }] });
       result[event] = 'added';
     }
   }
@@ -149,45 +143,38 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
 }
 
 // ---------------------------------------------------------------------------
-// Step 2: Register PATH (idempotent)
+// Step 2: Register PostToolUse qmd hook (optional, --qmd / --remove-qmd)
 // ---------------------------------------------------------------------------
 
-function applyPath(settings: SettingsJson): 'ok' | 'updated' {
-  if (!settings.env) settings.env = {};
+const QMD_CMD = 'onebrain qmd-reindex';
+const QMD_MATCHER = 'Write|Edit';
 
-  const existing = settings.env.PATH ?? '';
-  const parts = existing ? existing.split(':') : [];
+function applyQmdHook(settings: SettingsJson): HookStatus {
+  if (!settings.hooks) settings.hooks = {};
+  if (!settings.hooks['PostToolUse']) settings.hooks['PostToolUse'] = [];
+  const groups = settings.hooks['PostToolUse'];
+  const already = groups.some((g) => g.hooks?.some((h) => h.command === QMD_CMD));
+  if (already) return 'ok';
+  groups.push({ matcher: QMD_MATCHER, hooks: [{ type: 'command', command: QMD_CMD }] });
+  return 'added';
+}
 
-  const bunForms = [BUN_BIN, '$HOME/.bun/bin', '${HOME}/.bun/bin', '~/.bun/bin'];
-  const npmForms = [
-    NPM_GLOBAL_BIN,
-    '$HOME/.npm-global/bin',
-    '${HOME}/.npm-global/bin',
-    '~/.npm-global/bin',
-  ];
-
-  const missing: string[] = [];
-  if (!bunForms.some((f) => parts.includes(f))) missing.push(BUN_BIN);
-  if (!npmForms.some((f) => parts.includes(f))) missing.push(NPM_GLOBAL_BIN);
-
-  if (missing.length === 0) return 'ok';
-
-  const base = existing || '${PATH}';
-  const hasPlaceholder = base.includes('${PATH}');
-
-  if (hasPlaceholder) {
-    const withoutPlaceholder = base.replace('${PATH}', '').replace(/:+$/, '').replace(/^:+/, '');
-    const allParts = [
-      ...missing,
-      ...(withoutPlaceholder ? withoutPlaceholder.split(':').filter(Boolean) : []),
-      '${PATH}',
-    ];
-    settings.env.PATH = allParts.join(':');
+function removeQmdHook(settings: SettingsJson): 'removed' | 'ok' {
+  if (!settings.hooks?.['PostToolUse']) return 'ok';
+  const before = settings.hooks['PostToolUse'].length;
+  const filtered = settings.hooks['PostToolUse'].filter(
+    (g) => !g.hooks?.some((h) => (h.command ?? '').includes('qmd-reindex')),
+  );
+  if (filtered.length === 0) {
+    const remaining: HooksMap = {};
+    for (const [key, val] of Object.entries(settings.hooks)) {
+      if (key !== 'PostToolUse') remaining[key] = val;
+    }
+    settings.hooks = remaining;
   } else {
-    settings.env.PATH = [...missing, base].join(':');
+    settings.hooks['PostToolUse'] = filtered;
   }
-
-  return 'updated';
+  return before !== filtered.length ? 'removed' : 'ok';
 }
 
 // ---------------------------------------------------------------------------
@@ -268,12 +255,13 @@ async function registerDirectPath(): Promise<void> {
 
 export interface RegisterHooksOptions {
   vaultDir?: string;
+  qmd?: boolean;
+  removeQmd?: boolean;
 }
 
 export interface RegisterHooksResult {
   ok: boolean;
   hooks: Record<string, HookStatus>;
-  pathStatus: 'ok' | 'updated';
   permissionsAdded: string[];
   error?: string;
 }
@@ -304,7 +292,6 @@ export async function runRegisterHooks(
   const result: RegisterHooksResult = {
     ok: false,
     hooks: {},
-    pathStatus: 'ok',
     permissionsAdded: [],
   };
 
@@ -342,29 +329,24 @@ export async function runRegisterHooks(
       const hookLine = HOOK_EVENTS.map((e) => {
         const status = result.hooks[e];
         const label =
-          status === 'ok' || status === 'added' || status === 'migrated' || status === 'found'
-            ? 'ok'
-            : (status ?? 'ok');
+          status === 'ok' || status === 'added' || status === 'migrated' ? 'ok' : (status ?? 'ok');
         return `${e} ${label}`;
       }).join('  ');
       note(hookLine);
     }
 
-    // ── Step 2: PATH ──────────────────────────────────────────────────────
-    const pathSpinner = isTTY ? spinner() : null;
-    pathSpinner?.start('Registering PATH...');
-
-    result.pathStatus = applyPath(settings);
-
-    pathSpinner?.stop('PATH registered');
-
-    if (isTTY) {
-      note('env.PATH in .claude/settings.json: ✓');
-    } else {
-      note('PATH ok');
+    // ── Step 1b: qmd PostToolUse hook (optional) ─────────────────────────
+    if (opts.removeQmd) {
+      const status = removeQmdHook(settings);
+      note(
+        status === 'removed' ? 'PostToolUse qmd hook removed' : 'PostToolUse qmd hook not found',
+      );
+    } else if (opts.qmd) {
+      const status = applyQmdHook(settings);
+      note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: already registered');
     }
 
-    // ── Step 3: Permissions ───────────────────────────────────────────────
+    // ── Step 2: Permissions ───────────────────────────────────────────────
     const permSpinner = isTTY ? spinner() : null;
     permSpinner?.start('Updating permissions...');
 
@@ -411,8 +393,14 @@ export async function runRegisterHooks(
 // CLI entry point
 // ---------------------------------------------------------------------------
 
-export async function registerHooksCommand(vaultDir?: string): Promise<void> {
-  const result = await runRegisterHooks(vaultDir !== undefined ? { vaultDir } : {});
+export async function registerHooksCommand(
+  vaultDir?: string,
+  flags?: { qmd?: boolean; removeQmd?: boolean },
+): Promise<void> {
+  const result = await runRegisterHooks({
+    ...(vaultDir !== undefined ? { vaultDir } : {}),
+    ...flags,
+  });
   if (!result.ok) {
     process.exit(1);
   }

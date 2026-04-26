@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { chmodSync } from 'node:fs';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -281,6 +281,28 @@ describe('runBackfillRecapped', () => {
       chmodSync(file1, 0o644);
       chmodSync(file2, 0o644);
     }
+  });
+
+  it('cutoffDate: skips logs newer than cutoff, backfills older ones', async () => {
+    const monthDir = await makeMonthDir(logsDir, '2026', '04');
+    await writeSessionLog(monthDir, '2026-04-20-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-20',
+    });
+    await writeSessionLog(monthDir, '2026-04-25-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-25',
+    });
+
+    // cutoff = 2026-04-22 → 2026-04-20 is backfilled, 2026-04-25 is skipped
+    const result = await runBackfillRecapped(logsDir, '2026-04-22');
+    expect(result.backfilled).toBe(1);
+    expect(result.skipped).toBe(0);
+
+    const older = await readFile(join(monthDir, '2026-04-20-session-01.md'), 'utf8');
+    const newer = await readFile(join(monthDir, '2026-04-25-session-01.md'), 'utf8');
+    expect(older).toContain('recapped:');
+    expect(newer).not.toContain('recapped:');
   });
 
   it('handles idempotent re-runs: only first run backfills', async () => {

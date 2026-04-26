@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.8
+latest_version: 2.0.9
 released: 2026-04-26
 ---
 
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.9 — fix: register-hooks drops SessionStart and env, adds type/matcher to hook entries
+
+- fix(register-hooks): remove SessionStart from registered hooks — session-init is run explicitly by agent startup, not via hook
+- fix(register-hooks): add `type: "command"` and `matcher: ""` to new hook entries — missing type caused Claude Code settings validation error on every /update
+- fix(register-hooks): remove applyPath / env.PATH writing — settings.json must not contain env block
+- fix(register-hooks): remove hooks.json declaring SessionStart — eliminates duplicate hook registration
+- test(register-hooks): update tests to assert SessionStart absent, type/matcher present, env absent
+- feat(register-hooks): add --qmd / --remove-qmd flags for PostToolUse qmd-reindex hook management
+- refactor(skills): replace all bash script calls with onebrain CLI (vault-sync, checkpoint reset, migrate, register-hooks --qmd)
 
 ## v2.0.8 — refactor: collapse monorepo into single package
 

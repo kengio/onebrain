@@ -1,6 +1,6 @@
 ---
-latest_version: 2.0.5
-released: 2026-04-14
+latest_version: 2.0.6
+released: 2026-04-26
 ---
 
 # Plugin Changelog
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.6 — fix: replace bash scripts with CLI; fix SessionStart hook breaking vault after /update
+
+- fix(register-hooks): remove SessionStart hook registration — session-init is called by agent startup, not via hook
+- fix(wrapup): reset-checkpoint-counter.sh → onebrain checkpoint reset
+- fix(update): vault-sync.sh → onebrain vault-sync; backfill-recapped.sh → onebrain migrate backfill-recapped
+- fix(update): pin-to-vault.sh + clean-plugin-cache.sh → onebrain vault-sync (doctor, onboarding)
+- feat(qmd): register-hooks.sh --qmd/--remove-qmd → onebrain register-hooks --qmd/--remove-qmd
+- chore: delete all replaced bash scripts (hooks/, update/scripts/, wrapup/scripts/)
+- fix(update): bootstrap step downloads only SKILL.md — no bash scripts needed
 
 ## v2.0.5 — fix: vault skill fixes (grep encoding, PostCompact auto-wrapup, /update CLI migration, auto-summary routing)
 

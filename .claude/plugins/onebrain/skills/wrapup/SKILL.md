@@ -209,7 +209,7 @@ _Omit this section if the session had no notable friction or technique worth log
 After writing the session log, reset the checkpoint hook counter to prevent spurious post-wrapup checkpoints:
 
 ```bash
-bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"
+onebrain checkpoint reset
 ```
 
 This writes `0:<epoch>:00` into the session state file, triggering a 60-second skip window and resetting the message counter.

@@ -382,7 +382,7 @@ auto-recovered: true
 ```
 
 8. Verify the session log file exists and is non-empty before continuing
-9. Reset the checkpoint hook counter: `bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"`
+9. Reset the checkpoint hook counter: `onebrain checkpoint reset`
 10. Mark each checkpoint file `merged: true` (handle all variants: `merged: false`, `merged: null`, absent → set `merged: true`). If any individual write fails, do not delete that file — skip it and continue
 11. Delete checkpoint files — only AFTER session log write confirmed (step 8) AND file successfully marked merged (step 10); never delete a file whose `merged: true` write failed
 12. Silent — no output to user

@@ -169,16 +169,22 @@ program
   .command('register-hooks', { hidden: true })
   .description('Install Claude Code hooks into settings.json')
   .option('--vault-dir <path>', 'vault root directory (default: cwd)')
-  .action(async (opts: { vaultDir?: string }) => {
-    await registerHooksCommand(opts.vaultDir);
+  .option('--qmd', 'also register PostToolUse qmd-reindex hook')
+  .option('--remove-qmd', 'remove PostToolUse qmd-reindex hook')
+  .action(async (opts: { vaultDir?: string; qmd?: boolean; removeQmd?: boolean }) => {
+    await registerHooksCommand(opts.vaultDir, {
+      ...(opts.qmd !== undefined ? { qmd: opts.qmd } : {}),
+      ...(opts.removeQmd !== undefined ? { removeQmd: opts.removeQmd } : {}),
+    });
   });
 
 program
   .command('migrate', { hidden: true })
   .description('Run one-time migration scripts')
   .argument('<name>', 'migration name: backfill-recapped')
-  .action(async (name: string) => {
-    await migrateCommand(name);
+  .argument('[cutoff_date]', 'ISO date cutoff (YYYY-MM-DD) — skip logs newer than this date')
+  .action(async (name: string, cutoffDate?: string) => {
+    await migrateCommand(name, cutoffDate);
   });
 
 program.parse(process.argv);
