@@ -39,10 +39,6 @@ interface SettingsJson {
     [key: string]: unknown;
   };
   hooks?: HooksMap;
-  env?: {
-    PATH?: string;
-    [key: string]: unknown;
-  };
   [key: string]: unknown;
 }
 
@@ -54,10 +50,9 @@ const HOOK_COMMANDS: Record<string, string> = {
   Stop: 'onebrain checkpoint stop',
   PreCompact: 'onebrain checkpoint precompact',
   PostCompact: 'onebrain checkpoint postcompact',
-  SessionStart: 'onebrain session-init',
 };
 
-const HOOK_EVENTS = ['Stop', 'PreCompact', 'PostCompact', 'SessionStart'] as const;
+const HOOK_EVENTS = ['Stop', 'PreCompact', 'PostCompact'] as const;
 
 const PERMISSIONS_TO_ADD = [
   'Bash(onebrain *)',
@@ -140,54 +135,12 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
       }
       result[event] = 'migrated';
     } else {
-      groups.push({ hooks: [{ command: cmd }] });
+      groups.push({ matcher: '', hooks: [{ type: 'command', command: cmd }] });
       result[event] = 'added';
     }
   }
 
   return result;
-}
-
-// ---------------------------------------------------------------------------
-// Step 2: Register PATH (idempotent)
-// ---------------------------------------------------------------------------
-
-function applyPath(settings: SettingsJson): 'ok' | 'updated' {
-  if (!settings.env) settings.env = {};
-
-  const existing = settings.env.PATH ?? '';
-  const parts = existing ? existing.split(':') : [];
-
-  const bunForms = [BUN_BIN, '$HOME/.bun/bin', '${HOME}/.bun/bin', '~/.bun/bin'];
-  const npmForms = [
-    NPM_GLOBAL_BIN,
-    '$HOME/.npm-global/bin',
-    '${HOME}/.npm-global/bin',
-    '~/.npm-global/bin',
-  ];
-
-  const missing: string[] = [];
-  if (!bunForms.some((f) => parts.includes(f))) missing.push(BUN_BIN);
-  if (!npmForms.some((f) => parts.includes(f))) missing.push(NPM_GLOBAL_BIN);
-
-  if (missing.length === 0) return 'ok';
-
-  const base = existing || '${PATH}';
-  const hasPlaceholder = base.includes('${PATH}');
-
-  if (hasPlaceholder) {
-    const withoutPlaceholder = base.replace('${PATH}', '').replace(/:+$/, '').replace(/^:+/, '');
-    const allParts = [
-      ...missing,
-      ...(withoutPlaceholder ? withoutPlaceholder.split(':').filter(Boolean) : []),
-      '${PATH}',
-    ];
-    settings.env.PATH = allParts.join(':');
-  } else {
-    settings.env.PATH = [...missing, base].join(':');
-  }
-
-  return 'updated';
 }
 
 // ---------------------------------------------------------------------------
@@ -273,7 +226,6 @@ export interface RegisterHooksOptions {
 export interface RegisterHooksResult {
   ok: boolean;
   hooks: Record<string, HookStatus>;
-  pathStatus: 'ok' | 'updated';
   permissionsAdded: string[];
   error?: string;
 }
@@ -304,7 +256,6 @@ export async function runRegisterHooks(
   const result: RegisterHooksResult = {
     ok: false,
     hooks: {},
-    pathStatus: 'ok',
     permissionsAdded: [],
   };
 
@@ -350,21 +301,7 @@ export async function runRegisterHooks(
       note(hookLine);
     }
 
-    // ── Step 2: PATH ──────────────────────────────────────────────────────
-    const pathSpinner = isTTY ? spinner() : null;
-    pathSpinner?.start('Registering PATH...');
-
-    result.pathStatus = applyPath(settings);
-
-    pathSpinner?.stop('PATH registered');
-
-    if (isTTY) {
-      note('env.PATH in .claude/settings.json: ✓');
-    } else {
-      note('PATH ok');
-    }
-
-    // ── Step 3: Permissions ───────────────────────────────────────────────
+    // ── Step 2: Permissions ───────────────────────────────────────────────
     const permSpinner = isTTY ? spinner() : null;
     permSpinner?.start('Updating permissions...');
 

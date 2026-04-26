@@ -38,18 +38,18 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('runRegisterHooks', () => {
-  test('fresh run on empty settings — all hooks registered, PATH set, 3 permissions added', async () => {
+  test('fresh run on empty settings — all hooks registered, 3 permissions added', async () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
 
-    // All 4 hooks should be added
-    for (const event of ['Stop', 'PreCompact', 'PostCompact', 'SessionStart']) {
+    // All 3 hooks should be added
+    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
       expect(result.hooks[event]).toBe('added');
     }
 
-    // PATH should be updated
-    expect(result.pathStatus).toBe('updated');
+    // SessionStart must NOT be registered
+    expect(result.hooks['SessionStart']).toBeUndefined();
 
     // 3 permissions added
     expect(result.permissionsAdded).toHaveLength(3);
@@ -57,13 +57,31 @@ describe('runRegisterHooks', () => {
     expect(result.permissionsAdded).toContain('Bash(bun install -g @onebrain-ai/cli*)');
     expect(result.permissionsAdded).toContain('Bash(npm install -g @onebrain-ai/cli*)');
 
-    // Verify written file structure
+    // Verify written file structure — no env block
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(Object.keys(hooks)).toHaveLength(4);
+    expect(Object.keys(hooks)).toHaveLength(3);
+    expect(settings['env']).toBeUndefined();
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
     expect(perms).toHaveLength(3);
+  });
+
+  test('hook entries include type:command and matcher fields', async () => {
+    await runRegisterHooks({ vaultDir: tempDir });
+
+    const settings = await readSettingsFile(tempDir);
+    const hooks = settings['hooks'] as Record<
+      string,
+      Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>
+    >;
+
+    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
+      const group = hooks[event]?.[0];
+      expect(group).toBeDefined();
+      expect(group?.matcher).toBe('');
+      expect(group?.hooks?.[0]?.type).toBe('command');
+    }
   });
 
   test('idempotent re-run — nothing changes', async () => {
@@ -75,36 +93,11 @@ describe('runRegisterHooks', () => {
 
     expect(result.ok).toBe(true);
 
-    for (const event of ['Stop', 'PreCompact', 'PostCompact', 'SessionStart']) {
+    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
       expect(result.hooks[event]).toBe('ok');
     }
 
-    expect(result.pathStatus).toBe('ok');
     expect(result.permissionsAdded).toHaveLength(0);
-  });
-
-  test('idempotent re-run with shell-literal PATH forms — no duplicate entries', async () => {
-    // Pre-seed settings with shell-literal PATH forms
-    const settingsPath = join(tempDir, '.claude', 'settings.json');
-    await writeFile(
-      settingsPath,
-      JSON.stringify({
-        env: {
-          PATH: '$HOME/.bun/bin:$HOME/.npm-global/bin:${PATH}',
-        },
-      }),
-      'utf8',
-    );
-
-    const result = await runRegisterHooks({ vaultDir: tempDir });
-
-    expect(result.ok).toBe(true);
-    expect(result.pathStatus).toBe('ok');
-
-    // PATH should not have been modified (no duplicate absolute paths appended)
-    const settings = await readSettingsFile(tempDir);
-    const envPath = (settings['env'] as { PATH: string }).PATH;
-    expect(envPath).toBe('$HOME/.bun/bin:$HOME/.npm-global/bin:${PATH}');
   });
 
   test('migration: existing checkpoint-hook.sh entry → replaced with binary command', async () => {
@@ -151,51 +144,6 @@ describe('runRegisterHooks', () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyPath absolute-path idempotency
-// (placed before registerDirectPath to avoid mock.module side effects)
-// ---------------------------------------------------------------------------
-
-describe('applyPath absolute-path idempotency', () => {
-  let vaultDir: string;
-
-  beforeEach(async () => {
-    vaultDir = join(tmpdir(), `ob-path-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    await mkdir(join(vaultDir, '.claude'), { recursive: true });
-  });
-
-  afterEach(async () => {
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  test('pre-seeded settings with absolute BUN_BIN and NPM_GLOBAL_BIN paths → pathStatus ok, file unchanged', async () => {
-    const bunBin = join(homedir(), '.bun', 'bin');
-    const npmGlobalBin = join(homedir(), '.npm-global', 'bin');
-    const existingPath = `${bunBin}:${npmGlobalBin}:\${PATH}`;
-
-    const settingsPath = join(vaultDir, '.claude', 'settings.json');
-    const initialSettings = {
-      env: {
-        PATH: existingPath,
-      },
-    };
-    await writeFile(settingsPath, JSON.stringify(initialSettings, null, 4), 'utf8');
-
-    const result = await runRegisterHooks({ vaultDir });
-
-    expect(result.ok).toBe(true);
-    expect(result.pathStatus).toBe('ok');
-
-    // File should be unchanged (path was already set)
-    const afterSettings = JSON.parse(await readFile(settingsPath, 'utf8')) as Record<
-      string,
-      unknown
-    >;
-    const afterEnv = afterSettings['env'] as { PATH: string };
-    expect(afterEnv.PATH).toBe(existingPath);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // registerGeminiHooks (via runRegisterHooks with runtime.harness: gemini)
 // ---------------------------------------------------------------------------
 
@@ -235,7 +183,7 @@ describe('registerGeminiHooks', () => {
     expect(exists).toBe(false);
   });
 
-  test('.gemini/settings.json exists → all 4 hook events written to file', async () => {
+  test('.gemini/settings.json exists → Stop/PreCompact/PostCompact written, no SessionStart', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
     const geminiSettings = join(geminiDir, 'settings.json');
@@ -246,11 +194,12 @@ describe('registerGeminiHooks', () => {
 
     const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    for (const event of ['Stop', 'PreCompact', 'PostCompact', 'SessionStart']) {
+    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
       expect(hooks[event]).toBeDefined();
       expect(Array.isArray(hooks[event])).toBe(true);
       expect((hooks[event] as unknown[]).length).toBeGreaterThan(0);
     }
+    expect(hooks['SessionStart']).toBeUndefined();
   });
 
   test('corrupt JSON in .gemini/settings.json → result.ok === true (swallowed silently)', async () => {
@@ -276,7 +225,7 @@ describe('registerGeminiHooks', () => {
     >;
     const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
 
-    for (const event of ['Stop', 'PreCompact', 'PostCompact', 'SessionStart']) {
+    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
       const groups = hooks[event] ?? [];
       const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
       const unique = new Set(allCommands);

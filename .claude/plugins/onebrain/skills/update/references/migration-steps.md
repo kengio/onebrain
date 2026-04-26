@@ -101,7 +101,7 @@ Always: update `updated:` frontmatter to today.
 
 Runs every /update — idempotent. Ensures all hooks point to the correct script.
 
-- Run `onebrain register-hooks` — registers Stop, PreCompact, PostCompact, and SessionStart hooks; never removes user-added hooks in the same event key
+- Run `onebrain register-hooks` — registers Stop, PreCompact, and PostCompact hooks; never removes user-added hooks in the same event key
 - Check output: "all hooks already registered" → ✅ done; "added X" → ✅ registered
 
 **PostToolUse qmd hook (only when `qmd_collection` is set in vault.yml):**
