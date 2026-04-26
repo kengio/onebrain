@@ -69,11 +69,11 @@ afterEach(async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Scenario 1: Fresh vault (non-TTY) — all 7 folders created, vault.yml with folders: section
+// Scenario 1: Fresh vault (non-TTY) — all 8 folders created, vault.yml with folders: section
 // ---------------------------------------------------------------------------
 
 describe('init integration: fresh vault (non-TTY)', () => {
-  it('creates all 7 standard folders plus inbox/imports sub-directory', async () => {
+  it('creates all 8 standard folders plus inbox/imports sub-directory', async () => {
     const opts: InitOptions = {
       vaultDir: tempDir,
       isTTY: false,

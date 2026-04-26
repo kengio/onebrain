@@ -111,7 +111,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       checkOrphanCheckpointsFn(vaultDir, config),
       checkSandboxFn(config),
     ]);
-    sp?.stop('Done');
+    sp?.stop();
   } catch (err) {
     sp?.stop('Health check failed');
     throw err;
