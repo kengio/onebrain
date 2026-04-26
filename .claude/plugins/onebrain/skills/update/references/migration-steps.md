@@ -94,7 +94,7 @@ Always: update `updated:` frontmatter to today.
 **Step 6: Backfill recapped: on existing session logs**
 - **Skip if:** `[logs_folder]/` does not exist
 - Read `stats.last_recap` from vault.yml (may be absent — treat as empty string if missing). To extract: read vault.yml, navigate to `stats.last_recap`; if the `stats:` block or `last_recap:` key is absent, use `""`.
-- Run `bash ".claude/plugins/onebrain/skills/update/scripts/backfill-recapped.sh" "[logs_folder]" "[last_recap]"` — adds `recapped: YYYY-MM-DD` to session logs that don't have it; skips logs newer than `[last_recap]` if provided; idempotent
+- Run `onebrain migrate backfill-recapped "[logs_folder]" "[last_recap]"` — adds `recapped: YYYY-MM-DD` to session logs that don't have it; skips logs newer than `[last_recap]` if provided; idempotent
 - **Note:** The cutoff prevents /update from incorrectly marking recent sessions as recapped. Only logs on or before the last recap date are marked — newer sessions remain available for /recap to process.
 
 **Step 7: Register OneBrain hooks in `[vault]/.claude/settings.json`**
@@ -106,7 +106,7 @@ Runs every /update — idempotent. Ensures all hooks point to the correct script
 
 **PostToolUse qmd hook (only when `qmd_collection` is set in vault.yml):**
 - If `qmd_collection` is absent in vault.yml: skip
-- If `qmd_collection` is present: run `bash ".claude/plugins/onebrain/skills/update/scripts/register-hooks.sh" ".claude/settings.json" --qmd`
+- If `qmd_collection` is present: run `onebrain register-hooks --qmd`
   - Check output: "all hooks already registered" → ✅ done; "added PostToolUse" → ✅ registered
 
 **Bash permission for onebrain CLI:**

@@ -169,8 +169,10 @@ program
   .command('register-hooks', { hidden: true })
   .description('Install Claude Code hooks into settings.json')
   .option('--vault-dir <path>', 'vault root directory (default: cwd)')
-  .action(async (opts: { vaultDir?: string }) => {
-    await registerHooksCommand(opts.vaultDir);
+  .option('--qmd', 'also register PostToolUse qmd-reindex hook')
+  .option('--remove-qmd', 'remove PostToolUse qmd-reindex hook')
+  .action(async (opts: { vaultDir?: string; qmd?: boolean; removeQmd?: boolean }) => {
+    await registerHooksCommand(opts.vaultDir, { qmd: opts.qmd, removeQmd: opts.removeQmd });
   });
 
 program

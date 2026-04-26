@@ -20,6 +20,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - fix(register-hooks): remove applyPath / env.PATH writing — settings.json must not contain env block
 - fix(register-hooks): remove hooks.json declaring SessionStart — eliminates duplicate hook registration
 - test(register-hooks): update tests to assert SessionStart absent, type/matcher present, env absent
+- feat(register-hooks): add --qmd / --remove-qmd flags for PostToolUse qmd-reindex hook management
+- refactor(skills): replace all bash script calls with onebrain CLI (vault-sync, checkpoint reset, migrate, register-hooks --qmd)
 
 ## v2.0.8 — refactor: collapse monorepo into single package
 

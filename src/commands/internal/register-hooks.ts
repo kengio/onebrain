@@ -146,6 +146,32 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
 }
 
 // ---------------------------------------------------------------------------
+// Step 2: Register PostToolUse qmd hook (optional, --qmd / --remove-qmd)
+// ---------------------------------------------------------------------------
+
+const QMD_CMD = 'onebrain qmd-reindex';
+const QMD_MATCHER = 'Write|Edit';
+
+function applyQmdHook(settings: SettingsJson): HookStatus {
+  if (!settings.hooks) settings.hooks = {};
+  const groups = (settings.hooks['PostToolUse'] ??= []);
+  const already = groups.some((g) => g.hooks?.some((h) => h.command === QMD_CMD));
+  if (already) return 'ok';
+  groups.push({ matcher: QMD_MATCHER, hooks: [{ type: 'command', command: QMD_CMD }] });
+  return 'added';
+}
+
+function removeQmdHook(settings: SettingsJson): 'removed' | 'ok' {
+  if (!settings.hooks?.['PostToolUse']) return 'ok';
+  const before = settings.hooks['PostToolUse'].length;
+  settings.hooks['PostToolUse'] = settings.hooks['PostToolUse'].filter(
+    (g) => !g.hooks?.some((h) => (h.command ?? '').includes('qmd-reindex')),
+  );
+  if (settings.hooks['PostToolUse'].length === 0) delete settings.hooks['PostToolUse'];
+  return before !== (settings.hooks['PostToolUse']?.length ?? 0) ? 'removed' : 'ok';
+}
+
+// ---------------------------------------------------------------------------
 // Step 3: Register permissions (idempotent)
 // ---------------------------------------------------------------------------
 
@@ -223,6 +249,8 @@ async function registerDirectPath(): Promise<void> {
 
 export interface RegisterHooksOptions {
   vaultDir?: string;
+  qmd?: boolean;
+  removeQmd?: boolean;
 }
 
 export interface RegisterHooksResult {
@@ -303,6 +331,15 @@ export async function runRegisterHooks(
       note(hookLine);
     }
 
+    // ── Step 1b: qmd PostToolUse hook (optional) ─────────────────────────
+    if (opts.removeQmd) {
+      const status = removeQmdHook(settings);
+      note(status === 'removed' ? 'PostToolUse qmd hook removed' : 'PostToolUse qmd hook not found');
+    } else if (opts.qmd) {
+      const status = applyQmdHook(settings);
+      note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: already registered');
+    }
+
     // ── Step 2: Permissions ───────────────────────────────────────────────
     const permSpinner = isTTY ? spinner() : null;
     permSpinner?.start('Updating permissions...');
@@ -350,8 +387,14 @@ export async function runRegisterHooks(
 // CLI entry point
 // ---------------------------------------------------------------------------
 
-export async function registerHooksCommand(vaultDir?: string): Promise<void> {
-  const result = await runRegisterHooks(vaultDir !== undefined ? { vaultDir } : {});
+export async function registerHooksCommand(
+  vaultDir?: string,
+  flags?: { qmd?: boolean; removeQmd?: boolean },
+): Promise<void> {
+  const result = await runRegisterHooks({
+    ...(vaultDir !== undefined ? { vaultDir } : {}),
+    ...flags,
+  });
   if (!result.ok) {
     process.exit(1);
   }

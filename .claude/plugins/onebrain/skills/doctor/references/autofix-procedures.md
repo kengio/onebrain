@@ -9,10 +9,9 @@ Invoked by `/doctor --fix` flag only. Each pass confirms with the user before wr
 Fixes: Plugin `installPath` pointing to user cache instead of vault directory.
 Applies when: /doctor Config check shows 🔴 "Plugin loading from user cache"
 
-Run in order (sequential — pin first, then clear cache):
+Run from vault root (pins to vault and clears cache in one step):
 ```bash
-bash ".claude/plugins/onebrain/skills/update/scripts/pin-to-vault.sh" "$PWD"
-bash ".claude/plugins/onebrain/skills/update/scripts/clean-plugin-cache.sh"
+onebrain vault-sync "$PWD"
 ```
 
 After running: Tell the user: "Start a new Claude Code session — the plugin will now load from the vault directory."

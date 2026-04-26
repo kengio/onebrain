@@ -35,7 +35,7 @@ If conditions are met:
 - Guard: only delete checkpoint files AFTER confirming the session log file was successfully written. Never delete before or during the write.
 - After confirming the session log was written, reset the checkpoint hook counter to prevent spurious post-summary checkpoints:
   ```bash
-  bash ".claude/plugins/onebrain/skills/wrapup/scripts/reset-checkpoint-counter.sh"
+  onebrain checkpoint reset
   ```
 - Delete the checkpoint files from the glob above that were marked `merged: true`. Do not delete checkpoint files outside this session's glob result.
 - Safety-net: glob `[logs_folder]/YYYY/MM/*-checkpoint-*.md` (current month only) for any remaining files with `merged: true` — delete them. Scoped to current month to avoid vault-wide glob on large vaults.
