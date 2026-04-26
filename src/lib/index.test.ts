@@ -467,9 +467,20 @@ describe('checkVersionDrift', () => {
     const result = await checkVersionDrift(dir, config);
 
     expect(result.status).toBe('warn');
-    expect(result.message).toContain('1.9.0');
-    expect(result.message).toContain('1.8.0');
+    expect(result.message).toBe('vault v1.9.0, plugin files v1.8.0');
     expect(result.hint).toContain('onebrain update');
+  });
+
+  it('plugin.json exists but contains invalid JSON → status: ok, message contains unreadable', async () => {
+    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
+    await mkdir(pluginDir, { recursive: true });
+    await writeFile(join(pluginDir, 'plugin.json'), '{bad json', 'utf8');
+    const config = { ...baseConfig, onebrain_version: '1.9.0' };
+
+    const result = await checkVersionDrift(dir, config);
+
+    expect(result.status).toBe('ok');
+    expect(result.message).toContain('unreadable');
   });
 
   it('plugin.json with no version field → status: ok, message contains skip', async () => {

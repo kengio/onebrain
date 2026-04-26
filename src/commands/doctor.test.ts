@@ -476,4 +476,23 @@ describe('runDoctor', () => {
       expect(result.warningCount).toBe(0);
     });
   });
+
+  // ── checkVersionDriftFn call signature ────────────────────────────────────
+
+  describe('checkVersionDriftFn call signature', () => {
+    it('calls checkVersionDriftFn with (vaultDir, config) — no binaryVersion arg', async () => {
+      let capturedArgs: unknown[] = [];
+      const validators = makeAllOkValidators();
+      validators.checkVersionDriftFn = async (...args: unknown[]) => {
+        capturedArgs = args;
+        return { check: 'version-drift' as const, status: 'ok' as const, message: 'v1.0.0' };
+      };
+
+      await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
+
+      expect(capturedArgs).toHaveLength(2);
+      expect(capturedArgs[0]).toBe(tempDir);
+      expect(typeof capturedArgs[1]).toBe('object');
+    });
+  });
 });
