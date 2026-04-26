@@ -186,8 +186,8 @@ jobs:
         env:
           VERSION: ${{ needs.verify-tag.outputs.version }}
         run: |
-          # Extract section for this version: ## [2.0.0] or ## 2.0.0
-          NOTES=$(awk -v ver="$VERSION" 'BEGIN{pat="^## \\[?" ver "\\]?"} $0~pat{found=1;next} found && /^## /{exit} found{print}' CHANGELOG.md)
+          # Extract section for this version: ## v2.0.8 — title
+          NOTES=$(awk -v ver="$VERSION" 'BEGIN{pat="^## v?" ver} $0~pat{found=1;next} found && /^## /{exit} found{print}' CHANGELOG.md)
           if [ -z "$NOTES" ]; then
             NOTES="See [CHANGELOG.md](CHANGELOG.md) for details."
           fi

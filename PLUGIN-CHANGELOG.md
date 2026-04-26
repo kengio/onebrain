@@ -32,6 +32,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - fix(wrapup): Step 2 glob now requires today's date as a literal prefix — prevents counting all sessions in the month when determining session number for the current day
 
+> **Note:** v2.0.2 and v2.0.3 were CLI-only releases (npm metadata, qmd hook wiring, README). No plugin files changed — see [CHANGELOG.md](CHANGELOG.md).
+
 ## v1.10.18 — fix: session logs must not include recapped: in frontmatter
 
 - fix(auto-summary): add explicit prohibition against writing `recapped:` or `topics:` in session log frontmatter

@@ -3,7 +3,7 @@
 # Downloads the latest onebrain plugin files from GitHub and syncs to vault.
 # After download, three sync operations run in parallel:
 #   - Plugin folder sync (with stale file cleanup)
-#   - Root docs copy (README, CONTRIBUTING, CHANGELOG)
+#   - Root docs copy (README, CONTRIBUTING, CHANGELOG, PLUGIN-CHANGELOG)
 #   - Harness file merge (CLAUDE.md, GEMINI.md, AGENTS.md) — vault is primary
 # Then sequentially (must follow sync_plugin):
 #   - pin-to-vault.sh (reads plugin.json written by sync_plugin)
@@ -30,7 +30,7 @@ echo "vault-sync: downloading from github.com/${repo}@${branch}..."
 curl -fsSL "https://github.com/${repo}/archive/refs/heads/${branch}.tar.gz" \
   | tar -xz -C "$tmp_dir" --strip-components=1
 
-# All three sync operations are independent — run them in parallel.
+# All sync operations are independent — run them in parallel.
 "$python_cmd" - "$tmp_dir" "$vault_root" <<'PYEOF'
 import sys, shutil
 from pathlib import Path

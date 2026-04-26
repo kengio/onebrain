@@ -15,9 +15,6 @@ Good contributions include:
 ## Project Structure
 
 ```text
-.claude-plugin/                          Root marketplace config
-└── marketplace.json                     Registers plugins for Claude
-
 .claude/plugins/onebrain/                Main plugin directory
 ├── .claude-plugin/
 │   └── plugin.json                      Plugin manifest (name, version, description)
@@ -43,7 +40,7 @@ Good contributions include:
     └── task-extractor.md                Extract action items from braindumps (used by /braindump)
 ```
 
-Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
+Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
