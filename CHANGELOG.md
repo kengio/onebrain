@@ -1,6 +1,6 @@
 ---
-latest_version: 2.0.4
-released: 2026-04-25
+latest_version: 2.0.5
+released: 2026-04-26
 ---
 
 # Changelog
@@ -13,6 +13,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > `/update` tracks plugin version only — CLI updates happen via `npm install -g @onebrain-ai/cli`.
 
 ## [Unreleased]
+
+## v2.0.5 — Fix: Windows compatibility — PowerShell spawn, permission format, Unicode stdout
+
+- fix(windows): route `qmd update`, `qmd status`, and `npm install` through `powershell.exe -NoProfile -Command` on win32 — `Bun.spawn` cannot invoke `.cmd`/`.ps1` scripts via `CreateProcess` directly
+- fix(windows): `process.stdout/stderr.setDefaultEncoding('utf8')` at CLI startup on win32 — prevents `·` and `—` garbling in piped JSON output read by Claude
+- fix(permissions): `Bash(git:*)` colon syntax was wrong in `.claude/settings.json` and `register-hooks.ts` — corrected to space separator (`Bash(git *)`, `Bash(onebrain *)`)
+- fix(qmd-reindex): export `buildQmdSpawnArgs` helper; single-quote escape collection arg for PowerShell (embedded `'` → `''`)
+- fix(update): `defaultInstallBinary` on win32 now routes `npm install` through PowerShell (was passing bare `npm` to `Bun.spawn`, which resolves only `.exe`)
 
 ## v2.0.4 — feat: /wrapup auto-routes action items to project notes
 
