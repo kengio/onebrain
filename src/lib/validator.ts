@@ -406,26 +406,3 @@ async function readMergedField(filePath: string): Promise<boolean | undefined> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// checkSandbox
-// ---------------------------------------------------------------------------
-
-/**
- * Check that sandbox is explicitly enabled in vault.yml.
- */
-export function checkSandbox(config: VaultConfig): DoctorResult {
-  if (config.sandbox?.enabled === true) {
-    return {
-      check: 'sandbox',
-      status: 'ok',
-      message: 'enabled',
-    };
-  }
-
-  return {
-    check: 'sandbox',
-    status: 'warn',
-    message: 'disabled',
-    hint: 'Set sandbox.enabled: true in vault.yml',
-  };
-}

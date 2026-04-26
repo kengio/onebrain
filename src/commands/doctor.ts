@@ -6,7 +6,6 @@ import {
   checkHarnessBinary,
   checkOrphanCheckpoints,
   checkQmdEmbeddings,
-  checkSandbox,
   checkVaultYml,
   checkVersionDrift,
   loadVaultConfig,
@@ -29,7 +28,6 @@ export interface DoctorOptions {
   checkQmdEmbeddingsFn?: (config: VaultConfig) => Promise<DoctorResult>;
   checkVersionDriftFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
   checkOrphanCheckpointsFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
-  checkSandboxFn?: (config: VaultConfig) => DoctorResult | Promise<DoctorResult>;
 }
 
 export interface DoctorCommandResult {
@@ -54,7 +52,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const checkQmdEmbeddingsFn = opts.checkQmdEmbeddingsFn ?? checkQmdEmbeddings;
   const checkVersionDriftFn = opts.checkVersionDriftFn ?? checkVersionDrift;
   const checkOrphanCheckpointsFn = opts.checkOrphanCheckpointsFn ?? checkOrphanCheckpoints;
-  const checkSandboxFn = opts.checkSandboxFn ?? checkSandbox;
 
   const vaultYmlResult = await checkVaultYmlFn(vaultDir);
 
@@ -87,7 +84,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   let qmdResult: DoctorResult;
   let versionDriftResult: DoctorResult;
   let orphanCheckpointsResult: DoctorResult;
-  let sandboxResult: DoctorResult;
   try {
     [
       foldersResult,
@@ -95,14 +91,12 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       qmdResult,
       versionDriftResult,
       orphanCheckpointsResult,
-      sandboxResult,
     ] = await Promise.all([
       checkFoldersFn(vaultDir, config),
       checkHarnessBinaryFn(config),
       checkQmdEmbeddingsFn(config),
       checkVersionDriftFn(vaultDir, config),
       checkOrphanCheckpointsFn(vaultDir, config),
-      checkSandboxFn(config),
     ]);
     sp?.stop();
   } catch (err) {
@@ -117,7 +111,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     qmdResult,
     versionDriftResult,
     orphanCheckpointsResult,
-    sandboxResult,
   ];
 
   const errorCount = results.filter((r) => r.status === 'error').length;

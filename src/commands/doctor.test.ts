@@ -49,7 +49,6 @@ function makeAllOkValidators(): Required<
     | 'checkQmdEmbeddingsFn'
     | 'checkVersionDriftFn'
     | 'checkOrphanCheckpointsFn'
-    | 'checkSandboxFn'
   >
 > {
   return {
@@ -72,7 +71,6 @@ function makeAllOkValidators(): Required<
       status: 'ok',
       message: '0 orphans',
     }),
-    checkSandboxFn: async () => ({ check: 'sandbox', status: 'ok', message: 'enabled' }),
   };
 }
 
@@ -116,10 +114,10 @@ describe('runDoctor', () => {
         status: 'warn',
         message: '7/8 present',
       });
-      validators.checkSandboxFn = async () => ({
-        check: 'sandbox',
+      validators.checkOrphanCheckpointsFn = async () => ({
+        check: 'orphan-checkpoints',
         status: 'warn',
-        message: 'disabled',
+        message: '2 unmerged checkpoint(s)',
       });
 
       const result = await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
@@ -197,10 +195,10 @@ describe('runDoctor', () => {
       });
       try {
         const validators = makeAllOkValidators();
-        validators.checkSandboxFn = async () => ({
-          check: 'sandbox',
+        validators.checkOrphanCheckpointsFn = async () => ({
+          check: 'orphan-checkpoints',
           status: 'warn',
-          message: 'disabled',
+          message: '1 unmerged checkpoint(s)',
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
       } finally {
@@ -452,10 +450,10 @@ describe('runDoctor', () => {
         status: 'error',
         message: '0/8 present',
       });
-      validators.checkSandboxFn = async () => ({
-        check: 'sandbox',
+      validators.checkOrphanCheckpointsFn = async () => ({
+        check: 'orphan-checkpoints',
         status: 'warn',
-        message: 'disabled',
+        message: '1 unmerged checkpoint(s)',
       });
       validators.checkHarnessBinaryFn = async () => ({
         check: 'runtime.harness',

@@ -23,10 +23,6 @@ export interface VaultRuntime {
   harness: 'claude-code' | 'gemini' | 'direct';
 }
 
-export interface VaultSandbox {
-  enabled: boolean;
-}
-
 export interface VaultStats {
   last_doctor_run?: string;
   last_update_run?: string;
@@ -44,7 +40,6 @@ export interface VaultConfig {
   qmd_collection?: string;
   checkpoint?: VaultCheckpoint;
   runtime?: VaultRuntime;
-  sandbox?: VaultSandbox;
   onebrain_version?: string;
   update_channel?: 'stable' | 'next';
   stats?: VaultStats;

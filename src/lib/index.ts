@@ -5,7 +5,6 @@ export type {
   VaultFolders,
   VaultCheckpoint,
   VaultRuntime,
-  VaultSandbox,
   VaultStats,
   VaultRecap,
   DoctorResult,
@@ -20,5 +19,4 @@ export {
   checkQmdEmbeddings,
   checkVersionDrift,
   checkOrphanCheckpoints,
-  checkSandbox,
 } from './validator.js';
