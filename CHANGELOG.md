@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.6
+latest_version: 2.0.4
 released: 2026-04-26
 ---
 
