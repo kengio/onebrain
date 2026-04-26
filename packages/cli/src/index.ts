@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { Command } from 'commander';
 import { doctorCommand } from './commands/doctor.js';
 import { initCommand } from './commands/init.js';
@@ -37,6 +39,28 @@ if (process.argv.slice(2).length === 0) {
   console.log('Run `onebrain help` for available commands.');
   process.exit(0);
 }
+
+// ---------------------------------------------------------------------------
+// Vault root auto-detect
+// ---------------------------------------------------------------------------
+
+/**
+ * Walk up from startDir looking for vault.yml.
+ * Returns the first directory containing vault.yml, or startDir if not found.
+ */
+function findVaultRoot(startDir: string): string {
+  let dir = startDir;
+  while (true) {
+    if (existsSync(join(dir, 'vault.yml'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return startDir; // filesystem root — fall back to startDir
+    dir = parent;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CLI
+// ---------------------------------------------------------------------------
 
 const program = new Command();
 
@@ -93,8 +117,9 @@ program
 program
   .command('session-init', { hidden: true })
   .description('Emit session token and datetime (called by Claude Code hook)')
-  .action(async () => {
-    const vaultRoot = process.cwd();
+  .option('--vault-dir <path>', 'vault root directory (default: auto-detect from cwd)')
+  .action(async (opts: { vaultDir?: string }) => {
+    const vaultRoot = opts.vaultDir ?? findVaultRoot(process.cwd());
     await sessionInitCommand(vaultRoot);
   });
 
@@ -111,9 +136,11 @@ program
   .command('checkpoint', { hidden: true })
   .description('Handle checkpoint lifecycle (stop/precompact/postcompact/reset)')
   .argument('<mode>', 'stop | precompact | postcompact | reset')
-  .action(async (mode: string) => {
+  .option('--vault-dir <path>', 'vault root directory (default: auto-detect from cwd)')
+  .action(async (mode: string, opts: { vaultDir?: string }) => {
     const token = await resolveSessionToken();
-    await checkpointCommand(mode, token, process.cwd());
+    const vaultRoot = opts.vaultDir ?? findVaultRoot(process.cwd());
+    await checkpointCommand(mode, token, vaultRoot);
   });
 
 program

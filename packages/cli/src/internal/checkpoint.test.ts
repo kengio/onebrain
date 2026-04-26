@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -41,10 +41,6 @@ checkpoint:
 
 function stateFile(tmpDir: string, token: string): string {
   return join(tmpDir, `onebrain-${token}.state`);
-}
-
-async function readStateRaw(tmpDir: string, token: string): Promise<string> {
-  return readFile(stateFile(tmpDir, token), 'utf8');
 }
 
 async function createCheckpointFile(
@@ -103,7 +99,6 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    expect(state.pending_stub).toBeUndefined();
   });
 
   it('reads 3-field state correctly', async () => {
@@ -112,10 +107,9 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(3);
     expect(state.last_ts).toBe(1000000);
     expect(state.last_stop_nn).toBe('02');
-    expect(state.pending_stub).toBeUndefined();
   });
 
-  it('reads 4-field state (pending_stub) correctly', async () => {
+  it('reads 4-field legacy state — ignores pending_stub field', async () => {
     await writeFile(
       stateFile(tmpDir, TOKEN),
       '0:1000000:03:2026-04-23-41928-checkpoint-04.md',
@@ -125,7 +119,6 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(1000000);
     expect(state.last_stop_nn).toBe('03');
-    expect(state.pending_stub).toBe('2026-04-23-41928-checkpoint-04.md');
   });
 
   it('treats v1 2-field state as parse error → resets to 0:0:00', async () => {
@@ -150,24 +143,12 @@ describe('readState / writeState', () => {
     expect(raw).toMatch(/^0:\d+:00$/);
   });
 
-  it('writeState writes 3-field format when no pending_stub', () => {
+  it('writeState writes 3-field format', () => {
     writeState(TOKEN, { count: 2, last_ts: 999, last_stop_nn: '01' }, tmpDir);
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(2);
     expect(state.last_ts).toBe(999);
     expect(state.last_stop_nn).toBe('01');
-    expect(state.pending_stub).toBeUndefined();
-  });
-
-  it('writeState writes 4-field format when pending_stub is set', () => {
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: 999, last_stop_nn: '02', pending_stub: 'some-file.md' },
-      tmpDir,
-    );
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_stub).toBe('some-file.md');
-    expect(state.last_stop_nn).toBe('02');
   });
 });
 
@@ -190,7 +171,7 @@ describe('handleReset', () => {
     const cap = captureStdout();
     handleReset(TOKEN, now, tmpDir);
     const out = cap.stop();
-    const raw = await readStateRaw(tmpDir, TOKEN);
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
     expect(raw).toBe(`0:${now}:00`);
     expect(out).toBe('');
   });
@@ -199,7 +180,7 @@ describe('handleReset', () => {
     await writeFile(stateFile(tmpDir, TOKEN), '99:123456789', 'utf8');
     const now = 1700000001;
     handleReset(TOKEN, now, tmpDir);
-    const raw = await readStateRaw(tmpDir, TOKEN);
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
     expect(raw).toBe(`0:${now}:00`);
   });
 
@@ -208,19 +189,6 @@ describe('handleReset', () => {
     handleReset(TOKEN, 1000000, tmpDir);
     const out = cap.stop();
     expect(out).toBe('');
-  });
-
-  it('clears pending_stub from 4-field state', async () => {
-    writeState(
-      TOKEN,
-      { count: 3, last_ts: 999, last_stop_nn: '02', pending_stub: 'some-checkpoint.md' },
-      tmpDir,
-    );
-    handleReset(TOKEN, 1700000000, tmpDir);
-    const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe('0:1700000000:00');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_stub).toBeUndefined();
   });
 });
 
@@ -252,7 +220,6 @@ describe('handleStop', () => {
     const out = cap.stop();
 
     expect(out).toBe('');
-    // State should be unchanged
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(recentTs);
@@ -267,14 +234,12 @@ describe('handleStop', () => {
     handleStop(TOKEN, vaultDir, now, tmpDir);
     cap.stop();
 
-    // count should be 1 (below MIN_ACTIVITY=2, no emit, but state updated)
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(1);
     expect(state.last_ts).toBe(oldTs); // preserved when threshold not met / min_activity guard
   });
 
   it('threshold not met → no stdout, state updated with incremented count', () => {
-    // messages_threshold=5, count=2, elapsed small
     const now = 1700000100;
     writeState(TOKEN, { count: 2, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
 
@@ -288,8 +253,6 @@ describe('handleStop', () => {
   });
 
   it('MIN_ACTIVITY guard: count increments to 1, threshold met by time, but no emit', () => {
-    // Even if elapsed > threshold, count < 2 → no emit
-    // messages_threshold=5, minutes_threshold=10min=600s
     const now = 1700001000;
     const oldTs = now - 700; // 700s > 600s threshold
     writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '01' }, tmpDir);
@@ -300,13 +263,13 @@ describe('handleStop', () => {
 
     expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(1); // incremented but no emit
+    expect(state.count).toBe(1);
   });
 
-  it('threshold met by count (count reaches messages_threshold), emits block JSON', () => {
-    // count=4, after increment = 5 = messages_threshold
-    const now = 1700000500;
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
+  it('threshold met (messages) → emits block with correct filename', async () => {
+    const now = 1700001000;
+    await createCheckpointFile(vaultDir, now, TOKEN, 1);
+    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '01' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -314,91 +277,24 @@ describe('handleStop', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    // reason contains filename "since start" (last_stop_nn was '00')
-    expect(parsed.reason).toMatch(/checkpoint-01\.md since start$/);
+    expect(parsed.reason).toMatch(/checkpoint-02\.md since checkpoint-01$/);
+  });
 
-    // State reset: count=0, last_ts=now, last_stop_nn='01'
+  it('threshold met → state reset (count=0, last_ts=now)', async () => {
+    const now = 1700001000;
+    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
+
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    cap.stop();
+
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(now);
-    expect(state.last_stop_nn).toBe('01');
   });
 
-  // Update snapshots: bun test --update-snapshots
-  it('stop block JSON shape matches snapshot { decision: "block", reason: "...-checkpoint-NN.md since ..." }', () => {
-    // count=4 → increment to 5 = messages_threshold → emit block
-    const now = 1700001500;
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim()) as Record<string, unknown>;
-
-    // Lock the field names of the block decision shape.
-    expect(Object.keys(parsed).sort()).toMatchSnapshot();
-    // Lock the decision value ("block" is the only valid value).
-    expect(parsed.decision).toMatchSnapshot();
-    // Lock the reason pattern: must contain a checkpoint filename and a "since" clause.
-    expect(typeof parsed.reason).toMatchSnapshot();
-    expect(String(parsed.reason)).toMatch(/-checkpoint-\d{2}\.md since /);
-  });
-
-  it('threshold met by elapsed time, emits block JSON', async () => {
-    // elapsed > minutes_threshold (10 min = 600s), count >= 2
+  it('NN derivation: disk scan is authoritative over state last_stop_nn', async () => {
     const now = 1700001000;
-    const oldTs = now - 700; // 700s elapsed
-    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
-    await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    await createCheckpointFile(vaultDir, now, TOKEN, 2);
-    writeState(TOKEN, { count: 2, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toMatch(/checkpoint-03\.md since checkpoint-02$/);
-
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_stop_nn).toBe('03');
-  });
-
-  it('"since start" format when last_stop_nn is "00"', () => {
-    const now = 1700001000;
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.reason).toMatch(/since start$/);
-  });
-
-  it('"since checkpoint-NN" format when last_stop_nn is non-zero', async () => {
-    const now = 1700001000;
-    // Create 3 existing checkpoints so disk scan returns maxNn=3 → next NN=04
-    await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    await createCheckpointFile(vaultDir, now, TOKEN, 2);
-    await createCheckpointFile(vaultDir, now, TOKEN, 3);
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '03' }, tmpDir);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.reason).toMatch(/since checkpoint-03$/);
-    // next NN should be 04
-    expect(parsed.reason).toMatch(/checkpoint-04\.md/);
-  });
-
-  it('disk scan wins over state: last_stop_nn="02" but only checkpoint-01 on disk → creates checkpoint-02', async () => {
-    const now = 1700001000;
-    // Only checkpoint-01 exists on disk — state says last_stop_nn='02' but disk is authoritative
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
     writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '02' }, tmpDir);
 
@@ -408,51 +304,27 @@ describe('handleStop', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    // disk maxNn=1 → next NN=02 (not 03 from state)
     expect(parsed.reason).toMatch(/checkpoint-02\.md since checkpoint-01$/);
     const state = readState(TOKEN, tmpDir);
     expect(state.last_stop_nn).toBe('02');
   });
 
-  it('preserves pending_stub when stop fires while precompact stub is waiting for postcompact', async () => {
-    const now = 1700001000;
-    const stubFile = '2023-11-14-41928-checkpoint-03.md';
-    // State has pending_stub set (precompact wrote stub, postcompact hasn't run yet)
-    await createCheckpointFile(vaultDir, now, TOKEN, 3);
-    writeState(
-      TOKEN,
-      { count: 4, last_ts: now - 10, last_stop_nn: '03', pending_stub: stubFile },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    cap.stop();
-
-    const state = readState(TOKEN, tmpDir);
-    // pending_stub must survive so postcompact can still fill stub-03
-    expect(state.pending_stub).toBe(stubFile);
-  });
-
   it('elapsed calc: last_ts=0 → elapsed=0, never triggers time threshold alone', () => {
     const now = 1700001000;
-    // last_ts=0 sentinel (post-compact), count=1 (below min_activity)
     writeState(TOKEN, { count: 1, last_ts: 0, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
-    // count becomes 2, but elapsed=0 so time threshold not met, count=2 < 5 messages threshold
     expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(2);
   });
 
   it('precompact-then-stop same turn: count=0, not in SKIP_WINDOW → count=1, below MIN_ACTIVITY, no emit', () => {
-    // precompact sets count=0 but does NOT update last_ts; last_ts is old
     const now = 1700002000;
-    const oldTs = now - 900; // old, not in skip window
+    const oldTs = now - 900;
     writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
@@ -473,10 +345,8 @@ describe('handleStop', () => {
     expect(state.count).toBe(1);
   });
 
-  it('last_ts=0 + count=4 (below threshold=5 after increment to 5) → decision:block, last_ts updated, last_stop_nn incremented', async () => {
-    // messagesThreshold is 5 from vault.yml; count=4 → increment to 5 = threshold → emit
+  it('last_ts=0 + count=4 → decision:block, last_ts updated, last_stop_nn incremented', async () => {
     const now = 1700000800;
-    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
     await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 4, last_ts: 0, last_stop_nn: '02' }, tmpDir);
@@ -489,14 +359,11 @@ describe('handleStop', () => {
     expect(parsed.decision).toBe('block');
 
     const state = readState(TOKEN, tmpDir);
-    // last_ts must have been updated (was 0, now should be `now`)
     expect(state.last_ts).toBe(now);
     expect(state.last_stop_nn).toBe('03');
   });
 
-  it('last_ts=0 + count=0 → SKIP_WINDOW does NOT fire (guard needs last_ts > 0), out is empty, count increments to 1, last_ts stays 0', () => {
-    // last_ts=0 → the SKIP_WINDOW guard (last_ts > 0 && elapsed < 60) does not fire
-    // count=0 increments to 1, below MIN_ACTIVITY=2 → no emit
+  it('last_ts=0 + count=0 → SKIP_WINDOW does NOT fire (guard needs last_ts > 0)', () => {
     const now = 1700001500;
     writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
 
@@ -507,22 +374,18 @@ describe('handleStop', () => {
     expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(1);
-    // last_ts stays 0 when threshold not met
     expect(state.last_ts).toBe(0);
   });
 
   it('falls back to defaults when vault.yml is missing (messages=15, minutes=30)', () => {
-    // vaultDir has no vault.yml — use separate dir
     const emptyVault = tmpDir; // no vault.yml
     const now = 1700001000;
-    // count=14 → should NOT emit (threshold=15)
     writeState(TOKEN, { count: 14, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, emptyVault, now, tmpDir);
     const out = cap.stop();
 
-    // With default threshold=15, count=15 after increment → EMIT
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
   });
@@ -546,173 +409,77 @@ describe('handlePrecompact', () => {
     await rm(vaultDir, { recursive: true, force: true });
   });
 
-  it('recent checkpoint (last_ts within 5min) → exit 0, no stub file, state unchanged', async () => {
+  it('recent checkpoint (last_ts within 5min) → no-op, state unchanged', () => {
     const now = 1700001000;
     const recentTs = now - 100; // 100s < 300s
-    writeState(TOKEN, { count: 0, last_ts: recentTs, last_stop_nn: '02' }, tmpDir);
+    writeState(TOKEN, { count: 3, last_ts: recentTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
+    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
     expect(state.last_stop_nn).toBe('02'); // unchanged
-    expect(state.pending_stub).toBeUndefined();
+    expect(state.count).toBe(3); // unchanged
   });
 
-  it('no recent checkpoint → writes stub file and updates state to 4-field format', async () => {
+  it('no recent checkpoint → resets count to 0, preserves last_ts and last_stop_nn', () => {
     const now = 1700001000;
     const oldTs = now - 600; // 600s > 300s
-    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
-    await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 3, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
+    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
     expect(out).toBe('');
-
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(oldTs); // NOT updated by precompact
-    expect(state.last_stop_nn).toBe('02'); // NOT incremented
-    expect(state.pending_stub).toBeTruthy();
-    // stub NN should be 03 (disk scan maxNn=2 → next=03)
-    expect(state.pending_stub).toMatch(/checkpoint-03\.md$/);
+    expect(state.last_stop_nn).toBe('02'); // NOT changed
   });
 
-  it('NN derivation: disk scan maxNn=2 → stub NN="03"', async () => {
-    const now = 1700001000;
-    // Create 2 existing checkpoints so disk scan returns maxNn=2 → next NN=03
-    await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    await createCheckpointFile(vaultDir, now, TOKEN, 2);
-    writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
-
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_stub).toMatch(/-checkpoint-03\.md$/);
-  });
-
-  it('stub file is actually written to vault logs dir', async () => {
-    const now = 1700001000;
-    const date = new Date(now * 1000);
-    const yyyy = date.getFullYear().toString();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '00' }, tmpDir);
-
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-
-    const state = readState(TOKEN, tmpDir);
-    const stubFilename = state.pending_stub ?? '';
-    expect(stubFilename).toBeTruthy();
-    const stubPath = join(vaultDir, '07-logs', yyyy, mm, stubFilename);
-    const content = await readFile(stubPath, 'utf8');
-    expect(content).toContain('trigger: precompact');
-    expect(content).toContain('merged: false');
-    expect(content).toContain('## What We Worked On');
-  });
-
-  it('stub frontmatter checkpoint: field preserves zero-padding (e.g. "03" not 3)', async () => {
-    const now = 1700001000;
-    const date = new Date(now * 1000);
-    const yyyy = date.getFullYear().toString();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    // Create 2 existing checkpoints so disk scan returns maxNn=2 → stub NN='03'
-    await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    await createCheckpointFile(vaultDir, now, TOKEN, 2);
-    writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
-
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-
-    const state = readState(TOKEN, tmpDir);
-    const stubFilename = state.pending_stub ?? '';
-    const stubPath = join(vaultDir, '07-logs', yyyy, mm, stubFilename);
-    const content = await readFile(stubPath, 'utf8');
-    // Must contain 'checkpoint: 03' (zero-padded), NOT 'checkpoint: 3'
-    expect(content).toContain('checkpoint: 03');
-    expect(content).not.toContain('checkpoint: 3\n');
-  });
-
-  it('last_stop_nn NOT updated (stays same in state after precompact)', async () => {
-    const now = 1700001000;
-    // Create 3 existing checkpoints so disk scan returns maxNn=3 → stub NN=04
-    await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    await createCheckpointFile(vaultDir, now, TOKEN, 2);
-    await createCheckpointFile(vaultDir, now, TOKEN, 3);
-    writeState(TOKEN, { count: 2, last_ts: now - 600, last_stop_nn: '03' }, tmpDir);
-
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_stop_nn).toBe('03');
-    expect(state.pending_stub).toMatch(/-checkpoint-04\.md$/);
-  });
-
-  it('double-compact guard: pending_stub already set → no-op, existing stub preserved', async () => {
-    const now = 1700001000;
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: now - 600,
-        last_stop_nn: '01',
-        pending_stub: '2023-11-14-41928-checkpoint-02.md',
-      },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    // State unchanged — pending_stub still points to original stub
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_stub).toBe('2023-11-14-41928-checkpoint-02.md');
-  });
-
-  it('no state file (last_ts=0) → recency check fails → writes stub for new session', async () => {
-    // No state file → readState returns last_ts=0 → recency guard (last_ts > 0) is false
-    // → precompact proceeds and writes a stub (correct: compact on brand-new session)
+  it('no state file (last_ts=0) → recency guard fails → resets count', () => {
     const now = 1700001000;
     const cap = captureStdout();
-    await handlePrecompact(TOKEN, vaultDir, now, tmpDir);
+    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
-    expect(state.pending_stub).toBeTruthy();
-    expect(state.pending_stub).toMatch(/-checkpoint-01\.md$/);
+    expect(state.count).toBe(0);
   });
 
-  it('stop-then-autocompact: precompact no-ops within 5 min of stop checkpoint', async () => {
-    // Step 1: arrange state where stop threshold is met → stop writes checkpoint, last_ts = now
+  it('stop-then-autocompact: precompact no-ops within 5 min of stop checkpoint', () => {
     const now = 1700001000;
     writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '02' }, tmpDir);
 
-    // handleStop emits block JSON and resets state with last_ts = now
     const cap1 = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
-    cap1.stop(); // discard the block output
+    cap1.stop();
 
-    // Confirm stop updated last_ts to now
     const stateAfterStop = readState(TOKEN, tmpDir);
     expect(stateAfterStop.last_ts).toBe(now);
     expect(stateAfterStop.count).toBe(0);
 
-    // Step 2: precompact fires 60s later (still within PRECOMPACT_RECENCY = 300s)
     const nowPlus60 = now + 60;
     const cap2 = captureStdout();
-    await handlePrecompact(TOKEN, vaultDir, nowPlus60, tmpDir);
+    handlePrecompact(TOKEN, vaultDir, nowPlus60, tmpDir);
     const out2 = cap2.stop();
 
-    // Assert: precompact no-ops — no stdout, no stub written
     expect(out2).toBe('');
     const stateAfterPrecompact = readState(TOKEN, tmpDir);
-    expect(stateAfterPrecompact.pending_stub).toBeUndefined();
+    expect(stateAfterPrecompact.count).toBe(0);
+    expect(stateAfterPrecompact.last_ts).toBe(now); // unchanged
+  });
+
+  it('produces no stdout in any case', () => {
+    const now = 1700001000;
+    writeState(TOKEN, { count: 3, last_ts: now - 600, last_stop_nn: '01' }, tmpDir);
+    const cap = captureStdout();
+    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe('');
   });
 });
 
@@ -723,10 +490,7 @@ describe('handlePrecompact', () => {
 describe('handlePostcompact', () => {
   let tmpDir: string;
   let vaultDir: string;
-  // Use date consistent with now=1700001000 (2023-11-14) so disk paths align
   const now = 1700001000;
-  const stubDate = '2023-11-14';
-  const logsDir = () => join(vaultDir, '07-logs', '2023', '11');
 
   beforeEach(async () => {
     tmpDir = await makeTmpDir();
@@ -738,51 +502,9 @@ describe('handlePostcompact', () => {
     await rm(vaultDir, { recursive: true, force: true });
   });
 
-  async function writeCheckpointOnDisk(nn: string) {
-    await mkdir(logsDir(), { recursive: true });
-    await writeFile(
-      join(logsDir(), `${stubDate}-${TOKEN}-checkpoint-${nn}.md`),
-      '---\ntrigger: stop\nmerged: false\n---\n',
-      'utf8',
-    );
-  }
-
-  it('no pending stub (3-field state) → preserve last_ts, write 3-field, no stdout', async () => {
-    const ts = 1699999000;
-    writeState(TOKEN, { count: 2, last_ts: ts, last_stop_nn: '02' }, tmpDir);
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe(`0:${ts}:02`);
-  });
-
-  it('no state file → write 3-field with last_ts=0, no stdout', () => {
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(0);
-  });
-
-  it('pending stub found → emit fill-checkpoint block, clear pending_stub, last_ts=now', async () => {
-    const ts = 1699999000;
-    await writeCheckpointOnDisk('02'); // predecessor on disk
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: ts,
-        last_stop_nn: '02',
-        pending_stub: `${stubDate}-${TOKEN}-checkpoint-03.md`,
-      },
-      tmpDir,
-    );
+  it('no recent checkpoint → emits auto-wrapup block with token', () => {
+    const oldTs = now - 600; // > 300s → not recent
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
@@ -790,143 +512,48 @@ describe('handlePostcompact', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toContain('fill-checkpoint:');
-    expect(parsed.reason).toContain('checkpoint-03.md');
-    expect(parsed.reason).toMatch(/since checkpoint-02$/);
-
-    const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe(`0:${now}:03`);
+    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
   });
 
-  it('"since start" format when no predecessor on disk → advances last_stop_nn to 01', async () => {
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '00',
-        pending_stub: `${stubDate}-${TOKEN}-checkpoint-01.md`,
-      },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.reason).toMatch(/since start$/);
-    const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe(`0:${now}:01`);
-  });
-
-  it('"since checkpoint-NN" format → predecessor derived from disk, not arithmetic', async () => {
-    await writeCheckpointOnDisk('03'); // predecessor on disk
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '03',
-        pending_stub: `${stubDate}-${TOKEN}-checkpoint-04.md`,
-      },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.reason).toMatch(/since checkpoint-03$/);
-    const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe(`0:${now}:04`);
-  });
-
-  it('gap in disk: stub is checkpoint-04 but only checkpoint-02 exists → since checkpoint-02', async () => {
-    await writeCheckpointOnDisk('02'); // checkpoint-03 was never written
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '02',
-        pending_stub: `${stubDate}-${TOKEN}-checkpoint-04.md`,
-      },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    // arithmetic would say checkpoint-03 (which doesn't exist); disk scan correctly says checkpoint-02
-    expect(parsed.reason).toMatch(/since checkpoint-02$/);
-  });
-
-  it('missing stub file on disk → still emit fill-checkpoint (Claude creates it)', () => {
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '01',
-        pending_stub: `${stubDate}-${TOKEN}-checkpoint-02.md`,
-      },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toContain('fill-checkpoint:');
-  });
-
-  it('4-field state with empty pending_stub → treat as no pending stub', async () => {
-    await writeFile(stateFile(tmpDir, TOKEN), '0:1699999000:02:', 'utf8');
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-  });
-
-  it('pending_stub NN inconsistent with last_stop_nn → uses NN from filename (authoritative)', async () => {
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '02',
-        pending_stub: `${stubDate}-${TOKEN}-checkpoint-04.md`,
-      },
-      tmpDir,
-    );
+  it('auto-wrapup emitted → state updated: count=0, last_ts=now, last_stop_nn preserved', () => {
+    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     cap.stop();
 
-    const raw = await readStateRaw(tmpDir, TOKEN);
-    expect(raw).toBe(`0:${now}:04`);
+    const state = readState(TOKEN, tmpDir);
+    expect(state.count).toBe(0);
+    expect(state.last_ts).toBe(now);
+    expect(state.last_stop_nn).toBe('02'); // unchanged
   });
 
-  it('postcompact last_ts=now blocks precompact re-fire within 5 min', async () => {
-    writeState(
-      TOKEN,
-      {
-        count: 0,
-        last_ts: 1699999000,
-        last_stop_nn: '01',
-        pending_stub: `${stubDate}-${TOKEN}-checkpoint-02.md`,
-      },
-      tmpDir,
-    );
+  it('recent checkpoint (< 5 min) → no emit, last_ts preserved', () => {
+    const recentTs = now - 100; // < 300s
+    writeState(TOKEN, { count: 0, last_ts: recentTs, last_stop_nn: '03' }, tmpDir);
+
+    const cap = captureStdout();
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    expect(out).toBe('');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.last_ts).toBe(recentTs); // preserved
+    expect(state.last_stop_nn).toBe('03');
+  });
+
+  it('no state file (last_ts=0) → recency guard fails → emits auto-wrapup', () => {
+    const cap = captureStdout();
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.decision).toBe('block');
+    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
+  });
+
+  it('postcompact last_ts=now blocks precompact re-fire within 5 min', () => {
+    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '01' }, tmpDir);
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
@@ -934,16 +561,31 @@ describe('handlePostcompact', () => {
 
     const stateAfterPost = readState(TOKEN, tmpDir);
     expect(stateAfterPost.last_ts).toBe(now);
-    expect(stateAfterPost.pending_stub).toBeUndefined();
 
-    // Precompact fires 30s later (within PRECOMPACT_RECENCY=300s) — must be no-op
     const cap2 = captureStdout();
-    await handlePrecompact(TOKEN, vaultDir, now + 30, tmpDir);
+    handlePrecompact(TOKEN, vaultDir, now + 30, tmpDir);
     const out2 = cap2.stop();
 
     expect(out2).toBe('');
     const stateAfterPre = readState(TOKEN, tmpDir);
-    expect(stateAfterPre.pending_stub).toBeUndefined();
+    expect(stateAfterPre.last_ts).toBe(now); // unchanged
+  });
+
+  it('4-field legacy state (pending_stub) → auto-wrapup still emitted', async () => {
+    const oldTs = now - 600;
+    await writeFile(
+      stateFile(tmpDir, TOKEN),
+      `0:${oldTs}:02:2026-04-23-${TOKEN}-checkpoint-03.md`,
+      'utf8',
+    );
+
+    const cap = captureStdout();
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim());
+    expect(parsed.decision).toBe('block');
+    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
   });
 });
 
@@ -958,7 +600,6 @@ describe('postcompactFallback', () => {
   beforeEach(async () => {
     tmpDir = await makeTmpDir();
     vaultDir = await makeTmpDir();
-    await mkdir(join(vaultDir, 'vault.yml', '..'), { recursive: true });
   });
   afterEach(async () => {
     await rm(tmpDir, { recursive: true, force: true });
@@ -966,117 +607,23 @@ describe('postcompactFallback', () => {
   });
 
   const now = 1700002000;
-  const date = '2023-11-14';
-  const logsDir = () => join(vaultDir, '07-logs', '2023', '11');
 
-  async function writeStubFile(nn: string, trigger: string, merged: string | false = false) {
-    await mkdir(logsDir(), { recursive: true });
-    const mergedLine = merged === false ? 'merged: false' : `merged: ${merged}`;
-    await writeFile(
-      join(logsDir(), `${date}-${TOKEN}-checkpoint-${nn}.md`),
-      `---\ntrigger: ${trigger}\n${mergedLine}\n---\n`,
-      'utf8',
-    );
-  }
-
-  it('no stubs on disk → writes clean 3-field state, no emit', () => {
-    writeState(TOKEN, { count: 0, last_ts: 999, last_stop_nn: '02' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(999); // preserved
-    expect(state.last_stop_nn).toBe('02');
-  });
-
-  it('unmerged precompact stub found → emits fill-checkpoint, writes state', async () => {
-    await writeStubFile('01', 'stop', 'true'); // prior merged checkpoint on disk
-    await writeStubFile('02', 'precompact', false);
-    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '01' }, tmpDir);
+  it('emits auto-wrapup when not recent', () => {
+    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
     const cap = captureStdout();
     postcompactFallback(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toMatch(/fill-checkpoint:.*checkpoint-02\.md since checkpoint-01$/);
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_ts).toBe(now);
-    expect(state.last_stop_nn).toBe('02');
+    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
   });
 
-  it('stop-triggered stub → ignored, no emit', async () => {
-    await writeStubFile('02', 'stop', false);
-    writeState(TOKEN, { count: 0, last_ts: 500, last_stop_nn: '01' }, tmpDir);
+  it('no emit when recent (< 5 min since last checkpoint)', () => {
+    writeState(TOKEN, { count: 0, last_ts: now - 100, last_stop_nn: '02' }, tmpDir);
     const cap = captureStdout();
     postcompactFallback(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     expect(out).toBe('');
-  });
-
-  it('merged precompact stub → ignored, no emit', async () => {
-    await writeStubFile('02', 'precompact', 'true');
-    writeState(TOKEN, { count: 0, last_ts: 500, last_stop_nn: '01' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
-  });
-
-  it('multiple stubs → processes latest (highest NN)', async () => {
-    await writeStubFile('01', 'precompact', false);
-    await writeStubFile('03', 'precompact', false);
-    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    const parsed = JSON.parse(out.trim());
-    // predecessor derived from disk: stub-01 is highest NN < 03
-    expect(parsed.reason).toMatch(/checkpoint-03\.md since checkpoint-01$/);
-  });
-
-  it('first stub (NN=01) → since reference is "start"', async () => {
-    await writeStubFile('01', 'precompact', false);
-    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.reason).toMatch(/since start$/);
-  });
-
-  it('gap in checkpoint numbering → predecessor derived from disk, not arithmetic', async () => {
-    // checkpoint-03 was never written by Claude; stop-triggered -04 exists; stub is -05
-    await writeStubFile('04', 'stop', 'true'); // merged stop checkpoint
-    await writeStubFile('05', 'precompact', false); // unmerged precompact stub
-    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '04' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    const parsed = JSON.parse(out.trim());
-    // arithmetic would say checkpoint-04; disk scan correctly finds checkpoint-04 as predecessor
-    expect(parsed.reason).toMatch(/checkpoint-05\.md since checkpoint-04$/);
-  });
-
-  it('pending_stub in state → delegates to handlePostcompact, not disk scan', async () => {
-    const stubFilename = `${date}-${TOKEN}-checkpoint-02.md`;
-    await writeStubFile('01', 'stop', 'true'); // predecessor on disk
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: 0, last_stop_nn: '01', pending_stub: stubFilename },
-      tmpDir,
-    );
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.reason).toMatch(/fill-checkpoint:.*checkpoint-02\.md since checkpoint-01$/);
-    // State must be cleared: pending_stub gone, last_ts=now
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_stub).toBeUndefined();
-    expect(state.last_ts).toBe(now);
-    expect(state.last_stop_nn).toBe('02');
   });
 });
 
@@ -1098,31 +645,33 @@ describe('maxCheckpointNnSync', () => {
   const DATE = '2023-11-14';
   const LOGS = '07-logs';
 
-  it('returns 0 when directory does not exist', () => {
-    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(0);
+  it('returns 0 when no checkpoint files exist', () => {
+    const result = maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS);
+    expect(result).toBe(0);
   });
 
-  it('returns 0 when directory has no checkpoint files', async () => {
-    await mkdir(join(VAULT(), LOGS, '2023', '11'), { recursive: true });
-    await writeFile(join(VAULT(), LOGS, '2023', '11', '2023-11-14-session-01.md'), '', 'utf8');
-    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(0);
-  });
-
-  it('returns the highest NN from matching checkpoint files', async () => {
+  it('returns max NN from checkpoint files on disk', async () => {
     const dir = join(VAULT(), LOGS, '2023', '11');
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-01.md`), '', 'utf8');
     await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-03.md`), '', 'utf8');
-    await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-02.md`), '', 'utf8');
-    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(3);
+    const result = maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS);
+    expect(result).toBe(3);
   });
 
-  it('ignores files with wrong token or wrong format', async () => {
+  it('ignores files for other tokens', async () => {
     const dir = join(VAULT(), LOGS, '2023', '11');
     await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, `${DATE}-99999-checkpoint-05.md`), '', 'utf8'); // wrong token
-    await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-01.md`), '', 'utf8'); // correct
-    await writeFile(join(dir, `${DATE}-${TOKEN}-session-01.md`), '', 'utf8'); // not checkpoint
-    expect(maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS)).toBe(1);
+    await writeFile(join(dir, `${DATE}-99999-checkpoint-05.md`), '', 'utf8');
+    const result = maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS);
+    expect(result).toBe(0);
+  });
+
+  it('ignores files for other dates', async () => {
+    const dir = join(VAULT(), LOGS, '2023', '11');
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, `2023-11-15-${TOKEN}-checkpoint-02.md`), '', 'utf8');
+    const result = maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS);
+    expect(result).toBe(0);
   });
 });

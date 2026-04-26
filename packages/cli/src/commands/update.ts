@@ -2,23 +2,25 @@
  * update — Atomic OneBrain update sequence
  *
  * Steps:
+ *   0. Guard: vault.yml must exist (prevents running outside a vault)
  *   1. Fetch latest release from GitHub (parse tag_name)
  *   2. Sync plugin files (vault-sync)
  *   3. (Handled by vault-sync Step 4 — merge harness files)
- *   4. Install binary (bun install -g / npm install -g on Windows)
+ *   4. Install binary — skipped if already at latest version
  *   4b. Validate binary (ATOMIC GATE — register-hooks blocked if this fails)
  *   5. Register hooks (only if 4b passed)
  *   6. Write onebrain_version to vault.yml
  *
- * TTY:     uses @clack/prompts layout
+ * TTY:     uses @clack/prompts layout with spinners for slow steps
  * Non-TTY: plain text lines
  *
  * Exit code: 0 on success, 1 on failure.
  */
 
+import { existsSync } from 'node:fs';
 import { readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { intro, log, outro } from '@clack/prompts';
+import { spinner as createSpinner, intro, log, outro } from '@clack/prompts';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------
@@ -223,6 +225,20 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     writeLine('OneBrain Update');
   }
 
+  // ── Step 0: Guard — vault.yml must exist ─────────────────────────────────
+
+  if (!existsSync(join(vaultDir, 'vault.yml'))) {
+    const msg = `vault.yml not found in ${vaultDir}. Run 'onebrain update' from inside an OneBrain vault.`;
+    if (isTTY) {
+      log.error(msg);
+    } else {
+      writeLine(`error: ${msg}`);
+    }
+    result.error = msg;
+    result.exitCode = 1;
+    return result;
+  }
+
   // ── Step 1: Fetch latest release ──────────────────────────────────────────
 
   let latestVersion: string;
@@ -271,33 +287,49 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 
   let filesAdded = 0;
   let filesRemoved = 0;
+  const syncSpinner = isTTY ? createSpinner() : null;
+  syncSpinner?.start('Syncing plugin files…');
   try {
     const syncResult = await vaultSyncFn(vaultDir, { branch });
     filesAdded = syncResult.filesAdded;
     filesRemoved = syncResult.filesRemoved;
+    syncSpinner?.stop(`Synced — ${filesAdded} added, ${filesRemoved} removed`);
+    if (!isTTY) {
+      writeLine(`syncing: ${filesAdded} files synced, ${filesRemoved} removed`);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    syncSpinner?.stop('Sync failed');
     result.error = `vault-sync failed: ${msg}`;
     result.exitCode = 1;
     process.stderr.write(`update: ${result.error}\n`);
     return result;
   }
 
-  noteStep('syncing', `${filesAdded} files synced, ${filesRemoved} removed`);
+  // ── Step 4: Install binary (skipped if already at latest version) ─────────
 
-  // ── Step 4: Install binary ────────────────────────────────────────────────
+  const needsBinaryUpdate = latestVersion !== currentVersion;
 
-  try {
-    await installBinaryFn(latestVersion);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    result.error = `Binary install failed: ${msg}`;
-    result.exitCode = 1;
-    process.stderr.write(`update: ${result.error}\n`);
-    return result;
+  if (needsBinaryUpdate) {
+    const installSpinner = isTTY ? createSpinner() : null;
+    installSpinner?.start(`Installing @onebrain-ai/cli ${latestVersion}…`);
+    try {
+      await installBinaryFn(latestVersion);
+      installSpinner?.stop(`Installed @onebrain-ai/cli ${latestVersion}`);
+      if (!isTTY) {
+        writeLine(`upgrading: @onebrain-ai/cli ${latestVersion} installed`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      installSpinner?.stop('Install failed');
+      result.error = `Binary install failed: ${msg}`;
+      result.exitCode = 1;
+      process.stderr.write(`update: ${result.error}\n`);
+      return result;
+    }
+  } else {
+    noteStep('binary', `@onebrain-ai/cli ${latestVersion} already up to date`);
   }
-
-  noteStep('upgrading', `@onebrain-ai/cli ${latestVersion} installed`);
 
   // ── Step 4b: Validate binary (ATOMIC GATE) ────────────────────────────────
 
