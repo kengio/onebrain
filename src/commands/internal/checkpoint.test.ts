@@ -663,7 +663,7 @@ describe('unicode in checkpoint files', () => {
       '## What We Worked On',
       'Refactored the session init flow → improved startup speed.',
       '',
-      '## What Worked / Didn\'t Work',
+      "## What Worked / Didn't Work",
       '- ✅ Session token resolves correctly',
       '- ❌ Stale state file cleanup had edge case',
       '',
