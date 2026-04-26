@@ -285,8 +285,14 @@ describe('runBackfillRecapped', () => {
 
   it('cutoffDate: skips logs newer than cutoff, backfills older ones', async () => {
     const monthDir = await makeMonthDir(logsDir, '2026', '04');
-    await writeSessionLog(monthDir, '2026-04-20-session-01.md', { tags: 'session-log', date: '2026-04-20' });
-    await writeSessionLog(monthDir, '2026-04-25-session-01.md', { tags: 'session-log', date: '2026-04-25' });
+    await writeSessionLog(monthDir, '2026-04-20-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-20',
+    });
+    await writeSessionLog(monthDir, '2026-04-25-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-25',
+    });
 
     // cutoff = 2026-04-22 → 2026-04-20 is backfilled, 2026-04-25 is skipped
     const result = await runBackfillRecapped(logsDir, '2026-04-22');

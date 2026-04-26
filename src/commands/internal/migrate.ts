@@ -85,7 +85,10 @@ async function listMdFiles(dir: string): Promise<string[]> {
  * @param cutoffDate - ISO date string (YYYY-MM-DD); skip logs with date > cutoffDate
  * @returns MigrateResult with backfilled and skipped counts
  */
-export async function runBackfillRecapped(logsFolder: string, cutoffDate?: string): Promise<MigrateResult> {
+export async function runBackfillRecapped(
+  logsFolder: string,
+  cutoffDate?: string,
+): Promise<MigrateResult> {
   const today = new Date().toISOString().slice(0, 10);
   let backfilled = 0;
   let skipped = 0;

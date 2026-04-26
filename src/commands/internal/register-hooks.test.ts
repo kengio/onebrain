@@ -124,7 +124,10 @@ describe('runRegisterHooks', () => {
     // Verify the migration was written with correct command, type, and matcher
     const settings = await readSettingsFile(tempDir);
     const stopGroups = (
-      settings['hooks'] as Record<string, { matcher: string; hooks: { type: string; command: string }[] }[]>
+      settings['hooks'] as Record<
+        string,
+        { matcher: string; hooks: { type: string; command: string }[] }[]
+      >
     )['Stop'];
     const commands = (stopGroups ?? []).flatMap((g) => g.hooks.map((h) => h.command));
     expect(commands).toContain('onebrain checkpoint stop');
