@@ -243,19 +243,18 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 // ---------------------------------------------------------------------------
 
 /**
- * Compare a version against plugin.json version to detect drift.
+ * Compare vault.yml onebrain_version against plugin.json version to detect drift.
  *
- * When `binaryVersion` is provided, it is compared against plugin.json version
- * (detects "binary is newer than installed plugin files").
- * When `binaryVersion` is absent, falls back to comparing vault.yml
- * `onebrain_version` against plugin.json version.
+ * Both values are on the plugin version track — drift means /update ran partially
+ * (e.g. set onebrain_version in vault.yml but didn't bump plugin.json, or vice versa).
+ * The CLI binary version is intentionally NOT compared here: CLI and plugin files
+ * are released on independent tracks and will routinely differ.
  *
- * Returns ok if the required data for the selected comparison path is unavailable.
+ * Returns ok when the required data is unavailable.
  */
 export async function checkVersionDrift(
   vaultRoot: string,
   config: VaultConfig,
-  binaryVersion?: string,
 ): Promise<DoctorResult> {
   const pluginJsonPath = join(
     vaultRoot,
@@ -268,8 +267,7 @@ export async function checkVersionDrift(
   const pluginFile = Bun.file(pluginJsonPath);
   const exists = await pluginFile.exists();
 
-  // Determine which version to compare against plugin.json
-  const compareVersion = binaryVersion ?? config.onebrain_version;
+  const compareVersion = config.onebrain_version;
 
   if (!compareVersion || !exists) {
     return {
@@ -308,14 +306,10 @@ export async function checkVersionDrift(
     };
   }
 
-  const driftMessage = binaryVersion
-    ? `binary v${binaryVersion}, plugin files v${pluginVersion}`
-    : `vault v${compareVersion}, plugin files v${pluginVersion}`;
-
   return {
     check: 'version-drift',
     status: 'warn',
-    message: driftMessage,
+    message: `vault v${compareVersion}, plugin files v${pluginVersion}`,
     hint: 'Run onebrain update to sync',
   };
 }

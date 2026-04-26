@@ -106,7 +106,7 @@ program
   .description('Run vault health checks and report issues')
   .action(async () => {
     const vaultRoot = findVaultRoot(process.cwd());
-    await doctorCommand({ vaultDir: vaultRoot, binaryVersion: VERSION });
+    await doctorCommand({ vaultDir: vaultRoot });
   });
 
 program

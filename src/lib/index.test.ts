@@ -472,17 +472,6 @@ describe('checkVersionDrift', () => {
     expect(result.hint).toContain('onebrain update');
   });
 
-  it('binaryVersion param: checkVersionDrift(dir, config, "2.0.0") with plugin at 1.9.0 → status: warn, message contains binary v2.0.0', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.9.0' }), 'utf8');
-
-    const result = await checkVersionDrift(dir, baseConfig, '2.0.0');
-
-    expect(result.status).toBe('warn');
-    expect(result.message).toContain('binary v2.0.0');
-  });
-
   it('plugin.json with no version field → status: ok, message contains skip', async () => {
     const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
     await mkdir(pluginDir, { recursive: true });

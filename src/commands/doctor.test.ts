@@ -140,36 +140,6 @@ describe('runDoctor', () => {
     });
   });
 
-  // ── binaryVersion forwarding ───────────────────────────────────────────────
-
-  describe('binaryVersion forwarding', () => {
-    it('forwards binaryVersion to checkVersionDriftFn when provided', async () => {
-      let capturedBinaryVersion: string | undefined = 'not-set';
-      const validators = makeAllOkValidators();
-      validators.checkVersionDriftFn = async (_vaultDir, _config, bv) => {
-        capturedBinaryVersion = bv;
-        return { check: 'version-drift', status: 'ok', message: 'ok' };
-      };
-
-      await runDoctor({ vaultDir: tempDir, isTTY: false, binaryVersion: 'v2.0.0', ...validators });
-
-      expect(capturedBinaryVersion).toBe('v2.0.0');
-    });
-
-    it('passes undefined binaryVersion to checkVersionDriftFn when omitted', async () => {
-      let capturedBinaryVersion: string | undefined = 'not-set';
-      const validators = makeAllOkValidators();
-      validators.checkVersionDriftFn = async (_vaultDir, _config, bv) => {
-        capturedBinaryVersion = bv;
-        return { check: 'version-drift', status: 'ok', message: 'ok' };
-      };
-
-      await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
-
-      expect(capturedBinaryVersion).toBeUndefined();
-    });
-  });
-
   // ── Summary line selection ─────────────────────────────────────────────────
 
   describe('summary line selection', () => {
