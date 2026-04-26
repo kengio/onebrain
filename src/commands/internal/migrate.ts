@@ -82,9 +82,10 @@ async function listMdFiles(dir: string): Promise<string[]> {
  * Scans session logs and adds `recapped: <today-date>` to frontmatter where missing.
  *
  * @param logsFolder - absolute path to logs folder
+ * @param cutoffDate - ISO date string (YYYY-MM-DD); skip logs with date > cutoffDate
  * @returns MigrateResult with backfilled and skipped counts
  */
-export async function runBackfillRecapped(logsFolder: string): Promise<MigrateResult> {
+export async function runBackfillRecapped(logsFolder: string, cutoffDate?: string): Promise<MigrateResult> {
   const today = new Date().toISOString().slice(0, 10);
   let backfilled = 0;
   let skipped = 0;
@@ -119,6 +120,14 @@ export async function runBackfillRecapped(logsFolder: string): Promise<MigrateRe
         // Skip checkpoint files
         if (fname.includes('-checkpoint-')) {
           continue;
+        }
+
+        // Skip logs newer than cutoff (YYYY-MM-DD prefix from filename)
+        if (cutoffDate) {
+          const dateMatch = fname.match(/^(\d{4}-\d{2}-\d{2})/);
+          if (dateMatch && dateMatch[1] > cutoffDate) {
+            continue;
+          }
         }
 
         try {
@@ -168,14 +177,14 @@ export async function runBackfillRecapped(logsFolder: string): Promise<MigrateRe
  * Currently supports 'backfill-recapped' migration.
  * Always exits 0 (internal pattern).
  */
-export async function migrateCommand(migrationName: string): Promise<void> {
+export async function migrateCommand(migrationName: string, cutoffDate?: string): Promise<void> {
   try {
     const vaultRoot = process.cwd();
     const config = await loadVaultConfig(vaultRoot);
     const logsFolder = join(vaultRoot, config.folders.logs);
 
     if (migrationName === 'backfill-recapped') {
-      const result = await runBackfillRecapped(logsFolder);
+      const result = await runBackfillRecapped(logsFolder, cutoffDate);
       process.stdout.write(`backfilled: ${result.backfilled} files, skipped: ${result.skipped}\n`);
     } else {
       process.stderr.write(`migrate: unknown migration '${migrationName}'\n`);
