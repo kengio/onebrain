@@ -1,15 +1,46 @@
 {
-  "name": "onebrain",
-  "version": "2.0.0",
-  "private": true,
-  "workspaces": ["packages/*"],
+  "name": "@onebrain-ai/cli",
+  "version": "2.0.8",
+  "description": "CLI for OneBrain — personal AI OS for Obsidian with persistent memory, 24+ skills, and Claude Code integration",
+  "keywords": [
+    "onebrain",
+    "obsidian",
+    "ai",
+    "cli",
+    "memory",
+    "knowledge-management",
+    "claude",
+    "agent",
+    "pkm",
+    "productivity",
+    "vault"
+  ],
+  "homepage": "https://github.com/kengio/onebrain",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kengio/onebrain.git"
+  },
+  "bugs": "https://github.com/kengio/onebrain/issues",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "onebrain": "dist/onebrain"
+  },
+  "files": ["dist/onebrain"],
   "scripts": {
-    "bump": "bun run --cwd packages/cli bump",
-    "test": "bun test --pass-with-no-tests packages/",
-    "build": "bun run --cwd packages/cli build"
+    "build": "bun build src/index.ts --outfile dist/onebrain --target node",
+    "test": "bun test --pass-with-no-tests src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9",
+    "commander": "^12",
+    "yaml": "^2"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9",
+    "@types/bun": "latest",
+    "@types/node": "^20",
     "typescript": "^5.7"
   }
 }

@@ -14,8 +14,8 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "rootDir": "."
+    "rootDir": "src"
   },
-  "references": [{ "path": "packages/core" }, { "path": "packages/cli" }],
-  "files": []
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

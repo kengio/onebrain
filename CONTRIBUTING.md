@@ -15,9 +15,6 @@ Good contributions include:
 ## Project Structure
 
 ```text
-.claude-plugin/                          Root marketplace config
-└── marketplace.json                     Registers plugins for Claude
-
 .claude/plugins/onebrain/                Main plugin directory
 ├── .claude-plugin/
 │   └── plugin.json                      Plugin manifest (name, version, description)
@@ -43,7 +40,7 @@ Good contributions include:
     └── task-extractor.md                Extract action items from braindumps (used by /braindump)
 ```
 
-Key files: [marketplace.json](.claude-plugin/marketplace.json) · [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
+Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
@@ -272,8 +269,8 @@ Two independent version tracks — bump only the track that changed:
 
 | Track | Files | Bump when |
 |---|---|---|
-| **Plugin** | `plugin.json` · `CHANGELOG.md` frontmatter | Skills, INSTRUCTIONS.md, hooks, vault structure |
-| **CLI** | `packages/cli/package.json` · `packages/core/package.json` | TypeScript source changes only |
+| **Plugin** | `plugin.json` · `PLUGIN-CHANGELOG.md` | Skills, INSTRUCTIONS.md, hooks, vault structure |
+| **CLI** | `package.json` · `CHANGELOG.md` | TypeScript source changes only |
 
 **Plugin bump:** patch for fixes/docs, minor for new skills/agents/hooks
 **CLI bump:** patch for bug fixes, minor for new commands, major for breaking changes

@@ -12,5 +12,3 @@ jobs:
       - run: bunx tsc --noEmit
       - run: bunx biome check .
       - run: bun test
-      - name: Version sync check
-        run: bun run scripts/check-version-sync.js

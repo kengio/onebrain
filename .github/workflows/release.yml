@@ -22,13 +22,13 @@ jobs:
         run: |
           # Strip leading 'v'
           TAG_VERSION="${TAG#v}"
-          PKG_VERSION=$(node -p "require('./packages/cli/package.json').version")
+          PKG_VERSION=$(node -p "require('./package.json').version")
 
           echo "Tag version:  $TAG_VERSION"
           echo "package.json: $PKG_VERSION"
 
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag $TAG does not match packages/cli/package.json version $PKG_VERSION"
+            echo "::error::Tag $TAG does not match package.json version $PKG_VERSION"
             exit 1
           fi
 
@@ -79,7 +79,7 @@ jobs:
             --target="$TARGET" \
             --define BUILD_VERSION="\"$VERSION\"" \
             --define BUILD_DATE="\"$RELEASE_DATE\"" \
-            packages/cli/src/index.ts \
+            src/index.ts \
             --outfile "$OUTFILE"
 
           echo "Built: $OUTFILE ($(du -sh "$OUTFILE" | cut -f1))"
@@ -151,7 +151,6 @@ jobs:
         env:
           VERSION: ${{ needs.verify-tag.outputs.version }}
           RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
-        working-directory: packages/cli
         run: |
           bun build src/index.ts --outfile dist/onebrain --target node \
             --define BUILD_VERSION="\"$VERSION\"" \
@@ -160,12 +159,11 @@ jobs:
       - name: Publish to npm
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        working-directory: packages/cli
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
           npm publish --access public
 
-  # ─── Step 5: generate marketplace.json + create GitHub release ────────────
+  # ─── Step 5: create GitHub release ───────────────────────────────────────
   create-release:
     needs: [verify-tag, build-binaries, package-plugin, npm-publish]
     runs-on: ubuntu-latest
@@ -183,20 +181,13 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Generate marketplace.json
-        env:
-          VERSION: ${{ needs.verify-tag.outputs.version }}
-          RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
-          REPO: ${{ github.repository }}
-        run: bun run scripts/generate-marketplace-json.js
-
       - name: Extract CHANGELOG entry
         id: changelog
         env:
           VERSION: ${{ needs.verify-tag.outputs.version }}
         run: |
-          # Extract section for this version: ## [2.0.0] or ## 2.0.0
-          NOTES=$(awk -v ver="$VERSION" 'BEGIN{pat="^## \\[?" ver "\\]?"} $0~pat{found=1;next} found && /^## /{exit} found{print}' CHANGELOG.md)
+          # Extract section for this version: ## v2.0.8 — title
+          NOTES=$(awk -v ver="$VERSION" 'BEGIN{pat="^## v?" ver} $0~pat{found=1;next} found && /^## /{exit} found{print}' CHANGELOG.md)
           if [ -z "$NOTES" ]; then
             NOTES="See [CHANGELOG.md](CHANGELOG.md) for details."
           fi
@@ -219,7 +210,6 @@ jobs:
           done
           ASSETS+=("onebrain-plugin-v${VERSION}.zip")
           ASSETS+=("onebrain-plugin-v${VERSION}.sha256")
-          ASSETS+=("marketplace.json")
 
           FILE_ARGS=()
           for asset in "${ASSETS[@]}"; do
