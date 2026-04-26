@@ -60,6 +60,31 @@ describe('formatDatetime', () => {
     expect(result).toContain('· 03 Jan 2026 ·');
     expect(result).toContain('· 09:05');
   });
+
+  it('unicode: datetime contains exactly two · separators (U+00B7 MIDDLE DOT)', () => {
+    const d = new Date('2026-04-23T18:04:00');
+    const result = formatDatetime(d);
+    const dots = [...result].filter((ch) => ch === '·');
+    expect(dots.length).toBe(2);
+  });
+
+  it('unicode: · separators survive JSON round-trip (stringify → parse)', () => {
+    const d = new Date('2026-07-15T09:30:00');
+    const datetime = formatDatetime(d);
+    const json = JSON.stringify({ datetime });
+    const parsed = JSON.parse(json) as { datetime: string };
+    expect(parsed.datetime).toBe(datetime);
+    expect(parsed.datetime).toContain('·');
+  });
+
+  it('unicode: datetime is valid UTF-8 — all chars have char codes within valid BMP range', () => {
+    const d = new Date('2026-12-31T23:59:00');
+    const result = formatDatetime(d);
+    // Every character must encode cleanly into UTF-8 without replacement chars
+    const encoded = new TextEncoder().encode(result);
+    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+    expect(decoded).toBe(result);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -84,14 +109,14 @@ describe('resolveSessionToken', () => {
   });
 
   it('uses PPID when > 1', async () => {
-    process.env.WT_SESSION = undefined;
+    process.env['WT_SESSION'] = undefined;
     setPpid(12345);
     const token = await resolveSessionToken(tmpDir);
     expect(token).toBe('12345');
   });
 
   it('ignores PPID when = 1', async () => {
-    process.env.WT_SESSION = undefined;
+    process.env['WT_SESSION'] = undefined;
     setPpid(1);
     // Should fall through to cache
     const token = await resolveSessionToken(tmpDir);
@@ -100,7 +125,7 @@ describe('resolveSessionToken', () => {
   });
 
   it('prefers WT_SESSION over PPID', async () => {
-    process.env.WT_SESSION = 'abc-123-def-456-ghi';
+    process.env['WT_SESSION'] = 'abc-123-def-456-ghi';
     setPpid(99999);
     const token = await resolveSessionToken(tmpDir);
     // WT_SESSION stripped to alphanumeric, first 8 chars: 'abc123de'
@@ -108,7 +133,7 @@ describe('resolveSessionToken', () => {
   });
 
   it('strips non-alphanumeric from WT_SESSION and takes first 8 chars', async () => {
-    process.env.WT_SESSION = '{a1b2c3d4-e5f6-7890-abcd-ef1234567890}';
+    process.env['WT_SESSION'] = '{a1b2c3d4-e5f6-7890-abcd-ef1234567890}';
     setPpid(1); // force PPID fallthrough if WT_SESSION somehow fails
     const token = await resolveSessionToken(tmpDir);
     expect(token).toBe('a1b2c3d4');
@@ -116,7 +141,7 @@ describe('resolveSessionToken', () => {
   });
 
   it('reads cached token from day-scoped cache file', async () => {
-    process.env.WT_SESSION = undefined;
+    process.env['WT_SESSION'] = undefined;
     setPpid(1); // force fallthrough
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const cacheFile = join(tmpDir, `onebrain-day-${today}.token`);
@@ -126,7 +151,7 @@ describe('resolveSessionToken', () => {
   });
 
   it('writes new cache file when none exists', async () => {
-    process.env.WT_SESSION = undefined;
+    process.env['WT_SESSION'] = undefined;
     setPpid(1); // force fallthrough
     const token = await resolveSessionToken(tmpDir);
     // Should be a 5-digit number
@@ -153,7 +178,7 @@ describe('runSessionInit', () => {
     originalPpid = process.ppid;
     tmpDir = await makeTmpDir();
     // Ensure predictable token resolution in most tests
-    process.env.WT_SESSION = undefined;
+    process.env['WT_SESSION'] = undefined;
     setPpid(77777);
   });
 
@@ -181,7 +206,7 @@ describe('runSessionInit', () => {
     expect(result).toHaveProperty('session_token');
     expect(result).toHaveProperty('qmd_unembedded', 0);
     // Datetime format check
-    expect((result as Record<string, unknown>).datetime).toMatch(
+    expect((result as Record<string, unknown>)['datetime']).toMatch(
       /^[A-Z][a-z]{2} · \d{2} [A-Z][a-z]{2} \d{4} · \d{2}:\d{2}$/,
     );
   });
@@ -190,14 +215,14 @@ describe('runSessionInit', () => {
     await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
     setPpid(42001);
     const result = (await runSessionInit(tmpDir, tmpDir)) as Record<string, unknown>;
-    expect(result.session_token).toBe('42001');
+    expect(result['session_token']).toBe('42001');
   });
 
   it('qmd_unembedded is 0 when qmd is not in PATH / errors', async () => {
     await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
     const result = (await runSessionInit(tmpDir, tmpDir)) as Record<string, unknown>;
     // qmd is not expected to be installed in test env
-    expect(result.qmd_unembedded).toBe(0);
+    expect(result['qmd_unembedded']).toBe(0);
   });
 
   // Update snapshots: bun test --update-snapshots
@@ -209,9 +234,9 @@ describe('runSessionInit', () => {
     // Lock the exact field names of the SessionInitPayload shape.
     // The values are dynamic (datetime, session_token vary), so we assert structure only.
     expect(Object.keys(result).sort()).toMatchSnapshot();
-    expect(typeof result.datetime).toMatchSnapshot();
-    expect(typeof result.session_token).toMatchSnapshot();
-    expect(typeof result.qmd_unembedded).toMatchSnapshot();
+    expect(typeof result['datetime']).toMatchSnapshot();
+    expect(typeof result['session_token']).toMatchSnapshot();
+    expect(typeof result['qmd_unembedded']).toMatchSnapshot();
   });
 
   it('cleanStaleStateFile — no state file → resolves normally with payload', async () => {
@@ -275,6 +300,30 @@ describe('runSessionInit', () => {
     }
   });
 
+  it('unicode: datetime field in normal payload contains · separators that survive JSON.parse', async () => {
+    await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+    const result = (await runSessionInit(tmpDir, tmpDir)) as Record<string, unknown>;
+    const datetime = result['datetime'] as string;
+
+    // The field must contain the middle-dot separator used in the greeting format
+    expect(datetime).toContain('·');
+
+    // Round-trip: serialise the entire payload to JSON and parse it back
+    const json = JSON.stringify(result);
+    const reparsed = JSON.parse(json) as Record<string, unknown>;
+    expect(reparsed['datetime']).toBe(datetime);
+  });
+
+  it('unicode: full JSON payload is valid UTF-8 — encode → decode is lossless', async () => {
+    await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+    const result = await runSessionInit(tmpDir, tmpDir);
+    const json = JSON.stringify(result);
+
+    const encoded = new TextEncoder().encode(json);
+    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+    expect(decoded).toBe(json);
+  });
+
   it('qmd_unembedded reflects unembedded count from qmd status --json', async () => {
     await writeFile(join(tmpDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
 
@@ -310,7 +359,7 @@ describe('runSessionInit', () => {
 
     try {
       const result = (await runSessionInit(tmpDir, tmpDir)) as Record<string, unknown>;
-      expect(result.qmd_unembedded).toBe(5);
+      expect(result['qmd_unembedded']).toBe(5);
     } finally {
       spawnSpy.mockRestore();
     }

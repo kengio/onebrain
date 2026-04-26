@@ -374,6 +374,99 @@ describe('runDoctor', () => {
     });
   });
 
+  // ── Unicode symbol preservation ───────────────────────────────────────────
+
+  describe('unicode symbol preservation', () => {
+    it('ok status icon [✓] is present in output and survives UTF-8 encode → decode', async () => {
+      const logLines: string[] = [];
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
+      try {
+        await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
+      } finally {
+        spy.mockRestore();
+      }
+
+      const output = logLines.join('\n');
+      expect(output).toContain('[✓]');
+
+      // Round-trip: the output must survive UTF-8 encode → decode without data loss
+      const encoded = new TextEncoder().encode(output);
+      const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+      expect(decoded).toBe(output);
+    });
+
+    it('error status icon [✗] and warn icon [!] are present in output', async () => {
+      const logLines: string[] = [];
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
+      try {
+        const validators = makeAllOkValidators();
+        validators.checkVaultYmlFn = async () => ({
+          check: 'vault.yml',
+          status: 'error',
+          message: 'not found',
+        });
+        validators.checkFoldersFn = async () => ({
+          check: 'folders',
+          status: 'warn',
+          message: '7/8 present',
+        });
+        await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
+      } finally {
+        spy.mockRestore();
+      }
+
+      const output = logLines.join('\n');
+      expect(output).toContain('[✗]');
+      expect(output).toContain('[!]');
+    });
+
+    it('hint arrow → is preserved in output UTF-8 round-trip', async () => {
+      const logLines: string[] = [];
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
+      try {
+        const validators = makeAllOkValidators();
+        validators.checkVaultYmlFn = async () => ({
+          check: 'vault.yml',
+          status: 'error',
+          message: 'vault.yml not found',
+          hint: 'Run onebrain init to create vault.yml',
+        });
+        await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
+      } finally {
+        spy.mockRestore();
+      }
+
+      const output = logLines.join('\n');
+      expect(output).toContain('→');
+
+      // The → arrow must survive a UTF-8 encode → decode round-trip
+      const encoded = new TextEncoder().encode(output);
+      const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+      expect(decoded).toBe(output);
+    });
+
+    it('doctor title emoji 🔍 is preserved in output', async () => {
+      const logLines: string[] = [];
+      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
+        logLines.push(msg);
+      });
+      try {
+        await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
+      } finally {
+        spy.mockRestore();
+      }
+
+      const output = logLines.join('\n');
+      expect(output).toContain('🔍');
+    });
+  });
+
   // ── errorCount / warningCount accuracy ────────────────────────────────────
 
   describe('result counts', () => {

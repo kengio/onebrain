@@ -629,6 +629,74 @@ describe('postcompactFallback', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Unicode round-trip in checkpoint files
+// ---------------------------------------------------------------------------
+
+describe('unicode in checkpoint files', () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await makeTmpDir();
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('checkpoint file with unicode body (✅ ❌ →) is written and read back losslessly', async () => {
+    const now = 1700001000;
+    const d = new Date(now * 1000);
+    const yyyy = d.getFullYear().toString();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const date = `${yyyy}-${mm}-${dd}`;
+    const dir = join(tmpDir, '07-logs', yyyy, mm);
+    await mkdir(dir, { recursive: true });
+
+    const unicodeBody = [
+      '---',
+      'tags: [checkpoint, session-log]',
+      `date: ${date}`,
+      'checkpoint: 01',
+      'merged: false',
+      '---',
+      '',
+      '## What We Worked On',
+      'Refactored the session init flow → improved startup speed.',
+      '',
+      '## What Worked / Didn\'t Work',
+      '- ✅ Session token resolves correctly',
+      '- ❌ Stale state file cleanup had edge case',
+      '',
+      '## Action Items',
+      `- [ ] Fix stale state cleanup 📅 ${date}`,
+    ].join('\n');
+
+    const filePath = join(dir, `${date}-${TOKEN}-checkpoint-01.md`);
+    await writeFile(filePath, unicodeBody, 'utf8');
+
+    // Read back via Bun.file (same API used internally by checkpoint code)
+    const readBack = await Bun.file(filePath).text();
+    expect(readBack).toBe(unicodeBody);
+
+    // Verify specific unicode characters survived
+    expect(readBack).toContain('→');
+    expect(readBack).toContain('✅');
+    expect(readBack).toContain('❌');
+  });
+
+  it('state file with token containing only ASCII — content is valid UTF-8', async () => {
+    const now = 1700001000;
+    writeState(TOKEN, { count: 3, last_ts: now, last_stop_nn: '02' }, tmpDir);
+
+    const stateContent = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+    // State file is ASCII, so it's trivially valid UTF-8
+    const encoded = new TextEncoder().encode(stateContent);
+    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+    expect(decoded).toBe(stateContent);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // maxCheckpointNnSync
 // ---------------------------------------------------------------------------
 
