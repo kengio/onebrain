@@ -140,36 +140,6 @@ describe('runDoctor', () => {
     });
   });
 
-  // ── binaryVersion forwarding ───────────────────────────────────────────────
-
-  describe('binaryVersion forwarding', () => {
-    it('forwards binaryVersion to checkVersionDriftFn when provided', async () => {
-      let capturedBinaryVersion: string | undefined = 'not-set';
-      const validators = makeAllOkValidators();
-      validators.checkVersionDriftFn = async (_vaultDir, _config, bv) => {
-        capturedBinaryVersion = bv;
-        return { check: 'version-drift', status: 'ok', message: 'ok' };
-      };
-
-      await runDoctor({ vaultDir: tempDir, isTTY: false, binaryVersion: 'v2.0.0', ...validators });
-
-      expect(capturedBinaryVersion).toBe('v2.0.0');
-    });
-
-    it('passes undefined binaryVersion to checkVersionDriftFn when omitted', async () => {
-      let capturedBinaryVersion: string | undefined = 'not-set';
-      const validators = makeAllOkValidators();
-      validators.checkVersionDriftFn = async (_vaultDir, _config, bv) => {
-        capturedBinaryVersion = bv;
-        return { check: 'version-drift', status: 'ok', message: 'ok' };
-      };
-
-      await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
-
-      expect(capturedBinaryVersion).toBeUndefined();
-    });
-  });
-
   // ── Summary line selection ─────────────────────────────────────────────────
 
   describe('summary line selection', () => {
@@ -504,6 +474,25 @@ describe('runDoctor', () => {
       const result = await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
       expect(result.errorCount).toBe(0);
       expect(result.warningCount).toBe(0);
+    });
+  });
+
+  // ── checkVersionDriftFn call signature ────────────────────────────────────
+
+  describe('checkVersionDriftFn call signature', () => {
+    it('calls checkVersionDriftFn with (vaultDir, config) — no binaryVersion arg', async () => {
+      let capturedArgs: unknown[] = [];
+      const validators = makeAllOkValidators();
+      validators.checkVersionDriftFn = async (...args: unknown[]) => {
+        capturedArgs = args;
+        return { check: 'version-drift' as const, status: 'ok' as const, message: 'v1.0.0' };
+      };
+
+      await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
+
+      expect(capturedArgs).toHaveLength(2);
+      expect(capturedArgs[0]).toBe(tempDir);
+      expect(typeof capturedArgs[1]).toBe('object');
     });
   });
 });

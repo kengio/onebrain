@@ -21,19 +21,13 @@ export interface DoctorOptions {
   vaultDir?: string;
   /** Whether stdout is a TTY (default: process.stdout.isTTY). */
   isTTY?: boolean;
-  /** Compiled binary version (BUILD_VERSION). When provided, compared against plugin.json instead of vault.yml onebrain_version. */
-  binaryVersion?: string;
   /** Injectable validators — real implementations are used when absent. */
   checkVaultYmlFn?: (vaultDir: string) => Promise<DoctorResult>;
   loadVaultConfigFn?: (vaultDir: string) => Promise<VaultConfig>;
   checkFoldersFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
   checkHarnessBinaryFn?: (config: VaultConfig) => Promise<DoctorResult>;
   checkQmdEmbeddingsFn?: (config: VaultConfig) => Promise<DoctorResult>;
-  checkVersionDriftFn?: (
-    vaultDir: string,
-    config: VaultConfig,
-    binaryVersion?: string,
-  ) => Promise<DoctorResult>;
+  checkVersionDriftFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
   checkOrphanCheckpointsFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
   checkSandboxFn?: (config: VaultConfig) => DoctorResult | Promise<DoctorResult>;
 }
@@ -52,7 +46,6 @@ export interface DoctorCommandResult {
 export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommandResult> {
   const vaultDir = opts.vaultDir ?? process.cwd();
   const isTTY = opts.isTTY ?? process.stdout.isTTY ?? false;
-  const binaryVersion = opts.binaryVersion;
 
   const checkVaultYmlFn = opts.checkVaultYmlFn ?? checkVaultYml;
   const loadVaultConfigFn = opts.loadVaultConfigFn ?? loadVaultConfig;
@@ -107,7 +100,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       checkFoldersFn(vaultDir, config),
       checkHarnessBinaryFn(config),
       checkQmdEmbeddingsFn(config),
-      checkVersionDriftFn(vaultDir, config, binaryVersion),
+      checkVersionDriftFn(vaultDir, config),
       checkOrphanCheckpointsFn(vaultDir, config),
       checkSandboxFn(config),
     ]);
