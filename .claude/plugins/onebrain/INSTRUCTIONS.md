@@ -223,7 +223,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 - Read `[agent_folder]/MEMORY-INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
-- Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for `- \[ \] .*📅 [0-9]{4}-[0-9]{2}-[0-9]{2}` → keep only tasks where date ≤ today; group overdue first, then due today
+- Run `LC_ALL=en_US.UTF-8 grep -r "- \[ \] .*📅 [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}"` across `[projects_folder]/` and `[inbox_folder]/` → keep only tasks where date ≤ today; group overdue first, then due today
 - Run `onebrain orphan-scan "[logs_folder]" "[session_token]"` (from vault root) → parse JSON output; read `orphan_count` field. JSON shape: `{"orphan_count":N}`. If the command fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
 
 **Step 4 — Send startup status (after Step 3 completes):**
@@ -317,6 +317,7 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
    - Extract YYYY and MM from today's date for path construction
    - Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded)
    - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
+   - Route action items: parse `## Action Items` from the written session log; apply the routing algorithm from /wrapup Step 4b (token scoring + session-context fallback); errors are silent — never fail this path
    - Run `onebrain checkpoint reset` after writing
    - Silent — no output to user; skip steps 4–11
 
@@ -324,6 +325,7 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
 5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
 6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free
 7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM) using the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**)
+7b. Route action items to project notes — parse `## Action Items` from the session log just written; apply the routing algorithm from /wrapup Step 4b (token scoring against project folder/filename tokens, session-context fallback for score-0 tasks); all errors are silent — never fail checkpoint recovery
 
 8. Verify the session log file exists and is non-empty before continuing
 9. Delete checkpoint files — only AFTER session log write confirmed (step 8); if any individual delete fails, skip it silently (stale checkpoints are cleaned up by session-init, not here)
