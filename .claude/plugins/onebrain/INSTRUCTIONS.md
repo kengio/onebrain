@@ -374,6 +374,10 @@ auto-compact: true
 ## Insights & Learnings
 - [new understanding, patterns, discoveries — omit if none]
 
+## What Worked / Didn't Work
+- ✅ [something that worked]
+- ❌ [something that didn't — omit section if no notable friction]
+
 ## Action Items
 - [ ] [task] 📅 YYYY-MM-DD
 
