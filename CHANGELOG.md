@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.13
+latest_version: 2.0.14
 released: 2026-04-27
 ---
 
@@ -12,6 +12,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.14 — fix: remove session token from hook emit format; deterministic resolveSessionToken
+
+- fix(checkpoint): stop hook now emits `NN since <context>` instead of full filename — removes token from hook output, eliminates session token mismatch
+- fix(session-init): day-scoped cache checked before process.ppid in resolveSessionToken — guarantees same token on re-run within the same day
 
 ## v2.0.13 — fix: remove backfill-recapped done flag
 

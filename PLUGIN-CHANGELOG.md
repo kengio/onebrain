@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.9
+latest_version: 2.0.10
 released: 2026-04-27
 ---
 
@@ -12,6 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.10 — fix: background agent checkpoint writes; updated hook reason format in INSTRUCTIONS
+
+- fix(instructions): Auto Checkpoint routing now parses NN from hook reason; filename built from context session_token
+- fix(instructions): stop hook and postcompact writes dispatched to background agent (mode: bypassPermissions) — main session no longer blocks on file writes
+- fix(instructions): postcompact uses bare `auto-wrapup` reason; session_token sourced from context with session-init fallback
 
 ## v2.0.9 — fix: startup grep locale, postcompact routing, wrapup score-0 fallback
 
