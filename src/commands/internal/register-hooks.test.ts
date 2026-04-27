@@ -67,6 +67,34 @@ describe('runRegisterHooks', () => {
     expect(perms).toHaveLength(3);
   });
 
+  test('stale PreCompact hook is removed when present in existing settings.json', async () => {
+    const settingsPath = join(tempDir, '.claude', 'settings.json');
+    await mkdir(join(tempDir, '.claude'), { recursive: true });
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          PreCompact: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint precompact' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir: tempDir });
+
+    const settings = await readSettingsFile(tempDir);
+    const hooks = settings['hooks'] as Record<string, unknown>;
+    expect(hooks['PreCompact']).toBeUndefined();
+    // Stop and PostCompact should be present
+    expect(hooks['Stop']).toBeDefined();
+    expect(hooks['PostCompact']).toBeDefined();
+  });
+
   test('hook entries include type:command and matcher fields', async () => {
     await runRegisterHooks({ vaultDir: tempDir });
 
