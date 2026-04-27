@@ -8,7 +8,7 @@
  * Exit code: always 0 (internal pattern)
  */
 
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse, stringify } from 'yaml';
 import { loadVaultConfig } from '../../lib/index.js';
@@ -176,19 +176,46 @@ export async function runBackfillRecapped(
 // ---------------------------------------------------------------------------
 
 /**
+ * Write stats.backfill_recapped_done: true to vault.yml after migration completes.
+ * Prevents the backfill from re-running on subsequent /update calls.
+ */
+export async function writeBackfillDoneFlag(vaultRoot: string): Promise<void> {
+  const vaultYmlPath = join(vaultRoot, 'vault.yml');
+  try {
+    const text = await readFile(vaultYmlPath, 'utf8');
+    const raw = (parse(text) ?? {}) as Record<string, unknown>;
+    const stats = (raw['stats'] ?? {}) as Record<string, unknown>;
+    stats['backfill_recapped_done'] = true;
+    raw['stats'] = stats;
+    const tmpPath = `${vaultYmlPath}.tmp`;
+    await writeFile(tmpPath, stringify(raw), 'utf8');
+    await rename(tmpPath, vaultYmlPath);
+  } catch (error) {
+    process.stderr.write(
+      `migrate: warning — could not write backfill_recapped_done flag: ${error}\n`,
+    );
+  }
+}
+
+/**
  * Run migrate as a CLI command.
  * Currently supports 'backfill-recapped' migration.
  * Always exits 0 (internal pattern).
  */
-export async function migrateCommand(migrationName: string, cutoffDate?: string): Promise<void> {
+export async function migrateCommand(
+  migrationName: string,
+  cutoffDate?: string,
+  vaultDir?: string,
+): Promise<void> {
   try {
-    const vaultRoot = process.cwd();
+    const vaultRoot = vaultDir ?? process.cwd();
     const config = await loadVaultConfig(vaultRoot);
     const logsFolder = join(vaultRoot, config.folders.logs);
 
     if (migrationName === 'backfill-recapped') {
       const result = await runBackfillRecapped(logsFolder, cutoffDate);
       process.stdout.write(`backfilled: ${result.backfilled} files, skipped: ${result.skipped}\n`);
+      await writeBackfillDoneFlag(vaultRoot);
     } else {
       process.stderr.write(`migrate: unknown migration '${migrationName}'\n`);
     }

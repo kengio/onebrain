@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { runBackfillRecapped } from './migrate.js';
+import { runBackfillRecapped, writeBackfillDoneFlag } from './migrate.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -305,6 +305,18 @@ describe('runBackfillRecapped', () => {
     expect(newer).not.toContain('recapped:');
   });
 
+  it('cutoffDate: equal to log date → log is backfilled (boundary inclusive)', async () => {
+    const monthDir = await makeMonthDir(logsDir, '2026', '04');
+    await writeSessionLog(monthDir, '2026-04-22-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-22',
+    });
+
+    // cutoff = 2026-04-22 → date equal to cutoff → should be backfilled
+    const result = await runBackfillRecapped(logsDir, '2026-04-22');
+    expect(result.backfilled).toBe(1);
+  });
+
   it('handles idempotent re-runs: only first run backfills', async () => {
     const monthDir = await makeMonthDir(logsDir, '2026', '04');
     await writeSessionLog(monthDir, '2026-04-20-session-01.md', {
@@ -319,5 +331,58 @@ describe('runBackfillRecapped', () => {
     // Second run — should skip since recapped now exists
     const result2 = await runBackfillRecapped(logsDir);
     expect(result2).toEqual({ backfilled: 0, skipped: 0 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// writeBackfillDoneFlag
+// ---------------------------------------------------------------------------
+
+describe('writeBackfillDoneFlag', () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'onebrain-test-flag-'));
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it('writes stats.backfill_recapped_done: true to existing vault.yml', async () => {
+    const vaultYml = join(tmpDir, 'vault.yml');
+    await writeFile(vaultYml, 'method: onebrain\nstats:\n  last_recap: 2026-04-20\n', 'utf8');
+
+    await writeBackfillDoneFlag(tmpDir);
+
+    const text = await readFile(vaultYml, 'utf8');
+    expect(text).toContain('backfill_recapped_done: true');
+    expect(text).toContain('last_recap'); // existing fields preserved
+  });
+
+  it('creates stats block when vault.yml has none', async () => {
+    const vaultYml = join(tmpDir, 'vault.yml');
+    await writeFile(vaultYml, 'method: onebrain\nonebrain_version: 2.0.9\n', 'utf8');
+
+    await writeBackfillDoneFlag(tmpDir);
+
+    const text = await readFile(vaultYml, 'utf8');
+    expect(text).toContain('backfill_recapped_done: true');
+  });
+
+  it('is idempotent — second call leaves flag set', async () => {
+    const vaultYml = join(tmpDir, 'vault.yml');
+    await writeFile(vaultYml, 'method: onebrain\n', 'utf8');
+
+    await writeBackfillDoneFlag(tmpDir);
+    await writeBackfillDoneFlag(tmpDir);
+
+    const text = await readFile(vaultYml, 'utf8');
+    expect(text).toContain('backfill_recapped_done: true');
+    // Should appear exactly once
+    expect(text.split('backfill_recapped_done').length).toBe(2);
+  });
+
+  it('does not throw when vault.yml is missing (warning only)', async () => {
+    await expect(writeBackfillDoneFlag(join(tmpDir, 'nonexistent'))).resolves.toBeUndefined();
   });
 });

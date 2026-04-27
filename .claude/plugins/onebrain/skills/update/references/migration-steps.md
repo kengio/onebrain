@@ -92,9 +92,9 @@ Always: update `updated:` frontmatter to today.
 - If MEMORY-INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format; preserve existing Description values from old rows (map by filename) rather than regenerating from scratch
 
 **Step 6: Backfill recapped: on existing session logs**
-- **Skip if:** `[logs_folder]/` does not exist
+- **Skip if:** `[logs_folder]/` does not exist OR `stats.backfill_recapped_done: true` is set in vault.yml
 - Read `stats.last_recap` from vault.yml (may be absent — treat as empty string if missing). To extract: read vault.yml, navigate to `stats.last_recap`; if the `stats:` block or `last_recap:` key is absent, use `""`.
-- Run `onebrain migrate backfill-recapped "[last_recap]"` — adds `recapped: YYYY-MM-DD` to session logs that don't have it; skips logs newer than `[last_recap]` if provided; idempotent (logs folder is auto-resolved from vault.yml)
+- Run `onebrain migrate backfill-recapped "[last_recap]"` — adds `recapped: YYYY-MM-DD` to session logs that don't have it; skips logs newer than `[last_recap]` if provided; idempotent (logs folder is auto-resolved from vault.yml). Automatically writes `stats.backfill_recapped_done: true` to vault.yml on completion so this step is skipped on future /update runs.
 - **Note:** The cutoff prevents /update from incorrectly marking recent sessions as recapped. Only logs on or before the last recap date are marked — newer sessions remain available for /recap to process.
 
 **Step 7: Register OneBrain hooks in `[vault]/.claude/settings.json`**

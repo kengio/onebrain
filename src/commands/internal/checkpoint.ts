@@ -296,27 +296,32 @@ export function handleStop(
 // ---------------------------------------------------------------------------
 
 /**
- * Precompact hook: reset message count if no recent checkpoint.
- * If a checkpoint was written within the last 5 minutes, let compact proceed (no-op).
- * Otherwise reset count so the stop hook doesn't re-trigger immediately post-compact.
+ * Precompact hook: emit checkpoint block if no recent checkpoint; no-op if recent.
+ * Mirrors original bash precompact behavior: block compact → Claude writes checkpoint
+ * → compact retries and passes (recency guard fires, no block emitted on second call).
  */
 export function handlePrecompact(
   token: string,
-  _vaultRoot: string,
+  vaultRoot: string,
   now: number = Math.floor(Date.now() / 1000),
   tmpDir: string = osTmpdir(),
 ): void {
   const state = readState(token, tmpDir);
 
-  // Recency check: if last checkpoint < 5 minutes ago, let compact proceed.
-  // Invariant: handleStop resets count=0 when it writes last_ts, so count is
-  // already 0 when we reach this path — no write needed.
+  // Recency check: checkpoint written within 5 min → let compact proceed (no-op).
   if (state.last_ts > 0 && now - state.last_ts < PRECOMPACT_RECENCY) {
-    return; // no-op
+    return;
   }
 
-  // Reset count (last_ts unchanged — postcompact uses it for recency guard)
-  writeState(token, { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn }, tmpDir);
+  // No recent checkpoint — emit one before allowing compact.
+  const { logsFolder } = loadVaultSettings(vaultRoot);
+  const date = formatDate(now);
+  const maxNn = maxCheckpointNnSync(vaultRoot, date, token, logsFolder);
+  const nextNn = String(maxNn + 1).padStart(2, '0');
+  emitBlock(`${date}-${token}-checkpoint-${nextNn}.md`);
+
+  // Reset state so Stop hook's SKIP_WINDOW activates — avoids double-checkpoint.
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn }, tmpDir);
 }
 
 // ---------------------------------------------------------------------------
