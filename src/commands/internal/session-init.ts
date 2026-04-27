@@ -72,13 +72,16 @@ export function formatDatetime(date: Date): string {
  * 1. WT_SESSION env var (Windows Terminal — strip non-alphanumeric, first 8 chars)
  * 2. TMUX_PANE env var (tmux — stable per-pane, e.g. "%3" → "3")
  * 3. TERM_SESSION_ID env var (macOS Terminal.app — stable per-tab UUID)
- * 4. process.ppid if > 1
- * 5. PowerShell parent PID (Windows fallback)
- * 6. Day-scoped cache file: $tmpDir/onebrain-day-YYYYMMDD.token
+ * 4. Day-scoped cache file: $tmpDir/onebrain-day-YYYYMMDD.token (if valid cached token exists)
+ * 5. process.ppid if > 1 — resolve, write to cache, return
+ * 6. PowerShell parent PID (Windows fallback) — resolve, write to cache, return
+ * 7. Random fallback — generate, write to cache, return
  *
  * Env-var sources (1–3) are preferred over ppid because both session-init and
  * the stop hook run as children of separate bash processes (different ppid values),
  * while env vars are inherited from the shared terminal session ancestor.
+ * Cache (step 4) is checked before ppid so that re-runs within the same day always
+ * return the same token even if ppid varies between invocations.
  */
 export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<string> {
   // 1. WT_SESSION (Windows Terminal)
@@ -102,11 +105,31 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     if (stripped.length > 0) return stripped;
   }
 
-  // 4. PPID
-  const ppid = process.ppid;
-  if (ppid !== undefined && ppid > 1) return String(ppid);
+  // 4. Day-scoped cache — check before ppid so re-runs return the same token
+  const today = new Date();
+  const yyyymmdd = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('');
+  const cacheFile = join(tmpDir, `onebrain-day-${yyyymmdd}.token`);
 
-  // 5. PowerShell fallback (Windows only)
+  const cacheExists = await Bun.file(cacheFile).exists();
+  if (cacheExists) {
+    const cached = (await Bun.file(cacheFile).text()).trim();
+    const n = Number(cached);
+    if (!Number.isNaN(n) && n > 1) return cached;
+  }
+
+  // 5. PPID — resolve, write to cache, return
+  const ppid = process.ppid;
+  if (ppid !== undefined && ppid > 1) {
+    const token = String(ppid);
+    await Bun.write(cacheFile, token);
+    return token;
+  }
+
+  // 6. PowerShell fallback (Windows only) — resolve, write to cache, return
   try {
     const ps = Bun.spawn(
       [
@@ -132,7 +155,10 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     if (timerId !== undefined) clearTimeout(timerId);
     if (race !== 'timeout') {
       const out = (await new Response(ps.stdout).text()).replace(/\D/g, '').trim();
-      if (out && Number(out) > 1) return out;
+      if (out && Number(out) > 1) {
+        await Bun.write(cacheFile, out);
+        return out;
+      }
     } else {
       ps.kill();
     }
@@ -140,24 +166,7 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     // Not on Windows or powershell.exe not available — fall through
   }
 
-  // 6. Day-scoped cache
-  const today = new Date();
-  const yyyymmdd = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('');
-  const cacheFile = join(tmpDir, `onebrain-day-${yyyymmdd}.token`);
-
-  const f = Bun.file(cacheFile);
-  const exists = await f.exists();
-  if (exists) {
-    const cached = (await f.text()).trim();
-    const n = Number(cached);
-    if (!Number.isNaN(n) && n > 1) return cached;
-  }
-
-  // Generate and cache a random 5-digit token (10000–99999)
+  // 7. Generate and cache a random 5-digit token (10000–99999)
   const token = String(Math.floor(Math.random() * 90000) + 10000);
   await Bun.write(cacheFile, token);
   return token;

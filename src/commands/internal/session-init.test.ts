@@ -191,6 +191,27 @@ describe('resolveSessionToken', () => {
     expect(token).toBe('54321');
   });
 
+  it('day-scoped cache takes priority over PPID', async () => {
+    clearTokenEnvVars();
+    setPpid(12345);
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const cacheFile = join(tmpDir, `onebrain-day-${today}.token`);
+    await writeFile(cacheFile, '54321', 'utf8');
+    const token = await resolveSessionToken(tmpDir);
+    expect(token).toBe('54321'); // cache wins over ppid
+  });
+
+  it('ppid result is written to day-scoped cache for deterministic re-runs', async () => {
+    clearTokenEnvVars();
+    setPpid(99888);
+    const token = await resolveSessionToken(tmpDir);
+    expect(token).toBe('99888');
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const cacheFile = join(tmpDir, `onebrain-day-${today}.token`);
+    const cached = (await Bun.file(cacheFile).text()).trim();
+    expect(cached).toBe('99888');
+  });
+
   it('writes new cache file when none exists', async () => {
     clearTokenEnvVars();
     setPpid(1); // force fallthrough
