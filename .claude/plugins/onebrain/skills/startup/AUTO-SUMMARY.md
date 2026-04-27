@@ -11,8 +11,8 @@ If conditions are met:
 - Use `session_token` from context if already loaded (set by `onebrain session-init` at startup); if absent, run `onebrain session-init` and use the `SESSION_TOKEN` value. Glob checkpoint files: `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`. Also check yesterday's folder (compute yesterday's date, accounting for month/year rollover): `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`. Keep files where `merged` is absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
 - Determine NN: count existing `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …). **Verify** `YYYY-MM-DD-session-NN.md` does not already exist before writing; if it does, increment NN until a free slot is found.
 - Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `references/session-formats.md`:
-  - Checkpoints found and incorporated → case: **Auto-saved — checkpoints incorporated**
-  - No checkpoints → case: **Auto-saved — no checkpoints**
+  - Checkpoints found and incorporated → case: **Auto-saved (auto-summary) — checkpoints incorporated**
+  - No checkpoints → case: **Auto-saved (auto-summary) — no checkpoints**
   
   **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** — every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
 - **Route action items to project notes** — after the session log is written, automatically move action items so the startup task scan picks them up. This step must never fail the auto-summary; all errors are silently skipped.
