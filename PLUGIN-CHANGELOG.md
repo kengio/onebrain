@@ -1,6 +1,6 @@
 ---
-latest_version: 2.0.6
-released: 2026-04-26
+latest_version: 2.0.7
+released: 2026-04-27
 ---
 
 # Plugin Changelog
@@ -12,6 +12,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.7 — fix: postcompact Path B, backfill-recapped skip condition, session token tooltip
+
+- fix(INSTRUCTIONS): postcompact auto-wrapup adds Path B — when no checkpoint files exist, synthesize session log from current context (was a no-op, causing auto-compact to write nothing)
+- fix(INSTRUCTIONS): remove merged:true write step from postcompact; simplify delete step
+- fix(INSTRUCTIONS): update session_token tooltip to include $TMUX_PANE and $TERM_SESSION_ID priority
+- fix(update): migration-steps.md Step 6 skips backfill-recapped when stats.backfill_recapped_done: true is set in vault.yml
+- fix(wrapup): update session token mismatch gotcha note to reflect CLI v2.0.12 fix
 
 ## v2.0.6 — fix: replace bash scripts with CLI; fix SessionStart hook breaking vault after /update
 

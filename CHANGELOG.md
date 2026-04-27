@@ -1,6 +1,6 @@
 ---
-latest_version: 2.0.11
-released: 2026-04-26
+latest_version: 2.0.12
+released: 2026-04-27
 ---
 
 # CLI Changelog
@@ -12,6 +12,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.12 — fix: auto-compact session log, backfill-recapped idempotency, session token mismatch
+
+- fix(checkpoint): precompact resets counter only — was incorrectly emitting a block and writing state with current timestamp, causing postcompact to skip auto-wrapup via recency guard
+- fix(checkpoint): postcompact emits auto-wrapup block so Claude synthesizes session log from current context when no checkpoint files exist (Path B)
+- fix(migrate): writeBackfillDoneFlag writes stats.backfill_recapped_done: true after backfill-recapped completes — prevents re-run on every /update
+- fix(session-init): resolveSessionToken now checks $TMUX_PANE and $TERM_SESSION_ID before process.ppid — fixes token mismatch (#113) where session-init and stop hook spawn from different bash processes with different ppid values
 
 ## v2.0.11 — fix: remove unimplemented sandbox doctor check
 
