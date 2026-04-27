@@ -74,7 +74,7 @@ For each orphan group (process in chronological order by date in filename):
    - Next session number = count of matches + 1 (zero-padded to 2 digits)
    - Verify the slot is free; increment NN until free
 
-**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (variant: Orphan recovery — frontmatter adds `synthesized_from_checkpoints: true` + `auto-recovered: true`). All key decisions, action items, and open questions from checkpoints must appear explicitly — do not collapse into one line.
+**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). All key decisions, action items, and open questions from checkpoints must appear explicitly — do not collapse into one line.
 
 **e. Write the session log** (per the template above). Verify the file exists and is non-empty before continuing.
 
@@ -113,7 +113,9 @@ Reflect on the conversation that just occurred. Identify:
 
 > **If checkpoints were found in Step 1:** do not write the session log until the content of every checkpoint file read in Step 1 is reflected in the sections below. All Key Decisions, Action Items, and Open Questions from checkpoints must appear explicitly : not summarized into a single line.
 
-Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (variant: Standard /wrapup — no extra frontmatter fields).
+Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md`:
+- If checkpoints were incorporated in Step 1 → use **Standard /wrapup — checkpoints incorporated**
+- Otherwise → use **Standard /wrapup — no checkpoints incorporated**
 
 After writing the session log, reset the checkpoint hook counter to prevent spurious post-wrapup checkpoints:
 

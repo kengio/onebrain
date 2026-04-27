@@ -18,7 +18,7 @@ Shared canonical templates. Referenced by:
 
 Written by the Stop hook. Keep under 250 words.
 
-```yaml
+```markdown
 ---
 tags: [checkpoint, session-log]
 date: YYYY-MM-DD
@@ -26,9 +26,7 @@ checkpoint: NN
 trigger: stop
 merged: false
 ---
-```
 
-```markdown
 ## What We Worked On
 
 [2-3 sentences describing the session focus]
@@ -59,9 +57,7 @@ merged: false
 
 ## Session Log Format
 
-### Body Sections
-
-All session log variants share the same body structure:
+### Body (all variants)
 
 ```markdown
 # Session Summary : [Month DD, YYYY] (Session N)
@@ -94,24 +90,67 @@ _Omit this section if no notable friction or technique worth logging._
 - [Question or uncertainty to revisit]
 ```
 
-### Frontmatter Variants
+### Frontmatter by Case
 
-All session logs start with these base fields:
+Use the complete block for the matching case. Do not mix fields from different cases.
 
+**Standard /wrapup — no checkpoints incorporated:**
 ```yaml
 ---
 tags: [session-log]
 date: YYYY-MM-DD
 session: NN
+---
 ```
 
-Add variant-specific fields before closing `---`:
+**Standard /wrapup — checkpoints incorporated:**
+```yaml
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+synthesized_from_checkpoints: true
+---
+```
 
-| Variant | Additional fields |
-|---------|------------------|
-| Standard `/wrapup` | _(none)_ |
-| Auto-saved (auto-summary, no checkpoints) | `auto-saved: true` |
-| Auto-saved with checkpoints incorporated | `auto-saved: true` + `synthesized_from_checkpoints: true` |
-| Orphan recovery (`/wrapup` Step 1b) | `synthesized_from_checkpoints: true` + `auto-recovered: true` |
-| PostCompact Path A (checkpoint files found) | `synthesized_from_checkpoints: true` + `auto-recovered: true` |
-| PostCompact Path B (no checkpoint files) | `auto-compact: true` |
+**Auto-saved (auto-summary) — no checkpoints:**
+```yaml
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+auto-saved: true
+---
+```
+
+**Auto-saved (auto-summary) — checkpoints incorporated:**
+```yaml
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+auto-saved: true
+synthesized_from_checkpoints: true
+---
+```
+
+**Recovered from checkpoints** (used by: /wrapup orphan recovery, PostCompact Path A):
+```yaml
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+synthesized_from_checkpoints: true
+auto-recovered: true
+---
+```
+
+**PostCompact Path B — no checkpoint files (synthesized from context):**
+```yaml
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+auto-compact: true
+---
+```

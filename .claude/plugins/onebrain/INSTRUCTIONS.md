@@ -316,14 +316,14 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
    - Use today's date (YYYY-MM-DD) for the session log filename and `date:` field
    - Extract YYYY and MM from today's date for path construction
    - Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded)
-   - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (variant: PostCompact Path B — frontmatter adds `auto-compact: true`)
+   - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
    - Run `onebrain checkpoint reset` after writing
    - Silent — no output to user; skip steps 4–11
 
 4. Read all matched checkpoint files and extract their content for synthesis in step 6
 5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
 6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free
-7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM) using the Session Log Format from `skills/startup/references/session-formats.md` (variant: PostCompact Path A — frontmatter adds `synthesized_from_checkpoints: true` + `auto-recovered: true`)
+7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM) using the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**)
 
 8. Verify the session log file exists and is non-empty before continuing
 9. Delete checkpoint files — only AFTER session log write confirmed (step 8); if any individual delete fails, skip it silently (stale checkpoints are cleaned up by session-init, not here)
