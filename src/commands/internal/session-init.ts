@@ -106,7 +106,7 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
   const ppid = process.ppid;
   if (ppid !== undefined && ppid > 1) return String(ppid);
 
-  // 3. PowerShell fallback (Windows only)
+  // 5. PowerShell fallback (Windows only)
   try {
     const ps = Bun.spawn(
       [
@@ -140,7 +140,7 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     // Not on Windows or powershell.exe not available — fall through
   }
 
-  // 4. Day-scoped cache
+  // 6. Day-scoped cache
   const today = new Date();
   const yyyymmdd = [
     today.getFullYear(),
