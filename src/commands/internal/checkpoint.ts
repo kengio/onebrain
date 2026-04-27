@@ -285,8 +285,7 @@ export function handleStop(
   const nextNn = String(maxNn + 1).padStart(2, '0');
   const since =
     maxNn === 0 ? ' since start' : ` since checkpoint-${String(maxNn).padStart(2, '0')}`;
-  const filename = `${date}-${token}-checkpoint-${nextNn}.md`;
-  emitBlock(`${filename}${since}`);
+  emitBlock(`${nextNn}${since}`);
 
   writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn }, tmpDir);
 }
@@ -318,7 +317,7 @@ export function handlePostcompact(
     return;
   }
 
-  emitBlock(`auto-wrapup: ${token}`);
+  emitBlock('auto-wrapup');
   writeState(token, { count: 0, last_ts: now, last_stop_nn: state.last_stop_nn }, tmpDir);
 }
 

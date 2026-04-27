@@ -265,7 +265,7 @@ describe('handleStop', () => {
     expect(state.count).toBe(1);
   });
 
-  it('threshold met (messages) → emits block with correct filename', async () => {
+  it('threshold met (messages) → emits block with NN and since suffix', async () => {
     const now = 1700001000;
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
     writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '01' }, tmpDir);
@@ -276,7 +276,7 @@ describe('handleStop', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toMatch(/checkpoint-02\.md since checkpoint-01$/);
+    expect(parsed.reason).toBe('02 since checkpoint-01');
   });
 
   it('threshold met → state reset (count=0, last_ts=now)', async () => {
@@ -303,7 +303,7 @@ describe('handleStop', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toMatch(/checkpoint-02\.md since checkpoint-01$/);
+    expect(parsed.reason).toBe('02 since checkpoint-01');
     const state = readState(TOKEN, tmpDir);
     expect(state.last_stop_nn).toBe('02');
   });
@@ -409,7 +409,7 @@ describe('handlePostcompact', () => {
     await rm(vaultDir, { recursive: true, force: true });
   });
 
-  it('no recent checkpoint → emits auto-wrapup block with token', () => {
+  it('no recent checkpoint → emits auto-wrapup block', () => {
     const oldTs = now - 600; // > 300s → not recent
     writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
@@ -419,7 +419,7 @@ describe('handlePostcompact', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
+    expect(parsed.reason).toBe('auto-wrapup');
   });
 
   it('auto-wrapup emitted → state updated: count=0, last_ts=now, last_stop_nn preserved', () => {
@@ -456,7 +456,7 @@ describe('handlePostcompact', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
+    expect(parsed.reason).toBe('auto-wrapup');
   });
 
   it('postcompact resets last_ts to now and count to 0 — state ready for next session', () => {
@@ -485,7 +485,7 @@ describe('handlePostcompact', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
+    expect(parsed.reason).toBe('auto-wrapup');
   });
 });
 
@@ -515,7 +515,7 @@ describe('postcompactFallback', () => {
     const out = cap.stop();
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
+    expect(parsed.reason).toBe('auto-wrapup');
   });
 
   it('no emit when recent (< 5 min since last checkpoint)', () => {

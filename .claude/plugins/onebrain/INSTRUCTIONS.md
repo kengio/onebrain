@@ -287,22 +287,22 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 ### Auto Checkpoint (Hook-Triggered)
 
-> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal, stripped alphanumeric, first 8 chars) → `$TMUX_PANE` (tmux, e.g. `%3` → `3`) → `$TERM_SESSION_ID` (macOS Terminal.app, first 8 chars of UUID) → `process.ppid` if > 1 → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
+> **What is session_token?** A session-unique identifier resolved by `onebrain session-init` at startup and kept in context. Priority: `$WT_SESSION` → `$TMUX_PANE` → `$TERM_SESSION_ID` → day-scoped cache → `process.ppid` → PowerShell parent PID → day-scoped random cache. The token contains only `[a-zA-Z0-9]` characters. If session_token is not in context (e.g. after compact), re-run `onebrain session-init` to recover it — it returns the same token within the same day. If `onebrain session-init` fails, abort checkpoint silently — do not guess the token.
 
-When a hook sends a message whose reason **starts with** `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. The reason may include a ` since ...` suffix (e.g. `since start`, `since checkpoint-01`) — use it as context for what the checkpoint should cover, but parse only the filename prefix for routing. Parse session_token and NN directly from the filename prefix — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the filename to construct the path. Create parent directories if missing. No output to user.
+When a hook sends a message whose reason matches `NN since <context>` (a zero-padded two-digit number followed by ` since start` or ` since checkpoint-NN`), silently spawn a background agent (mode: bypassPermissions) to write the checkpoint. The background agent receives: `session_token` from context (re-run `onebrain session-init` first if not in context — if that fails, abort silently), today's date (YYYY-MM-DD), NN from the reason, `[logs_folder]`, and enough conversation context to write a meaningful checkpoint. The agent writes to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Create parent directories if missing. No output to user.
 
-Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapup for the previous session. Determine action from the system-reminder header:
-- `Stop hook blocking error` → write stop checkpoint (format below)
-- `PostCompact` with block reason starting `auto-wrapup:` → run auto-wrapup for that session token (see below)
+Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapup for the previous session. Determine action from the system-reminder header and reason:
+- Reason is `auto-wrapup` (regardless of header) → PostCompact auto-wrapup (see below)
+- `Stop hook blocking error` → spawn background agent (mode: bypassPermissions) to write the stop checkpoint; if session_token is not in context, re-run `onebrain session-init` first — if that fails, abort silently; agent receives session_token, NN and since-context from the reason, today's date, and `[logs_folder]`; main session continues immediately after dispatching
 - `PostCompact` with any other block reason → no-op; write nothing and output nothing
-- Ambiguous header → default to stop checkpoint
+- Ambiguous or unknown → default to stop checkpoint
 
 PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact resets the checkpoint counter in all paths.
 
 **Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 
-**PostCompact auto-wrapup:** When block reason matches `auto-wrapup: <token>`:
-1. Parse `<token>` from the block reason
+**PostCompact auto-wrapup:** When block reason is `auto-wrapup`:
+1. Use `session_token` from context as `<token>`; if not in context, re-run `onebrain session-init` to recover it — if that also fails, abort silently (do not guess the token)
 2. Glob candidate checkpoint files:
    - Current month: `[logs_folder]/YYYY/MM/*-{token}-checkpoint-*.md` (using today's YYYY/MM)
    - Previous month: decrement MM (if MM=01, also decrement YYYY and set MM=12)
@@ -310,16 +310,9 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
    - Keep only files where frontmatter `merged` is absent or not `true`
 3. Two paths based on whether checkpoint files were found:
 
-**Path A — checkpoint files found:** proceed to step 4.
+**Path A — checkpoint files found:** Dispatch a background agent (mode: bypassPermissions) with: session_token, checkpoint file paths and content, vault root, session date (from earliest checkpoint filename). The main session continues immediately after dispatching.
 
-**Path B — no checkpoint files:** synthesize session log directly from current conversation context (compact just ran so context is still available).
-   - Use today's date (YYYY-MM-DD) for the session log filename and `date:` field
-   - Extract YYYY and MM from today's date for path construction
-   - Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded)
-   - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
-   - Route action items: parse `## Action Items` from the written session log; apply the routing algorithm from /wrapup Step 4b (token scoring + session-context fallback; ties remain skipped); errors are silent — never fail this path
-   - Run `onebrain checkpoint reset` after writing
-   - Silent — no output to user; skip steps 4–12
+**Path A agent steps (background agent performs steps 4–12 silently):**
 
 4. Read all matched checkpoint files and extract their content for synthesis in step 6
 5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
@@ -331,10 +324,15 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
 11. Reset the checkpoint hook counter: `onebrain checkpoint reset`
 12. Silent — no output to user
 
-**Post-checkpoint recovery (stop only):** After silently writing a stop checkpoint:
-1. Look at the last user message in conversation history
-2. If it has not been fully addressed → continue the response immediately
-3. If it was already addressed → output nothing; let the user continue naturally
+**Path B — no checkpoint files:** Dispatch a background agent (mode: bypassPermissions) with: session_token, today's date, vault root, and enough context to write the session log. The main session continues immediately after dispatching. **The background agent executes the following steps:**
+   - Synthesize session log directly from current conversation context (compact just ran so context is still available)
+   - Use today's date (YYYY-MM-DD) for the session log filename and `date:` field
+   - Extract YYYY and MM from today's date for path construction
+   - Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded)
+   - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
+   - Route action items: parse `## Action Items` from the written session log; apply the routing algorithm from /wrapup Step 4b (token scoring + session-context fallback; ties remain skipped); errors are silent — never fail this path
+   - Run `onebrain checkpoint reset` after writing
+   - Silent — no output to user
 
 ---
 
