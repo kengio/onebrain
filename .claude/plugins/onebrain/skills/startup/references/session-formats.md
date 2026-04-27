@@ -14,22 +14,14 @@ Shared canonical templates. Referenced by:
 
 ---
 
-## Checkpoint Format
+## Shared Body Sections
 
-Written by the Stop hook. Keep under 250 words.
+Both checkpoint files and session log files use these sections in order:
 
 ```markdown
----
-tags: [checkpoint, session-log]
-date: YYYY-MM-DD
-checkpoint: NN
-trigger: stop
-merged: false
----
-
 ## What We Worked On
 
-[2-3 sentences describing the session focus]
+[see per-format note below]
 
 ## Key Decisions
 
@@ -55,40 +47,33 @@ merged: false
 
 ---
 
+## Checkpoint Format
+
+Written by the Stop hook. Keep under 250 words total.
+
+**Frontmatter:**
+```yaml
+---
+tags: [checkpoint, session-log]
+date: YYYY-MM-DD
+checkpoint: NN
+trigger: stop
+merged: false
+---
+```
+
+**Body:** use Shared Body Sections above. `## What We Worked On`: 2-3 sentences describing the session focus.
+
+---
+
 ## Session Log Format
 
-### Body (all variants)
-
+**Header line** (before body sections):
 ```markdown
 # Session Summary : [Month DD, YYYY] (Session N)
-
-## What We Worked On
-
-[1-3 sentences describing the session's focus]
-
-## Key Decisions
-
-- [Decision 1]
-
-## Insights & Learnings
-
-- [Insight 1]
-
-## What Worked / Didn't Work
-
-- ✅ [Something that worked]
-- ❌ [Something that didn't]
-
-_Omit this section if no notable friction or technique worth logging._
-
-## Action Items
-
-- [ ] [task] 📅 YYYY-MM-DD
-
-## Open Questions
-
-- [Question or uncertainty to revisit]
 ```
+
+**Body:** use Shared Body Sections above. `## What We Worked On`: 1-3 sentences describing the session's focus.
 
 ### Frontmatter by Case
 
