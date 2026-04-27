@@ -297,7 +297,7 @@ Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapu
 - `PostCompact` with any other block reason → no-op; write nothing and output nothing
 - Ambiguous header → default to stop checkpoint
 
-PreCompact no longer sends a block to Claude (the binary writes a stub file directly and exits 0).
+PreCompact resets the checkpoint counter and exits 0 — it does not send a block to Claude.
 
 **Stop checkpoint format:**
 
@@ -345,7 +345,44 @@ Keep under 250 words.
    - Previous month: decrement MM (if MM=01, also decrement YYYY and set MM=12)
    - After globbing, parse the token segment from each filename (`YYYY-MM-DD-{token}-checkpoint-NN.md`) and discard files where the parsed token does not exactly equal `<token>`
    - Keep only files where frontmatter `merged` is absent or not `true`
-3. If no files found → no-op; output nothing
+3. Two paths based on whether checkpoint files were found:
+
+**Path A — checkpoint files found:** proceed to step 4.
+
+**Path B — no checkpoint files:** synthesize session log directly from current conversation context (compact just ran so context is still available).
+   - Use today's date (YYYY-MM-DD) for the session log filename and `date:` field
+   - Extract YYYY and MM from today's date for path construction
+   - Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded)
+   - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`:
+
+```markdown
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session: NN
+auto-compact: true
+---
+
+# Session Summary : [Month DD, YYYY] (Session N)
+
+## What We Worked On
+[1-3 sentences summarizing the conversation context]
+
+## Key Decisions
+- [decisions made during the session]
+
+## Insights & Learnings
+- [new understanding, patterns, discoveries — omit if none]
+
+## Action Items
+- [ ] [task] 📅 YYYY-MM-DD
+
+## Open Questions
+- [unresolved questions]
+```
+   - Run `onebrain checkpoint reset` after writing
+   - Silent — no output to user; skip steps 4–11
+
 4. Read all matched checkpoint files and extract their content for synthesis in step 6
 5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
 6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free
@@ -382,10 +419,9 @@ auto-recovered: true
 ```
 
 8. Verify the session log file exists and is non-empty before continuing
-9. Reset the checkpoint hook counter: `onebrain checkpoint reset`
-10. Mark each checkpoint file `merged: true` (handle all variants: `merged: false`, `merged: null`, absent → set `merged: true`). If any individual write fails, do not delete that file — skip it and continue
-11. Delete checkpoint files — only AFTER session log write confirmed (step 8) AND file successfully marked merged (step 10); never delete a file whose `merged: true` write failed
-12. Silent — no output to user
+9. Delete checkpoint files — only AFTER session log write confirmed (step 8); if any individual delete fails, skip it silently (stale checkpoints are cleaned up by session-init, not here)
+10. Reset the checkpoint hook counter: `onebrain checkpoint reset`
+11. Silent — no output to user
 
 **Post-checkpoint recovery (stop only):** After silently writing a stop checkpoint:
 1. Look at the last user message in conversation history

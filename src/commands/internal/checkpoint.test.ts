@@ -424,38 +424,31 @@ describe('handlePrecompact', () => {
     expect(state.count).toBe(3); // unchanged
   });
 
-  it('no recent checkpoint → emits checkpoint block, updates state', async () => {
+  it('no recent checkpoint → resets count to 0, preserves last_ts and last_stop_nn', () => {
     const now = 1700001000;
     const oldTs = now - 600; // 600s > 300s
-    await createCheckpointFile(vaultDir, now, TOKEN, 2);
     writeState(TOKEN, { count: 3, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
     handlePrecompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toMatch(/checkpoint-03\.md$/);
+    expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(now);
-    expect(state.last_stop_nn).toBe('03');
+    expect(state.last_ts).toBe(oldTs); // NOT updated by precompact
+    expect(state.last_stop_nn).toBe('02'); // NOT changed
   });
 
-  it('no state file (first compact) → emits checkpoint-01 block', () => {
+  it('no state file (last_ts=0) → recency guard fails → resets count, last_ts stays 0', () => {
     const now = 1700001000;
     const cap = captureStdout();
     handlePrecompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toMatch(/checkpoint-01\.md$/);
+    expect(out).toBe('');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(now);
-    expect(state.last_stop_nn).toBe('01');
+    expect(state.last_ts).toBe(0); // precompact preserves last_ts; default state has last_ts=0
   });
 
   it('stop-then-autocompact: precompact no-ops within 5 min of stop checkpoint', () => {
@@ -481,9 +474,9 @@ describe('handlePrecompact', () => {
     expect(stateAfterPrecompact.last_ts).toBe(now); // unchanged
   });
 
-  it('recent checkpoint → no stdout (no-op)', () => {
+  it('produces no stdout in any case', () => {
     const now = 1700001000;
-    writeState(TOKEN, { count: 3, last_ts: now - 100, last_stop_nn: '01' }, tmpDir);
+    writeState(TOKEN, { count: 3, last_ts: now - 600, last_stop_nn: '01' }, tmpDir);
     const cap = captureStdout();
     handlePrecompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
