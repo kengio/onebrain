@@ -319,7 +319,7 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
    - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
    - Route action items: parse `## Action Items` from the written session log; apply the routing algorithm from /wrapup Step 4b (token scoring + session-context fallback; ties remain skipped); errors are silent — never fail this path
    - Run `onebrain checkpoint reset` after writing
-   - Silent — no output to user; skip steps 4–11
+   - Silent — no output to user; skip steps 4–12
 
 4. Read all matched checkpoint files and extract their content for synthesis in step 6
 5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
