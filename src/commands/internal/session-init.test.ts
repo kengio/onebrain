@@ -108,15 +108,22 @@ describe('resolveSessionToken', () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
-  it('uses PPID when > 1', async () => {
+  /** Clear all env-var token sources so tests that check PPID/cache behaviour are isolated. */
+  function clearTokenEnvVars(): void {
     process.env['WT_SESSION'] = undefined;
+    process.env['TMUX_PANE'] = undefined;
+    process.env['TERM_SESSION_ID'] = undefined;
+  }
+
+  it('uses PPID when > 1', async () => {
+    clearTokenEnvVars();
     setPpid(12345);
     const token = await resolveSessionToken(tmpDir);
     expect(token).toBe('12345');
   });
 
   it('ignores PPID when = 1', async () => {
-    process.env['WT_SESSION'] = undefined;
+    clearTokenEnvVars();
     setPpid(1);
     // Should fall through to cache
     const token = await resolveSessionToken(tmpDir);
@@ -140,8 +147,42 @@ describe('resolveSessionToken', () => {
     expect(token.length).toBe(8);
   });
 
-  it('reads cached token from day-scoped cache file', async () => {
+  it('uses TMUX_PANE when set, prefers over PPID', async () => {
+    clearTokenEnvVars();
+    process.env['TMUX_PANE'] = '%3';
+    setPpid(99999);
+    const token = await resolveSessionToken(tmpDir);
+    expect(token).toBe('3');
+  });
+
+  it('uses TERM_SESSION_ID when TMUX_PANE not set', async () => {
+    clearTokenEnvVars();
+    process.env['TERM_SESSION_ID'] = 'C2C99E7B-1780-4A88-9FEC-E1B4DA00A47C';
+    setPpid(99999);
+    const token = await resolveSessionToken(tmpDir);
+    expect(token).toBe('C2C99E7B');
+  });
+
+  it('prefers WT_SESSION over TMUX_PANE', async () => {
+    process.env['WT_SESSION'] = 'wtsession1';
+    process.env['TMUX_PANE'] = '%5';
+    setPpid(99999);
+    const token = await resolveSessionToken(tmpDir);
+    // 'wtsession1' → strip non-alphanum → 'wtsession1' → first 8 → 'wtsessio'
+    expect(token).toBe('wtsessio');
+  });
+
+  it('prefers TMUX_PANE over TERM_SESSION_ID', async () => {
     process.env['WT_SESSION'] = undefined;
+    process.env['TMUX_PANE'] = '%7';
+    process.env['TERM_SESSION_ID'] = 'ABCD1234-EFGH-5678';
+    setPpid(99999);
+    const token = await resolveSessionToken(tmpDir);
+    expect(token).toBe('7');
+  });
+
+  it('reads cached token from day-scoped cache file', async () => {
+    clearTokenEnvVars();
     setPpid(1); // force fallthrough
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const cacheFile = join(tmpDir, `onebrain-day-${today}.token`);
@@ -151,7 +192,7 @@ describe('resolveSessionToken', () => {
   });
 
   it('writes new cache file when none exists', async () => {
-    process.env['WT_SESSION'] = undefined;
+    clearTokenEnvVars();
     setPpid(1); // force fallthrough
     const token = await resolveSessionToken(tmpDir);
     // Should be a 5-digit number
@@ -177,8 +218,10 @@ describe('runSessionInit', () => {
     originalEnv = { ...process.env };
     originalPpid = process.ppid;
     tmpDir = await makeTmpDir();
-    // Ensure predictable token resolution in most tests
+    // Clear all env-var token sources for predictable token resolution
     process.env['WT_SESSION'] = undefined;
+    process.env['TMUX_PANE'] = undefined;
+    process.env['TERM_SESSION_ID'] = undefined;
     setPpid(77777);
   });
 

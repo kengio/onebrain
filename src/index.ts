@@ -138,8 +138,8 @@ program
 
 program
   .command('checkpoint', { hidden: true })
-  .description('Handle checkpoint lifecycle (stop/precompact/postcompact/reset)')
-  .argument('<mode>', 'stop | precompact | postcompact | reset')
+  .description('Handle checkpoint lifecycle (stop/postcompact/reset)')
+  .argument('<mode>', 'stop | postcompact | reset')
   .option('--vault-dir <path>', 'vault root directory (default: auto-detect from cwd)')
   .action(async (mode: string, opts: { vaultDir?: string }) => {
     const token = await resolveSessionToken();

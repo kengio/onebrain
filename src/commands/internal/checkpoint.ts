@@ -1,7 +1,7 @@
 /**
  * checkpoint — internal command
  *
- * Implements stop/precompact/postcompact/reset modes, replacing checkpoint-hook.sh.
+ * Implements stop/postcompact/reset modes.
  *
  * State file: $TMPDIR/onebrain-{session_token}.state
  * Format: count:last_ts:last_stop_nn
@@ -24,7 +24,7 @@ import { join } from 'node:path';
 
 const SKIP_WINDOW = 60; // seconds — suppress re-trigger after reset
 const MIN_ACTIVITY = 2; // minimum messages to warrant checkpoint
-const PRECOMPACT_RECENCY = 300; // seconds — treat checkpoint as "recent" for precompact
+const PRECOMPACT_RECENCY = 300; // seconds — postcompact recency guard
 
 // Default thresholds (used when vault.yml is missing/unreadable)
 const DEFAULT_MESSAGES_THRESHOLD = 15;
@@ -76,7 +76,7 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
   } catch {
     // Missing or malformed → fresh state
     // last_ts=0: avoids SKIP_WINDOW on first run (guard requires last_ts > 0)
-    // and avoids false "recent checkpoint" in precompact (guard requires last_ts > 0)
+    // and avoids false "recent checkpoint" in postcompact recency guard (requires last_ts > 0)
     // Eagerly rewrite the state file so v1/malformed files don't accumulate.
     // Use last_ts=0 to match the returned value — callers rely on last_ts=0 to
     // disable SKIP_WINDOW and recency guards on the first run.
@@ -292,34 +292,6 @@ export function handleStop(
 }
 
 // ---------------------------------------------------------------------------
-// precompact mode
-// ---------------------------------------------------------------------------
-
-/**
- * Precompact hook: reset message count if no recent checkpoint.
- * If a checkpoint was written within the last 5 minutes, let compact proceed (no-op).
- * Otherwise reset count so the stop hook doesn't re-trigger immediately post-compact.
- */
-export function handlePrecompact(
-  token: string,
-  _vaultRoot: string,
-  now: number = Math.floor(Date.now() / 1000),
-  tmpDir: string = osTmpdir(),
-): void {
-  const state = readState(token, tmpDir);
-
-  // Recency check: if last checkpoint < 5 minutes ago, let compact proceed.
-  // Invariant: handleStop resets count=0 when it writes last_ts, so count is
-  // already 0 when we reach this path — no write needed.
-  if (state.last_ts > 0 && now - state.last_ts < PRECOMPACT_RECENCY) {
-    return; // no-op
-  }
-
-  // Reset count (last_ts unchanged — postcompact uses it for recency guard)
-  writeState(token, { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn }, tmpDir);
-}
-
-// ---------------------------------------------------------------------------
 // postcompact mode
 // ---------------------------------------------------------------------------
 
@@ -384,9 +356,6 @@ export async function checkpointCommand(
     switch (mode) {
       case 'stop':
         handleStop(token, vaultRoot);
-        break;
-      case 'precompact':
-        handlePrecompact(token, vaultRoot);
         break;
       case 'postcompact':
         postcompactFallback(token, vaultRoot);

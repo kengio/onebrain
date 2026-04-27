@@ -180,9 +180,13 @@ export async function runBackfillRecapped(
  * Currently supports 'backfill-recapped' migration.
  * Always exits 0 (internal pattern).
  */
-export async function migrateCommand(migrationName: string, cutoffDate?: string): Promise<void> {
+export async function migrateCommand(
+  migrationName: string,
+  cutoffDate?: string,
+  vaultDir?: string,
+): Promise<void> {
   try {
-    const vaultRoot = process.cwd();
+    const vaultRoot = vaultDir ?? process.cwd();
     const config = await loadVaultConfig(vaultRoot);
     const logsFolder = join(vaultRoot, config.folders.logs);
 

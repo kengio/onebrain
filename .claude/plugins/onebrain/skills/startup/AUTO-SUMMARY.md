@@ -10,18 +10,11 @@ Run silently (no output) if ALL of these are true:
 If conditions are met:
 - Use `session_token` from context if already loaded (set by `onebrain session-init` at startup); if absent, run `onebrain session-init` and use the `SESSION_TOKEN` value. Glob checkpoint files: `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`. Also check yesterday's folder (compute yesterday's date, accounting for month/year rollover): `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`. Keep files where `merged` is absent or not `true` : **read every file in this list** and fully incorporate all of their content into the session summary (not just as background context). Every unmerged checkpoint must appear in the summary before being marked merged.
 - Determine NN: count existing `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` files for today; NN = count + 1, zero-padded to 2 digits (01, 02, …). **Verify** `YYYY-MM-DD-session-NN.md` does not already exist before writing; if it does, increment NN until a free slot is found.
-- Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Frontmatter:
-  ```yaml
-  ---
-  tags: [session-log]
-  date: YYYY-MM-DD
-  session: NN
-  auto-saved: true
-  synthesized_from_checkpoints: true   # only if checkpoints were found and incorporated
-  ---
-  ```
-  **Never add `recapped:` or `topics:` to this frontmatter.** These fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log.
-  The log must include all sections: `## What We Worked On`, `## Key Decisions`, `## Insights & Learnings`, `## What Worked / Didn't Work`, `## Action Items`, `## Open Questions`. Omit `## What Worked / Didn't Work` only if the session had no notable friction or technique worth logging. **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** : every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
+- Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `references/session-formats.md`:
+  - Checkpoints found and incorporated → case: **Auto-saved (auto-summary) — checkpoints incorporated**
+  - No checkpoints → case: **Auto-saved (auto-summary) — no checkpoints**
+  
+  **Do not write the session log if any unmerged checkpoint's content is absent from the relevant sections** — every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
 - **Route action items to project notes** — after the session log is written, automatically move action items so the startup task scan picks them up. This step must never fail the auto-summary; all errors are silently skipped.
   1. Parse `## Action Items` from the session log just written. Collect all `- [ ] ...` lines. If none, skip entirely.
   2. Glob `[projects_folder]/**/*.md`. For each file, collect the folder name and filename stem as candidate keywords.
@@ -44,4 +37,4 @@ If conditions are met:
 
 ## Known Gotchas
 
-- **Never write `recapped:` or `topics:` in session log frontmatter.** These fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log, meaning insights are never promoted to memory/. The frontmatter template above is the complete list of valid fields.
+- **Never write `recapped:` or `topics:` in session log frontmatter.** These fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log, meaning insights are never promoted to memory/. See `references/session-formats.md` for the complete frontmatter spec.

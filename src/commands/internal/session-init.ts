@@ -69,24 +69,44 @@ export function formatDatetime(date: Date): string {
 
 /**
  * Resolve session token using priority order:
- * 1. WT_SESSION env var (strip non-alphanumeric, first 8 chars)
- * 2. process.ppid if > 1
- * 3. PowerShell parent PID (Windows fallback — not tested on Mac)
- * 4. Day-scoped cache file: $tmpDir/onebrain-day-YYYYMMDD.token
+ * 1. WT_SESSION env var (Windows Terminal — strip non-alphanumeric, first 8 chars)
+ * 2. TMUX_PANE env var (tmux — stable per-pane, e.g. "%3" → "3")
+ * 3. TERM_SESSION_ID env var (macOS Terminal.app — stable per-tab UUID)
+ * 4. process.ppid if > 1
+ * 5. PowerShell parent PID (Windows fallback)
+ * 6. Day-scoped cache file: $tmpDir/onebrain-day-YYYYMMDD.token
+ *
+ * Env-var sources (1–3) are preferred over ppid because both session-init and
+ * the stop hook run as children of separate bash processes (different ppid values),
+ * while env vars are inherited from the shared terminal session ancestor.
  */
 export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<string> {
-  // 1. WT_SESSION
+  // 1. WT_SESSION (Windows Terminal)
   const wtSession = process.env['WT_SESSION'];
   if (wtSession) {
     const stripped = wtSession.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
     if (stripped.length > 0) return stripped;
   }
 
-  // 2. PPID
+  // 2. TMUX_PANE (tmux — stable across all processes in the same pane)
+  const tmuxPane = process.env['TMUX_PANE'];
+  if (tmuxPane) {
+    const stripped = tmuxPane.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+    if (stripped.length > 0) return stripped;
+  }
+
+  // 3. TERM_SESSION_ID (macOS Terminal.app — stable per-tab UUID)
+  const termSessionId = process.env['TERM_SESSION_ID'];
+  if (termSessionId) {
+    const stripped = termSessionId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+    if (stripped.length > 0) return stripped;
+  }
+
+  // 4. PPID
   const ppid = process.ppid;
   if (ppid !== undefined && ppid > 1) return String(ppid);
 
-  // 3. PowerShell fallback (Windows only)
+  // 5. PowerShell fallback (Windows only)
   try {
     const ps = Bun.spawn(
       [
@@ -120,7 +140,7 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     // Not on Windows or powershell.exe not available — fall through
   }
 
-  // 4. Day-scoped cache
+  // 6. Day-scoped cache
   const today = new Date();
   const yyyymmdd = [
     today.getFullYear(),

@@ -287,9 +287,9 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 ### Auto Checkpoint (Hook-Triggered)
 
-> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal pane GUID, non-alphanumeric stripped, first 8 chars) → `process.ppid` if > 1 → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
+> **What is session_token?** A session-unique identifier resolved by the hook using this priority: `$WT_SESSION` (Windows Terminal, stripped alphanumeric, first 8 chars) → `$TMUX_PANE` (tmux, e.g. `%3` → `3`) → `$TERM_SESSION_ID` (macOS Terminal.app, first 8 chars of UUID) → `process.ppid` if > 1 → PowerShell parent PID (Windows Git Bash fallback) → day-scoped random cache (last resort; shared across windows). The token contains only `[a-zA-Z0-9]` characters.
 
-When a hook sends a message matching `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. Parse session_token and NN directly from the trigger filename — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the trigger filename to construct the path. Create parent directories if missing. No output to user.
+When a hook sends a message whose reason **starts with** `YYYY-MM-DD-{session_token}-checkpoint-NN.md` (no slashes — a date, an alphanumeric session token, the literal word "checkpoint", and a zero-padded NN), silently write a checkpoint. The reason may include a ` since ...` suffix (e.g. `since start`, `since checkpoint-01`) — use it as context for what the checkpoint should cover, but parse only the filename prefix for routing. Parse session_token and NN directly from the filename prefix — no extra Bash call needed. Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Extract `YYYY` and `MM` from the filename to construct the path. Create parent directories if missing. No output to user.
 
 Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapup for the previous session. Determine action from the system-reminder header:
 - `Stop hook blocking error` → write stop checkpoint (format below)
@@ -297,46 +297,9 @@ Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapu
 - `PostCompact` with any other block reason → no-op; write nothing and output nothing
 - Ambiguous header → default to stop checkpoint
 
-PreCompact no longer sends a block to Claude (the binary writes a stub file directly and exits 0).
+PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact resets the checkpoint counter in all paths.
 
-**Stop checkpoint format:**
-
-```markdown
----
-tags: [checkpoint, session-log]
-date: YYYY-MM-DD
-checkpoint: NN
-trigger: stop
-merged: false
----
-
-## What We Worked On
-
-[2-3 sentences describing the session focus]
-
-## Key Decisions
-
-- [bullet list of decisions made]
-
-## Insights & Learnings
-
-- [new understanding, patterns, discoveries — omit if none]
-
-## What Worked / Didn't Work
-
-- ✅ [something that worked]
-- ❌ [something that didn't — omit section if no notable friction]
-
-## Action Items
-
-- [ ] [task] 📅 YYYY-MM-DD
-
-## Open Questions
-
-- [unresolved questions]
-```
-
-Keep under 250 words.
+**Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 
 **PostCompact auto-wrapup:** When block reason matches `auto-wrapup: <token>`:
 1. Parse `<token>` from the block reason
@@ -345,47 +308,27 @@ Keep under 250 words.
    - Previous month: decrement MM (if MM=01, also decrement YYYY and set MM=12)
    - After globbing, parse the token segment from each filename (`YYYY-MM-DD-{token}-checkpoint-NN.md`) and discard files where the parsed token does not exactly equal `<token>`
    - Keep only files where frontmatter `merged` is absent or not `true`
-3. If no files found → no-op; output nothing
+3. Two paths based on whether checkpoint files were found:
+
+**Path A — checkpoint files found:** proceed to step 4.
+
+**Path B — no checkpoint files:** synthesize session log directly from current conversation context (compact just ran so context is still available).
+   - Use today's date (YYYY-MM-DD) for the session log filename and `date:` field
+   - Extract YYYY and MM from today's date for path construction
+   - Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded)
+   - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
+   - Run `onebrain checkpoint reset` after writing
+   - Silent — no output to user; skip steps 4–11
+
 4. Read all matched checkpoint files and extract their content for synthesis in step 6
 5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
 6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free
-7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM):
-
-```markdown
----
-tags: [session-log]
-date: YYYY-MM-DD
-session: NN
-synthesized_from_checkpoints: true
-auto-recovered: true
----
-
-# Session Summary : [Month DD, YYYY] (Session N)
-
-## What We Worked On
-[1-3 sentences synthesized from checkpoint content]
-
-## Key Decisions
-- [All key decisions from checkpoints]
-
-## Insights & Learnings
-- [Insights from checkpoints]
-
-## What Worked / Didn't Work
-- ✅ / ❌ [From checkpoints — omit section if none noted]
-
-## Action Items
-- [ ] [Action items from checkpoints] 📅 YYYY-MM-DD
-
-## Open Questions
-- [Open questions from checkpoints]
-```
+7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM) using the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**)
 
 8. Verify the session log file exists and is non-empty before continuing
-9. Reset the checkpoint hook counter: `onebrain checkpoint reset`
-10. Mark each checkpoint file `merged: true` (handle all variants: `merged: false`, `merged: null`, absent → set `merged: true`). If any individual write fails, do not delete that file — skip it and continue
-11. Delete checkpoint files — only AFTER session log write confirmed (step 8) AND file successfully marked merged (step 10); never delete a file whose `merged: true` write failed
-12. Silent — no output to user
+9. Delete checkpoint files — only AFTER session log write confirmed (step 8); if any individual delete fails, skip it silently (stale checkpoints are cleaned up by session-init, not here)
+10. Reset the checkpoint hook counter: `onebrain checkpoint reset`
+11. Silent — no output to user
 
 **Post-checkpoint recovery (stop only):** After silently writing a stop checkpoint:
 1. Look at the last user message in conversation history

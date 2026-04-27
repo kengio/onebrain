@@ -453,4 +453,4 @@ Say:
 
 - **Re-run on an already-configured vault.** The skill's re-run check (top of file) fires when both `.claude/plugins/onebrain/` and `vault.yml` exist. It presents the specific prompt "Running onboarding again will update your identity and preferences : your notes and vault structure will not change." Do not skip this guard or replace it with a more alarming message — the skill is designed to be re-runnable safely.
 
-- **Plugin hooks require a Claude Code session restart to activate.** The Stop/PreCompact/PostCompact hooks registered during onboarding take effect on the NEXT session start. If the user runs /wrapup immediately after onboarding and no checkpoint appears, remind them to restart the session.
+- **Plugin hooks require a Claude Code session restart to activate.** The Stop/PostCompact hooks registered during onboarding take effect on the NEXT session start. If the user runs /wrapup immediately after onboarding and no checkpoint appears, remind them to restart the session.

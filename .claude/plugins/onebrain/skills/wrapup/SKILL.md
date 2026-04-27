@@ -18,20 +18,7 @@ Generates a summary of this session and saves it to the logs folder for future r
 
 ## Session Log Frontmatter
 
-Write the session log with this frontmatter (omit `recapped:` and `topics:` — those are
-populated by /recap later):
-
-```yaml
----
-tags: [session-log]
-date: YYYY-MM-DD
-session: NN
-auto-saved: true                        # only if auto-saved
-synthesized_from_checkpoints: true      # only if synthesized from checkpoints
----
-```
-
-**Never add `recapped:` or `topics:` to this frontmatter** — these fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log.
+See `skills/startup/references/session-formats.md` → Session Log Format for frontmatter variants and body sections. **Never add `recapped:` or `topics:`** — those are populated by /recap later.
 
 ---
 
@@ -87,45 +74,7 @@ For each orphan group (process in chronological order by date in filename):
    - Next session number = count of matches + 1 (zero-padded to 2 digits)
    - Verify the slot is free; increment NN until free
 
-**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist.
-
-```markdown
----
-tags: [session-log]
-date: YYYY-MM-DD
-session: NN
-synthesized_from_checkpoints: true
-auto-recovered: true
----
-
-# Session Summary : [Month DD, YYYY] (Session N)
-
-## What We Worked On
-
-[1-3 sentences synthesized from checkpoint content]
-
-## Key Decisions
-
-- [All key decisions from checkpoints — list explicitly, do not collapse into one line]
-
-## Insights & Learnings
-
-- [Insights from checkpoints]
-
-## What Worked / Didn't Work
-
-- ✅ / ❌ [From checkpoints — omit section if none noted]
-
-## Action Items
-
-- [ ] [Action items from checkpoints] 📅 YYYY-MM-DD
-
-## Open Questions
-
-- [Open questions from checkpoints]
-```
-
-**Never add `recapped:` or `topics:` to this frontmatter** — these fields are set exclusively by /recap. Writing them here causes /recap to silently skip the log.
+**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). All key decisions, action items, and open questions from checkpoints must appear explicitly — do not collapse into one line.
 
 **e. Write the session log** (per the template above). Verify the file exists and is non-empty before continuing.
 
@@ -164,47 +113,9 @@ Reflect on the conversation that just occurred. Identify:
 
 > **If checkpoints were found in Step 1:** do not write the session log until the content of every checkpoint file read in Step 1 is reflected in the sections below. All Key Decisions, Action Items, and Open Questions from checkpoints must appear explicitly : not summarized into a single line.
 
-Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`:
-
-```markdown
----
-tags: [session-log]
-date: YYYY-MM-DD
-session: NN
----
-
-# Session Summary : [Month DD, YYYY] (Session N)
-
-## What We Worked On
-
-[1-3 sentences describing the session's focus]
-
-## Key Decisions
-
-- [Decision 1]
-- [Decision 2]
-
-## Insights & Learnings
-
-- [Insight 1]
-- [Insight 2]
-
-## What Worked / Didn't Work
-
-- ✅ [Something that worked well]
-- ❌ [Something that didn't work or slowed things down]
-
-_Omit this section if the session had no notable friction or technique worth logging._
-
-## Action Items
-
-- [ ] [Action item 1] 📅 YYYY-MM-DD
-- [ ] [Action item 2] 📅 YYYY-MM-DD
-
-## Open Questions
-
-- [Question or uncertainty to revisit]
-```
+Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md`:
+- If checkpoints were incorporated in Step 1 → use **Standard /wrapup — checkpoints incorporated**
+- Otherwise → use **Standard /wrapup — no checkpoints incorporated**
 
 After writing the session log, reset the checkpoint hook counter to prevent spurious post-wrapup checkpoints:
 
@@ -356,7 +267,7 @@ Good session! See you next time.
 
 ## Known Gotchas
 
-- **Session token mismatch on Mac.** `$PPID` changes if the session was started from a wrapper (Hammerspoon, tmux `new-session`, etc.). If Step 1 finds no checkpoints but you expect some, compare `$PPID` against the date-matching checkpoint filenames in the folder to find the actual token used when they were written.
+- **Orphan checkpoints from a different token.** Rare case: if the vault was used before CLI v2.0.10 (which fixed the token mismatch between `session-init` and the stop hook), checkpoint files may exist under a different token than the current session. If Step 1 finds no checkpoints but you expect some, look for date-matching checkpoint files in the folder with any token and offer to synthesize them manually.
 
 - **Cross-month midnight sessions.** If a session starts before midnight and /wrapup runs after midnight in a new month, Step 1 looks in "yesterday's folder." Decrementing the month is sufficient for all months except January — for January specifically, also roll back the year (e.g., January 1 → December of the prior year). All other month boundaries only need the month decremented.
 

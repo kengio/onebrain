@@ -305,6 +305,18 @@ describe('runBackfillRecapped', () => {
     expect(newer).not.toContain('recapped:');
   });
 
+  it('cutoffDate: equal to log date → log is backfilled (boundary inclusive)', async () => {
+    const monthDir = await makeMonthDir(logsDir, '2026', '04');
+    await writeSessionLog(monthDir, '2026-04-22-session-01.md', {
+      tags: 'session-log',
+      date: '2026-04-22',
+    });
+
+    // cutoff = 2026-04-22 → date equal to cutoff → should be backfilled
+    const result = await runBackfillRecapped(logsDir, '2026-04-22');
+    expect(result.backfilled).toBe(1);
+  });
+
   it('handles idempotent re-runs: only first run backfills', async () => {
     const monthDir = await makeMonthDir(logsDir, '2026', '04');
     await writeSessionLog(monthDir, '2026-04-20-session-01.md', {

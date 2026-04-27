@@ -48,11 +48,15 @@ interface SettingsJson {
 
 const HOOK_COMMANDS: Record<string, string> = {
   Stop: 'onebrain checkpoint stop',
-  PreCompact: 'onebrain checkpoint precompact',
   PostCompact: 'onebrain checkpoint postcompact',
 };
 
-const HOOK_EVENTS = ['Stop', 'PreCompact', 'PostCompact'] as const;
+const HOOK_EVENTS = ['Stop', 'PostCompact'] as const;
+
+// Hooks that were registered by previous versions and must be removed on /update.
+const STALE_HOOK_COMMANDS: Record<string, string> = {
+  PreCompact: 'onebrain checkpoint precompact',
+};
 
 const PERMISSIONS_TO_ADD = [
   'Bash(onebrain *)',
@@ -112,6 +116,15 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
   if (!settings.hooks) settings.hooks = {};
   const hooks = settings.hooks;
   const result: Record<string, HookStatus> = {};
+
+  // Remove stale hooks from previous versions
+  for (const [event, staleCmd] of Object.entries(STALE_HOOK_COMMANDS)) {
+    if (!hooks[event]) continue;
+    hooks[event] = hooks[event].filter(
+      (group) => !group.hooks?.some((entry) => entry.command === staleCmd),
+    );
+    if (hooks[event].length === 0) delete hooks[event];
+  }
 
   for (const event of HOOK_EVENTS) {
     const cmd = HOOK_COMMANDS[event];

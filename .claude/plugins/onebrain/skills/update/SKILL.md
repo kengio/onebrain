@@ -88,8 +88,8 @@ Steps:
       and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
       - **Full vault sync:** run `onebrain vault-sync "$PWD" --branch {branch}`. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md/PLUGIN-CHANGELOG.md to vault root (overwrite), merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only), pins plugin to vault, and clears plugin cache.
-      - **Settings merge:** WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys (skip `onebrain@kengio` — repo-dev-only key, not valid in vault context); `extraKnownMarketplaces` → skip (repo-dev-only config, not valid in vault context); `hooks` → skip (handled by migration Step 7).
-   c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 9 migration steps
+      - **Settings merge:** WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys (skip `onebrain@kengio` — repo-dev-only key, not valid in vault context); `extraKnownMarketplaces` → skip (repo-dev-only config, not valid in vault context); `hooks` → skip (handled by migration Step 6).
+   c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 8 migration steps
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
 4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
 
@@ -110,10 +110,9 @@ Steps:
    - [x] Step 3: Updated frontmatter on N memory/ files
    - [x] Step 4: Restructured MEMORY.md → 3 sections
    - [x] Step 5: Created MEMORY-INDEX.md (N active entries)
-   - [x] Step 6: Backfilled recapped: on N session logs
-   - [x] Step 7: Registered Stop/PreCompact/PostCompact hooks in [vault]/.claude/settings.json (+ PostToolUse qmd hook if qmd_collection set)
-   - [x] Step 8: /doctor — N issues
-   - [x] Step 9: Initialized vault.yml stats + recap block
+   - [x] Step 6: Registered Stop/PostCompact hooks; removed stale PreCompact hook if present (+ PostToolUse qmd hook if qmd_collection set)
+   - [x] Step 7: /doctor — N issues
+   - [x] Step 8: Initialized vault.yml stats + recap block
 
    ## Summary
 
@@ -122,7 +121,7 @@ Steps:
 
    - Mark each step `[x]` on completion; leave `[ ]` if skipped (with reason)
    - If a step had nothing to do (e.g. context/ already absent), write `[x] Step 2: Skipped — context/ not present`
-   - If /doctor found issues in Step 8, list them under the step line
+   - If /doctor found issues in Step 7, list them under the step line
 
 5. Report summary to user:
 
