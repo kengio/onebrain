@@ -18,6 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - fix(instructions): Auto Checkpoint routing now parses NN from hook reason; filename built from context session_token
 - fix(instructions): stop hook and postcompact writes dispatched to background agent (mode: bypassPermissions) — main session no longer blocks on file writes
 - fix(instructions): postcompact uses bare `auto-wrapup` reason; session_token sourced from context with session-init fallback
+- fix(instructions): session-init failure explicitly aborts silently; routing table checks auto-wrapup reason first; Path A steps follow Path A dispatch (no longer split by Path B)
 
 ## v2.0.9 — fix: startup grep locale, postcompact routing, wrapup score-0 fallback
 
