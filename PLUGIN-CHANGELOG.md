@@ -1,5 +1,5 @@
 ---
-latest_version: 2.0.8
+latest_version: 2.0.9
 released: 2026-04-27
 ---
 
@@ -12,6 +12,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.0.9 — fix: startup grep locale, postcompact routing, wrapup score-0 fallback
+
+- fix(INSTRUCTIONS): startup task scan uses `LC_ALL=en_US.UTF-8` prefix on grep — prevents emoji pattern failures on macOS
+- fix(INSTRUCTIONS): postcompact auto-wrapup Path A (step 9, after verify) and Path B now route action items to project notes — matches /wrapup Step 4b parity
+- fix(wrapup): add session-context fallback in Step 4b-3b — score-0 tasks are routed to the project identified from `## What We Worked On` instead of being skipped; separate skipped_score0/skipped_ties lists
+- fix(auto-summary): add session-context fallback for score-0 tasks in step 3 with explicit tokenization delimiters — matches /wrapup Step 4b-3b parity
 
 ## v2.0.8 — refactor: extract shared session formats; remove backfill-recapped from /update
 
