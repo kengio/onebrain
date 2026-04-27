@@ -139,21 +139,25 @@ Store `routed_tasks = []` and `skipped_tasks = []` for use in Step 8.
 
 **4b-3. Score and group tasks by target.**
 
+Store `skipped_score0 = []` and `skipped_ties = []` alongside `skipped_tasks` for internal tracking.
+
 For each task line:
   - Score each candidate project note: split the folder name and filename stem on hyphens and underscores to produce individual keyword tokens, then count how many tokens appear as case-insensitive whole-word matches in the task text.
   - Select the highest-scoring candidate. **Require score ≥ 1 and a unique winner (no tie at the top score)** to route.
-  - If score = 0 or two files tie → add to `skipped_tasks` (tentatively); leave task in session log only.
+  - If score = 0 → add to `skipped_score0` and `skipped_tasks`; leave task in session log only.
+  - If two or more files tie at the top score → add to `skipped_ties` and `skipped_tasks`; leave task in session log only.
   - Otherwise → assign the task to the winning project note.
 
 **4b-3b. Session-context fallback for score-0 tasks.**
 
-If `skipped_tasks` contains any score-0 tasks (not ties), resolve a session context project:
-  - Parse the `## Main Topics` section of the session log (also accept `## Main Topic(s)`).
-  - Tokenize the topic text (split on spaces, hyphens, underscores, commas).
+If `skipped_score0` is non-empty, resolve a session context project:
+  - Parse the `## What We Worked On` section of the session log.
+  - Tokenize the section text (split on spaces, hyphens, underscores, commas).
   - Score each project note candidate using the same token-match algorithm as 4b-3.
   - If a unique winner exists (score ≥ 1, no tie) → that is the `context_project`.
-  - For each score-0 task in `skipped_tasks`: remove it from `skipped_tasks` and assign it to `context_project`.
-  - If no unique `context_project` → these tasks stay in `skipped_tasks`.
+  - For each task in `skipped_score0`: remove it from `skipped_tasks` and assign it to `context_project`.
+  - If `## What We Worked On` is absent or produces no unique `context_project` → these tasks stay in `skipped_tasks`.
+  - Tasks in `skipped_ties` are never candidates for the fallback — they remain in `skipped_tasks`.
 
 Group all assigned tasks by their target file path. This avoids repeated reads and writes to the same note.
 
