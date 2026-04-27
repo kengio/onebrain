@@ -295,7 +295,7 @@ Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapu
 - `Stop hook blocking error` → spawn background agent (mode: bypassPermissions) to write the stop checkpoint; agent receives session_token from context, NN and since-context from the reason, today's date, and `[logs_folder]`
 - `PostCompact` with block reason `auto-wrapup` → run auto-wrapup (see below); if `session_token` is not in context, re-run `onebrain session-init` first
 - `PostCompact` with any other block reason → no-op; write nothing and output nothing
-- Ambiguous header → default to stop checkpoint
+- Ambiguous header → default to stop checkpoint (note: bare `auto-wrapup` reason with no header → treat as PostCompact, not stop)
 
 PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact resets the checkpoint counter in all paths.
 
@@ -323,6 +323,8 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
    - Silent — no output to user
 
 The main session continues immediately after dispatching.
+
+**Path A agent steps (background agent performs steps 4–12 silently):**
 
 4. Read all matched checkpoint files and extract their content for synthesis in step 6
 5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
