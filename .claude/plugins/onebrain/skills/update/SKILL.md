@@ -110,10 +110,9 @@ Steps:
    - [x] Step 3: Updated frontmatter on N memory/ files
    - [x] Step 4: Restructured MEMORY.md → 3 sections
    - [x] Step 5: Created MEMORY-INDEX.md (N active entries)
-   - [x] Step 6: Backfilled recapped: on N session logs
-   - [x] Step 7: Registered Stop/PostCompact hooks; removed stale PreCompact hook if present (+ PostToolUse qmd hook if qmd_collection set)
-   - [x] Step 8: /doctor — N issues
-   - [x] Step 9: Initialized vault.yml stats + recap block
+   - [x] Step 6: Registered Stop/PostCompact hooks; removed stale PreCompact hook if present (+ PostToolUse qmd hook if qmd_collection set)
+   - [x] Step 7: /doctor — N issues
+   - [x] Step 8: Initialized vault.yml stats + recap block
 
    ## Summary
 
@@ -122,7 +121,7 @@ Steps:
 
    - Mark each step `[x]` on completion; leave `[ ]` if skipped (with reason)
    - If a step had nothing to do (e.g. context/ already absent), write `[x] Step 2: Skipped — context/ not present`
-   - If /doctor found issues in Step 8, list them under the step line
+   - If /doctor found issues in Step 7, list them under the step line
 
 5. Report summary to user:
 

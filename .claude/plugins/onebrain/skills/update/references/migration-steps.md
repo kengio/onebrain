@@ -91,13 +91,7 @@ Always: update `updated:` frontmatter to today.
 - Set cache fields: total_active, total_needs_review (omit last_review)
 - If MEMORY-INDEX.md already exists but has wrong column order or missing Description column → rewrite with correct format; preserve existing Description values from old rows (map by filename) rather than regenerating from scratch
 
-**Step 6: Backfill recapped: on existing session logs**
-- **Skip if:** `[logs_folder]/` does not exist OR `stats.backfill_recapped_done: true` is set in vault.yml
-- Read `stats.last_recap` from vault.yml (may be absent — treat as empty string if missing). To extract: read vault.yml, navigate to `stats.last_recap`; if the `stats:` block or `last_recap:` key is absent, use `""`.
-- Run `onebrain migrate backfill-recapped "[last_recap]"` — adds `recapped: YYYY-MM-DD` to session logs that don't have it; skips logs newer than `[last_recap]` if provided; idempotent (logs folder is auto-resolved from vault.yml). Automatically writes `stats.backfill_recapped_done: true` to vault.yml on completion so this step is skipped on future /update runs.
-- **Note:** The cutoff prevents /update from incorrectly marking recent sessions as recapped. Only logs on or before the last recap date are marked — newer sessions remain available for /recap to process.
-
-**Step 7: Register OneBrain hooks in `[vault]/.claude/settings.json`**
+**Step 6: Register OneBrain hooks in `[vault]/.claude/settings.json`**
 
 Runs every /update — idempotent. Ensures all hooks point to the correct script.
 
@@ -121,12 +115,12 @@ Runs every /update — idempotent. Ensures all hooks point to the correct script
       with open(path, "w") as f: json.dump(cfg, f, indent=2)
   ```
 
-**Step 8: Verify migration**
+**Step 7: Verify migration**
 - Run /doctor (newly-synced version) automatically
 - Expected: 0 orphans, 0 dead links, 0 non-compliant names, MEMORY-INDEX.md present
 - If any check fails: surface to user with suggestion to run /doctor --fix
 
-**Step 9: Initialize vault.yml stats + recap block**
+**Step 8: Initialize vault.yml stats + recap block**
 - **Skip if:** vault.yml already has both `stats:` and `recap:` blocks
 - Add stats: block: set last_doctor_run to today; leave last_memory_review and last_recap absent (written on first use)
 - Add recap: block: min_sessions: 6, min_frequency: 2
