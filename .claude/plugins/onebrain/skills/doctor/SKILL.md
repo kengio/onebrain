@@ -98,15 +98,15 @@ Run all applicable checks based on flags (default: all). Collect findings before
 **OneBrain hooks:**
 - Read `[vault]/.claude/settings.json` (vault-level settings — the `.claude/` folder inside the vault, not `~/.claude/settings.json`)
 - Check `Stop` hook: entry exists under `hooks.Stop` and command contains `checkpoint stop` → ✅ / 🔴 missing or wrong
-- Check `PreCompact` hook: entry exists under `hooks.PreCompact` and command contains `checkpoint precompact` → ✅ / 🔴 missing or wrong
 - Check `PostCompact` hook: entry exists under `hooks.PostCompact` and command contains `checkpoint postcompact` → ✅ / 🔴 missing or wrong
-- Any missing or wrong entry: include in issue count, suggest running /update to fix
+- Check `PreCompact` hook: if `hooks.PreCompact` exists and command contains `checkpoint precompact` → 🟡 stale hook — suggest running /update to remove it
+- Any missing or wrong required entry: include in issue count, suggest running /update to fix
 
 **qmd PostToolUse hook (only when `qmd_collection` is set in vault.yml):**
 - If `qmd_collection` is absent in vault.yml: skip this entire check
 - If `qmd_collection` is present:
   - Check `which qmd` (macOS/Linux) or `where qmd` (Windows): qmd binary must be installed → ✅ / 🔴 "qmd not installed — qmd_collection is set but binary is missing; run `/qmd setup` to reinstall"
-  - Read `[vault]/.claude/settings.json` (same file used for Stop/PreCompact/PostCompact hooks); check that `hooks.PostToolUse` contains an entry whose `command` contains `qmd-reindex` → ✅ / 🔴 "PostToolUse qmd hook missing in settings.json — run /update to register"
+  - Read `[vault]/.claude/settings.json` (same file used for Stop/PostCompact hooks); check that `hooks.PostToolUse` contains an entry whose `command` contains `qmd-reindex` → ✅ / 🔴 "PostToolUse qmd hook missing in settings.json — run /update to register"
 
 ---
 

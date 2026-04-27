@@ -1,5 +1,5 @@
 /**
- * checkpoint.test.ts — tests for checkpoint command (stop/precompact/postcompact/reset)
+ * checkpoint.test.ts — tests for checkpoint command (stop/postcompact/reset)
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
@@ -8,7 +8,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   handlePostcompact,
-  handlePrecompact,
   handleReset,
   handleStop,
   maxCheckpointNnSync,
@@ -392,99 +391,6 @@ describe('handleStop', () => {
 });
 
 // ---------------------------------------------------------------------------
-// handlePrecompact
-// ---------------------------------------------------------------------------
-
-describe('handlePrecompact', () => {
-  let tmpDir: string;
-  let vaultDir: string;
-
-  beforeEach(async () => {
-    tmpDir = await makeTmpDir();
-    vaultDir = await makeTmpDir();
-    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-  });
-  afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  it('recent checkpoint (last_ts within 5min) → no-op, state unchanged', () => {
-    const now = 1700001000;
-    const recentTs = now - 100; // 100s < 300s
-    writeState(TOKEN, { count: 3, last_ts: recentTs, last_stop_nn: '02' }, tmpDir);
-
-    const cap = captureStdout();
-    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_stop_nn).toBe('02'); // unchanged
-    expect(state.count).toBe(3); // unchanged
-  });
-
-  it('no recent checkpoint → resets count to 0, preserves last_ts and last_stop_nn', () => {
-    const now = 1700001000;
-    const oldTs = now - 600; // 600s > 300s
-    writeState(TOKEN, { count: 3, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
-
-    const cap = captureStdout();
-    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(oldTs); // NOT updated by precompact
-    expect(state.last_stop_nn).toBe('02'); // NOT changed
-  });
-
-  it('no state file (last_ts=0) → recency guard fails → resets count, last_ts stays 0', () => {
-    const now = 1700001000;
-    const cap = captureStdout();
-    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(0); // precompact preserves last_ts; default state has last_ts=0
-  });
-
-  it('stop-then-autocompact: precompact no-ops within 5 min of stop checkpoint', () => {
-    const now = 1700001000;
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '02' }, tmpDir);
-
-    const cap1 = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    cap1.stop();
-
-    const stateAfterStop = readState(TOKEN, tmpDir);
-    expect(stateAfterStop.last_ts).toBe(now);
-    expect(stateAfterStop.count).toBe(0);
-
-    const nowPlus60 = now + 60;
-    const cap2 = captureStdout();
-    handlePrecompact(TOKEN, vaultDir, nowPlus60, tmpDir);
-    const out2 = cap2.stop();
-
-    expect(out2).toBe('');
-    const stateAfterPrecompact = readState(TOKEN, tmpDir);
-    expect(stateAfterPrecompact.count).toBe(0);
-    expect(stateAfterPrecompact.last_ts).toBe(now); // unchanged
-  });
-
-  it('produces no stdout in any case', () => {
-    const now = 1700001000;
-    writeState(TOKEN, { count: 3, last_ts: now - 600, last_stop_nn: '01' }, tmpDir);
-    const cap = captureStdout();
-    handlePrecompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
-  });
-});
-
-// ---------------------------------------------------------------------------
 // handlePostcompact
 // ---------------------------------------------------------------------------
 
@@ -553,23 +459,16 @@ describe('handlePostcompact', () => {
     expect(parsed.reason).toBe(`auto-wrapup: ${TOKEN}`);
   });
 
-  it('postcompact last_ts=now blocks precompact re-fire within 5 min', () => {
+  it('postcompact resets last_ts to now and count to 0 — state ready for next session', () => {
     writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '01' }, tmpDir);
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     cap.stop();
 
-    const stateAfterPost = readState(TOKEN, tmpDir);
-    expect(stateAfterPost.last_ts).toBe(now);
-
-    const cap2 = captureStdout();
-    handlePrecompact(TOKEN, vaultDir, now + 30, tmpDir);
-    const out2 = cap2.stop();
-
-    expect(out2).toBe('');
-    const stateAfterPre = readState(TOKEN, tmpDir);
-    expect(stateAfterPre.last_ts).toBe(now); // unchanged
+    const state = readState(TOKEN, tmpDir);
+    expect(state.last_ts).toBe(now);
+    expect(state.count).toBe(0);
   });
 
   it('4-field legacy state (pending_stub) → auto-wrapup still emitted', async () => {

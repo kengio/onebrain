@@ -297,7 +297,7 @@ Stop hooks write checkpoint files silently. PostCompact hooks trigger auto-wrapu
 - `PostCompact` with any other block reason → no-op; write nothing and output nothing
 - Ambiguous header → default to stop checkpoint
 
-PreCompact resets the checkpoint counter and exits 0 — it does not send a block to Claude.
+PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact resets the checkpoint counter in all paths.
 
 **Stop checkpoint format:**
 

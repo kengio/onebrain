@@ -44,7 +44,7 @@ describe('runRegisterHooks', () => {
     expect(result.ok).toBe(true);
 
     // All 3 hooks should be added
-    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
+    for (const event of ['Stop', 'PostCompact']) {
       expect(result.hooks[event]).toBe('added');
     }
 
@@ -60,7 +60,7 @@ describe('runRegisterHooks', () => {
     // Verify written file structure — no env block
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(Object.keys(hooks)).toHaveLength(3);
+    expect(Object.keys(hooks)).toHaveLength(2); // Stop + PostCompact only (PreCompact removed)
     expect(settings['env']).toBeUndefined();
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
@@ -76,7 +76,7 @@ describe('runRegisterHooks', () => {
       Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>
     >;
 
-    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
+    for (const event of ['Stop', 'PostCompact']) {
       const group = hooks[event]?.[0];
       expect(group).toBeDefined();
       expect(group?.matcher).toBe('');
@@ -93,7 +93,7 @@ describe('runRegisterHooks', () => {
 
     expect(result.ok).toBe(true);
 
-    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
+    for (const event of ['Stop', 'PostCompact']) {
       expect(result.hooks[event]).toBe('ok');
     }
 
@@ -193,7 +193,7 @@ describe('registerGeminiHooks', () => {
     expect(exists).toBe(false);
   });
 
-  test('.gemini/settings.json exists → Stop/PreCompact/PostCompact written, no SessionStart', async () => {
+  test('.gemini/settings.json exists → Stop/PostCompact written, no SessionStart', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
     const geminiSettings = join(geminiDir, 'settings.json');
@@ -204,7 +204,7 @@ describe('registerGeminiHooks', () => {
 
     const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
+    for (const event of ['Stop', 'PostCompact']) {
       expect(hooks[event]).toBeDefined();
       expect(Array.isArray(hooks[event])).toBe(true);
       expect((hooks[event] as unknown[]).length).toBeGreaterThan(0);
@@ -235,7 +235,7 @@ describe('registerGeminiHooks', () => {
     >;
     const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
 
-    for (const event of ['Stop', 'PreCompact', 'PostCompact']) {
+    for (const event of ['Stop', 'PostCompact']) {
       const groups = hooks[event] ?? [];
       const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
       const unique = new Set(allCommands);
