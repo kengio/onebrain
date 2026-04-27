@@ -13,11 +13,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.0.7 — fix: postcompact Path B, backfill-recapped skip condition, session token tooltip
+## v2.0.7 — fix: postcompact Path B, remove PreCompact hook, backfill-recapped skip condition
 
 - fix(INSTRUCTIONS): postcompact auto-wrapup adds Path B — when no checkpoint files exist, synthesize session log from current context (was a no-op, causing auto-compact to write nothing)
+- fix(INSTRUCTIONS): PreCompact is now a no-op and no longer registered; PostCompact resets counter in all paths
 - fix(INSTRUCTIONS): remove merged:true write step from postcompact; simplify delete step
 - fix(INSTRUCTIONS): update session_token tooltip to include $TMUX_PANE and $TERM_SESSION_ID priority
+- fix(doctor): replace PreCompact required-check with stale-hook warning (🟡 suggest /update to remove)
 - fix(update): migration-steps.md Step 6 skips backfill-recapped when stats.backfill_recapped_done: true is set in vault.yml
 - fix(wrapup): update session token mismatch gotcha note to reflect CLI v2.0.12 fix
 
