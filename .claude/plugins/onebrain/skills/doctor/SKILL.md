@@ -134,9 +134,9 @@ Use this format:
   🔴 qmd_collection: missing — qmd search will not work
   🟡 vault.yml: `timezone` key found — no longer used, safe to remove
   🔴 OneBrain hooks: Stop missing or wrong — run /update to register
-  🔴 OneBrain hooks: PreCompact missing or wrong — run /update to register
   🔴 OneBrain hooks: PostCompact missing or wrong — run /update to register
-  🟢 OneBrain hooks: all 3 registered correctly
+  🟡 OneBrain hooks: PreCompact is stale — run /update to remove it
+  🟢 OneBrain hooks: all 2 registered correctly
   🔴 qmd: binary not installed — run /qmd setup
   🔴 qmd: PostToolUse hook missing in settings.json — run /update to register
   🟢 qmd: PostToolUse hook registered correctly
