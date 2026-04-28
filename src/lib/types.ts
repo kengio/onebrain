@@ -47,4 +47,5 @@ export interface DoctorResult {
   status: 'ok' | 'warn' | 'error';
   message: string;
   hint?: string;
+  details?: string[];
 }

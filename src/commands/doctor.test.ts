@@ -179,7 +179,7 @@ describe('runDoctor', () => {
         process.stdout.write = originalWrite;
       }
 
-      expect(outputChunks.join('')).toMatch(/Summary: 1 errors, 1 warnings/);
+      expect(outputChunks.join('')).toMatch(/Summary: \d+ checks · 1 error\(s\) · 1 warning\(s\)/);
     });
 
     it('shows "N errors, N warnings" summary when only errors exist', async () => {
@@ -206,7 +206,7 @@ describe('runDoctor', () => {
       }
 
       const output = outputChunks.join('');
-      expect(output).toMatch(/Summary: 1 errors, 0 warnings/m);
+      expect(output).toMatch(/Summary: \d+ checks · 1 error\(s\)/m);
     });
 
     it('shows "N warnings — ok to run" when only warnings (no errors)', async () => {
@@ -232,7 +232,7 @@ describe('runDoctor', () => {
         process.stdout.write = originalWrite;
       }
 
-      expect(outputChunks.join('')).toMatch(/Summary: 1 warnings — ok to run/);
+      expect(outputChunks.join('')).toMatch(/Summary: \d+ checks · 1 warning\(s\) — ok to run/);
     });
 
     it('shows "All checks passed" when no errors or warnings', async () => {
@@ -252,7 +252,7 @@ describe('runDoctor', () => {
         process.stdout.write = originalWrite;
       }
 
-      expect(outputChunks.join('')).toMatch(/Summary: All checks passed/);
+      expect(outputChunks.join('')).toMatch(/Summary: \d+ checks — all passed/);
     });
   });
 

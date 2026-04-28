@@ -3,9 +3,10 @@
  *
  * Steps:
  *   1. Detect existing vault.yml  (--force, non-TTY exit-1, TTY prompt)
- *   2. Create standard folders    (8 + inbox/imports)
- *   3. Write vault.yml
+ *   2. Write vault.yml
+ *   3. Create standard folders    (8 + inbox/imports)
  *   4. Download plugin files      (skip if .claude/plugins/onebrain/.claude-plugin/plugin.json exists)
+ *   4b. Install Obsidian community plugins
  *   5. Register plugin            (skip if source:marketplace entry exists)
  *   6. Run register-hooks
  *
@@ -15,14 +16,13 @@
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { cancel, confirm, spinner as createSpinner, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
 import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
-import { detectHarness } from './internal/harness.js';
+import { askYesNo, barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
 
 const binaryVersion = resolveBinaryVersion();
 
@@ -51,6 +51,8 @@ export interface InitOptions {
   ) => Promise<PluginInstallResult>;
   /** Injectable register-hooks function (for tests). */
   registerHooksFn?: (vaultDir: string) => Promise<void>;
+  /** Injectable delay function (for tests — bypasses artificial pauses). */
+  delayFn?: (ms: number) => Promise<void>;
 }
 
 export interface InitResult {
@@ -194,6 +196,20 @@ async function downloadPluginFiles(
   }
 
   return { skipped: false };
+}
+
+async function countPluginContents(
+  vaultDir: string,
+): Promise<{ skills: number; agents: number }> {
+  const base = join(vaultDir, '.claude', 'plugins', 'onebrain');
+  const [skillEntries, agentEntries] = await Promise.all([
+    readdir(join(base, 'skills'), { withFileTypes: true }).catch(() => []),
+    readdir(join(base, 'agents'), { withFileTypes: true }).catch(() => []),
+  ]);
+  return {
+    skills: skillEntries.filter((e) => e.isDirectory()).length,
+    agents: agentEntries.filter((e) => e.name.endsWith('.md')).length,
+  };
 }
 
 /**
@@ -479,18 +495,10 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     pluginsFailed: 0,
   };
 
-  // Output helpers
-  function writeLine(msg: string) {
-    process.stdout.write(`${msg}\n`);
-  }
-
-  const delay = (ms: number) =>
-    isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
-  const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
-
-  function warnStep(msg: string) {
-    process.stdout.write(`  ${pc.bold(pc.yellow('›'))}  ${pc.yellow(msg)}\n`);
-  }
+  const createStep = makeStepFn(isTTY);
+  const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const randDelay = () =>
+    isTTY ? delay(Math.floor(Math.random() * 1000) + 1000) : Promise.resolve();
 
   // ── Step 1: Detect existing vault.yml ─────────────────────────────────────
 
@@ -509,24 +517,22 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     // TTY: prompt user
     if (isTTY) {
       await printBanner();
-      process.stdout.write(
-        `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n\n`,
-      );
-      const overwrite = await confirm({
-        message: 'vault.yml already exists. Overwrite?',
-      });
-      if (!overwrite || overwrite === Symbol.for('clack:cancel')) {
-        outro('Aborted.');
+
+      const answer = await askYesNo('vault.yml already exists. Overwrite?');
+
+      if (answer === null || answer === false) {
+        barLine(pc.dim('No'));
+        barBlank();
+        close('Aborted');
         result.ok = true;
         result.exitCode = 0;
         return result;
       }
+      barLine('Yes');
+      barBlank();
     }
   } else if (isTTY) {
     await printBanner();
-    process.stdout.write(
-      `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n\n`,
-    );
   }
 
   // Non-TTY header (TTY uses intro() above)
@@ -534,90 +540,85 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     writeLine('OneBrain Init');
   }
 
-  // ── Step 2: Create standard folders ───────────────────────────────────────
+  // ── Step 2: Write vault.yml ────────────────────────────────────────────────
 
-  const sp2 = isTTY ? createSpinner() : null;
-  sp2?.start('📁  Setting up vault structure…');
+  const sp2 = createStep('📋', 'vault.yml');
+  await writeVaultYml(vaultDir);
+  if (sp2) {
+    await randDelay();
+    sp2.stop(pc.dim('written'), ['update_channel: stable', 'checkpoint: 15 msgs · 30 min']);
+  } else {
+    writeLine('vault.yml: written');
+  }
+
+  // ── Step 3: Create standard folders ───────────────────────────────────────
+
+  const sp3 = createStep('📁', 'Vault folders');
   const foldersCreated = await createFolders(vaultDir);
   result.foldersCreated = foldersCreated;
-
-  if (isTTY) {
+  if (sp3) {
     await randDelay();
-    sp2?.stop(
-      `📁  Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`,
+    sp3.stop(
+      `${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`,
+      STANDARD_FOLDERS,
     );
   } else {
     writeLine(`folders: ${foldersCreated} created`);
   }
 
-  // ── Step 3: Write vault.yml ────────────────────────────────────────────────
-
-  const sp3 = isTTY ? createSpinner() : null;
-  sp3?.start('⚙️   Writing vault.yml…');
-  await writeVaultYml(vaultDir);
-  const harness = await detectHarness(vaultDir);
-
-  if (isTTY) {
-    await randDelay();
-    sp3?.stop(`⚙️   vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
-  } else {
-    writeLine(`vault.yml: written (harness=${harness})`);
-  }
-
   // ── Step 4: Download plugin files ─────────────────────────────────────────
 
-  const dlSpinner = isTTY ? createSpinner() : null;
-  dlSpinner?.start('Downloading plugin files…');
-
+  const sp4 = createStep('📦', 'Plugin files');
   const {
     skipped: pluginSkipped,
-    driftWarning,
     failed: pluginDownloadFailed,
   } = await downloadPluginFiles(vaultDir, vaultSyncFn);
   result.pluginSkipped = pluginSkipped;
 
-  dlSpinner?.stop(pluginDownloadFailed ? 'Plugin download failed' : 'Plugin files ready');
+  if (sp4) {
+    if (pluginDownloadFailed) {
+      sp4.stop('download failed');
+    } else {
+      const { skills, agents } = await countPluginContents(vaultDir);
+      sp4.stop(
+        pc.dim(pluginSkipped ? 'already installed' : 'downloaded'),
+        [`${skills} skills · ${agents} agents`],
+      );
+    }
+  } else {
+    if (pluginSkipped) writeLine('plugin-files: skipped');
+    else if (!pluginDownloadFailed) writeLine('plugin-files: installed');
+  }
 
   if (pluginDownloadFailed) {
     result.exitCode = 1;
     if (isTTY) {
-      cancel('Could not download plugin files. Check your internet connection and try again.');
+      close('Could not download plugin files. Check your internet connection and try again.', true);
     } else {
       writeLine('error: vault-sync failed — run onebrain update to download plugin files');
     }
     return result;
-  }
-  if (driftWarning) {
-    if (isTTY) {
-      warnStep(driftWarning);
-    } else {
-      writeLine(driftWarning);
-    }
   }
 
   // ── Step 4b: Install community plugins ────────────────────────────────────
 
   const installPluginsFn = opts.installPluginsFn ?? installObsidianPlugins;
   const githubToken = process.env['GITHUB_TOKEN'];
-  const sp4b = isTTY ? createSpinner() : null;
-  sp4b?.start('🔌  Installing Obsidian plugins…');
+  const sp4b = createStep('🔌', 'Obsidian plugins');
   const pluginResult = await installPluginsFn(vaultDir, {
     ...(githubToken ? { githubToken } : {}),
   });
   result.pluginsInstalled = pluginResult.installed.length;
   result.pluginsFailed = pluginResult.failed.length;
 
-  if (isTTY) {
+  if (sp4b) {
     await randDelay();
     const n = pluginResult.installed.length;
-    sp4b?.stop(
-      n > 0
-        ? `🔌  ${n} plugin${n !== 1 ? 's' : ''} installed`
-        : '🔌  No Obsidian plugins to install',
-    );
-    for (const f of pluginResult.failed) {
-      warnStep(`${f.id} · skipped — install manually in Obsidian Settings`);
-    }
+    const details = [
+      ...pluginResult.installed,
+      ...pluginResult.failed.map((f) => `${f.id} (skipped)`),
+    ];
+    sp4b.stop(pc.dim(n > 0 ? `${n} installed` : 'none'), details.length > 0 ? details : undefined);
   } else {
     if (pluginResult.installed.length > 0)
       writeLine(`plugins: ${pluginResult.installed.join(', ')} installed`);
@@ -627,18 +628,18 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   // ── Step 5: Register plugin ────────────────────────────────────────────────
 
-  const sp5 = isTTY ? createSpinner() : null;
-  sp5?.start('📌  Registering plugin…');
+  const sp5 = createStep('📌', 'Plugin registration');
   const { skipped: pluginRegistrationSkipped } = await registerPlugin(
     vaultDir,
     installedPluginsPath,
   );
   result.pluginRegistrationSkipped = pluginRegistrationSkipped;
 
-  if (isTTY) {
+  if (sp5) {
     await randDelay();
-    sp5?.stop(
-      `📌  Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`,
+    sp5.stop(
+      pc.dim(pluginRegistrationSkipped ? 'skipped' : 'registered'),
+      [`source: ${pluginRegistrationSkipped ? 'marketplace' : 'local'}`],
     );
   } else {
     writeLine(`plugin: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : 'registered'}`);
@@ -646,8 +647,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   // ── Step 6: Register hooks ─────────────────────────────────────────────────
 
-  const sp6 = isTTY ? createSpinner() : null;
-  sp6?.start('🪝  Registering hooks…');
+  const sp6 = createStep('🪝', 'Hooks & permissions');
   let hooksOk = true;
   try {
     await registerHooksFn(vaultDir);
@@ -657,12 +657,11 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     process.stderr.write(`init: register-hooks warning: ${msg}\n`);
   }
 
-  if (isTTY) {
+  if (sp6) {
     await randDelay();
-    sp6?.stop(
-      hooksOk
-        ? '🪝  Hooks registered   Stop · PostCompact'
-        : '🪝  Hooks not registered — run onebrain update',
+    sp6.stop(
+      hooksOk ? undefined : 'not registered — run onebrain update',
+      hooksOk ? ['Stop ✓  PostCompact ✓', 'Bash(onebrain *) ✓'] : undefined,
     );
   } else {
     writeLine(`hooks: ${hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update'}`);
@@ -674,15 +673,13 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.exitCode = 0;
 
   if (isTTY) {
-    process.stdout.write(`\n  ${pc.dim('─'.repeat(38))}\n`);
-    process.stdout.write(
-      `  ${pc.bold(pc.cyan('1'))}  🗂  Open Obsidian → open this folder as vault\n`,
-    );
-    process.stdout.write(`  ${pc.bold(pc.cyan('2'))}  🤖  Run ${pc.cyan('claude')}\n`);
-    process.stdout.write(
-      `  ${pc.bold(pc.cyan('3'))}  🧠  Type ${pc.cyan('/onboarding')} to personalize\n`,
-    );
-    process.stdout.write(`\n  ✨  ${pc.bold('Ready')}  —  ${pc.cyan('/onboarding')}\n`);
+    barLine(pc.dim(`─── Next steps ${'─'.repeat(25)}`));
+    barBlank();
+    barLine(`  ${pc.bold(pc.cyan('1'))}  📁  Open Obsidian → open this folder as vault`);
+    barLine(`  ${pc.bold(pc.cyan('2'))}  🤖  Run ${pc.cyan('claude')}`);
+    barLine(`  ${pc.bold(pc.cyan('3'))}  🧠  Type ${pc.cyan('/onboarding')} to personalize`);
+    barBlank();
+    close(`✨  ${pc.bold('Ready')}  —  ${pc.cyan('/onboarding')}`);
   } else {
     writeLine('done: run /onboarding in Claude to finish setup');
   }

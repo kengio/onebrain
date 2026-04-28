@@ -1,4 +1,3 @@
-import { spinner as createSpinner, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import {
   type DoctorResult,
@@ -12,7 +11,8 @@ import {
   checkVaultYmlKeys,
   loadVaultConfig,
 } from '../lib/index.js';
-import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
+import { printBanner } from './internal/cli-banner.js';
+import { askYesNo, barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,14 +64,23 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const checkSettingsHooksFn = opts.checkSettingsHooksFn ?? checkSettingsHooks;
 
   if (isTTY) {
-    const binaryVersion = resolveBinaryVersion();
     await printBanner();
-    process.stdout.write(
-      `${pc.bold('OneBrain')} ${pc.dim('Doctor')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n`,
-    );
   }
 
-  const vaultYmlResult = await checkVaultYmlFn(vaultDir);
+  const createStep = makeStepFn(isTTY);
+  const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const randDelay = () =>
+    isTTY ? delay(Math.floor(Math.random() * 1000) + 1000) : Promise.resolve();
+
+  function fmtResult(r: DoctorResult): string {
+    if (r.status === 'ok') return pc.dim(r.message);
+    if (r.status === 'warn') return pc.yellow(r.message);
+    return pc.red(r.message);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Default config
+  // ---------------------------------------------------------------------------
 
   let config: VaultConfig = {
     folders: {
@@ -86,17 +95,25 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     },
   };
 
+  // ---------------------------------------------------------------------------
+  // Step 1: vault.yml (always first — needed to load config)
+  // ---------------------------------------------------------------------------
+
+  const sp1 = createStep('📋', 'vault.yml');
+  const vaultYmlResult = await checkVaultYmlFn(vaultDir);
   if (vaultYmlResult.status === 'ok') {
     try {
       config = await loadVaultConfigFn(vaultDir);
     } catch {
-      // If loading fails, use default config above
+      // use default config
     }
   }
+  await randDelay();
+  sp1?.stop(fmtResult(vaultYmlResult), vaultYmlResult.details);
 
-  const sp = isTTY ? createSpinner() : null;
-  const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-  const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
+  // ---------------------------------------------------------------------------
+  // Steps 2–7: remaining checks
+  // ---------------------------------------------------------------------------
 
   let foldersResult: DoctorResult;
   let qmdResult: DoctorResult;
@@ -104,66 +121,95 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   let pluginFilesResult: DoctorResult;
   let vaultYmlKeysResult: DoctorResult;
   let settingsHooksResult: DoctorResult;
-  try {
-    if (isTTY) {
-      // Sequential with spinner updates so each check is visible
-      sp?.start('📋  Checking vault.yml…');
-      await randDelay();
-      foldersResult = await checkFoldersFn(vaultDir, config);
-      sp?.message('📁  Checking folders…');
-      await randDelay();
-      qmdResult = await checkQmdEmbeddingsFn(config);
-      sp?.message('🔍  Checking qmd…');
-      await randDelay();
-      orphanResult = await checkOrphanCheckpointsFn(vaultDir, config);
-      sp?.message('📍  Checking checkpoints…');
-      await randDelay();
-      pluginFilesResult = await checkPluginFilesFn(vaultDir);
-      sp?.message('📦  Checking plugin files…');
-      await randDelay();
-      vaultYmlKeysResult = await checkVaultYmlKeysFn(vaultDir);
-      sp?.message('⚙️   Checking settings…');
-      await randDelay();
-      settingsHooksResult = await checkSettingsHooksFn(vaultDir, config);
-    } else {
-      [
-        foldersResult,
-        qmdResult,
-        orphanResult,
-        pluginFilesResult,
-        vaultYmlKeysResult,
-        settingsHooksResult,
-      ] = await Promise.all([
-        checkFoldersFn(vaultDir, config),
-        checkQmdEmbeddingsFn(config),
-        checkOrphanCheckpointsFn(vaultDir, config),
-        checkPluginFilesFn(vaultDir),
-        checkVaultYmlKeysFn(vaultDir),
-        checkSettingsHooksFn(vaultDir, config),
-      ]);
-    }
-    sp?.stop('Checks complete');
-  } catch (err) {
-    sp?.stop('Health check failed');
-    throw err;
+
+  if (isTTY) {
+    const sp2 = createStep('⚙️', 'Config schema');
+    vaultYmlKeysResult = await checkVaultYmlKeysFn(vaultDir);
+    await randDelay();
+    sp2!.stop(fmtResult(vaultYmlKeysResult), vaultYmlKeysResult.details);
+
+    const sp3 = createStep('📁', 'Vault folders');
+    foldersResult = await checkFoldersFn(vaultDir, config);
+    await randDelay();
+    sp3!.stop(fmtResult(foldersResult), foldersResult.details);
+
+    const sp4 = createStep('📦', 'Plugin integrity');
+    pluginFilesResult = await checkPluginFilesFn(vaultDir);
+    await randDelay();
+    sp4!.stop(fmtResult(pluginFilesResult), pluginFilesResult.details);
+
+    const sp5 = createStep('🪝', 'Hooks & permissions');
+    settingsHooksResult = await checkSettingsHooksFn(vaultDir, config);
+    await randDelay();
+    sp5!.stop(fmtResult(settingsHooksResult), settingsHooksResult.details);
+
+    const sp6 = createStep('📍', 'Orphan checkpoints');
+    orphanResult = await checkOrphanCheckpointsFn(vaultDir, config);
+    await randDelay();
+    sp6!.stop(fmtResult(orphanResult), orphanResult.details);
+
+    const sp7 = createStep('🔍', 'Search index');
+    qmdResult = await checkQmdEmbeddingsFn(config);
+    await randDelay();
+    sp7!.stop(fmtResult(qmdResult), qmdResult.details);
+  } else {
+    [
+      foldersResult,
+      qmdResult,
+      orphanResult,
+      pluginFilesResult,
+      vaultYmlKeysResult,
+      settingsHooksResult,
+    ] = await Promise.all([
+      checkFoldersFn(vaultDir, config),
+      checkQmdEmbeddingsFn(config),
+      checkOrphanCheckpointsFn(vaultDir, config),
+      checkPluginFilesFn(vaultDir),
+      checkVaultYmlKeysFn(vaultDir),
+      checkSettingsHooksFn(vaultDir, config),
+    ]);
   }
 
   const results = [
     vaultYmlResult,
-    foldersResult,
-    qmdResult,
-    orphanResult,
-    pluginFilesResult,
     vaultYmlKeysResult,
+    foldersResult,
+    pluginFilesResult,
     settingsHooksResult,
+    orphanResult,
+    qmdResult,
   ];
 
+  const totalChecks = results.length;
   const errorCount = results.filter((r) => r.status === 'error').length;
   const warningCount = results.filter((r) => r.status === 'warn').length;
+  const fixableCount = results.filter((r) => r.status !== 'ok' && getFix(r) !== null).length;
+  const showFixHint = !opts.fix && fixableCount > 0;
 
-  const hasFixable = results.some((r) => r.status !== 'ok' && getFix(r) !== null);
-  const showFixHint = !opts.fix && hasFixable;
-  printDoctorOutput(results, isTTY, errorCount, warningCount, showFixHint);
+  const summaryParts = [`${totalChecks} checks`];
+  if (errorCount > 0) summaryParts.push(`${errorCount} error(s)`);
+  if (warningCount > 0) summaryParts.push(`${warningCount} warning(s)`);
+
+  // ---------------------------------------------------------------------------
+  // Output
+  // ---------------------------------------------------------------------------
+
+  if (!isTTY) {
+    printNonTtyOutput(results, totalChecks, errorCount, warningCount, showFixHint, fixableCount);
+  } else {
+    if (errorCount > 0) {
+      close(`${summaryParts.join(' · ')} — fix before using`, true);
+    } else if (warningCount > 0) {
+      close(`${summaryParts.join(' · ')} — advisory only, safe to run`, false, true);
+    } else {
+      close(pc.green(`${summaryParts.join(' · ')} — all passed`));
+    }
+    if (showFixHint) {
+      process.stdout.write(
+        `\n→ Run ${pc.cyan('onebrain doctor --fix')} to auto-fix ${fixableCount} issue(s)\n`,
+      );
+    }
+  }
 
   if (opts.fix) {
     await applyFixes(vaultDir, results, isTTY, opts.registerHooksFn);
@@ -187,93 +233,38 @@ export async function doctorCommand(opts: DoctorOptions = {}): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Formatting (clack-based)
+// Non-TTY output (plain text table)
 // ---------------------------------------------------------------------------
 
-function printDoctorOutput(
+function printNonTtyOutput(
   results: DoctorResult[],
-  isTTY: boolean,
+  totalChecks: number,
   errorCount: number,
   warningCount: number,
   showFixHint: boolean,
+  fixableCount: number,
 ): void {
-  if (!isTTY) {
-    // Keep existing non-TTY format (plain text)
-    const lines: string[] = [];
-    lines.push('OneBrain Doctor');
-    lines.push('');
-    for (const result of results) {
-      const icon = result.status === 'ok' ? '[✓]' : result.status === 'warn' ? '[!]' : '[✗]';
-      lines.push(`  ${icon} ${result.check.padEnd(20)} ${result.message}`);
-      if (result.hint) lines.push(`        → ${result.hint}`);
-    }
-    lines.push('');
-    if (errorCount > 0) lines.push(`Summary: ${errorCount} errors, ${warningCount} warnings`);
-    else if (warningCount > 0) lines.push(`Summary: ${warningCount} warnings — ok to run`);
-    else lines.push('Summary: All checks passed');
-    if (showFixHint) lines.push('hint: run onebrain doctor --fix to auto-fix issues');
-    process.stdout.write(`${lines.join('\n')}\n`);
-    return;
-  }
-
-  // TTY: compact output — no per-line blank lines
-  const CHECK_EMOJI: Record<string, string> = {
-    'vault.yml': '📋',
-    folders: '📁',
-    'qmd-embeddings': '🔍',
-    'orphan-checkpoints': '📍',
-    'plugin-files': '📦',
-    'vault.yml-keys': '⚙️',
-    'settings-hooks': '🪝',
-  };
-  const bar = pc.cyan('│');
-  process.stdout.write(`${bar}\n`);
+  const lines: string[] = ['OneBrain Doctor', ''];
   for (const result of results) {
-    const icon =
-      result.status === 'ok'
-        ? pc.green('◆')
-        : result.status === 'warn'
-          ? pc.yellow('▲')
-          : pc.red('■');
-    const emoji = CHECK_EMOJI[result.check] ?? '  ';
-    const displayName = result.check.replaceAll('-', ' ').padEnd(20);
-    const check =
-      result.status === 'ok'
-        ? pc.dim(displayName)
-        : result.status === 'warn'
-          ? pc.yellow(displayName)
-          : pc.bold(pc.red(displayName));
-    const msg =
-      result.status === 'ok'
-        ? pc.dim(result.message)
-        : result.status === 'warn'
-          ? pc.yellow(result.message)
-          : pc.red(result.message);
-    process.stdout.write(`${bar}  ${icon}  ${emoji}  ${check}  ${msg}\n`);
-    if (result.hint) process.stdout.write(`${bar}${' '.repeat(31)}${pc.dim(`→ ${result.hint}`)}\n`);
+    const icon = result.status === 'ok' ? '[✓]' : result.status === 'warn' ? '[!]' : '[✗]';
+    lines.push(`  ${icon} ${result.check.padEnd(20)} ${result.message}`);
+    if (result.hint) lines.push(`        → ${result.hint}`);
+    if (result.details) for (const d of result.details) lines.push(`        · ${d}`);
   }
-  process.stdout.write(`${bar}\n`);
-
-  // Summary — styled to match the cyan bar
+  lines.push('');
   if (errorCount > 0) {
-    process.stdout.write(
-      `${pc.red('└')}  ${pc.bold(pc.red(`${errorCount} error(s) — fix before using`))}\n`,
-    );
+    lines.push(`Summary: ${totalChecks} checks · ${errorCount} error(s) · ${warningCount} warning(s) — fix before using`);
   } else if (warningCount > 0) {
-    process.stdout.write(
-      `${pc.cyan('└')}  ${pc.yellow(`${warningCount} warning(s) — advisory only, safe to run`)}\n`,
-    );
+    lines.push(`Summary: ${totalChecks} checks · ${warningCount} warning(s) — ok to run`);
   } else {
-    process.stdout.write(`${pc.cyan('└')}  ${pc.green('All checks passed')}\n`);
+    lines.push(`Summary: ${totalChecks} checks — all passed`);
   }
-
-  if (showFixHint) {
-    process.stdout.write(`\n→ Run ${pc.cyan('onebrain doctor --fix')} to auto-fix issues\n`);
-  }
+  if (showFixHint) lines.push(`hint: run onebrain doctor --fix to auto-fix ${fixableCount} issue(s)`);
+  process.stdout.write(`${lines.join('\n')}\n`);
 }
 
 // ---------------------------------------------------------------------------
-// Fix helpers (B3)
+// Fix helpers
 // ---------------------------------------------------------------------------
 
 type FixFn = (
@@ -281,108 +272,130 @@ type FixFn = (
   registerHooksFn?: (vaultDir: string) => Promise<void>,
 ) => Promise<void>;
 
-function isFixable(r: DoctorResult): boolean {
-  return getFix(r) !== null;
+interface Fix {
+  fn: FixFn;
+  description: string;
 }
 
-function getFix(r: DoctorResult): FixFn | null {
+function getFix(r: DoctorResult): Fix | null {
   // settings-hooks → run register-hooks
-  if (
-    r.check === 'settings-hooks' &&
-    r.status === 'warn' &&
-    r.message !== 'settings.json contains invalid JSON'
-  ) {
-    return async (vaultDir, registerHooksFn) => {
-      const fn =
-        registerHooksFn ??
-        (async (dir: string) => {
-          const { runRegisterHooks } = await import('./internal/register-hooks.js');
-          await runRegisterHooks({ vaultDir: dir });
-        });
-      await fn(vaultDir);
+  if (r.check === 'settings-hooks' && r.status === 'warn') {
+    const issues = (r.details ?? []).filter((d) => !d.startsWith('Run '));
+    const description =
+      issues.length > 0
+        ? `Fix: ${issues.join(', ')}`
+        : 'Repair Claude Code hooks in .claude/settings.json';
+    return {
+      fn: async (vaultDir, registerHooksFn) => {
+        const fn =
+          registerHooksFn ??
+          (async (dir: string) => {
+            const { runRegisterHooks } = await import('./internal/register-hooks.js');
+            await runRegisterHooks({ vaultDir: dir });
+          });
+        await fn(vaultDir);
+      },
+      description,
     };
   }
 
   // vault.yml-keys: deprecated keys → remove them
-  if (
-    r.check === 'vault.yml-keys' &&
-    r.status === 'warn' &&
-    (r.message.includes('onebrain_version') ||
-      r.message.includes('deprecated key: method') ||
-      r.message.includes('runtime.harness'))
-  ) {
-    return async (vaultDir) => {
-      const { readFile, writeFile, rename } = await import('node:fs/promises');
-      const { join } = await import('node:path');
-      const { parse, stringify } = await import('yaml');
-      const vaultYmlPath = join(vaultDir, 'vault.yml');
-      const text = await readFile(vaultYmlPath, 'utf8');
-      const raw = (parse(text) ?? {}) as Record<string, unknown>;
-      if (r.message.includes('onebrain_version')) raw['onebrain_version'] = undefined;
-      if (r.message.includes('deprecated key: method')) raw['method'] = undefined;
-      if (r.message.includes('runtime.harness')) {
-        const runtime = raw['runtime'] as Record<string, unknown> | undefined;
-        if (runtime) {
-          runtime['harness'] = undefined;
-          if (Object.keys(runtime).filter((k) => runtime[k] !== undefined).length === 0) {
-            raw['runtime'] = undefined;
+  const hasDeprecatedKeys = r.details?.some(
+    (d) =>
+      d.includes('deprecated key: onebrain_version') ||
+      d.includes('deprecated key: method') ||
+      d.includes('deprecated key: runtime.harness'),
+  );
+  if (r.check === 'vault.yml-keys' && r.status === 'warn' && hasDeprecatedKeys) {
+    const deprecated = (r.details ?? [])
+      .filter((d) => d.startsWith('deprecated key:'))
+      .map((d) => d.slice('deprecated key: '.length).split(' ')[0] ?? d);
+    const description =
+      deprecated.length > 0
+        ? `Remove deprecated keys from vault.yml: ${deprecated.join(', ')}`
+        : 'Remove deprecated keys from vault.yml';
+    return {
+      fn: async (vaultDir) => {
+        const { readFile, writeFile, rename } = await import('node:fs/promises');
+        const { join } = await import('node:path');
+        const { parse, stringify } = await import('yaml');
+        const vaultYmlPath = join(vaultDir, 'vault.yml');
+        const text = await readFile(vaultYmlPath, 'utf8');
+        const raw = (parse(text) ?? {}) as Record<string, unknown>;
+        const details = r.details ?? [];
+        if (details.some((d) => d.includes('onebrain_version'))) raw['onebrain_version'] = undefined;
+        if (details.some((d) => d.includes('deprecated key: method'))) raw['method'] = undefined;
+        if (details.some((d) => d.includes('runtime.harness'))) {
+          const runtime = raw['runtime'] as Record<string, unknown> | undefined;
+          if (runtime) {
+            runtime['harness'] = undefined;
+            if (Object.keys(runtime).filter((k) => runtime[k] !== undefined).length === 0) {
+              raw['runtime'] = undefined;
+            }
           }
         }
-      }
-      const updated = stringify(raw, { lineWidth: 0 });
-      const tmpPath = `${vaultYmlPath}.tmp`;
-      await writeFile(tmpPath, updated, 'utf8');
-      await rename(tmpPath, vaultYmlPath);
+        const updated = stringify(raw, { lineWidth: 0 });
+        const tmpPath = `${vaultYmlPath}.tmp`;
+        await writeFile(tmpPath, updated, 'utf8');
+        await rename(tmpPath, vaultYmlPath);
+      },
+      description,
     };
   }
 
   // qmd-embeddings: unembedded docs → qmd update + qmd embed
   if (r.check === 'qmd-embeddings' && r.status === 'warn' && r.message.includes('unembedded')) {
-    return async (vaultDir) => {
-      const { join } = await import('node:path');
-      const { parse: parseYaml } = await import('yaml');
-      const { readFile } = await import('node:fs/promises');
-      const raw = parseYaml(await readFile(join(vaultDir, 'vault.yml'), 'utf8')) as Record<
-        string,
-        unknown
-      >;
-      const collection = raw['qmd_collection'] as string | undefined;
-      if (!collection) return;
+    const pendingMatch = r.message.match(/(\d+) unembedded/);
+    const count = pendingMatch?.[1] ?? 'some';
+    return {
+      fn: async (vaultDir) => {
+        const { join } = await import('node:path');
+        const { parse: parseYaml } = await import('yaml');
+        const { readFile } = await import('node:fs/promises');
+        const raw = parseYaml(await readFile(join(vaultDir, 'vault.yml'), 'utf8')) as Record<
+          string,
+          unknown
+        >;
+        const collection = raw['qmd_collection'] as string | undefined;
+        if (!collection) return;
 
-      const qmd =
-        Bun.which('qmd') ??
-        Bun.which('qmd', {
-          PATH: `${process.env['HOME'] ?? ''}/.bun/bin:${process.env['PATH'] ?? ''}`,
-        });
-      if (!qmd) return;
+        const qmd =
+          Bun.which('qmd') ??
+          Bun.which('qmd', {
+            PATH: `${process.env['HOME'] ?? ''}/.bun/bin:${process.env['PATH'] ?? ''}`,
+          });
+        if (!qmd) return;
 
-      // Step 1: index
-      await Bun.spawn([qmd, 'update', '-c', collection], {
-        stdout: 'ignore',
-        stderr: 'ignore',
-      }).exited;
+        await Bun.spawn([qmd, 'update', '-c', collection], {
+          stdout: 'ignore',
+          stderr: 'ignore',
+        }).exited;
 
-      // Step 2: embed
-      await Bun.spawn([qmd, 'embed'], {
-        stdout: 'ignore',
-        stderr: 'ignore',
-      }).exited;
+        await Bun.spawn([qmd, 'embed'], {
+          stdout: 'ignore',
+          stderr: 'ignore',
+        }).exited;
+      },
+      description: `Embed ${count} unembedded document(s) (qmd update + embed)`,
     };
   }
 
   // folders missing → mkdir -p
-  if (r.check === 'folders' && r.status === 'warn' && r.hint) {
-    return async (vaultDir) => {
-      const { mkdir } = await import('node:fs/promises');
-      const { join } = await import('node:path');
-      const missingStr = r.hint?.replace('Missing: ', '') ?? '';
-      const missing = missingStr
-        .split(', ')
-        .map((f) => f.trim())
-        .filter(Boolean);
-      for (const folder of missing) {
-        await mkdir(join(vaultDir, folder), { recursive: true });
-      }
+  if (r.check === 'folders' && r.status === 'error' && r.hint) {
+    const missingStr = r.hint.replace('Missing: ', '');
+    return {
+      fn: async (vaultDir) => {
+        const { mkdir } = await import('node:fs/promises');
+        const { join } = await import('node:path');
+        const missing = missingStr
+          .split(', ')
+          .map((f) => f.trim())
+          .filter(Boolean);
+        for (const folder of missing) {
+          await mkdir(join(vaultDir, folder), { recursive: true });
+        }
+      },
+      description: `Create missing folders: ${missingStr}`,
     };
   }
 
@@ -393,21 +406,35 @@ async function applyFixes(
   vaultDir: string,
   results: DoctorResult[],
   isTTY: boolean,
-  registerHooksFn?: (vaultDir: string) => Promise<void>,
+  registerHooksFn: ((vaultDir: string) => Promise<void>) | undefined,
 ): Promise<void> {
-  const fixable = results.filter((r) => r.status !== 'ok').filter(isFixable);
+  const fixable = results.filter((r) => r.status !== 'ok' && getFix(r) !== null);
 
   if (fixable.length === 0) {
-    if (isTTY) process.stdout.write(`${pc.green('◆')} All checks passed — nothing to fix\n`);
-    else process.stdout.write('nothing to fix\n');
+    if (isTTY) barLine(`${pc.green('◆')}  Nothing to fix`);
+    else writeLine('nothing to fix');
     return;
   }
 
-  // TTY: confirm before applying
   if (isTTY) {
-    const { confirm } = await import('@clack/prompts');
-    const ok = await confirm({ message: `Apply ${fixable.length} fix(es)?` });
-    if (!ok || ok === Symbol.for('clack:cancel')) return;
+    barBlank();
+    barLine(pc.bold(`${fixable.length} fix(es) to apply:`));
+    barBlank();
+    for (const r of fixable) {
+      barLine(`  ${pc.cyan('◆')}  ${getFix(r)!.description}`);
+    }
+    barBlank();
+
+    const answer = await askYesNo('Apply all?');
+
+    if (answer === null || answer === false) {
+      barLine(pc.dim('No'));
+      barBlank();
+      close(`No changes made — run ${pc.cyan('onebrain doctor --fix')} to apply`);
+      return;
+    }
+    barLine('Yes');
+    barBlank();
   }
 
   let fixed = 0;
@@ -421,13 +448,13 @@ async function applyFixes(
       continue;
     }
     try {
-      await fix(vaultDir, registerHooksFn);
+      await fix.fn(vaultDir, registerHooksFn);
       fixed++;
-      if (isTTY) process.stdout.write(`${pc.green('◆')} Fixed: ${r.check}\n`);
+      if (isTTY) barLine(`${pc.green('◆')}  ${fix.description}`);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       if (isTTY) {
-        process.stdout.write(`${pc.yellow('▲')} Could not fix ${r.check}: ${errMsg}\n`);
+        barLine(`${pc.yellow('▲')}  Could not fix ${r.check}: ${errMsg}`);
       } else {
         process.stderr.write(`doctor: fix failed for ${r.check}: ${errMsg}\n`);
       }
@@ -435,16 +462,16 @@ async function applyFixes(
   }
 
   if (isTTY) {
-    if (fixed > 0) process.stdout.write(`${pc.green('◆')} Fixed ${fixed} issue(s)\n`);
+    barBlank();
+    if (fixed > 0) barLine(`${pc.green('◆')}  Fixed ${fixed} issue(s)`);
     if (unfixable.length > 0) {
-      process.stdout.write(
-        `${pc.yellow('▲')} ${unfixable.length} issue(s) require manual action:\n`,
-      );
+      barLine(`${pc.yellow('▲')}  ${unfixable.length} issue(s) require manual action:`);
       for (const r of unfixable) {
-        process.stdout.write(`    ${r.check}: ${r.hint ?? 'no auto-fix available'}\n`);
+        barLine(`      ${r.check}: ${r.hint ?? 'no auto-fix available'}`);
       }
     }
-    outro('Done');
+    barBlank();
+    close('Done');
   } else {
     process.stdout.write(`fixed: ${fixed}\n`);
     if (unfixable.length > 0) {

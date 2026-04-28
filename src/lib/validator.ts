@@ -21,25 +21,37 @@ export async function checkVaultYml(vaultRoot: string): Promise<DoctorResult> {
       status: 'error',
       message: 'vault.yml not found',
       hint: 'Run onebrain init to create vault.yml',
+      details: ['Run onebrain init to create vault.yml'],
     };
   }
 
   const text = await file.text();
+  let parsed: Record<string, unknown> | null = null;
   try {
-    parse(text);
+    const result = parse(text);
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      parsed = result as Record<string, unknown>;
+    }
   } catch {
     return {
       check: 'vault.yml',
       status: 'error',
       message: 'vault.yml contains invalid YAML',
       hint: 'Check vault.yml syntax',
+      details: ['Check vault.yml syntax'],
     };
   }
 
+  const details: string[] = [];
+  if (parsed) {
+    if (typeof parsed['update_channel'] === 'string') details.push(`update_channel: ${parsed['update_channel']}`);
+    if (typeof parsed['qmd_collection'] === 'string') details.push(`qmd: ${parsed['qmd_collection']}`);
+  }
   return {
     check: 'vault.yml',
     status: 'ok',
     message: 'valid',
+    details: details.length > 0 ? details : undefined,
   };
 }
 
@@ -84,9 +96,10 @@ export async function checkFolders(vaultRoot: string, config: VaultConfig): Prom
 
   return {
     check: 'folders',
-    status: 'warn',
+    status: 'error',
     message: `${present}/${total} present`,
     hint: `Missing: ${missing.join(', ')}`,
+    details: missing.map((f) => `missing: ${f}`),
   };
 }
 
@@ -113,6 +126,7 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
       status: 'warn',
       message: 'qmd_collection not set in vault.yml',
       hint: 'Run /qmd to set up search index',
+      details: ['Run /qmd to set up search index'],
     };
   }
 
@@ -173,10 +187,19 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
         status: 'warn',
         message: summary,
         hint: 'Run onebrain doctor --fix to reindex and embed',
+        details: [
+          `collection: ${config.qmd_collection}`,
+          'Run onebrain doctor --fix to reindex and embed',
+        ],
       };
     }
 
-    return { check: 'qmd-embeddings', status: 'ok', message: summary };
+    return {
+      check: 'qmd-embeddings',
+      status: 'ok',
+      message: summary,
+      details: [`collection: ${config.qmd_collection}`],
+    };
   } catch {
     return { check: 'qmd-embeddings', status: 'ok', message: 'qmd status unavailable' };
   }
@@ -244,6 +267,7 @@ export async function checkOrphanCheckpoints(
     status: 'warn',
     message: `${orphanCount} unmerged checkpoint(s) in ${logsFolder}/`,
     hint: 'Run /wrapup to synthesize and merge them',
+    details: ['Run /wrapup to synthesize and merge them'],
   };
 }
 
@@ -335,6 +359,10 @@ export async function checkPluginFiles(vaultRoot: string): Promise<DoctorResult>
       status: 'error',
       message: `missing: ${missingFiles.join(', ')}`,
       hint: 'Run onebrain update to restore plugin files',
+      details: [
+        ...missingFiles.map((f) => `missing: ${f}`),
+        'Run onebrain update to restore plugin files',
+      ],
     };
   }
 
@@ -344,13 +372,32 @@ export async function checkPluginFiles(vaultRoot: string): Promise<DoctorResult>
       status: 'warn',
       message: `stale bash files: ${staleFound.join(', ')}`,
       hint: 'Run onebrain update to remove stale files',
+      details: [
+        ...staleFound.map((f) => `stale: ${f}`),
+        'Run onebrain update to remove stale files',
+      ],
     };
   }
+
+  // Count skills and agents for ok details
+  let skillCount = 0;
+  let agentCount = 0;
+  try {
+    for await (const _ of new Bun.Glob('*/SKILL.md').scan({ cwd: join(pluginBase, 'skills') })) {
+      skillCount++;
+    }
+  } catch { /* ok */ }
+  try {
+    for await (const _ of new Bun.Glob('*.md').scan({ cwd: join(pluginBase, 'agents') })) {
+      agentCount++;
+    }
+  } catch { /* ok */ }
 
   return {
     check: 'plugin-files',
     status: 'ok',
     message: 'all required files present',
+    details: [`${skillCount} skills · ${agentCount} agents · INSTRUCTIONS.md ✓`],
   };
 }
 
@@ -451,18 +498,13 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
 
   if (errors.length > 0) {
     const hassMissingKey = errors.some((e) => e.startsWith('missing key:'));
-    if (hassMissingKey) {
-      return {
-        check: 'vault.yml-keys',
-        status: 'error',
-        message: errors.join('; '),
-        hint: 'Run onebrain init --force to recreate vault.yml',
-      };
-    }
+    const hint = hassMissingKey ? 'Run onebrain init --force to recreate vault.yml' : undefined;
     return {
       check: 'vault.yml-keys',
       status: 'error',
-      message: errors.join('; '),
+      message: `${errors.length} error(s)`,
+      hint,
+      details: hint ? [...errors, hint] : errors,
     };
   }
 
@@ -471,18 +513,16 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
       (w) =>
         w.includes('onebrain_version') || w.includes('method') || w.includes('runtime.harness'),
     );
-    if (fixableWarnings.length > 0) {
-      return {
-        check: 'vault.yml-keys',
-        status: 'warn',
-        message: warnings.join('; '),
-        hint: 'Run onebrain doctor --fix to remove deprecated keys',
-      };
-    }
+    const hint =
+      fixableWarnings.length > 0
+        ? 'Run onebrain doctor --fix to remove deprecated keys'
+        : undefined;
     return {
       check: 'vault.yml-keys',
       status: 'warn',
-      message: warnings.join('; '),
+      message: `${warnings.length} issue(s)`,
+      hint,
+      details: hint ? [...warnings, hint] : warnings,
     };
   }
 
@@ -546,17 +586,25 @@ export async function checkSettingsHooks(
   }
 
   const warnings: string[] = [];
+  const confirmedHooks: string[] = [];
+  let permissionOk = false;
 
   // Check required hooks
   for (const { event, cmdSubstring } of REQUIRED_HOOKS) {
     if (!hookPresent(settings, event, cmdSubstring)) {
       warnings.push(`${event} hook missing`);
+    } else {
+      confirmedHooks.push(`${event} ✓`);
     }
   }
 
   // PostToolUse (qmd) — conditional on qmd_collection
-  if (config.qmd_collection && !hookPresent(settings, 'PostToolUse', QMD_HOOK_SUBSTRING)) {
-    warnings.push('PostToolUse (qmd) hook missing');
+  if (config.qmd_collection) {
+    if (!hookPresent(settings, 'PostToolUse', QMD_HOOK_SUBSTRING)) {
+      warnings.push('PostToolUse (qmd) hook missing');
+    } else {
+      confirmedHooks.push('PostToolUse ✓');
+    }
   }
 
   // Stale PreCompact hook
@@ -586,20 +634,28 @@ export async function checkSettingsHooks(
   const allow = settings.permissions?.allow ?? [];
   if (!allow.includes(REQUIRED_PERMISSION)) {
     warnings.push(`missing permission: ${REQUIRED_PERMISSION}`);
+  } else {
+    permissionOk = true;
   }
 
   if (warnings.length > 0) {
     return {
       check: 'settings-hooks',
       status: 'warn',
-      message: warnings.join('; '),
+      message: `${warnings.length} issue(s)`,
       hint: 'Run onebrain doctor --fix to repair hooks',
+      details: [...warnings, 'Run onebrain doctor --fix to repair hooks'],
     };
   }
+
+  const okDetails: string[] = [];
+  if (confirmedHooks.length > 0) okDetails.push(`hooks: ${confirmedHooks.join('  ')}`);
+  if (permissionOk) okDetails.push('permissions: Bash(onebrain *) ✓');
 
   return {
     check: 'settings-hooks',
     status: 'ok',
     message: 'hooks ok',
+    details: okDetails.length > 0 ? okDetails : undefined,
   };
 }

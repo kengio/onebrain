@@ -65,7 +65,10 @@ const throwingFetch = makeThrowingFetch();
 /** Noop mocks with required return shapes. */
 const noopInstallBinary = async (_version: string): Promise<void> => {};
 const noopValidateBinary = async (): Promise<boolean> => true;
-const noopCurrentVersion = async (): Promise<string> => 'v1.10.18';
+const noopCurrentVersion = async (): Promise<{ version: string; publishedAt: Date | null }> => ({
+  version: 'v1.10.18',
+  publishedAt: null,
+});
 
 let tempDir: string;
 
@@ -193,7 +196,7 @@ describe('update integration: full end-to-end success', () => {
       },
       currentVersionFn: async () => {
         sideEffects.push('current-version');
-        return 'v1.10.18';
+        return { version: 'v1.10.18', publishedAt: null };
       },
     };
 

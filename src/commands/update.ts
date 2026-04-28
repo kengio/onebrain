@@ -18,9 +18,9 @@
 
 import { access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { spinner as createSpinner } from '@clack/prompts';
 import pc from 'picocolors';
-import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
+import { printBanner } from './internal/cli-banner.js';
+import { barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -40,7 +40,9 @@ export interface UpdateOptions {
   /** Injectable binary validation function for tests. Returns true if binary is valid. */
   validateBinaryFn?: () => Promise<boolean>;
   /** Injectable current version function for tests. */
-  currentVersionFn?: () => Promise<string>;
+  currentVersionFn?: () => Promise<{ version: string; publishedAt: Date | null }>;
+  /** Injectable delay function for tests — bypasses artificial pauses. */
+  delayFn?: (ms: number) => Promise<void>;
 }
 
 export interface UpdateResult {
@@ -55,7 +57,8 @@ export interface UpdateResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const GITHUB_RELEASES_URL = 'https://api.github.com/repos/kengio/onebrain/releases/latest';
+const GITHUB_REPO = 'https://api.github.com/repos/kengio/onebrain';
+const GITHUB_RELEASES_URL = `${GITHUB_REPO}/releases/latest`;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -65,7 +68,12 @@ const GITHUB_RELEASES_URL = 'https://api.github.com/repos/kengio/onebrain/releas
 // Step 1: Fetch latest release
 // ---------------------------------------------------------------------------
 
-async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
+interface ReleaseInfo {
+  version: string;
+  publishedAt: Date | null;
+}
+
+async function fetchLatestRelease(fetchFn: typeof fetch): Promise<ReleaseInfo> {
   const response = await fetchFn(GITHUB_RELEASES_URL, {
     headers: { Accept: 'application/vnd.github.v3+json' },
   });
@@ -77,7 +85,20 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
   if (typeof tagName !== 'string' || !tagName) {
     throw new Error('GitHub response missing tag_name');
   }
-  return tagName;
+  const publishedAt =
+    typeof json['published_at'] === 'string' ? new Date(json['published_at']) : null;
+  return { version: tagName, publishedAt };
+}
+
+function formatReleaseDate(date: Date): string {
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function daysBehind(date: Date): string {
+  const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) return 'just released';
+  if (days === 1) return '1 day behind';
+  return `${days} days behind`;
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +162,7 @@ async function defaultValidateBinary(): Promise<boolean> {
 // Current version detection
 // ---------------------------------------------------------------------------
 
-async function defaultCurrentVersion(): Promise<string> {
+async function defaultCurrentVersion(): Promise<{ version: string; publishedAt: Date | null }> {
   try {
     const isWindows = process.platform === 'win32';
     const cmd = isWindows
@@ -149,12 +170,16 @@ async function defaultCurrentVersion(): Promise<string> {
       : ['onebrain', '--version'];
     const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
     const exitCode = await proc.exited;
-    if (exitCode !== 0) return 'unknown';
+    if (exitCode !== 0) return { version: 'unknown', publishedAt: null };
     const stdout = await new Response(proc.stdout).text();
-    const match = /v[\d.]+/.exec(stdout.trim());
-    return match ? match[0] : 'unknown';
+    const versionMatch = /v[\d.]+/.exec(stdout);
+    const dateMatch = /released (\d{4}-\d{2}-\d{2})/.exec(stdout);
+    return {
+      version: versionMatch ? versionMatch[0] : 'unknown',
+      publishedAt: dateMatch ? new Date(dateMatch[1]!) : null,
+    };
   } catch {
-    return 'unknown';
+    return { version: 'unknown', publishedAt: null };
   }
 }
 
@@ -173,36 +198,15 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   const currentVersionFn = opts.currentVersionFn ?? defaultCurrentVersion;
 
   const result: UpdateResult = { ok: false, exitCode: 0 };
-
-  function writeLine(msg: string) {
-    process.stdout.write(`${msg}\n`);
-  }
-
-  function step(msg: string) {
-    process.stdout.write(`  ${pc.bold(pc.cyan('›'))}  ${msg}\n`);
-  }
-
-  function close(msg: string, isError = false) {
-    if (isError) {
-      process.stdout.write(`${pc.red('└')}  ${pc.bold(pc.red(msg))}\n`);
-    } else {
-      process.stdout.write(`${pc.cyan('└')}  ${msg}\n`);
-    }
-  }
-
-  const delay = (ms: number) =>
-    isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
-  const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
+  const createStep = makeStepFn(isTTY);
+  const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const randDelay = () =>
+    isTTY ? delay(Math.floor(Math.random() * 1000) + 1000) : Promise.resolve();
 
   if (isTTY) {
-    const binaryVersion = resolveBinaryVersion();
     await printBanner();
-    process.stdout.write(
-      `${pc.bold('OneBrain')} ${pc.dim('Update')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n\n`,
-    );
   } else {
     writeLine('OneBrain Update');
-    writeLine('binary-only');
   }
 
   // Step 0: Guard
@@ -221,27 +225,33 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   }
 
   // Step 1a: Check local version
-  const spLocal = isTTY ? createSpinner() : null;
-  spLocal?.start('🔍  Checking local version…');
-  const currentVersion = await currentVersionFn();
+  const sp1 = createStep('🔍', 'Local version');
+  const { version: currentVersion, publishedAt: localPublishedAt } = await currentVersionFn();
   result.currentVersion = currentVersion;
-  if (isTTY) {
-    await randDelay();
-    spLocal?.stop(`🔍  Local version   ${pc.dim(currentVersion)}`);
-  } else {
-    writeLine(`current: ${currentVersion}`);
-  }
+  await randDelay();
+  const localVersionLabel = localPublishedAt
+    ? `${pc.dim(currentVersion)}  ${pc.dim('·')}  ${pc.dim(formatReleaseDate(localPublishedAt))}`
+    : pc.dim(currentVersion);
+  if (sp1) sp1.stop(localVersionLabel);
+  else writeLine(`current: ${currentVersion}${localPublishedAt ? `  (${formatReleaseDate(localPublishedAt)})` : ''}`);
 
   // Step 1b: Check remote version
-  const spRemote = isTTY ? createSpinner() : null;
-  spRemote?.start('🌐  Checking remote version…');
+  const sp2 = createStep('🌐', 'Remote version');
   let latestVersion: string;
+  let publishedAt: Date | null = null;
   try {
-    latestVersion = await fetchLatestVersion(fetchFn);
-    spRemote?.stop(`🌐  Remote version  ${pc.green(latestVersion)}`);
+    const release = await fetchLatestRelease(fetchFn);
+    latestVersion = release.version;
+    publishedAt = release.publishedAt;
+    await randDelay();
+    const isOutdated = latestVersion !== currentVersion;
+    const behindSuffix = isOutdated && publishedAt ? `  ${pc.dim('·')}  ${pc.dim(daysBehind(publishedAt))}` : '';
+    const dateSuffix = publishedAt ? `  ${pc.dim('·')}  ${pc.dim(formatReleaseDate(publishedAt))}${behindSuffix}` : '';
+    if (sp2) sp2.stop(`${pc.green(latestVersion)}${dateSuffix}`);
+    else writeLine(`latest: ${latestVersion}${isOutdated && publishedAt ? `  (${daysBehind(publishedAt)})` : ''}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    spRemote?.stop('🌐  Remote version unavailable');
+    if (sp2) sp2.stop('unavailable');
     result.error = `Fetch failed: ${msg}`;
     result.exitCode = 1;
     if (isTTY) {
@@ -257,9 +267,10 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   if (check) {
     if (isTTY) {
       if (currentVersion !== latestVersion) {
-        step(
+        barLine(
           `⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}  · binary would upgrade`,
         );
+        barBlank();
       }
       close('Dry run complete — no changes made');
     } else {
@@ -273,10 +284,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // Already up to date?
   if (latestVersion === currentVersion) {
     if (isTTY) {
-      step(`✅  Already up to date  @onebrain-ai/cli ${latestVersion}`);
-      close('Nothing to do');
+      const dateSuffix = publishedAt ? `  ·  ${formatReleaseDate(publishedAt)}` : '';
+      close(`Already up to date — @onebrain-ai/cli ${pc.dim(latestVersion)}${pc.dim(dateSuffix)}`);
     } else {
-      writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}`);
+      const dateSuffix = publishedAt ? `  (${formatReleaseDate(publishedAt)})` : '';
+      writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}${dateSuffix}`);
       writeLine('done: nothing to do');
     }
     result.ok = true;
@@ -284,21 +296,22 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     return result;
   }
 
-  // Show upgrade
+  // Show upgrade arrow
   if (isTTY) {
-    step(`⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}`);
+    barLine(`⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}`);
+    barBlank();
   }
 
   // Step 2: Install binary
-  const installSpinner = isTTY ? createSpinner() : null;
-  installSpinner?.start(`Installing @onebrain-ai/cli ${latestVersion}…`);
+  const sp3 = createStep('📦', 'Installing @onebrain-ai/cli');
   try {
     await installBinaryFn(latestVersion);
-    installSpinner?.stop(`Binary installed  ${latestVersion}`);
-    if (!isTTY) writeLine(`upgrading: @onebrain-ai/cli ${latestVersion} installed`);
+    await randDelay();
+    if (sp3) sp3.stop(pc.green(latestVersion));
+    else writeLine(`upgrading: @onebrain-ai/cli ${latestVersion} installed`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    installSpinner?.stop('Install failed');
+    if (sp3) sp3.stop('install failed');
     result.error = `Binary install failed: ${msg}`;
     result.exitCode = 1;
     if (isTTY) {
@@ -310,8 +323,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   }
 
   // Step 3: Validate binary
+  const sp4 = createStep('✅', 'Validating binary');
   const binaryValid = await validateBinaryFn();
+  await randDelay();
   if (!binaryValid) {
+    if (sp4) sp4.stop('failed');
     result.error = 'Binary validation failed. Check PATH.';
     result.exitCode = 1;
     if (isTTY) {
@@ -321,6 +337,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     }
     return result;
   }
+  if (sp4) sp4.stop('ok');
 
   result.ok = true;
   result.exitCode = 0;

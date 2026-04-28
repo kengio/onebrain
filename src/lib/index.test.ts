@@ -230,22 +230,22 @@ describe('checkFolders', () => {
     expect(result.message).toBe('8/8 present');
   });
 
-  it('returns warn listing missing folders when some are absent', async () => {
+  it('returns error listing missing folders when some are absent', async () => {
     // Only create half the folders
     await mkdir(join(dir, '00-inbox'), { recursive: true });
     await mkdir(join(dir, '01-projects'), { recursive: true });
     const result = await checkFolders(dir, config);
 
-    expect(result.status).toBe('warn');
+    expect(result.status).toBe('error');
     expect(result.message).toContain('2/8');
     expect(result.hint).toContain('02-areas');
     expect(result.hint).toContain('03-knowledge');
   });
 
-  it('returns warn listing all missing folders when none exist', async () => {
+  it('returns error listing all missing folders when none exist', async () => {
     const result = await checkFolders(dir, config);
 
-    expect(result.status).toBe('warn');
+    expect(result.status).toBe('error');
     expect(result.message).toContain('0/8');
   });
 });

@@ -51,7 +51,7 @@ function makeMockFetch(tagName: string): typeof fetch {
 /** Noop mocks */
 const noopInstallBinary = async (_version: string): Promise<void> => {};
 const noopValidateBinary = async (): Promise<boolean> => true;
-const noopCurrentVersion = async (): Promise<string> => 'v1.10.18';
+const noopCurrentVersion = async () => ({ version: 'v1.10.18', publishedAt: null });
 
 let tempDir: string;
 
@@ -88,7 +88,7 @@ describe('runUpdate', () => {
       },
       currentVersionFn: async () => {
         calls.push('current-version');
-        return 'v1.10.18';
+        return { version: 'v1.10.18', publishedAt: null };
       },
     };
 
@@ -148,7 +148,7 @@ describe('runUpdate', () => {
         calls.push('validate');
         return true;
       },
-      currentVersionFn: async () => 'v2.0.0', // same as latest
+      currentVersionFn: async () => ({ version: 'v2.0.0', publishedAt: null }), // same as latest
     };
 
     const result = await runUpdate(opts);
@@ -276,7 +276,7 @@ describe('runUpdate', () => {
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: noopInstallBinary,
       validateBinaryFn: noopValidateBinary,
-      currentVersionFn: async () => 'unknown',
+      currentVersionFn: async () => ({ version: 'unknown', publishedAt: null }),
     };
 
     const result = await runUpdate(opts2);
