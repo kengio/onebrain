@@ -64,6 +64,8 @@ merged: false
 
 **Body:** use Shared Body Sections above. `## What We Worked On`: 2-3 sentences describing the session focus.
 
+**Dataview compatibility:** Never write `` `=… `` (backtick followed by `=`) anywhere in the file — Dataview parses it as an inline query and throws a parse error in Obsidian. Use `→` in place of `==>`, or describe the concept in plain prose instead of quoting it in a code span.
+
 ---
 
 ## Session Log Format
