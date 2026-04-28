@@ -1,4 +1,4 @@
-import { cancel, spinner as createSpinner, outro } from '@clack/prompts';
+import { spinner as createSpinner, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import {
   type DoctorResult,
@@ -254,13 +254,17 @@ function printDoctorOutput(
   }
   process.stdout.write(`${bar}\n`);
 
-  // Summary via outro (ok/warn) or cancel (error)
+  // Summary — styled to match the cyan bar
   if (errorCount > 0) {
-    cancel(`${errorCount} error(s) — fix before using`);
+    process.stdout.write(
+      `${pc.red('└')}  ${pc.bold(pc.red(`${errorCount} error(s) — fix before using`))}\n`,
+    );
   } else if (warningCount > 0) {
-    outro(`${warningCount} warning(s) — ok to run`);
+    process.stdout.write(
+      `${pc.cyan('└')}  ${pc.yellow(`${warningCount} warning(s) — advisory only, safe to run`)}\n`,
+    );
   } else {
-    outro('All checks passed');
+    process.stdout.write(`${pc.cyan('└')}  ${pc.green('All checks passed')}\n`);
   }
 
   if (showFixHint) {
