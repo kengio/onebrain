@@ -35,7 +35,6 @@ Only run if `vault.yml` is missing `folders.areas`.
 5. Verify `05-agent/MEMORY-INDEX.md` exists; if not, create an empty MEMORY-INDEX.md with the standard frontmatter (`total_active: 0`, `total_needs_review: 0`, `updated: YYYY-MM-DD`)
 6. Update `vault.yml` with all 8 keys:
    ```yaml
-   method: onebrain
    folders:
      inbox: 00-inbox
      projects: 01-projects

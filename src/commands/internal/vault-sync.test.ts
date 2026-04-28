@@ -105,8 +105,7 @@ async function makeVaultDir(): Promise<string> {
   return mkdtemp(join(tmpdir(), 'onebrain-vs-test-'));
 }
 
-const VALID_VAULT_YML =
-  'method: onebrain\nupdate_channel: stable\nfolders:\n  inbox: 00-inbox\n  logs: 07-logs\n';
+const VALID_VAULT_YML = 'update_channel: stable\nfolders:\n  inbox: 00-inbox\n  logs: 07-logs\n';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -118,6 +117,7 @@ describe('runVaultSync', () => {
 
   beforeEach(async () => {
     vaultDir = await makeVaultDir();
+    await mkdir(join(vaultDir, '.claude'), { recursive: true });
     await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
     tarball = buildMockTarball({});
   });
@@ -142,13 +142,9 @@ describe('runVaultSync', () => {
     const pj = JSON.parse(await readFile(pluginJson, 'utf8'));
     expect(pj.version).toBe('1.11.0');
 
-    // Root docs should be present
-    const readme = await readFile(join(vaultDir, 'README.md'), 'utf8');
-    expect(readme).toContain('# OneBrain');
-
-    // vault.yml should have onebrain_version
+    // vault.yml should have update_channel preserved
     const vaultYml = await readFile(join(vaultDir, 'vault.yml'), 'utf8');
-    expect(vaultYml).toContain('onebrain_version: 1.11.0');
+    expect(vaultYml).toContain('update_channel: stable');
   });
 
   // ── Test 2: stale file removal ──────────────────────────────────────────
@@ -273,7 +269,7 @@ describe('runVaultSync', () => {
 
   // ── Test 6: vault.yml version + channel written ─────────────────────────
 
-  it('writes onebrain_version and preserves update_channel in vault.yml', async () => {
+  it('preserves update_channel in vault.yml', async () => {
     const result = await runVaultSync(vaultDir, {
       fetchFn: mockFetchWithTarball(tarball),
     });
@@ -281,8 +277,8 @@ describe('runVaultSync', () => {
     expect(result.ok).toBe(true);
 
     const vaultYml = await readFile(join(vaultDir, 'vault.yml'), 'utf8');
-    expect(vaultYml).toContain('onebrain_version: 1.11.0');
     expect(vaultYml).toContain('update_channel: stable');
+    expect(vaultYml).not.toContain('onebrain_version');
   });
 
   // ── Test 7: missing installed_plugins.json → pin no-op ─────────────────

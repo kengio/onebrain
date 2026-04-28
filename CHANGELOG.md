@@ -1,6 +1,6 @@
 ---
-latest_version: 2.0.14
-released: 2026-04-27
+latest_version: 2.1.0
+released: 2026-04-28
 ---
 
 # CLI Changelog
@@ -12,6 +12,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.0 — Redesign Install Flow
+
+- feat(init): community plugin installer — downloads Tasks, Dataview, Terminal automatically
+- feat(init): ASCII banner + picocolors UX redesign; cancel() on fatal vault-sync failure
+- **BREAKING** change(update): binary-only — run `/update` skill in Claude to sync vault files
+- remove(update): onebrain_version no longer written to vault.yml
+- feat(doctor): intro/outro + clack UX; new checks (plugin-files, vault.yml-keys, settings-hooks)
+- feat(doctor): --fix mode — auto-repair hooks, remove deprecated vault.yml keys; removes deprecated vault.yml keys (method, runtime.harness, onebrain_version)
+- fix(register-hooks): PostToolUse auto-detected from qmd_collection; SessionStart removed
+- remove: install.sh and install.ps1 — replaced by onebrain init
+- feat(harness): replace CLAUDE_CODE_HARNESS with ONEBRAIN_HARNESS env var; shared detectHarness() utility detects harness at runtime via env → .gemini/ → .claude/ → direct
+- remove(vault.yml): method and runtime.harness keys removed — harness detected at runtime, no longer stored
 
 ## v2.0.14 — fix: remove session token from hook emit format; deterministic resolveSessionToken
 

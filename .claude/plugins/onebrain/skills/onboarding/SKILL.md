@@ -168,7 +168,7 @@ Wait for response. Store: `recurring_contexts`.
 ## Step 8b: Verify CLAUDE.md pointer
 
 Check the state of root `CLAUDE.md`:
-- **File exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment : not prefixed with `>`, `<!--`, or `#`) → skip silently (already set by install.sh)
+- **File exists and has a line that is exactly** `@.claude/plugins/onebrain/INSTRUCTIONS.md` (line matches exactly after stripping leading/trailing whitespace, and is not inside a comment : not prefixed with `>`, `<!--`, or `#`) → skip silently (already set by `onebrain init`)
 - **File exists but does not have that exact line** → append `@.claude/plugins/onebrain/INSTRUCTIONS.md` on a new line at the end
 - **File does not exist** → create `CLAUDE.md` with content: `@.claude/plugins/onebrain/INSTRUCTIONS.md`
 

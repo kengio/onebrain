@@ -4,7 +4,6 @@ export type {
   VaultConfig,
   VaultFolders,
   VaultCheckpoint,
-  VaultRuntime,
   VaultStats,
   VaultRecap,
   DoctorResult,
@@ -15,8 +14,9 @@ export { loadVaultConfig } from './parser.js';
 export {
   checkVaultYml,
   checkFolders,
-  checkHarnessBinary,
   checkQmdEmbeddings,
-  checkVersionDrift,
   checkOrphanCheckpoints,
+  checkPluginFiles,
+  checkVaultYmlKeys,
+  checkSettingsHooks,
 } from './validator.js';

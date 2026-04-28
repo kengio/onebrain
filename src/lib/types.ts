@@ -19,10 +19,6 @@ export interface VaultCheckpoint {
   minutes: number;
 }
 
-export interface VaultRuntime {
-  harness: 'claude-code' | 'gemini' | 'direct';
-}
-
 export interface VaultStats {
   last_doctor_run?: string;
   last_update_run?: string;
@@ -39,8 +35,6 @@ export interface VaultConfig {
   folders: VaultFolders;
   qmd_collection?: string;
   checkpoint?: VaultCheckpoint;
-  runtime?: VaultRuntime;
-  onebrain_version?: string;
   update_channel?: 'stable' | 'next';
   stats?: VaultStats;
   recap?: VaultRecap;
@@ -53,4 +47,5 @@ export interface DoctorResult {
   status: 'ok' | 'warn' | 'error';
   message: string;
   hint?: string;
+  details?: string[];
 }

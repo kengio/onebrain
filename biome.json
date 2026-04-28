@@ -36,13 +36,6 @@
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      "*.js",
-      ".obsidian",
-      ".claude/settings.json",
-      ".claude/plugins/onebrain/hooks/hooks.json"
-    ]
+    "ignore": ["node_modules", "dist", "*.js", ".obsidian", ".claude/settings.json"]
   }
 }

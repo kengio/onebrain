@@ -112,7 +112,7 @@ describe('init integration: fresh vault (non-TTY)', () => {
     const folders = parsed['folders'] as Record<string, string>;
     expect(folders['inbox']).toBe('00-inbox');
     expect(folders['logs']).toBe('07-logs');
-    expect(parsed['method']).toBe('onebrain');
+    expect(parsed['update_channel']).toBeDefined();
     expect(parsed['update_channel']).toBe('stable');
   });
 
@@ -236,9 +236,9 @@ describe('init integration: plugin files present (skip vault-sync)', () => {
       expect(await fileExists(join(tempDir, folder))).toBe(true);
     }
 
-    // vault.yml updated (method now onebrain, not legacy)
+    // vault.yml updated (legacy method key is gone)
     const parsed = await readVaultYml(tempDir);
-    expect(parsed['method']).toBe('onebrain');
+    expect(parsed['update_channel']).toBeDefined();
   });
 });
 

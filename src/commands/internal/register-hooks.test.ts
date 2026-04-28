@@ -38,33 +38,45 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('runRegisterHooks', () => {
-  test('fresh run on empty settings — all hooks registered, 3 permissions added', async () => {
+  test('fresh run on empty settings — Stop + PostCompact registered, full permissions added', async () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
 
-    // All 3 hooks should be added
+    // Stop and PostCompact should all be added
     for (const event of ['Stop', 'PostCompact']) {
       expect(result.hooks[event]).toBe('added');
     }
 
-    // SessionStart must NOT be registered
-    expect(result.hooks['SessionStart']).toBeUndefined();
-
-    // 3 permissions added
-    expect(result.permissionsAdded).toHaveLength(3);
-    expect(result.permissionsAdded).toContain('Bash(onebrain *)');
-    expect(result.permissionsAdded).toContain('Bash(bun install -g @onebrain-ai/cli*)');
-    expect(result.permissionsAdded).toContain('Bash(npm install -g @onebrain-ai/cli*)');
+    // Full permission set added
+    expect(result.permissionsAdded).toHaveLength(14);
+    for (const perm of [
+      'Read',
+      'Write',
+      'Edit',
+      'Glob',
+      'Grep',
+      'Bash(git *)',
+      'Bash(bun *)',
+      'Bash(gh *)',
+      'Bash(node *)',
+      'Bash(onebrain *)',
+      'Bash(bun install -g @onebrain-ai/cli*)',
+      'Bash(npm install -g @onebrain-ai/cli*)',
+      'WebFetch',
+      'WebSearch',
+    ]) {
+      expect(result.permissionsAdded).toContain(perm);
+    }
 
     // Verify written file structure — no env block
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(Object.keys(hooks)).toHaveLength(2); // Stop + PostCompact only (PreCompact removed)
+    expect(Object.keys(hooks)).toHaveLength(2); // Stop + PostCompact
     expect(settings['env']).toBeUndefined();
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
-    expect(perms).toHaveLength(3);
+    expect(perms).toHaveLength(14);
   });
 
   test('stale PreCompact hook is removed when present in existing settings.json', async () => {
@@ -182,6 +194,61 @@ describe('runRegisterHooks', () => {
 });
 
 // ---------------------------------------------------------------------------
+// qmd_collection auto-detection via vault.yml
+// ---------------------------------------------------------------------------
+
+describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
+  let vaultDir: string;
+
+  beforeEach(async () => {
+    vaultDir = join(tmpdir(), `ob-qmd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    await mkdir(join(vaultDir, '.claude'), { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(vaultDir, { recursive: true, force: true });
+  });
+
+  test('qmd_collection in vault.yml → PostToolUse added to settings.json', async () => {
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const text = await readFile(join(vaultDir, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const hooks = settings['hooks'] as Record<string, unknown[]>;
+    expect(hooks['PostToolUse']).toBeDefined();
+    expect(Array.isArray(hooks['PostToolUse'])).toBe(true);
+    expect((hooks['PostToolUse'] as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  test('qmd_collection absent from vault.yml → PostToolUse NOT added', async () => {
+    await writeFile(join(vaultDir, 'vault.yml'), 'method: onebrain\n', 'utf8');
+
+    await runRegisterHooks({ vaultDir });
+
+    const text = await readFile(join(vaultDir, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const hooks = settings['hooks'] as Record<string, unknown> | undefined;
+    expect(hooks?.['PostToolUse']).toBeUndefined();
+  });
+
+  test('no vault.yml → PostToolUse NOT added (defaults to no qmd_collection)', async () => {
+    // No vault.yml written — loadVaultConfig throws, defaulting to no qmd_collection
+    await runRegisterHooks({ vaultDir });
+
+    const text = await readFile(join(vaultDir, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const hooks = settings['hooks'] as Record<string, unknown> | undefined;
+    expect(hooks?.['PostToolUse']).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // registerGeminiHooks (via runRegisterHooks with runtime.harness: gemini)
 // ---------------------------------------------------------------------------
 
@@ -193,17 +260,15 @@ describe('registerGeminiHooks', () => {
       tmpdir(),
       `ob-gemini-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
+    process.env['ONEBRAIN_HARNESS'] = 'gemini';
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
-    // Write vault.yml with gemini harness
-    await writeFile(
-      join(vaultDir, 'vault.yml'),
-      'method: onebrain\nruntime:\n  harness: gemini\n',
-      'utf8',
-    );
+    await writeFile(join(vaultDir, 'vault.yml'), 'update_channel: stable\n', 'utf8');
   });
 
   afterEach(async () => {
     await rm(vaultDir, { recursive: true, force: true });
+    // biome-ignore lint/performance/noDelete: env cleanup requires delete to unset
+    delete process.env['ONEBRAIN_HARNESS'];
   });
 
   test('no .gemini/settings.json (ENOENT) → result.ok === true, no file created', async () => {
@@ -221,7 +286,7 @@ describe('registerGeminiHooks', () => {
     expect(exists).toBe(false);
   });
 
-  test('.gemini/settings.json exists → Stop/PostCompact written, no SessionStart', async () => {
+  test('.gemini/settings.json exists → Stop/PostCompact written', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
     const geminiSettings = join(geminiDir, 'settings.json');
@@ -237,7 +302,6 @@ describe('registerGeminiHooks', () => {
       expect(Array.isArray(hooks[event])).toBe(true);
       expect((hooks[event] as unknown[]).length).toBeGreaterThan(0);
     }
-    expect(hooks['SessionStart']).toBeUndefined();
   });
 
   test('corrupt JSON in .gemini/settings.json → result.ok === true (swallowed silently)', async () => {
@@ -288,15 +352,9 @@ describe('registerDirectPath', () => {
       `ob-direct-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
-    await writeFile(
-      join(vaultDir, 'vault.yml'),
-      'method: onebrain\nruntime:\n  harness: direct\n',
-      'utf8',
-    );
+    await writeFile(join(vaultDir, 'vault.yml'), 'update_channel: stable\n', 'utf8');
+    process.env['ONEBRAIN_HARNESS'] = 'direct';
 
-    // Register the mock.module factory (structural requirement per spec).
-    // The factory exports a homedir() stub — its effect on already-bound imports
-    // is limited to dynamic re-imports, but we register it here per spec.
     mock.module('node:os', () => ({
       homedir,
       tmpdir,
@@ -305,6 +363,8 @@ describe('registerDirectPath', () => {
 
   afterEach(async () => {
     mock.restore();
+    // biome-ignore lint/performance/noDelete: env cleanup requires delete to unset
+    delete process.env['ONEBRAIN_HARNESS'];
     await rm(vaultDir, { recursive: true, force: true });
   });
 

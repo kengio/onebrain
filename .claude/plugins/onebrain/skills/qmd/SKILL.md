@@ -88,11 +88,10 @@ If this command fails, report the error but continue (context is optional metada
 
 ### Step 7: Store collection name in vault.yml
 
-Read vault.yml. Add `qmd_collection: <collection-name>` as a top-level key immediately after the `method:` line (before the `folders:` block). Write the full updated vault.yml back.
+Read vault.yml. Add `qmd_collection: <collection-name>` as a top-level key before the `folders:` block. Write the full updated vault.yml back.
 
 Example of updated vault.yml:
 ```yaml
-method: onebrain
 qmd_collection: onebrain-a3f2c1
 folders:
   inbox: 00-inbox

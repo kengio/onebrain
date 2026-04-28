@@ -10,6 +10,9 @@
       "Bash(bun *)",
       "Bash(gh *)",
       "Bash(node *)",
+      "Bash(onebrain *)",
+      "Bash(bun install -g @onebrain-ai/cli*)",
+      "Bash(npm install -g @onebrain-ai/cli*)",
       "WebFetch",
       "WebSearch"
     ]

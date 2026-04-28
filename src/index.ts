@@ -75,14 +75,10 @@ program
   .command('init')
   .description('Initialize a new OneBrain vault')
   .option('--vault-dir <path>', 'vault root directory (default: cwd)')
-  .option('--harness <harness>', 'harness type: claude-code | gemini | direct')
   .option('--force', 'overwrite existing vault.yml without prompting')
-  .action(async (opts: { vaultDir?: string; harness?: string; force?: boolean }) => {
+  .action(async (opts: { vaultDir?: string; force?: boolean }) => {
     await initCommand({
       ...(opts.vaultDir !== undefined ? { vaultDir: opts.vaultDir } : {}),
-      ...(opts.harness !== undefined
-        ? { harness: opts.harness as 'claude-code' | 'gemini' | 'direct' }
-        : {}),
       ...(opts.force !== undefined ? { force: opts.force } : {}),
     });
   });
@@ -104,9 +100,13 @@ program
 program
   .command('doctor')
   .description('Run vault health checks and report issues')
-  .action(async () => {
+  .option('--fix', 'auto-fix detected issues')
+  .action(async (opts: { fix?: boolean }) => {
     const vaultRoot = findVaultRoot(process.cwd());
-    await doctorCommand({ vaultDir: vaultRoot });
+    await doctorCommand({
+      vaultDir: vaultRoot,
+      ...(opts.fix !== undefined ? { fix: opts.fix } : {}),
+    });
   });
 
 program
@@ -169,13 +169,8 @@ program
   .command('register-hooks', { hidden: true })
   .description('Install Claude Code hooks into settings.json')
   .option('--vault-dir <path>', 'vault root directory (default: cwd)')
-  .option('--qmd', 'also register PostToolUse qmd-reindex hook')
-  .option('--remove-qmd', 'remove PostToolUse qmd-reindex hook')
-  .action(async (opts: { vaultDir?: string; qmd?: boolean; removeQmd?: boolean }) => {
-    await registerHooksCommand(opts.vaultDir, {
-      ...(opts.qmd !== undefined ? { qmd: opts.qmd } : {}),
-      ...(opts.removeQmd !== undefined ? { removeQmd: opts.removeQmd } : {}),
-    });
+  .action(async (opts: { vaultDir?: string }) => {
+    await registerHooksCommand(opts.vaultDir);
   });
 
 program

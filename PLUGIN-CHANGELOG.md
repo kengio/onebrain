@@ -1,6 +1,6 @@
 ---
-latest_version: 2.0.10
-released: 2026-04-27
+latest_version: 2.1.0
+released: 2026-04-28
 ---
 
 # Plugin Changelog
@@ -12,6 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.0
+
+- docs(onboarding): update install.sh reference → onebrain init; remove method/runtime.harness from vault.yml template
+- docs(skills): remove method: onebrain from qmd and reorganize skill examples
+- fix(doctor): --fix removes deprecated vault.yml keys (method, runtime.harness) in addition to onebrain_version
 
 ## v2.0.10 — fix: background agent checkpoint writes; updated hook reason format in INSTRUCTIONS
 

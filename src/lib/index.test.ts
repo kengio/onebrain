@@ -5,11 +5,9 @@ import { join } from 'node:path';
 
 import {
   checkFolders,
-  checkHarnessBinary,
   checkOrphanCheckpoints,
   checkQmdEmbeddings,
   checkVaultYml,
-  checkVersionDrift,
   loadVaultConfig,
 } from './index.js';
 import type { VaultConfig } from './index.js';
@@ -19,7 +17,6 @@ import type { VaultConfig } from './index.js';
 // ---------------------------------------------------------------------------
 
 const VALID_YAML = `
-method: onebrain
 update_channel: stable
 qmd_collection: ob-1-test
 folders:
@@ -101,7 +98,7 @@ describe('loadVaultConfig', () => {
   });
 
   it('fills default folder names when folders section is absent', async () => {
-    await writeVaultYml(dir, 'method: onebrain\n');
+    await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
     expect(config.folders.inbox).toBe('00-inbox');
@@ -115,7 +112,7 @@ describe('loadVaultConfig', () => {
   });
 
   it('fills default checkpoint values when checkpoint is absent', async () => {
-    await writeVaultYml(dir, 'method: onebrain\n');
+    await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
     expect(config.checkpoint?.messages).toBe(15);
@@ -123,7 +120,7 @@ describe('loadVaultConfig', () => {
   });
 
   it('fills default update_channel when absent', async () => {
-    await writeVaultYml(dir, 'method: onebrain\n');
+    await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
     expect(config.update_channel).toBe('stable');
@@ -143,9 +140,6 @@ describe('loadVaultConfig', () => {
 
   it('preserves optional fields when present', async () => {
     const yaml = `
-onebrain_version: "1.9.0"
-runtime:
-  harness: claude-code
 recap:
   min_sessions: 3
   min_frequency: 7
@@ -153,8 +147,6 @@ recap:
     await writeVaultYml(dir, yaml);
     const config = await loadVaultConfig(dir);
 
-    expect(config.onebrain_version).toBe('1.9.0');
-    expect(config.runtime?.harness).toBe('claude-code');
     expect(config.recap?.min_sessions).toBe(3);
     expect(config.recap?.min_frequency).toBe(7);
   });
@@ -238,119 +230,27 @@ describe('checkFolders', () => {
     expect(result.message).toBe('8/8 present');
   });
 
-  it('returns warn listing missing folders when some are absent', async () => {
+  it('returns error listing missing folders when some are absent', async () => {
     // Only create half the folders
     await mkdir(join(dir, '00-inbox'), { recursive: true });
     await mkdir(join(dir, '01-projects'), { recursive: true });
     const result = await checkFolders(dir, config);
 
-    expect(result.status).toBe('warn');
+    expect(result.status).toBe('error');
     expect(result.message).toContain('2/8');
     expect(result.hint).toContain('02-areas');
     expect(result.hint).toContain('03-knowledge');
   });
 
-  it('returns warn listing all missing folders when none exist', async () => {
+  it('returns error listing all missing folders when none exist', async () => {
     const result = await checkFolders(dir, config);
 
-    expect(result.status).toBe('warn');
+    expect(result.status).toBe('error');
     expect(result.message).toContain('0/8');
   });
 });
 
 // ---------------------------------------------------------------------------
-// checkHarnessBinary
-// ---------------------------------------------------------------------------
-
-describe('checkHarnessBinary', () => {
-  it('returns ok for "direct" harness without checking PATH', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-      runtime: { harness: 'direct' },
-    };
-    const result = await checkHarnessBinary(config);
-
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns ok when runtime is absent', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-    };
-    const result = await checkHarnessBinary(config);
-
-    expect(result.status).toBe('ok');
-  });
-
-  it('whichFn returns null with claude-code harness → status: warn, hint defined', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-      runtime: { harness: 'claude-code' },
-    };
-    const result = await checkHarnessBinary(config, () => null);
-
-    expect(result.status).toBe('warn');
-    expect(result.check).toBe('runtime.harness');
-    expect(result.hint).toBeDefined();
-  });
-
-  it('whichFn returns path with claude-code harness → status: ok, message contains found', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-      runtime: { harness: 'claude-code' },
-    };
-    const result = await checkHarnessBinary(config, () => '/usr/local/bin/claude');
-
-    expect(result.status).toBe('ok');
-    expect(result.check).toBe('runtime.harness');
-    expect(result.message).toContain('found');
-  });
-});
-
 // ---------------------------------------------------------------------------
 // checkQmdEmbeddings
 // ---------------------------------------------------------------------------
@@ -373,8 +273,8 @@ describe('checkQmdEmbeddings', () => {
     };
     const result = await checkQmdEmbeddings(config);
 
-    expect(result.status).toBe('ok');
-    expect(result.message).toContain('not configured');
+    expect(result.status).toBe('warn');
+    expect(result.message).toContain('not set in vault.yml');
   });
 
   it('returns ok with "qmd status unavailable" when qmd command fails', async () => {
@@ -399,96 +299,6 @@ describe('checkQmdEmbeddings', () => {
     expect(result.check).toBe('qmd-embeddings');
     // Either unavailable (ok) or actually ran — both valid
     expect(['ok', 'warn']).toContain(result.status);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// checkVersionDrift
-// ---------------------------------------------------------------------------
-
-describe('checkVersionDrift', () => {
-  let dir: string;
-
-  beforeEach(async () => {
-    dir = await makeTmpDir();
-  });
-
-  afterEach(async () => {
-    await rm(dir, { recursive: true, force: true });
-  });
-
-  const baseConfig: VaultConfig = {
-    folders: {
-      inbox: '00-inbox',
-      projects: '01-projects',
-      areas: '02-areas',
-      knowledge: '03-knowledge',
-      resources: '04-resources',
-      agent: '05-agent',
-      archive: '06-archive',
-      logs: '07-logs',
-    },
-    checkpoint: { messages: 15, minutes: 30 },
-    update_channel: 'stable',
-  };
-
-  it('returns ok when both versions match', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.9.0' }), 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns ok when onebrain_version is absent in config', async () => {
-    const result = await checkVersionDrift(dir, baseConfig);
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns ok when plugin.json is missing', async () => {
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-    const result = await checkVersionDrift(dir, config);
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns warn when versions differ', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.8.0' }), 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('warn');
-    expect(result.message).toBe('vault v1.9.0, plugin files v1.8.0');
-    expect(result.hint).toContain('onebrain update');
-  });
-
-  it('plugin.json exists but contains invalid JSON → status: ok, message contains unreadable', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), '{bad json', 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('ok');
-    expect(result.message).toContain('unreadable');
-  });
-
-  it('plugin.json with no version field → status: ok, message contains skip', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ id: 'onebrain' }), 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('ok');
-    expect(result.message).toContain('skip');
   });
 });
 

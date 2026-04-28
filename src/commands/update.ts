@@ -1,14 +1,14 @@
 /**
- * update — Atomic OneBrain update sequence
+ * update — Update OneBrain CLI binary
  *
  * Steps:
  *   0. Guard: vault.yml must exist (prevents running outside a vault)
  *   1. Fetch latest release from GitHub (parse tag_name)
- *   2. Sync plugin files (vault-sync, includes harness file merge)
- *   4. Install binary — skipped if already at latest version
- *   4b. Validate binary (ATOMIC GATE — register-hooks blocked if this fails)
- *   5. Register hooks (only if 4b passed)
- *   6. Write onebrain_version to vault.yml
+ *   2. Install binary — skipped if already at latest version
+ *   3. Validate binary (ATOMIC GATE)
+ *
+ * Vault file sync (plugin files, INSTRUCTIONS.md, etc.) is handled by the
+ * /update skill in Claude Code — not by this command.
  *
  * TTY:     uses @clack/prompts layout with spinners for slow steps
  * Non-TTY: plain text lines
@@ -16,10 +16,11 @@
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { access, readFile, rename, writeFile } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { spinner as createSpinner, intro, log, outro } from '@clack/prompts';
-import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+import pc from 'picocolors';
+import { printBanner } from './internal/cli-banner.js';
+import { barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,21 +33,16 @@ export interface UpdateOptions {
   isTTY?: boolean;
   /** Dry run — show what would change and exit 0 without making changes. */
   check?: boolean;
-  /** Override update channel: 'stable' | 'next'. Falls back to vault.yml update_channel. */
-  channel?: 'stable' | 'next';
   /** Mock fetch for tests. */
   fetchFn?: typeof fetch;
-  /** Injectable vault-sync function for tests. */
-  vaultSyncFn?: (
-    vaultDir: string,
-    opts: Record<string, unknown>,
-  ) => Promise<{ filesAdded: number; filesRemoved: number }>;
   /** Injectable binary install function for tests. */
   installBinaryFn?: (version: string) => Promise<void>;
   /** Injectable binary validation function for tests. Returns true if binary is valid. */
   validateBinaryFn?: () => Promise<boolean>;
-  /** Injectable register-hooks function for tests. */
-  registerHooksFn?: (vaultDir: string) => Promise<void>;
+  /** Injectable current version function for tests. */
+  currentVersionFn?: () => Promise<{ version: string; publishedAt: Date | null }>;
+  /** Injectable delay function for tests — bypasses artificial pauses. */
+  delayFn?: (ms: number) => Promise<void>;
 }
 
 export interface UpdateResult {
@@ -61,43 +57,23 @@ export interface UpdateResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const GITHUB_RELEASES_URL = 'https://api.github.com/repos/kengio/onebrain/releases/latest';
+const GITHUB_REPO = 'https://api.github.com/repos/kengio/onebrain';
+const GITHUB_RELEASES_URL = `${GITHUB_REPO}/releases/latest`;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Resolve branch name from channel or vault.yml update_channel. */
-function resolveBranch(channel: string | undefined): string {
-  return channel === 'next' ? 'next' : 'main';
-}
-
-/** Read vault.yml as raw object — non-throwing. Returns {} on missing/invalid. */
-async function readVaultYmlRaw(vaultDir: string): Promise<Record<string, unknown>> {
-  try {
-    const text = await readFile(join(vaultDir, 'vault.yml'), 'utf8');
-    return (parseYaml(text) ?? {}) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-}
-
-/** Write onebrain_version field to vault.yml atomically (in-place merge). */
-async function writeVersionToVaultYml(vaultDir: string, version: string): Promise<void> {
-  const raw = await readVaultYmlRaw(vaultDir);
-  raw['onebrain_version'] = version;
-  const content = stringifyYaml(raw, { lineWidth: 0 });
-  const vaultYmlPath = join(vaultDir, 'vault.yml');
-  const tmpPath = `${vaultYmlPath}.tmp`;
-  await writeFile(tmpPath, content, 'utf8');
-  await rename(tmpPath, vaultYmlPath);
-}
-
 // ---------------------------------------------------------------------------
 // Step 1: Fetch latest release
 // ---------------------------------------------------------------------------
 
-async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
+interface ReleaseInfo {
+  version: string;
+  publishedAt: Date | null;
+}
+
+async function fetchLatestRelease(fetchFn: typeof fetch): Promise<ReleaseInfo> {
   const response = await fetchFn(GITHUB_RELEASES_URL, {
     headers: { Accept: 'application/vnd.github.v3+json' },
   });
@@ -109,7 +85,20 @@ async function fetchLatestVersion(fetchFn: typeof fetch): Promise<string> {
   if (typeof tagName !== 'string' || !tagName) {
     throw new Error('GitHub response missing tag_name');
   }
-  return tagName;
+  const publishedAt =
+    typeof json['published_at'] === 'string' ? new Date(json['published_at']) : null;
+  return { version: tagName, publishedAt };
+}
+
+function formatReleaseDate(date: Date): string {
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function daysBehind(date: Date): string {
+  const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) return 'just released';
+  if (days === 1) return '1 day behind';
+  return `${days} days behind`;
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +159,31 @@ async function defaultValidateBinary(): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
+// Current version detection
+// ---------------------------------------------------------------------------
+
+async function defaultCurrentVersion(): Promise<{ version: string; publishedAt: Date | null }> {
+  try {
+    const isWindows = process.platform === 'win32';
+    const cmd = isWindows
+      ? [windowsShell(), '-NoProfile', '-Command', 'onebrain --version']
+      : ['onebrain', '--version'];
+    const proc = Bun.spawn(cmd, { stdout: 'pipe', stderr: 'pipe' });
+    const exitCode = await proc.exited;
+    if (exitCode !== 0) return { version: 'unknown', publishedAt: null };
+    const stdout = await new Response(proc.stdout).text();
+    const versionMatch = /v[\d.]+/.exec(stdout);
+    const dateMatch = /released (\d{4}-\d{2}-\d{2})/.exec(stdout);
+    return {
+      version: versionMatch ? versionMatch[0] : 'unknown',
+      publishedAt: dateMatch ? new Date(dateMatch[1]!) : null,
+    };
+  } catch {
+    return { version: 'unknown', publishedAt: null };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main runUpdate
 // ---------------------------------------------------------------------------
 
@@ -179,58 +193,29 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   const check = opts.check ?? false;
 
   const fetchFn = opts.fetchFn ?? globalThis.fetch;
-
-  const vaultSyncFn =
-    opts.vaultSyncFn ??
-    (async (dir: string, syncOpts: Record<string, unknown>) => {
-      const { runVaultSync } = await import('./internal/vault-sync.js');
-      const result = await runVaultSync(dir, syncOpts);
-      return { filesAdded: result.filesAdded, filesRemoved: result.filesRemoved };
-    });
-
   const installBinaryFn = opts.installBinaryFn ?? defaultInstallBinary;
   const validateBinaryFn = opts.validateBinaryFn ?? defaultValidateBinary;
+  const currentVersionFn = opts.currentVersionFn ?? defaultCurrentVersion;
 
-  const registerHooksFn =
-    opts.registerHooksFn ??
-    (async (dir: string) => {
-      const { runRegisterHooks } = await import('./internal/register-hooks.js');
-      await runRegisterHooks({ vaultDir: dir });
-    });
+  const result: UpdateResult = { ok: false, exitCode: 0 };
+  const createStep = makeStepFn(isTTY);
+  const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const randDelay = () =>
+    isTTY ? delay(Math.floor(Math.random() * 1000) + 1000) : Promise.resolve();
 
-  const result: UpdateResult = {
-    ok: false,
-    exitCode: 0,
-  };
-
-  // Output helpers
-  function writeLine(msg: string) {
-    process.stdout.write(`${msg}\n`);
-  }
-
-  function noteStep(label: string, detail: string) {
-    if (isTTY) {
-      log.step(`${label}\n│  ${detail}`);
-    } else {
-      writeLine(`${label}: ${detail}`);
-    }
-  }
-
-  // Header
   if (isTTY) {
-    intro('OneBrain Update');
+    await printBanner();
   } else {
     writeLine('OneBrain Update');
   }
 
-  // ── Step 0: Guard — vault.yml must exist ─────────────────────────────────
-
+  // Step 0: Guard
   try {
     await access(join(vaultDir, 'vault.yml'));
   } catch {
     const msg = `vault.yml not found in ${vaultDir}. Run 'onebrain update' from inside an OneBrain vault.`;
     if (isTTY) {
-      log.error(msg);
+      close(msg, true);
     } else {
       writeLine(`error: ${msg}`);
     }
@@ -239,44 +224,55 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     return result;
   }
 
-  // ── Step 1: Fetch latest release ──────────────────────────────────────────
+  // Step 1a: Check local version
+  const sp1 = createStep('🔍', 'Local version');
+  const { version: currentVersion, publishedAt: localPublishedAt } = await currentVersionFn();
+  result.currentVersion = currentVersion;
+  await randDelay();
+  const localVersionLabel = localPublishedAt
+    ? `${pc.dim(currentVersion)}  ${pc.dim('·')}  ${pc.dim(formatReleaseDate(localPublishedAt))}`
+    : pc.dim(currentVersion);
+  if (sp1) sp1.stop(localVersionLabel);
+  else writeLine(`current: ${currentVersion}${localPublishedAt ? `  (${formatReleaseDate(localPublishedAt)})` : ''}`);
 
+  // Step 1b: Check remote version
+  const sp2 = createStep('🌐', 'Remote version');
   let latestVersion: string;
+  let publishedAt: Date | null = null;
   try {
-    latestVersion = await fetchLatestVersion(fetchFn);
+    const release = await fetchLatestRelease(fetchFn);
+    latestVersion = release.version;
+    publishedAt = release.publishedAt;
+    await randDelay();
+    const isOutdated = latestVersion !== currentVersion;
+    const behindSuffix = isOutdated && publishedAt ? `  ${pc.dim('·')}  ${pc.dim(daysBehind(publishedAt))}` : '';
+    const dateSuffix = publishedAt ? `  ${pc.dim('·')}  ${pc.dim(formatReleaseDate(publishedAt))}${behindSuffix}` : '';
+    if (sp2) sp2.stop(`${pc.green(latestVersion)}${dateSuffix}`);
+    else writeLine(`latest: ${latestVersion}${isOutdated && publishedAt ? `  (${daysBehind(publishedAt)})` : ''}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    if (sp2) sp2.stop('unavailable');
     result.error = `Fetch failed: ${msg}`;
     result.exitCode = 1;
-    process.stderr.write(`update: ${result.error}\n`);
+    if (isTTY) {
+      close(result.error, true);
+    } else {
+      process.stderr.write(`update: ${result.error}\n`);
+    }
     return result;
   }
-
   result.latestVersion = latestVersion;
 
-  // Read current version from vault.yml
-  const vaultYmlRaw = await readVaultYmlRaw(vaultDir);
-  const currentVersion =
-    typeof vaultYmlRaw['onebrain_version'] === 'string'
-      ? vaultYmlRaw['onebrain_version']
-      : 'unknown';
-  result.currentVersion = currentVersion;
-
-  // Resolve channel/branch
-  const channel =
-    opts.channel ??
-    (typeof vaultYmlRaw['update_channel'] === 'string'
-      ? (vaultYmlRaw['update_channel'] as 'stable' | 'next')
-      : 'stable');
-  const branch = resolveBranch(channel);
-
-  noteStep('fetching', `${latestVersion} available (current: ${currentVersion})`);
-
-  // ── --check: dry run ──────────────────────────────────────────────────────
-
+  // --check dry run
   if (check) {
     if (isTTY) {
-      outro('Dry run complete — no changes made');
+      if (currentVersion !== latestVersion) {
+        barLine(
+          `⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}  · binary would upgrade`,
+        );
+        barBlank();
+      }
+      close('Dry run complete — no changes made');
     } else {
       writeLine('done: dry run complete — no changes made');
     }
@@ -285,107 +281,71 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     return result;
   }
 
-  // ── Step 2: vault-sync ────────────────────────────────────────────────────
-
-  let filesAdded = 0;
-  let filesRemoved = 0;
-  const syncSpinner = isTTY ? createSpinner() : null;
-  syncSpinner?.start('Syncing plugin files…');
-  try {
-    const syncResult = await vaultSyncFn(vaultDir, { branch });
-    filesAdded = syncResult.filesAdded;
-    filesRemoved = syncResult.filesRemoved;
-    syncSpinner?.stop(`Synced — ${filesAdded} added, ${filesRemoved} removed`);
-    if (!isTTY) {
-      writeLine(`syncing: ${filesAdded} files synced, ${filesRemoved} removed`);
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    syncSpinner?.stop('Sync failed');
-    result.error = `vault-sync failed: ${msg}`;
-    result.exitCode = 1;
-    process.stderr.write(`update: ${result.error}\n`);
-    return result;
-  }
-
-  // ── Step 4: Install binary (skipped if already at latest version) ─────────
-
-  const needsBinaryUpdate = latestVersion !== currentVersion;
-
-  if (needsBinaryUpdate) {
-    const installSpinner = isTTY ? createSpinner() : null;
-    installSpinner?.start(`Installing @onebrain-ai/cli ${latestVersion}…`);
-    try {
-      await installBinaryFn(latestVersion);
-      installSpinner?.stop(`Installed @onebrain-ai/cli ${latestVersion}`);
-      if (!isTTY) {
-        writeLine(`upgrading: @onebrain-ai/cli ${latestVersion} installed`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      installSpinner?.stop('Install failed');
-      result.error = `Binary install failed: ${msg}`;
-      result.exitCode = 1;
-      process.stderr.write(`update: ${result.error}\n`);
-      return result;
-    }
-  } else {
-    noteStep('binary', `@onebrain-ai/cli ${latestVersion} already up to date`);
-  }
-
-  // ── Step 4b: Validate binary (ATOMIC GATE) ────────────────────────────────
-
-  const binaryValid = await validateBinaryFn();
-  if (!binaryValid) {
-    result.error = 'Binary validation failed. Check PATH. register-hooks NOT called.';
-    result.exitCode = 1;
-    process.stderr.write(`update: ${result.error}\n`);
-    return result;
-  }
-
-  // ── Step 5: Register hooks (only if 4b passed) ────────────────────────────
-
-  let hooksDetail = 'hooks: ✓  PATH: ✓  permissions: ✓';
-  let hooksOk = true;
-  try {
-    await registerHooksFn(vaultDir);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    hooksDetail = `warning: ${msg}`;
-    hooksOk = false;
-    process.stderr.write(`update: register-hooks warning: ${msg}\n`);
-  }
-
-  if (isTTY) {
-    log.step(`Registering hooks\n│  ${hooksDetail}`);
-  } else {
-    writeLine(hooksOk ? 'hooks: ok  PATH: ok  permissions: ok' : `hooks: warning — ${hooksDetail}`);
-  }
-
-  // ── Step 6: Write version to vault.yml ───────────────────────────────────
-
-  try {
-    await writeVersionToVaultYml(vaultDir, latestVersion);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`update: vault.yml version write warning: ${msg}\n`);
+  // Already up to date?
+  if (latestVersion === currentVersion) {
     if (isTTY) {
-      log.warn(`vault.yml not updated — ${msg}`);
+      const dateSuffix = publishedAt ? `  ·  ${formatReleaseDate(publishedAt)}` : '';
+      close(`Already up to date — @onebrain-ai/cli ${pc.dim(latestVersion)}${pc.dim(dateSuffix)}`);
     } else {
-      writeLine(`warning: vault.yml not updated — ${msg}`);
+      const dateSuffix = publishedAt ? `  (${formatReleaseDate(publishedAt)})` : '';
+      writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}${dateSuffix}`);
+      writeLine('done: nothing to do');
     }
+    result.ok = true;
+    result.exitCode = 0;
+    return result;
   }
 
-  // ── Done ──────────────────────────────────────────────────────────────────
+  // Show upgrade arrow
+  if (isTTY) {
+    barLine(`⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}`);
+    barBlank();
+  }
+
+  // Step 2: Install binary
+  const sp3 = createStep('📦', 'Installing @onebrain-ai/cli');
+  try {
+    await installBinaryFn(latestVersion);
+    await randDelay();
+    if (sp3) sp3.stop(pc.green(latestVersion));
+    else writeLine(`upgrading: @onebrain-ai/cli ${latestVersion} installed`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (sp3) sp3.stop('install failed');
+    result.error = `Binary install failed: ${msg}`;
+    result.exitCode = 1;
+    if (isTTY) {
+      close(result.error, true);
+    } else {
+      process.stderr.write(`update: ${result.error}\n`);
+    }
+    return result;
+  }
+
+  // Step 3: Validate binary
+  const sp4 = createStep('✅', 'Validating binary');
+  const binaryValid = await validateBinaryFn();
+  await randDelay();
+  if (!binaryValid) {
+    if (sp4) sp4.stop('failed');
+    result.error = 'Binary validation failed. Check PATH.';
+    result.exitCode = 1;
+    if (isTTY) {
+      close(result.error, true);
+    } else {
+      process.stderr.write(`update: ${result.error}\n`);
+    }
+    return result;
+  }
+  if (sp4) sp4.stop('ok');
 
   result.ok = true;
   result.exitCode = 0;
 
-  const doneMsg = `OneBrain ${latestVersion}`;
   if (isTTY) {
-    outro(`Done — ${doneMsg}`);
+    close(`Done — run ${pc.cyan('/update')} in Claude to sync vault files`);
   } else {
-    writeLine(`done: ${doneMsg}`);
+    writeLine('done: run /update in Claude to sync vault files');
   }
 
   return result;
@@ -398,7 +358,6 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 export interface UpdateCommandOptions {
   vaultDir?: string;
   check?: boolean;
-  channel?: 'stable' | 'next';
 }
 
 export async function updateCommand(opts: UpdateCommandOptions = {}): Promise<void> {

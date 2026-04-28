@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <a href="#get-started">Get Started →</a> &nbsp;·&nbsp; <a href="#commands">View Commands →</a>
+  <a href="#installation">Get Started →</a> &nbsp;·&nbsp; <a href="#commands">View Commands →</a>
 </p>
 
 ---
@@ -79,7 +79,7 @@ Run OneBrain as your personal AI operating system — a complete AI environment 
 
 **Setting up the full stack:**
 
-1. Install OneBrain and open your vault in Obsidian ([Get Started](#get-started))
+1. Install OneBrain and open your vault in Obsidian ([Get Started](#installation))
 2. Start a tmux session: `tmux new -s onebrain`
 3. Start Claude Code in your vault directory: `claude`
 4. Run `/telegram:configure` to connect Claude Code's built-in Telegram channel — no custom bot or external infra needed
@@ -168,56 +168,30 @@ OneBrain has three automatic behaviors that run without you doing anything:
 
 ---
 
-## Get Started
+## Installation
 
-### Option 1 — Fresh vault (recommended)
-
-**macOS / Linux:**
+### 1. Install the CLI
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/kengio/onebrain/main/install.sh | bash
-```
-
-**Windows (PowerShell):**
-
-```powershell
-irm https://raw.githubusercontent.com/kengio/onebrain/main/install.ps1 | iex
-```
-
-> Or clone manually: `git clone https://github.com/kengio/onebrain.git`
-
-**Install the CLI binary** (required for auto-checkpoints, `/doctor`, and `/update`):
-
-```bash
-# with bun (recommended)
-bun install -g @onebrain-ai/cli
-
-# or with npm
 npm install -g @onebrain-ai/cli
 ```
 
-Verify: `onebrain --version`
-
-1. **Open in Obsidian** — Open folder as vault, install community plugins when prompted
-2. **Start your agent** — Open the terminal plugin, run `claude` or `gemini`
-3. **Run `/onboarding`** — 2 minutes to personalize your vault and AI assistant
-
----
-
-### Option 2 — Add to existing vault
-
-Run from within your existing vault in Claude Code:
-
-```
-/plugin marketplace add kengio/onebrain
-/plugin install onebrain@onebrain
-```
-
-Then install the CLI binary and run `/onboarding`:
+### 2. Create and initialize your vault
 
 ```bash
-bun install -g @onebrain-ai/cli   # or: npm install -g @onebrain-ai/cli
+mkdir my-vault && cd my-vault
+onebrain init
 ```
+
+### 3. Open Obsidian
+
+File → Open Folder as Vault → select this folder
+
+### 4. Personalize your vault
+
+In Claude Code: `/onboarding`
+
+> **Adding OneBrain to an existing vault?** `cd` into it and run `onebrain init`
 
 ---
 

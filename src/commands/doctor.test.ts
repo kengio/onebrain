@@ -5,7 +5,7 @@
  * fast, offline, and deterministic. No mock.module needed.
  */
 
-import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -45,31 +45,41 @@ function makeAllOkValidators(): Required<
     | 'checkVaultYmlFn'
     | 'loadVaultConfigFn'
     | 'checkFoldersFn'
-    | 'checkHarnessBinaryFn'
     | 'checkQmdEmbeddingsFn'
-    | 'checkVersionDriftFn'
     | 'checkOrphanCheckpointsFn'
+    | 'checkPluginFilesFn'
+    | 'checkVaultYmlKeysFn'
+    | 'checkSettingsHooksFn'
   >
 > {
   return {
     checkVaultYmlFn: async () => ({ check: 'vault.yml', status: 'ok', message: 'valid' }),
     loadVaultConfigFn: async () => DEFAULT_CONFIG,
     checkFoldersFn: async () => ({ check: 'folders', status: 'ok', message: '8/8 present' }),
-    checkHarnessBinaryFn: async () => ({
-      check: 'runtime.harness',
-      status: 'ok',
-      message: 'claude-code (found)',
-    }),
     checkQmdEmbeddingsFn: async () => ({
       check: 'qmd-embeddings',
       status: 'ok',
       message: 'all embedded',
     }),
-    checkVersionDriftFn: async () => ({ check: 'version-drift', status: 'ok', message: 'v1.0.0' }),
     checkOrphanCheckpointsFn: async () => ({
       check: 'orphan-checkpoints',
       status: 'ok',
       message: '0 orphans',
+    }),
+    checkPluginFilesFn: async () => ({
+      check: 'plugin-files',
+      status: 'ok',
+      message: 'all present',
+    }),
+    checkVaultYmlKeysFn: async () => ({
+      check: 'vault.yml-keys',
+      status: 'ok',
+      message: 'all keys valid',
+    }),
+    checkSettingsHooksFn: async () => ({
+      check: 'settings-hooks',
+      status: 'ok',
+      message: 'all hooks registered',
     }),
   };
 }
@@ -142,10 +152,16 @@ describe('runDoctor', () => {
 
   describe('summary line selection', () => {
     it('shows "N errors, N warnings" when both errors and warnings exist', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         const validators = makeAllOkValidators();
         validators.checkVaultYmlFn = async () => ({
@@ -160,17 +176,23 @@ describe('runDoctor', () => {
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      expect(logLines.join('\n')).toMatch(/Summary: 1 errors, 1 warnings/);
+      expect(outputChunks.join('')).toMatch(/Summary: \d+ checks · 1 error\(s\) · 1 warning\(s\)/);
     });
 
-    it('shows "N errors" (no warnings mention) when only errors', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+    it('shows "N errors, N warnings" summary when only errors exist', async () => {
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         const validators = makeAllOkValidators();
         validators.checkVaultYmlFn = async () => ({
@@ -180,19 +202,24 @@ describe('runDoctor', () => {
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      const output = logLines.join('\n');
-      expect(output).toMatch(/Summary: 1 errors$/m);
-      expect(output).not.toMatch(/warnings/);
+      const output = outputChunks.join('');
+      expect(output).toMatch(/Summary: \d+ checks · 1 error\(s\)/m);
     });
 
     it('shows "N warnings — ok to run" when only warnings (no errors)', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         const validators = makeAllOkValidators();
         validators.checkOrphanCheckpointsFn = async () => ({
@@ -202,58 +229,69 @@ describe('runDoctor', () => {
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      expect(logLines.join('\n')).toMatch(/Summary: 1 warnings — ok to run/);
+      expect(outputChunks.join('')).toMatch(/Summary: \d+ checks · 1 warning\(s\) — ok to run/);
     });
 
     it('shows "All checks passed" when no errors or warnings', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      expect(logLines.join('\n')).toMatch(/Summary: All checks passed/);
+      expect(outputChunks.join('')).toMatch(/Summary: \d+ checks — all passed/);
     });
   });
 
   // ── TTY vs non-TTY output formatting ──────────────────────────────────────
 
   describe('TTY vs non-TTY output', () => {
-    it('non-TTY: plain title without leading blank line', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+    it('non-TTY: plain title present in output', async () => {
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      expect(logLines.join('\n')).toMatch(/^OneBrain Doctor 🔍/);
+      expect(outputChunks.join('')).toMatch(/OneBrain Doctor/);
     });
 
-    it('TTY: title is padded with surrounding blank lines', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
+    it('TTY: runDoctor completes with exitCode 0 when all checks pass', async () => {
+      // In TTY mode, summary goes through clack outro() which bypasses console.log.
+      // We verify the return value instead of capturing console output.
+      const result = await runDoctor({
+        vaultDir: tempDir,
+        isTTY: true,
+        delayFn: async () => {},
+        ...makeAllOkValidators(),
       });
-      try {
-        await runDoctor({ vaultDir: tempDir, isTTY: true, ...makeAllOkValidators() });
-      } finally {
-        spy.mockRestore();
-      }
-
-      const output = logLines.join('\n');
-      expect(output).toMatch(/^\n\s+OneBrain Doctor 🔍/);
-      expect(output).toMatch(/✅ All checks passed\n$/);
+      expect(result.exitCode).toBe(0);
+      expect(result.ok).toBe(true);
+      expect(result.errorCount).toBe(0);
+      expect(result.warningCount).toBe(0);
     });
   });
 
@@ -307,10 +345,16 @@ describe('runDoctor', () => {
 
   describe('hint lines', () => {
     it('includes hint line in output when a check returns a hint', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         const validators = makeAllOkValidators();
         validators.checkVaultYmlFn = async () => ({
@@ -321,24 +365,30 @@ describe('runDoctor', () => {
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      expect(logLines.join('\n')).toContain('→ Run onebrain init to create vault.yml');
+      expect(outputChunks.join('')).toContain('→ Run onebrain init to create vault.yml');
     });
 
     it('does not include a hint line when check has no hint', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      expect(logLines.join('\n')).not.toContain('→');
+      expect(outputChunks.join('')).not.toContain('→');
     });
   });
 
@@ -346,17 +396,23 @@ describe('runDoctor', () => {
 
   describe('unicode symbol preservation', () => {
     it('ok status icon [✓] is present in output and survives UTF-8 encode → decode', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      const output = logLines.join('\n');
+      const output = outputChunks.join('');
       expect(output).toContain('[✓]');
 
       // Round-trip: the output must survive UTF-8 encode → decode without data loss
@@ -366,10 +422,16 @@ describe('runDoctor', () => {
     });
 
     it('error status icon [✗] and warn icon [!] are present in output', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         const validators = makeAllOkValidators();
         validators.checkVaultYmlFn = async () => ({
@@ -384,19 +446,25 @@ describe('runDoctor', () => {
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      const output = logLines.join('\n');
+      const output = outputChunks.join('');
       expect(output).toContain('[✗]');
       expect(output).toContain('[!]');
     });
 
     it('hint arrow → is preserved in output UTF-8 round-trip', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         const validators = makeAllOkValidators();
         validators.checkVaultYmlFn = async () => ({
@@ -407,10 +475,10 @@ describe('runDoctor', () => {
         });
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      const output = logLines.join('\n');
+      const output = outputChunks.join('');
       expect(output).toContain('→');
 
       // The → arrow must survive a UTF-8 encode → decode round-trip
@@ -419,19 +487,27 @@ describe('runDoctor', () => {
       expect(decoded).toBe(output);
     });
 
-    it('doctor title emoji 🔍 is preserved in output', async () => {
-      const logLines: string[] = [];
-      const spy = spyOn(console, 'log').mockImplementation((msg: string) => {
-        logLines.push(msg);
-      });
+    it('non-TTY output is valid UTF-8 (round-trip)', async () => {
+      const outputChunks: string[] = [];
+      const originalWrite = process.stdout.write.bind(process.stdout);
+      // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+      (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
+        if (typeof chunk === 'string') outputChunks.push(chunk);
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
+      };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
       } finally {
-        spy.mockRestore();
+        process.stdout.write = originalWrite;
       }
 
-      const output = logLines.join('\n');
-      expect(output).toContain('🔍');
+      const output = outputChunks.join('');
+      const encoded = new TextEncoder().encode(output);
+      const decoded = new TextDecoder('utf-8', { fatal: true }).decode(encoded);
+      expect(decoded).toBe(output);
     });
   });
 
@@ -455,16 +531,11 @@ describe('runDoctor', () => {
         status: 'warn',
         message: '1 unmerged checkpoint(s)',
       });
-      validators.checkHarnessBinaryFn = async () => ({
-        check: 'runtime.harness',
-        status: 'warn',
-        message: 'not found',
-      });
 
       const result = await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
 
       expect(result.errorCount).toBe(2);
-      expect(result.warningCount).toBe(2);
+      expect(result.warningCount).toBe(1);
       expect(result.exitCode).toBe(1);
     });
 
@@ -475,22 +546,79 @@ describe('runDoctor', () => {
     });
   });
 
-  // ── checkVersionDriftFn call signature ────────────────────────────────────
+  // ── --fix flag ─────────────────────────────────────────────────────────────
 
-  describe('checkVersionDriftFn call signature', () => {
-    it('calls checkVersionDriftFn with (vaultDir, config) — no binaryVersion arg', async () => {
-      let capturedArgs: unknown[] = [];
-      const validators = makeAllOkValidators();
-      validators.checkVersionDriftFn = async (...args: unknown[]) => {
-        capturedArgs = args;
-        return { check: 'version-drift' as const, status: 'ok' as const, message: 'v1.0.0' };
-      };
+  describe('fix flag', () => {
+    it('fix: all checks pass → nothing to fix (non-TTY)', async () => {
+      const registerHooksCalled = { called: false };
+      const result = await runDoctor({
+        vaultDir: tempDir,
+        isTTY: false,
+        fix: true,
+        ...makeAllOkValidators(),
+        registerHooksFn: async (_vaultDir) => {
+          registerHooksCalled.called = true;
+        },
+      });
 
-      await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
+      expect(result.ok).toBe(true);
+      expect(result.errorCount).toBe(0);
+      // registerHooks should NOT be called (nothing to fix)
+      expect(registerHooksCalled.called).toBe(false);
+    });
 
-      expect(capturedArgs).toHaveLength(2);
-      expect(capturedArgs[0]).toBe(tempDir);
-      expect(typeof capturedArgs[1]).toBe('object');
+    it('fix: settings-hooks warn → registerHooksFn called (non-TTY)', async () => {
+      const registerHooksCalled = { called: false };
+
+      const result = await runDoctor({
+        vaultDir: tempDir,
+        isTTY: false,
+        fix: true,
+        ...makeAllOkValidators(),
+        checkSettingsHooksFn: async () => ({
+          check: 'settings-hooks',
+          status: 'warn',
+          message: 'SessionStart hook missing',
+          hint: 'Run onebrain doctor --fix',
+        }),
+        registerHooksFn: async (_vaultDir) => {
+          registerHooksCalled.called = true;
+        },
+      });
+
+      expect(result.ok).toBe(true); // warn doesn't make ok=false
+      expect(registerHooksCalled.called).toBe(true);
+    });
+  });
+
+  // ── new checks contribute to counts ───────────────────────────────────────
+
+  describe('new checks count contribution', () => {
+    it('new checks (plugin-files, vault.yml-keys, settings-hooks) contribute to error/warning counts', async () => {
+      const result = await runDoctor({
+        vaultDir: tempDir,
+        isTTY: false,
+        ...makeAllOkValidators(),
+        checkPluginFilesFn: async () => ({
+          check: 'plugin-files',
+          status: 'error',
+          message: 'missing: INSTRUCTIONS.md',
+        }),
+        checkVaultYmlKeysFn: async () => ({
+          check: 'vault.yml-keys',
+          status: 'warn',
+          message: 'deprecated key: onebrain_version',
+        }),
+        checkSettingsHooksFn: async () => ({
+          check: 'settings-hooks',
+          status: 'ok',
+          message: 'hooks ok',
+        }),
+      });
+
+      expect(result.errorCount).toBe(1);
+      expect(result.warningCount).toBe(1);
+      expect(result.ok).toBe(false);
     });
   });
 });

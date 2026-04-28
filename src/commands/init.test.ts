@@ -59,8 +59,6 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await rm(tempDir, { recursive: true, force: true });
-  // biome-ignore lint/performance/noDelete: env cleanup requires delete to unset, not assign "undefined"
-  delete process.env['CLAUDE_CODE_HARNESS'];
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +103,6 @@ describe('runInit', () => {
     // vault.yml written
     expect(await fileExists(join(tempDir, 'vault.yml'))).toBe(true);
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml['method']).toBe('onebrain');
     expect(vaultYml['update_channel']).toBe('stable');
 
     // folders count: 8 standard + inbox/imports = 9 total
@@ -147,7 +144,7 @@ describe('runInit', () => {
 
     expect(result.ok).toBe(true);
     const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml['method']).toBe('onebrain');
+    expect(vaultYml['update_channel']).toBe('stable');
   });
 
   it('plugin files already present — skips vault-sync download', async () => {
@@ -206,55 +203,6 @@ describe('runInit', () => {
     expect(result.pluginRegistrationSkipped).toBe(true);
   });
 
-  it('harness auto-detect: .claude/ dir present → claude-code', async () => {
-    await mkdir(join(tempDir, '.claude'), { recursive: true });
-
-    const opts: InitOptions = {
-      vaultDir: tempDir,
-      vaultSyncFn: noopVaultSync,
-      registerHooksFn: noopRegisterHooks,
-    };
-
-    const result = await runInit(opts);
-
-    expect(result.ok).toBe(true);
-    const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
-    expect(runtime?.['harness']).toBe('claude-code');
-  });
-
-  it('harness auto-detect: no .claude/ dir → direct', async () => {
-    // Fresh vault, no .claude/ dir
-    const opts: InitOptions = {
-      vaultDir: tempDir,
-      vaultSyncFn: noopVaultSync,
-      registerHooksFn: noopRegisterHooks,
-    };
-
-    const result = await runInit(opts);
-
-    expect(result.ok).toBe(true);
-    const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
-    expect(runtime?.['harness']).toBe('direct');
-  });
-
-  it('--harness flag overrides auto-detect', async () => {
-    const opts: InitOptions = {
-      vaultDir: tempDir,
-      harness: 'gemini',
-      vaultSyncFn: noopVaultSync,
-      registerHooksFn: noopRegisterHooks,
-    };
-
-    const result = await runInit(opts);
-
-    expect(result.ok).toBe(true);
-    const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
-    expect(runtime?.['harness']).toBe('gemini');
-  });
-
   it('existing folders not double-counted in foldersCreated', async () => {
     // Pre-create some folders
     await mkdir(join(tempDir, '00-inbox'), { recursive: true });
@@ -303,21 +251,51 @@ describe('runInit', () => {
     expect(fullOutput).toMatch(/^OneBrain Init\n/);
   });
 
-  it('harness auto-detect: CLAUDE_CODE_HARNESS env → uses env value', async () => {
-    process.env['CLAUDE_CODE_HARNESS'] = 'gemini';
-
-    const opts: InitOptions = {
+  it('installPluginsFn: community-plugins.json missing → pluginsInstalled=0, pluginsFailed=0', async () => {
+    const result = await runInit({
       vaultDir: tempDir,
+      isTTY: false,
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
-    };
-
-    const result = await runInit(opts);
+      installPluginsFn: async (_vaultDir, _opts) => {
+        // community-plugins.json doesn't exist — return empty
+        return { installed: [], failed: [] };
+      },
+    });
 
     expect(result.ok).toBe(true);
-    expect(result.harness).toBe('gemini');
-    const vaultYml = await readVaultYml(tempDir);
-    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
-    expect(runtime?.['harness']).toBe('gemini');
+    expect(result.pluginsInstalled).toBe(0);
+    expect(result.pluginsFailed).toBe(0);
+  });
+
+  it('installPluginsFn: invalid plugin ID → pluginsFailed counted', async () => {
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: false,
+      vaultSyncFn: noopVaultSync,
+      registerHooksFn: noopRegisterHooks,
+      installPluginsFn: async (_vaultDir, _opts) => {
+        // Invalid ID rejected
+        return { installed: [], failed: [{ id: 'bad/id', reason: 'invalid id' }] };
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.pluginsFailed).toBe(1);
+    expect(result.pluginsInstalled).toBe(0);
+  });
+
+  it('vault-sync fatal failure → exitCode 1 (non-TTY)', async () => {
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: false,
+      vaultSyncFn: async (_vaultDir, _opts) => {
+        throw new Error('network error');
+      },
+      registerHooksFn: noopRegisterHooks,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.exitCode).toBe(1);
   });
 });
