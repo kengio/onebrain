@@ -58,7 +58,7 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 | 🪄 | **Smart Memory Review** | `/memory-review` lets you interactively prune, update, or archive memory entries one by one |
 | 🔒 | **Concurrent-session Safe** | Each session generates an isolated 6-char token — multiple parallel sessions never mix checkpoints |
 | 📱 | **Mobile Access** | Send instructions and receive briefings from anywhere via Telegram |
-| ⚙️ | **CLI Binary** | `onebrain` binary handles checkpoints, session init, doctor, vault-sync, and updates — no Python or Node.js required |
+| ⚙️ | **CLI Binary** | `onebrain` binary handles checkpoints, session init, doctor, vault-sync, and updates — no Bun, Python, or Node.js required |
 
 ---
 
@@ -164,43 +164,33 @@ OneBrain has three automatic behaviors that run without you doing anything:
 
 **The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
 
-> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `bun install -g @onebrain-ai/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
+> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `npm install -g @onebrain-ai/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
 
 ---
 
 ## Installation
 
-### 1. Install Bun
-
-The `onebrain` binary requires [Bun](https://bun.sh) in your `PATH`:
-
-```bash
-# macOS / Linux
-curl -fsSL https://bun.sh/install | bash
-
-# Windows
-powershell -c "irm bun.sh/install.ps1 | iex"
-```
-
-### 2. Install the CLI
+### 1. Install the CLI
 
 ```bash
 npm install -g @onebrain-ai/cli
 # or: bun install -g @onebrain-ai/cli
 ```
 
-### 3. Create and initialize your vault
+The installer automatically downloads the correct compiled binary for your platform — no Bun installation required.
+
+### 2. Create and initialize your vault
 
 ```bash
 mkdir my-vault && cd my-vault
 onebrain init
 ```
 
-### 4. Open Obsidian
+### 3. Open Obsidian
 
 File → Open Folder as Vault → select this folder
 
-### 5. Personalize your vault
+### 4. Personalize your vault
 
 In Claude Code: `/onboarding`
 
@@ -377,7 +367,7 @@ Tasks live inline in your notes — the Tasks plugin surfaces them across the va
 
 Verify with `git --version` before running the installer.
 
-**Required:** [bun](https://bun.sh) — the `onebrain` binary runs under Bun and requires it in your `PATH` at runtime. Install via the [official installer](https://bun.sh/docs/installation) or `curl -fsSL https://bun.sh/install | bash`. The binary handles checkpoints, session init, vault-sync, and doctor — no Python or Node.js needed.
+**Optional:** [bun](https://bun.sh) — not required for most users. `npm install -g @onebrain-ai/cli` automatically downloads a compiled binary for your platform. Bun is only needed if you're on an unsupported platform or want to install from source.
 
 **Windows:** Git for Windows (above) includes Git Bash, which provides the `bash` environment required to run all hooks.
 
