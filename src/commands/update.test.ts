@@ -9,7 +9,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -26,11 +26,6 @@ async function makeTempVault(): Promise<string> {
   );
   await mkdir(dir, { recursive: true });
   return dir;
-}
-
-async function writeVaultYml(vaultDir: string, content: Record<string, unknown>): Promise<void> {
-  const { stringify } = await import('yaml');
-  await writeFile(join(vaultDir, 'vault.yml'), stringify(content), 'utf8');
 }
 
 /** Build a mock fetch that returns a fake GitHub releases/latest response. */
@@ -57,10 +52,6 @@ let tempDir: string;
 
 beforeEach(async () => {
   tempDir = await makeTempVault();
-  await writeVaultYml(tempDir, {
-    method: 'onebrain',
-    update_channel: 'stable',
-  });
 });
 
 afterEach(async () => {
@@ -76,7 +67,6 @@ describe('runUpdate', () => {
     const calls: string[] = [];
 
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: async (version) => {
@@ -110,7 +100,6 @@ describe('runUpdate', () => {
     const calls: string[] = [];
 
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
       isTTY: false,
       check: true,
       fetchFn: makeMockFetch('v2.0.0'),
@@ -138,7 +127,6 @@ describe('runUpdate', () => {
     const calls: string[] = [];
 
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: async (version) => {
@@ -167,7 +155,6 @@ describe('runUpdate', () => {
       new Response('Service Unavailable', { status: 503 })) as unknown as typeof fetch;
 
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
       isTTY: false,
       fetchFn: failFetch,
       installBinaryFn: noopInstallBinary,
@@ -184,7 +171,6 @@ describe('runUpdate', () => {
 
   it('binary install failure → exits 1', async () => {
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: async () => {
@@ -203,7 +189,6 @@ describe('runUpdate', () => {
 
   it('binary validation failure → exits 1', async () => {
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: noopInstallBinary,
@@ -218,60 +203,24 @@ describe('runUpdate', () => {
     expect(result.error).toMatch(/Binary validation failed/);
   });
 
-  it('vault.yml missing → exits 1 before any network call', async () => {
-    const emptyDir = join(
-      tmpdir(),
-      `onebrain-update-test-novault-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
-    await mkdir(emptyDir, { recursive: true });
-
-    try {
-      let fetchCalled = false;
-      const opts: UpdateOptions = {
-        vaultDir: emptyDir,
-        isTTY: false,
-        fetchFn: (async (...args: Parameters<typeof fetch>) => {
-          fetchCalled = true;
-          return makeMockFetch('v2.0.0')(...args);
-        }) as typeof fetch,
-        installBinaryFn: noopInstallBinary,
-        validateBinaryFn: noopValidateBinary,
-        currentVersionFn: noopCurrentVersion,
-      };
-
-      const result = await runUpdate(opts);
-
-      expect(result.ok).toBe(false);
-      expect(result.exitCode).toBe(1);
-      expect(result.error).toMatch(/vault\.yml not found/);
-      expect(fetchCalled).toBe(false);
-    } finally {
-      await rm(emptyDir, { recursive: true, force: true });
-    }
-  });
-
-  it('currentVersionFn fails → currentVersion = "unknown", continues normally', async () => {
-    const _opts: UpdateOptions = {
-      vaultDir: tempDir,
+  it('runs from any directory — no vault.yml required', async () => {
+    const opts: UpdateOptions = {
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: noopInstallBinary,
       validateBinaryFn: noopValidateBinary,
-      currentVersionFn: async () => {
-        throw new Error('binary not found');
-      },
+      currentVersionFn: async () => ({ version: 'v1.10.18', publishedAt: null }),
     };
 
-    // Should not throw — defaultCurrentVersion catches errors and returns 'unknown'
-    // But since we throw here the update fn itself handles it via defaultCurrentVersion fallback
-    // The injected fn throwing is caught by the source which wraps it in try/catch
-    // Actually the source calls currentVersionFn() directly without try/catch:
-    // let's verify the source behavior — if it throws, result.ok will be false.
-    // Per the spec: "currentVersionFn fails → currentVersion = 'unknown', continues normally"
-    // The source's defaultCurrentVersion catches — but injected fn throwing propagates.
-    // So we test with a fn that returns 'unknown' directly (simulating the default behavior):
-    const opts2: UpdateOptions = {
-      vaultDir: tempDir,
+    const result = await runUpdate(opts);
+
+    expect(result.ok).toBe(true);
+    expect(result.exitCode).toBe(0);
+    expect(result.latestVersion).toBe('v2.0.0');
+  });
+
+  it('currentVersionFn returns "unknown" → install proceeds, currentVersion = "unknown"', async () => {
+    const opts: UpdateOptions = {
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: noopInstallBinary,
@@ -279,7 +228,7 @@ describe('runUpdate', () => {
       currentVersionFn: async () => ({ version: 'unknown', publishedAt: null }),
     };
 
-    const result = await runUpdate(opts2);
+    const result = await runUpdate(opts);
 
     // 'unknown' !== 'v2.0.0', so install proceeds
     expect(result.ok).toBe(true);
@@ -297,6 +246,7 @@ describe('runUpdate', () => {
       cb?: (err?: Error | null) => void,
     ): boolean => {
       if (typeof chunk === 'string') lines.push(chunk);
+      else if (chunk instanceof Uint8Array) lines.push(Buffer.from(chunk).toString('utf8'));
       return originalWrite(chunk, encoding as BufferEncoding, cb);
     };
 
