@@ -94,7 +94,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
 
   const sp = isTTY ? createSpinner() : null;
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-  const randDelay = () => delay(Math.floor(Math.random() * 500) + 500);
+  const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
 
   let foldersResult: DoctorResult;
   let qmdResult: DoctorResult;

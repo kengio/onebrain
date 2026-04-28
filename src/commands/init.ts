@@ -490,7 +490,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const delay = (ms: number) =>
     isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
-  const randDelay = () => delay(Math.floor(Math.random() * 500) + 500);
+  const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
 
   function warnStep(msg: string) {
     process.stdout.write(`  ${pc.bold(pc.yellow('›'))}  ${pc.yellow(msg)}\n`);
