@@ -485,14 +485,14 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   }
 
   function step(msg: string) {
-    process.stdout.write(`${pc.bold(pc.green('==>'))} ${msg}\n`);
+    process.stdout.write(`  ${pc.bold(pc.cyan('›'))}  ${msg}\n`);
   }
 
   const delay = (ms: number) =>
     isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
 
   function warnStep(msg: string) {
-    process.stdout.write(`${pc.bold(pc.yellow('==>'))} ${pc.yellow(msg)}\n`);
+    process.stdout.write(`  ${pc.bold(pc.yellow('›'))}  ${pc.yellow(msg)}\n`);
   }
 
   // ── Step 1: Detect existing vault.yml ─────────────────────────────────────
@@ -513,7 +513,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     if (isTTY) {
       await printBanner();
       process.stdout.write(
-        `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+        `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n\n`,
       );
       const overwrite = await confirm({
         message: 'vault.yml already exists. Overwrite?',
@@ -526,9 +526,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
       }
     }
   } else if (isTTY) {
-    printBanner();
+    await printBanner();
     process.stdout.write(
-      `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+      `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n\n`,
     );
   }
 
@@ -667,13 +667,15 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.exitCode = 0;
 
   if (isTTY) {
-    process.stdout.write('\n');
+    process.stdout.write(`\n  ${pc.dim('─'.repeat(38))}\n`);
+    process.stdout.write(`  ${pc.bold(pc.cyan('1'))}  Open Obsidian → open this folder as vault\n`);
+    process.stdout.write(`  ${pc.bold(pc.cyan('2'))}  Run ${pc.cyan('claude')}\n`);
     process.stdout.write(
-      `   ${pc.bold('1')}  Open Obsidian → File → Open Folder as Vault → select this folder\n`,
+      `  ${pc.bold(pc.cyan('3'))}  Type ${pc.cyan('/onboarding')} to personalize\n`,
     );
-    process.stdout.write(`   ${pc.bold('2')}  Start your AI assistant: ${pc.cyan('claude')}\n`);
-    process.stdout.write(`   ${pc.bold('3')}  Personalize your vault: ${pc.cyan('/onboarding')}\n`);
-    process.stdout.write(`\n🧠  Run ${pc.cyan('/onboarding')} to get started\n`);
+    process.stdout.write(
+      `\n  ${pc.bold(pc.cyan('›'))}  ${pc.bold('Ready')}  —  ${pc.cyan('/onboarding')}\n`,
+    );
   } else {
     writeLine('done: run /onboarding in Claude to finish setup');
   }

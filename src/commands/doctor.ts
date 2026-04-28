@@ -65,7 +65,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     const binaryVersion = resolveBinaryVersion();
     await printBanner();
     process.stdout.write(
-      `${pc.bold('OneBrain')} ${pc.dim('Doctor')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n`,
+      `${pc.bold('OneBrain')} ${pc.dim('Doctor')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n`,
     );
   }
 
@@ -214,7 +214,7 @@ function printDoctorOutput(
   }
 
   // TTY: compact output — no per-line blank lines
-  const bar = pc.gray('│');
+  const bar = pc.cyan('│');
   process.stdout.write(`${bar}\n`);
   for (const result of results) {
     const icon =
@@ -223,9 +223,20 @@ function printDoctorOutput(
         : result.status === 'warn'
           ? pc.yellow('▲')
           : pc.red('■');
-    const line = `${result.check.padEnd(20)} ${result.message}`;
-    process.stdout.write(`${bar}  ${icon} ${line}\n`);
-    if (result.hint) process.stdout.write(`${bar}    ${pc.dim(`→ ${result.hint}`)}\n`);
+    const check =
+      result.status === 'ok'
+        ? pc.dim(result.check.padEnd(20))
+        : result.status === 'warn'
+          ? pc.yellow(result.check.padEnd(20))
+          : pc.bold(pc.red(result.check.padEnd(20)));
+    const msg =
+      result.status === 'ok'
+        ? pc.dim(result.message)
+        : result.status === 'warn'
+          ? pc.yellow(result.message)
+          : pc.red(result.message);
+    process.stdout.write(`${bar}  ${icon}  ${check}  ${msg}\n`);
+    if (result.hint) process.stdout.write(`${bar}      ${pc.dim(`→ ${result.hint}`)}\n`);
   }
   process.stdout.write(`${bar}\n`);
 

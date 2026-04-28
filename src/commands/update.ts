@@ -189,7 +189,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     const binaryVersion = resolveBinaryVersion();
     await printBanner();
     process.stdout.write(
-      `${pc.bold('OneBrain')} ${pc.dim('Update')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+      `${pc.bold('OneBrain')} ${pc.dim('Update')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')} ${pc.cyan(vaultDir)}\n\n`,
     );
   } else {
     writeLine('OneBrain Update');

@@ -81,7 +81,7 @@ function renderBanner(hueOffset: number, neon: boolean): string {
     '',
     ...ART_LINES.map(colorLine),
     '',
-    `    ${pc.dim('Your AI Thinking Partner')}`,
+    `    ${pc.bold('Your AI Thinking Partner')}`,
     '',
   ].join('\n');
 }
