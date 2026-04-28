@@ -75,7 +75,7 @@ function neonLine(line: string, hueOffset: number): string {
     .join('');
 }
 
-// taglineT: <0 = hidden (blink-off), 0 = white, 1 = magenta, between = interpolated
+// taglineT: <0 = hidden (blink-off), 0 = white (255,255,255), 1 = gray (80,80,80)
 function renderBanner(hueOffset: number, neon: boolean, taglineT = 1): string {
   const colorLine = (l: string) => (neon ? neonLine(l, hueOffset) : pc.bold(pc.cyan(l)));
   const TEXT = 'Your AI Thinking Partner';
@@ -85,8 +85,8 @@ function renderBanner(hueOffset: number, neon: boolean, taglineT = 1): string {
   } else if (!neon) {
     tagline = pc.bold(pc.magenta(TEXT));
   } else {
-    const g = Math.round(255 * (1 - taglineT));
-    tagline = `\x1b[1;38;2;255;${g};255m${TEXT}\x1b[0m`;
+    const v = Math.round(255 - taglineT * 175); // 255 (white) → 80 (gray)
+    tagline = `\x1b[1;38;2;${v};${v};${v}m${TEXT}\x1b[0m`;
   }
   return ['', ...ART_LINES.map(colorLine), '', `    ${tagline}`, ''].join('\n');
 }
@@ -97,7 +97,7 @@ export async function printBanner(): Promise<void> {
   const neon = supportsRgb();
   // Two passes of cosine ease-in-out, each 1.5 s → total 3 s
   // Art:     hue 0°→180° (forward), 180°→0° (reverse)
-  // Tagline: white→magenta (forward), magenta→white (reverse); hue/180 drives both
+  // Tagline: white→gray (forward), gray→white (reverse); hue/180 drives both
   // End:     blink off 150 ms → settle on static cyan + magenta
   const N = 29; // frames per pass; 29 × 50 ms ≈ 1.45 s
   const FRAME_MS = 50;
