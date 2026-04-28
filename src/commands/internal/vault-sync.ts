@@ -33,7 +33,7 @@ import { dirname, join, relative } from 'node:path';
 import { intro, outro, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { barBlank, barLine, makeStepFn } from './cli-ui.js';
+import { makeStepFn } from './cli-ui.js';
 import { detectHarness } from './harness.js';
 
 // ---------------------------------------------------------------------------

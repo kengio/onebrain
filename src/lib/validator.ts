@@ -44,8 +44,10 @@ export async function checkVaultYml(vaultRoot: string): Promise<DoctorResult> {
 
   const details: string[] = [];
   if (parsed) {
-    if (typeof parsed['update_channel'] === 'string') details.push(`update_channel: ${parsed['update_channel']}`);
-    if (typeof parsed['qmd_collection'] === 'string') details.push(`qmd: ${parsed['qmd_collection']}`);
+    if (typeof parsed['update_channel'] === 'string')
+      details.push(`update_channel: ${parsed['update_channel']}`);
+    if (typeof parsed['qmd_collection'] === 'string')
+      details.push(`qmd: ${parsed['qmd_collection']}`);
   }
   return {
     check: 'vault.yml',
@@ -386,12 +388,16 @@ export async function checkPluginFiles(vaultRoot: string): Promise<DoctorResult>
     for await (const _ of new Bun.Glob('*/SKILL.md').scan({ cwd: join(pluginBase, 'skills') })) {
       skillCount++;
     }
-  } catch { /* ok */ }
+  } catch {
+    /* ok */
+  }
   try {
     for await (const _ of new Bun.Glob('*.md').scan({ cwd: join(pluginBase, 'agents') })) {
       agentCount++;
     }
-  } catch { /* ok */ }
+  } catch {
+    /* ok */
+  }
 
   return {
     check: 'plugin-files',

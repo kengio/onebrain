@@ -253,13 +253,16 @@ function printNonTtyOutput(
   }
   lines.push('');
   if (errorCount > 0) {
-    lines.push(`Summary: ${totalChecks} checks · ${errorCount} error(s) · ${warningCount} warning(s) — fix before using`);
+    lines.push(
+      `Summary: ${totalChecks} checks · ${errorCount} error(s) · ${warningCount} warning(s) — fix before using`,
+    );
   } else if (warningCount > 0) {
     lines.push(`Summary: ${totalChecks} checks · ${warningCount} warning(s) — ok to run`);
   } else {
     lines.push(`Summary: ${totalChecks} checks — all passed`);
   }
-  if (showFixHint) lines.push(`hint: run onebrain doctor --fix to auto-fix ${fixableCount} issue(s)`);
+  if (showFixHint)
+    lines.push(`hint: run onebrain doctor --fix to auto-fix ${fixableCount} issue(s)`);
   process.stdout.write(`${lines.join('\n')}\n`);
 }
 
@@ -323,7 +326,8 @@ function getFix(r: DoctorResult): Fix | null {
         const text = await readFile(vaultYmlPath, 'utf8');
         const raw = (parse(text) ?? {}) as Record<string, unknown>;
         const details = r.details ?? [];
-        if (details.some((d) => d.includes('onebrain_version'))) raw['onebrain_version'] = undefined;
+        if (details.some((d) => d.includes('onebrain_version')))
+          raw['onebrain_version'] = undefined;
         if (details.some((d) => d.includes('deprecated key: method'))) raw['method'] = undefined;
         if (details.some((d) => d.includes('runtime.harness'))) {
           const runtime = raw['runtime'] as Record<string, unknown> | undefined;

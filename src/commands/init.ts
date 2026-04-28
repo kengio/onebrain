@@ -22,7 +22,15 @@ import { dirname, join } from 'node:path';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
 import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
-import { askYesNo, barBlank, barLine, close, dotLine, makeStepFn, writeLine } from './internal/cli-ui.js';
+import {
+  askYesNo,
+  barBlank,
+  barLine,
+  close,
+  dotLine,
+  makeStepFn,
+  writeLine,
+} from './internal/cli-ui.js';
 
 const binaryVersion = resolveBinaryVersion();
 
@@ -200,9 +208,7 @@ async function downloadPluginFiles(
   return { skipped: false };
 }
 
-async function countPluginContents(
-  vaultDir: string,
-): Promise<{ skills: number; agents: number }> {
+async function countPluginContents(vaultDir: string): Promise<{ skills: number; agents: number }> {
   const base = join(vaultDir, '.claude', 'plugins', 'onebrain');
   const [skillEntries, agentEntries] = await Promise.all([
     readdir(join(base, 'skills'), { withFileTypes: true }).catch(() => []),
@@ -475,7 +481,10 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   // Injectable dependencies (real implementations lazy-loaded)
   const vaultSyncFn =
     opts.vaultSyncFn ??
-    (async (dir: string, syncOpts: { branch?: string; includeObsidian?: boolean; embedded?: boolean }) => {
+    (async (
+      dir: string,
+      syncOpts: { branch?: string; includeObsidian?: boolean; embedded?: boolean },
+    ) => {
       const { vaultSyncCommand } = await import('./internal/vault-sync.js');
       await vaultSyncCommand(dir, syncOpts);
     });
@@ -594,10 +603,10 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   const pluginFilesExist = await pathExists(pluginJsonPath);
   const sp4 = pluginFilesExist ? createStep('📦', 'Plugin files') : null;
 
-  const {
-    skipped: pluginSkipped,
-    failed: pluginDownloadFailed,
-  } = await downloadPluginFiles(vaultDir, vaultSyncFn);
+  const { skipped: pluginSkipped, failed: pluginDownloadFailed } = await downloadPluginFiles(
+    vaultDir,
+    vaultSyncFn,
+  );
   result.pluginSkipped = pluginSkipped;
 
   if (sp4) {
@@ -606,10 +615,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
       sp4.stop('download failed');
     } else {
       const { skills, agents } = await countPluginContents(vaultDir);
-      sp4.stop(
-        pc.dim('already installed'),
-        [`${skills} skills · ${agents} agents`],
-      );
+      sp4.stop(pc.dim('already installed'), [`${skills} skills · ${agents} agents`]);
     }
   } else if (isTTY) {
     // Download path — vault-sync rendered its own UI; output our completion line
@@ -672,10 +678,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   if (sp5) {
     await randDelay();
-    sp5.stop(
-      pc.dim(pluginRegistrationSkipped ? 'skipped' : 'registered'),
-      [`source: ${pluginRegistrationSkipped ? 'marketplace' : 'local'}`],
-    );
+    sp5.stop(pc.dim(pluginRegistrationSkipped ? 'skipped' : 'registered'), [
+      `source: ${pluginRegistrationSkipped ? 'marketplace' : 'local'}`,
+    ]);
   } else {
     writeLine(`plugin: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : 'registered'}`);
   }

@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.2
+latest_version: 2.1.3
 released: 2026-04-29
 ---
 
@@ -12,6 +12,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.3 — fix: npm publish target + biome cleanup
+
+- fix(release): use `--target bun` in npm-publish step — npm-installed binary was still built with `--target node`, causing UTF-8 garbling despite the v2.1.1 fix
+- fix(update): remove unused `daysBehind` function
+- fix(biome): format validator.ts — wrap long lines introduced by exactOptionalPropertyTypes spread fixes
+- fix(biome): replace template literal with string literal in cli-banner.ts cursor definition
+- fix(biome): simplify boolean ternary in init.test.ts confirmFn
 
 ## v2.1.2 — fix: init fresh install layout + CI typecheck
 
