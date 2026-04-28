@@ -476,18 +476,11 @@ async function installObsidianPlugins(
 
 function printBanner(): void {
   if (!process.stdout.isTTY) return;
-  const lines = [
-    '  ___             ____            _       ',
-    ' / _ \\  _ __   ___| __ ) _ __ __ _(_)_ __  ',
-    "| | | | '_ \\ / _ \\  _ \\| '__/ _` | | '_ \\ ",
-    '| |_| | | | |  __/ |_) | | | (_| | | | | |',
-    ' \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|',
-  ];
-  process.stdout.write('\n');
-  for (const line of lines) {
-    process.stdout.write(`${pc.cyan(pc.bold(line))}\n`);
-  }
-  process.stdout.write(`\n${pc.yellow('  Two Minds, Think as One, in OneBrain')}\n\n`);
+  const bar = '─'.repeat(38);
+  process.stdout.write(`\n  ${pc.dim(bar)}\n`);
+  process.stdout.write(`    ${pc.cyan(pc.bold('OneBrain'))}\n`);
+  process.stdout.write(`    ${pc.dim('Two Minds, Think as One, in OneBrain')}\n`);
+  process.stdout.write(`  ${pc.dim(bar)}\n\n`);
 }
 
 // ---------------------------------------------------------------------------
