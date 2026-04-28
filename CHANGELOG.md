@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.1
+latest_version: 2.1.2
 released: 2026-04-29
 ---
 
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.2 — fix: init fresh install layout + CI typecheck
+
+- fix(init): peek plugin.json before step 4 — skip spinner on fresh install to prevent vault-sync clack output conflicting with setInterval \x1b[1A\x1b[2K
+- fix(init): add dotLine() helper for completed-step output without a preceding spinner
+- fix(vault-sync): add embedded mode — when called from init, uses makeStepFn (cyan bar, emoji steps) instead of clack intro/spinner/outro
+- fix(vault-sync): add emoji to all steps (📥 📂 🔧 📌 🧹) for embedded mode
+- fix(typecheck): spread pattern for optional hint/details in validator.ts (exactOptionalPropertyTypes)
+- fix(typecheck): remove vaultDir from UpdateOptions usage in tests — field removed in binary-only refactor
+- fix(typecheck): narrow patch-utf8.test.ts write signature to match implementation
 
 ## v2.1.1 — Post-merge fixes
 
