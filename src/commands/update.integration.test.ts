@@ -103,7 +103,7 @@ describe('update integration: --check dry-run mode', () => {
     const sideEffects: string[] = [];
 
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
+
       isTTY: false,
       check: true,
       fetchFn: makeMockFetch('v1.99.0'),
@@ -133,7 +133,7 @@ describe('update integration: --check dry-run mode', () => {
 
   it('result carries both current and latest version in dry-run mode', async () => {
     const result = await runUpdate({
-      vaultDir: tempDir,
+
       isTTY: false,
       check: true,
       fetchFn: makeMockFetch('v1.99.0'),
@@ -156,7 +156,7 @@ describe('update integration: --check dry-run mode', () => {
 describe('update integration: network unavailable (fetch throws)', () => {
   it('exits with clear error message when fetch throws, does not crash', async () => {
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
+
       isTTY: false,
       fetchFn: throwingFetch,
       installBinaryFn: noopInstallBinary,
@@ -184,7 +184,7 @@ describe('update integration: full end-to-end success', () => {
     const sideEffects: string[] = [];
 
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
+
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: async (version) => {
@@ -227,7 +227,7 @@ describe('update integration: atomic gate (validateBinary returns false)', () =>
     const sideEffects: string[] = [];
 
     const opts: UpdateOptions = {
-      vaultDir: tempDir,
+
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
       installBinaryFn: async (version) => {

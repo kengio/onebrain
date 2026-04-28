@@ -51,7 +51,7 @@ export async function checkVaultYml(vaultRoot: string): Promise<DoctorResult> {
     check: 'vault.yml',
     status: 'ok',
     message: 'valid',
-    details: details.length > 0 ? details : undefined,
+    ...(details.length > 0 ? { details } : {}),
   };
 }
 
@@ -503,7 +503,7 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
       check: 'vault.yml-keys',
       status: 'error',
       message: `${errors.length} error(s)`,
-      hint,
+      ...(hint !== undefined ? { hint } : {}),
       details: hint ? [...errors, hint] : errors,
     };
   }
@@ -521,7 +521,7 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
       check: 'vault.yml-keys',
       status: 'warn',
       message: `${warnings.length} issue(s)`,
-      hint,
+      ...(hint !== undefined ? { hint } : {}),
       details: hint ? [...warnings, hint] : warnings,
     };
   }
@@ -656,6 +656,6 @@ export async function checkSettingsHooks(
     check: 'settings-hooks',
     status: 'ok',
     message: 'hooks ok',
-    details: okDetails.length > 0 ? okDetails : undefined,
+    ...(okDetails.length > 0 ? { details: okDetails } : {}),
   };
 }

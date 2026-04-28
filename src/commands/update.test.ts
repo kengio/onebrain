@@ -252,7 +252,6 @@ describe('runUpdate', () => {
 
     try {
       const opts: UpdateOptions = {
-        vaultDir: tempDir,
         isTTY: false,
         fetchFn: makeMockFetch('v2.0.0'),
         installBinaryFn: noopInstallBinary,

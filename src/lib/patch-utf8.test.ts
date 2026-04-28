@@ -12,12 +12,12 @@ import { patchUtf8 } from './patch-utf8.js';
 
 function makeMockStream(): {
   chunks: Buffer[];
-  write: (chunk: string | Uint8Array, ...args: unknown[]) => boolean;
+  write: (chunk: string | Uint8Array, cb?: (err?: Error | null) => void) => boolean;
 } {
   const chunks: Buffer[] = [];
   return {
     chunks,
-    write(chunk: string | Uint8Array, cb?: ((err?: Error | null) => void)): boolean {
+    write(chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean {
       chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : Buffer.from(chunk));
       cb?.();
       return true;
