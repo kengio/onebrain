@@ -30,8 +30,6 @@ Good contributions include:
 │       ├── SKILL.md                     The skill prompt — what the AI follows when invoked
 │       ├── references/                  Large content loaded on-demand (handlers, templates, procedures)
 │       └── scripts/                     Predefined shell scripts called inline by the skill
-├── hooks/
-│   └── hooks.json                       Hook configuration (session automation)
 └── agents/
     ├── knowledge-linker.md              Knowledge graph agent (used by /connect)
     ├── link-suggester.md                Auto-add wikilinks after note creation (used by /learn)
@@ -40,7 +38,7 @@ Good contributions include:
     └── task-extractor.md                Extract action items from braindumps (used by /braindump)
 ```
 
-Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [hooks.json](.claude/plugins/onebrain/hooks/hooks.json)
+Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md)
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
@@ -133,7 +131,7 @@ Agents are stateless — they receive all context in the prompt payload and do n
 
 ## Adding a New Hook
 
-Hooks run shell commands automatically when Claude performs certain actions. Hook configuration lives in [`hooks.json`](.claude/plugins/onebrain/hooks/hooks.json). Shell scripts go in the same `hooks/` directory.
+Hooks run shell commands automatically when Claude performs certain actions. Hook configuration lives in the **vault's** `.claude/settings.json`. Shell scripts (for PostToolUse hooks) go in `.claude/plugins/onebrain/hooks/`.
 
 **Available hook events:**
 
@@ -168,34 +166,15 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 **To add a hook:**
 
-1. Add an entry to [hooks.json](.claude/plugins/onebrain/hooks/hooks.json):
+1. Add the hook entry to the **vault's** `.claude/settings.json` under the appropriate event key. Hook commands use relative paths — Claude Code runs hooks from the vault directory as CWD.
 
-   ```json
-   {
-     "hooks": {
-       "PostToolUse": [
-         {
-           "matcher": "Write|Edit",
-           "hooks": [
-             {
-               "type": "command",
-               "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/your-hook.sh\"",
-               "async": true
-             }
-           ]
-         }
-       ]
-     }
-   }
-   ```
-
-2. Create the corresponding script in `.claude/plugins/onebrain/hooks/`. Use `${CLAUDE_PLUGIN_ROOT}` to reference other files in the plugin directory. Write a single `.sh` script — it runs on macOS, Linux, and Windows (via Git Bash, which ships with Git for Windows). No `.ps1` variant is needed.
+2. For PostToolUse hooks that call a shell script, create the script in `.claude/plugins/onebrain/hooks/`. Write a single `.sh` script — it runs on macOS, Linux, and Windows (via Git Bash, which ships with Git for Windows). No `.ps1` variant is needed.
 
 3. Make scripts defensive — they run on every matching event, so they should exit silently if there's nothing to do.
 
 4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection. PreCompact hooks do not support `decision:block` and cannot inject prompts.
 
-5. **Stop, PreCompact, and PostCompact hooks cannot be registered in `hooks.json`** — Claude Code does not fire them from plugin hook files. Register them in the **vault's** `.claude/settings.json` (the `.claude/` folder inside the vault, not `~/.claude/settings.json`). Hook commands use relative paths — Claude Code runs hooks from the vault directory as CWD, so `${CLAUDE_PLUGIN_ROOT}` (hooks.json only) is not needed. Use `/update` to register or repair these hooks automatically.
+5. Use `/update` (or `onebrain register-hooks`) to register or repair Stop and PostCompact hooks automatically.
 
 ## Memory System
 

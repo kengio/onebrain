@@ -41,8 +41,7 @@
       "dist",
       "*.js",
       ".obsidian",
-      ".claude/settings.json",
-      ".claude/plugins/onebrain/hooks/hooks.json"
+      ".claude/settings.json"
     ]
   }
 }

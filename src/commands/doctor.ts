@@ -4,7 +4,6 @@ import {
   type DoctorResult,
   type VaultConfig,
   checkFolders,
-  checkHarnessBinary,
   checkOrphanCheckpoints,
   checkPluginFiles,
   checkQmdEmbeddings,
@@ -29,7 +28,6 @@ export interface DoctorOptions {
   checkVaultYmlFn?: (vaultDir: string) => Promise<DoctorResult>;
   loadVaultConfigFn?: (vaultDir: string) => Promise<VaultConfig>;
   checkFoldersFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
-  checkHarnessBinaryFn?: (config: VaultConfig) => Promise<DoctorResult>;
   checkQmdEmbeddingsFn?: (config: VaultConfig) => Promise<DoctorResult>;
   checkOrphanCheckpointsFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
   checkPluginFilesFn?: (vaultDir: string) => Promise<DoctorResult>;
@@ -56,7 +54,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const checkVaultYmlFn = opts.checkVaultYmlFn ?? checkVaultYml;
   const loadVaultConfigFn = opts.loadVaultConfigFn ?? loadVaultConfig;
   const checkFoldersFn = opts.checkFoldersFn ?? checkFolders;
-  const checkHarnessBinaryFn = opts.checkHarnessBinaryFn ?? checkHarnessBinary;
   const checkQmdEmbeddingsFn = opts.checkQmdEmbeddingsFn ?? checkQmdEmbeddings;
   const checkOrphanCheckpointsFn = opts.checkOrphanCheckpointsFn ?? checkOrphanCheckpoints;
   const checkPluginFilesFn = opts.checkPluginFilesFn ?? checkPluginFiles;
@@ -95,7 +92,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   sp?.start('Running vault health checks…');
 
   let foldersResult: DoctorResult;
-  let harnessResult: DoctorResult;
   let qmdResult: DoctorResult;
   let orphanResult: DoctorResult;
   let pluginFilesResult: DoctorResult;
@@ -104,7 +100,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   try {
     [
       foldersResult,
-      harnessResult,
       qmdResult,
       orphanResult,
       pluginFilesResult,
@@ -112,7 +107,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       settingsHooksResult,
     ] = await Promise.all([
       checkFoldersFn(vaultDir, config),
-      checkHarnessBinaryFn(config),
       checkQmdEmbeddingsFn(config),
       checkOrphanCheckpointsFn(vaultDir, config),
       checkPluginFilesFn(vaultDir),
@@ -128,7 +122,6 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const results = [
     vaultYmlResult,
     foldersResult,
-    harnessResult,
     qmdResult,
     orphanResult,
     pluginFilesResult,

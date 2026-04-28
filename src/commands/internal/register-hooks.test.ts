@@ -38,13 +38,13 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('runRegisterHooks', () => {
-  test('fresh run on empty settings — all hooks registered, 3 permissions added', async () => {
+  test('fresh run on empty settings — Stop + PostCompact registered, 3 permissions added', async () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
 
-    // Stop, PostCompact, and SessionStart should all be added
-    for (const event of ['Stop', 'PostCompact', 'SessionStart']) {
+    // Stop and PostCompact should all be added
+    for (const event of ['Stop', 'PostCompact']) {
       expect(result.hooks[event]).toBe('added');
     }
 
@@ -57,21 +57,11 @@ describe('runRegisterHooks', () => {
     // Verify written file structure — no env block
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(Object.keys(hooks)).toHaveLength(3); // Stop + PostCompact + SessionStart
+    expect(Object.keys(hooks)).toHaveLength(2); // Stop + PostCompact
     expect(settings['env']).toBeUndefined();
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
     expect(perms).toHaveLength(3);
-  });
-
-  test('register-hooks → SessionStart added to settings.json', async () => {
-    await runRegisterHooks({ vaultDir: tempDir });
-
-    const settings = await readSettingsFile(tempDir);
-    const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(hooks['SessionStart']).toBeDefined();
-    expect(Array.isArray(hooks['SessionStart'])).toBe(true);
-    expect((hooks['SessionStart'] as unknown[]).length).toBeGreaterThan(0);
   });
 
   test('stale PreCompact hook is removed when present in existing settings.json', async () => {
@@ -111,7 +101,7 @@ describe('runRegisterHooks', () => {
       Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>
     >;
 
-    for (const event of ['Stop', 'PostCompact', 'SessionStart']) {
+    for (const event of ['Stop', 'PostCompact']) {
       const group = hooks[event]?.[0];
       expect(group).toBeDefined();
       expect(group?.matcher).toBe('');
@@ -128,41 +118,11 @@ describe('runRegisterHooks', () => {
 
     expect(result.ok).toBe(true);
 
-    for (const event of ['Stop', 'PostCompact', 'SessionStart']) {
+    for (const event of ['Stop', 'PostCompact']) {
       expect(result.hooks[event]).toBe('ok');
     }
 
     expect(result.permissionsAdded).toHaveLength(0);
-  });
-
-  test('run twice → SessionStart idempotent (status: ok on second run)', async () => {
-    await runRegisterHooks({ vaultDir: tempDir });
-    const result = await runRegisterHooks({ vaultDir: tempDir });
-
-    expect(result.ok).toBe(true);
-    expect(result.hooks['SessionStart']).toBe('ok');
-  });
-
-  test('output string contains "SessionStart" (regression guard)', async () => {
-    const lines: string[] = [];
-    const originalWrite = process.stdout.write.bind(process.stdout);
-    // biome-ignore lint/suspicious/noExplicitAny: capturing output for assertion
-    (process.stdout as any).write = (
-      chunk: string | Uint8Array,
-      encoding?: BufferEncoding,
-      cb?: (err?: Error | null) => void,
-    ): boolean => {
-      if (typeof chunk === 'string') lines.push(chunk);
-      return originalWrite(chunk, encoding as BufferEncoding, cb);
-    };
-
-    try {
-      await runRegisterHooks({ vaultDir: tempDir });
-    } finally {
-      process.stdout.write = originalWrite;
-    }
-
-    expect(lines.join('')).toContain('SessionStart');
   });
 
   test('migration: existing checkpoint-hook.sh entry → replaced with binary command', async () => {
@@ -313,7 +273,7 @@ describe('registerGeminiHooks', () => {
     expect(exists).toBe(false);
   });
 
-  test('.gemini/settings.json exists → Stop/PostCompact/SessionStart written', async () => {
+  test('.gemini/settings.json exists → Stop/PostCompact written', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
     const geminiSettings = join(geminiDir, 'settings.json');
@@ -324,7 +284,7 @@ describe('registerGeminiHooks', () => {
 
     const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    for (const event of ['Stop', 'PostCompact', 'SessionStart']) {
+    for (const event of ['Stop', 'PostCompact']) {
       expect(hooks[event]).toBeDefined();
       expect(Array.isArray(hooks[event])).toBe(true);
       expect((hooks[event] as unknown[]).length).toBeGreaterThan(0);
@@ -354,7 +314,7 @@ describe('registerGeminiHooks', () => {
     >;
     const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
 
-    for (const event of ['Stop', 'PostCompact', 'SessionStart']) {
+    for (const event of ['Stop', 'PostCompact']) {
       const groups = hooks[event] ?? [];
       const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
       const unique = new Set(allCommands);

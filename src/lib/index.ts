@@ -15,7 +15,6 @@ export { loadVaultConfig } from './parser.js';
 export {
   checkVaultYml,
   checkFolders,
-  checkHarnessBinary,
   checkQmdEmbeddings,
   checkOrphanCheckpoints,
   checkPluginFiles,

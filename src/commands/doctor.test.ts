@@ -45,7 +45,6 @@ function makeAllOkValidators(): Required<
     | 'checkVaultYmlFn'
     | 'loadVaultConfigFn'
     | 'checkFoldersFn'
-    | 'checkHarnessBinaryFn'
     | 'checkQmdEmbeddingsFn'
     | 'checkOrphanCheckpointsFn'
     | 'checkPluginFilesFn'
@@ -57,11 +56,6 @@ function makeAllOkValidators(): Required<
     checkVaultYmlFn: async () => ({ check: 'vault.yml', status: 'ok', message: 'valid' }),
     loadVaultConfigFn: async () => DEFAULT_CONFIG,
     checkFoldersFn: async () => ({ check: 'folders', status: 'ok', message: '8/8 present' }),
-    checkHarnessBinaryFn: async () => ({
-      check: 'runtime.harness',
-      status: 'ok',
-      message: 'claude-code (found)',
-    }),
     checkQmdEmbeddingsFn: async () => ({
       check: 'qmd-embeddings',
       status: 'ok',
@@ -532,16 +526,11 @@ describe('runDoctor', () => {
         status: 'warn',
         message: '1 unmerged checkpoint(s)',
       });
-      validators.checkHarnessBinaryFn = async () => ({
-        check: 'runtime.harness',
-        status: 'warn',
-        message: 'not found',
-      });
 
       const result = await runDoctor({ vaultDir: tempDir, isTTY: false, ...validators });
 
       expect(result.errorCount).toBe(2);
-      expect(result.warningCount).toBe(2);
+      expect(result.warningCount).toBe(1);
       expect(result.exitCode).toBe(1);
     });
 

@@ -100,64 +100,6 @@ async function directoryExists(path: string): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// checkHarnessBinary
-// ---------------------------------------------------------------------------
-
-const HARNESS_BINARY: Record<string, string> = {
-  'claude-code': 'claude',
-  gemini: 'gemini',
-};
-
-const HARNESS_INSTALL_HINT: Record<string, string> = {
-  'claude-code': 'Install Claude Code: https://claude.ai/code',
-  gemini: 'Install Gemini CLI: https://github.com/google-gemini/gemini-cli',
-};
-
-/**
- * Check that the configured harness binary is available in PATH.
- * For 'direct' or absent runtime, always returns ok.
- */
-export async function checkHarnessBinary(
-  config: VaultConfig,
-  whichFn: (cmd: string) => string | null = (cmd) => Bun.which(cmd),
-): Promise<DoctorResult> {
-  const harness = config.runtime?.harness;
-
-  if (!harness || harness === 'direct') {
-    return {
-      check: 'runtime.harness',
-      status: 'ok',
-      message: harness ? 'direct (no binary check)' : 'no harness configured',
-    };
-  }
-
-  const binaryName = HARNESS_BINARY[harness];
-  if (!binaryName) {
-    return {
-      check: 'runtime.harness',
-      status: 'ok',
-      message: `${harness} (unknown harness, skipping)`,
-    };
-  }
-
-  const found = whichFn(binaryName);
-  if (found) {
-    return {
-      check: 'runtime.harness',
-      status: 'ok',
-      message: `${harness} (found)`,
-    };
-  }
-
-  return {
-    check: 'runtime.harness',
-    status: 'warn',
-    message: `${harness} binary not found`,
-    hint: HARNESS_INSTALL_HINT[harness] ?? `Install ${binaryName} and ensure it is in PATH`,
-  };
-}
-
-// ---------------------------------------------------------------------------
 // checkQmdEmbeddings
 // ---------------------------------------------------------------------------
 
@@ -547,7 +489,6 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
 const REQUIRED_HOOKS: Array<{ event: string; cmdSubstring: string }> = [
   { event: 'Stop', cmdSubstring: 'onebrain checkpoint stop' },
   { event: 'PostCompact', cmdSubstring: 'onebrain checkpoint postcompact' },
-  { event: 'SessionStart', cmdSubstring: 'onebrain session-init' },
 ];
 
 const QMD_HOOK_SUBSTRING = 'onebrain qmd-reindex';

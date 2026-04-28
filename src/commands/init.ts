@@ -685,7 +685,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const hooksLine = hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update';
   if (isTTY) {
-    log.success('Hooks registered   Stop · PostCompact · SessionStart');
+    log.success('Hooks registered   Stop · PostCompact');
   } else {
     writeLine(`hooks: ${hooksLine}`);
   }
