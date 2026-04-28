@@ -334,11 +334,7 @@ async function readMergedField(filePath: string): Promise<boolean | undefined> {
 // checkPluginFiles
 // ---------------------------------------------------------------------------
 
-const REQUIRED_PLUGIN_FILES = [
-  'INSTRUCTIONS.md',
-  '.claude-plugin/plugin.json',
-  'hooks/hooks.json',
-] as const;
+const REQUIRED_PLUGIN_FILES = ['INSTRUCTIONS.md', '.claude-plugin/plugin.json'] as const;
 
 const REQUIRED_PLUGIN_DIRS = ['agents', 'skills'] as const;
 
