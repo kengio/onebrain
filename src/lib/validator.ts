@@ -110,18 +110,17 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
   if (!config.qmd_collection) {
     return {
       check: 'qmd-embeddings',
-      status: 'ok',
-      message: 'qmd not configured',
+      status: 'warn',
+      message: 'qmd_collection not set in vault.yml',
+      hint: 'Run /qmd to set up search index',
     };
   }
 
   try {
     let qmdArgs: string[];
     if (process.platform === 'win32') {
-      qmdArgs = ['powershell.exe', '-NoProfile', '-Command', 'qmd status --json'];
+      qmdArgs = ['powershell.exe', '-NoProfile', '-Command', 'qmd status'];
     } else {
-      // Bun.spawn doesn't inherit shell PATH — resolve the binary first.
-      // Fall back through common install locations if Bun.which misses it.
       const resolved =
         Bun.which('qmd') ??
         Bun.which('qmd', {
@@ -134,14 +133,11 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
           message: 'qmd not found in PATH',
         };
       }
-      qmdArgs = [resolved, 'status', '--json'];
+      qmdArgs = [resolved, 'status'];
     }
-    const proc = Bun.spawn(qmdArgs, {
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
 
-    // Race between process completion and 3-second timeout
+    const proc = Bun.spawn(qmdArgs, { stdout: 'pipe', stderr: 'pipe' });
+
     const timeoutMs = 3000;
     let timerId: ReturnType<typeof setTimeout> | undefined;
     const raceResult = await Promise.race([
@@ -154,45 +150,35 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 
     if (raceResult === 'timeout') {
       proc.kill();
-      return {
-        check: 'qmd-embeddings',
-        status: 'ok',
-        message: 'qmd status unavailable (timeout)',
-      };
+      return { check: 'qmd-embeddings', status: 'ok', message: 'qmd status unavailable (timeout)' };
     }
 
     const stdout = await new Response(proc.stdout).text();
-    const parsed = JSON.parse(stdout) as Record<string, unknown>;
-    const unembedded = parsed['unembedded'];
 
-    if (typeof unembedded !== 'number') {
+    // Parse "Total:    N files indexed" and "Pending:  M need embedding"
+    const totalMatch = stdout.match(/Total:\s+(\d+)\s+files? indexed/);
+    const pendingMatch = stdout.match(/Pending:\s+(\d+)\s+need embedding/);
+    const total = totalMatch ? Number.parseInt(totalMatch[1] ?? '0', 10) : null;
+    const pending = pendingMatch ? Number.parseInt(pendingMatch[1] ?? '0', 10) : 0;
+
+    if (total === null) {
+      return { check: 'qmd-embeddings', status: 'ok', message: 'qmd status unavailable' };
+    }
+
+    const summary = `${total} indexed · ${pending} unembedded`;
+
+    if (pending > 0) {
       return {
         check: 'qmd-embeddings',
-        status: 'ok',
-        message: 'qmd status unavailable (unexpected output)',
+        status: 'warn',
+        message: summary,
+        hint: 'Run onebrain doctor --fix to reindex and embed',
       };
     }
 
-    if (unembedded === 0) {
-      return {
-        check: 'qmd-embeddings',
-        status: 'ok',
-        message: 'all embedded',
-      };
-    }
-
-    return {
-      check: 'qmd-embeddings',
-      status: 'warn',
-      message: `${unembedded} doc(s) missing embeddings`,
-      hint: 'Run /qmd embed to index them',
-    };
+    return { check: 'qmd-embeddings', status: 'ok', message: summary };
   } catch {
-    return {
-      check: 'qmd-embeddings',
-      status: 'ok',
-      message: 'qmd status unavailable',
-    };
+    return { check: 'qmd-embeddings', status: 'ok', message: 'qmd status unavailable' };
   }
 }
 

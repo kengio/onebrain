@@ -488,6 +488,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     process.stdout.write(`${pc.bold(pc.green('==>'))} ${msg}\n`);
   }
 
+  const delay = (ms: number) =>
+    isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
+
   function warnStep(msg: string) {
     process.stdout.write(`${pc.bold(pc.yellow('==>'))} ${pc.yellow(msg)}\n`);
   }
@@ -508,7 +511,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
     // TTY: prompt user
     if (isTTY) {
-      printBanner();
+      await printBanner();
       process.stdout.write(
         `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
       );
@@ -540,7 +543,10 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.foldersCreated = foldersCreated;
 
   if (isTTY) {
-    step(`Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`);
+    step(
+      `📁  Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`,
+    );
+    await delay(100);
   } else {
     writeLine(`folders: ${foldersCreated} created`);
   }
@@ -551,7 +557,8 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   const harness = await detectHarness(vaultDir);
 
   if (isTTY) {
-    step(`vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
+    step(`⚙️   vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
+    await delay(100);
   } else {
     writeLine(`vault.yml: written (harness=${harness})`);
   }
@@ -600,8 +607,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   if (isTTY && pluginResult.installed.length + pluginResult.failed.length > 0) {
     if (pluginResult.installed.length > 0) {
       step(
-        `${pluginResult.installed.length} plugin${pluginResult.installed.length !== 1 ? 's' : ''} installed`,
+        `🔌  ${pluginResult.installed.length} plugin${pluginResult.installed.length !== 1 ? 's' : ''} installed`,
       );
+      await delay(100);
     }
     for (const f of pluginResult.failed) {
       warnStep(`${f.id} · skipped — install manually in Obsidian Settings`);
@@ -623,8 +631,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   if (isTTY) {
     step(
-      `Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`,
+      `📌  Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`,
     );
+    await delay(100);
   } else {
     writeLine(`plugin: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : 'registered'}`);
   }
@@ -643,10 +652,11 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   const hooksLine = hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update';
   if (isTTY) {
     if (hooksOk) {
-      step('Hooks registered   Stop · PostCompact');
+      step('🪝  Hooks registered   Stop · PostCompact');
     } else {
-      warnStep('Hooks not registered — run onebrain update');
+      warnStep('🪝  Hooks not registered — run onebrain update');
     }
+    await delay(100);
   } else {
     writeLine(`hooks: ${hooksLine}`);
   }

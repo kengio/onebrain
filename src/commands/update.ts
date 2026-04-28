@@ -182,9 +182,12 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     process.stdout.write(`${pc.bold(pc.green('==>'))} ${msg}\n`);
   }
 
+  const delay = (ms: number) =>
+    isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
+
   if (isTTY) {
     const binaryVersion = resolveBinaryVersion();
-    printBanner();
+    await printBanner();
     process.stdout.write(
       `${pc.bold('OneBrain')} ${pc.dim('Update')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
     );
@@ -252,7 +255,8 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // Already up to date?
   if (latestVersion === currentVersion) {
     if (isTTY) {
-      step(`Already up to date  @onebrain-ai/cli ${latestVersion}`);
+      step(`✅  Already up to date  @onebrain-ai/cli ${latestVersion}`);
+      await delay(100);
       outro('Nothing to do');
     } else {
       writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}`);
@@ -265,7 +269,8 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 
   // Show upgrade
   if (isTTY) {
-    step(`${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}`);
+    step(`⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}`);
+    await delay(100);
   }
 
   // Step 2: Install binary

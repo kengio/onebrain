@@ -63,9 +63,9 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
 
   if (isTTY) {
     const binaryVersion = resolveBinaryVersion();
-    printBanner();
+    await printBanner();
     process.stdout.write(
-      `${pc.bold('OneBrain')} ${pc.dim('Doctor')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+      `${pc.bold('OneBrain')} ${pc.dim('Doctor')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n`,
     );
   }
 
@@ -93,7 +93,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   }
 
   const sp = isTTY ? createSpinner() : null;
-  sp?.start('Running vault health checks…');
+  const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   let foldersResult: DoctorResult;
   let qmdResult: DoctorResult;
@@ -102,21 +102,43 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   let vaultYmlKeysResult: DoctorResult;
   let settingsHooksResult: DoctorResult;
   try {
-    [
-      foldersResult,
-      qmdResult,
-      orphanResult,
-      pluginFilesResult,
-      vaultYmlKeysResult,
-      settingsHooksResult,
-    ] = await Promise.all([
-      checkFoldersFn(vaultDir, config),
-      checkQmdEmbeddingsFn(config),
-      checkOrphanCheckpointsFn(vaultDir, config),
-      checkPluginFilesFn(vaultDir),
-      checkVaultYmlKeysFn(vaultDir),
-      checkSettingsHooksFn(vaultDir, config),
-    ]);
+    if (isTTY) {
+      // Sequential with spinner updates so each check is visible
+      sp?.start('📋  Checking vault.yml…');
+      await delay(80);
+      foldersResult = await checkFoldersFn(vaultDir, config);
+      sp?.message('📁  Checking folders…');
+      await delay(80);
+      qmdResult = await checkQmdEmbeddingsFn(config);
+      sp?.message('🔍  Checking qmd…');
+      await delay(80);
+      orphanResult = await checkOrphanCheckpointsFn(vaultDir, config);
+      sp?.message('📍  Checking checkpoints…');
+      await delay(80);
+      pluginFilesResult = await checkPluginFilesFn(vaultDir);
+      sp?.message('📦  Checking plugin files…');
+      await delay(80);
+      vaultYmlKeysResult = await checkVaultYmlKeysFn(vaultDir);
+      sp?.message('⚙️   Checking settings…');
+      await delay(80);
+      settingsHooksResult = await checkSettingsHooksFn(vaultDir, config);
+    } else {
+      [
+        foldersResult,
+        qmdResult,
+        orphanResult,
+        pluginFilesResult,
+        vaultYmlKeysResult,
+        settingsHooksResult,
+      ] = await Promise.all([
+        checkFoldersFn(vaultDir, config),
+        checkQmdEmbeddingsFn(config),
+        checkOrphanCheckpointsFn(vaultDir, config),
+        checkPluginFilesFn(vaultDir),
+        checkVaultYmlKeysFn(vaultDir),
+        checkSettingsHooksFn(vaultDir, config),
+      ]);
+    }
     sp?.stop('Checks complete');
   } catch (err) {
     sp?.stop('Health check failed');
@@ -136,7 +158,9 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const errorCount = results.filter((r) => r.status === 'error').length;
   const warningCount = results.filter((r) => r.status === 'warn').length;
 
-  printDoctorOutput(results, isTTY, errorCount, warningCount);
+  const hasFixable = results.some((r) => r.status !== 'ok' && getFix(r) !== null);
+  const showFixHint = !opts.fix && hasFixable;
+  printDoctorOutput(results, isTTY, errorCount, warningCount, showFixHint);
 
   if (opts.fix) {
     await applyFixes(vaultDir, results, isTTY, opts.registerHooksFn);
@@ -168,6 +192,7 @@ function printDoctorOutput(
   isTTY: boolean,
   errorCount: number,
   warningCount: number,
+  showFixHint: boolean,
 ): void {
   if (!isTTY) {
     // Keep existing non-TTY format (plain text)
@@ -183,6 +208,7 @@ function printDoctorOutput(
     if (errorCount > 0) lines.push(`Summary: ${errorCount} errors, ${warningCount} warnings`);
     else if (warningCount > 0) lines.push(`Summary: ${warningCount} warnings — ok to run`);
     else lines.push('Summary: All checks passed');
+    if (showFixHint) lines.push('hint: run onebrain doctor --fix to auto-fix issues');
     process.stdout.write(`${lines.join('\n')}\n`);
     return;
   }
@@ -210,6 +236,10 @@ function printDoctorOutput(
     outro(`${warningCount} warning(s) — ok to run`);
   } else {
     outro('All checks passed');
+  }
+
+  if (showFixHint) {
+    process.stdout.write(`\n→ Run ${pc.cyan('onebrain doctor --fix')} to auto-fix issues\n`);
   }
 }
 
@@ -274,6 +304,40 @@ function getFix(r: DoctorResult): FixFn | null {
       const tmpPath = `${vaultYmlPath}.tmp`;
       await writeFile(tmpPath, updated, 'utf8');
       await rename(tmpPath, vaultYmlPath);
+    };
+  }
+
+  // qmd-embeddings: unembedded docs → qmd update + qmd embed
+  if (r.check === 'qmd-embeddings' && r.status === 'warn' && r.message.includes('unembedded')) {
+    return async (vaultDir) => {
+      const { join } = await import('node:path');
+      const { parse: parseYaml } = await import('yaml');
+      const { readFile } = await import('node:fs/promises');
+      const raw = parseYaml(await readFile(join(vaultDir, 'vault.yml'), 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      const collection = raw['qmd_collection'] as string | undefined;
+      if (!collection) return;
+
+      const qmd =
+        Bun.which('qmd') ??
+        Bun.which('qmd', {
+          PATH: `${process.env['HOME'] ?? ''}/.bun/bin:${process.env['PATH'] ?? ''}`,
+        });
+      if (!qmd) return;
+
+      // Step 1: index
+      await Bun.spawn([qmd, 'update', '-c', collection], {
+        stdout: 'ignore',
+        stderr: 'ignore',
+      }).exited;
+
+      // Step 2: embed
+      await Bun.spawn([qmd, 'embed'], {
+        stdout: 'ignore',
+        stderr: 'ignore',
+      }).exited;
     };
   }
 

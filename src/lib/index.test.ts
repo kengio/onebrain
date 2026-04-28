@@ -273,8 +273,8 @@ describe('checkQmdEmbeddings', () => {
     };
     const result = await checkQmdEmbeddings(config);
 
-    expect(result.status).toBe('ok');
-    expect(result.message).toContain('not configured');
+    expect(result.status).toBe('warn');
+    expect(result.message).toContain('not set in vault.yml');
   });
 
   it('returns ok with "qmd status unavailable" when qmd command fails', async () => {
