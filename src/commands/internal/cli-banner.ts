@@ -90,27 +90,22 @@ export async function printBanner(): Promise<void> {
   if (!process.stdout.isTTY) return;
 
   const neon = supportsRgb();
-  const FRAME_MS = 45; // 2× speed: 45 ms/frame
-  const HUE_STEP = 12; // 30 frames × 12° = 360° = 1 full hue cycle
-  const FRAMES = 360 / HUE_STEP; // 30 frames per pass
+  // Cosine ease-in-out: slow start → accelerate → peak at 180° offset → decelerate → slow end
+  // hue(f) = 90 × (1 − cos(2π × f / (N−1)))  →  peak = 180°, ends back at 0°
+  const FRAMES = 60;
+  const FRAME_MS = 45;
 
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   if (neon) process.stdout.write('\x1b[?25l');
   try {
-    // Forward pass: hue 0 → 348
     process.stdout.write(`${renderBanner(0, neon)}\n`);
     if (neon) {
       for (let f = 1; f < FRAMES; f++) {
         await delay(FRAME_MS);
+        const hueOffset = Math.round(90 * (1 - Math.cos((2 * Math.PI * f) / (FRAMES - 1))));
         process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-        process.stdout.write(`${renderBanner(f * HUE_STEP, neon)}\n`);
-      }
-      // Reverse pass: hue 348 → 0
-      for (let f = FRAMES - 1; f >= 0; f--) {
-        await delay(FRAME_MS);
-        process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-        process.stdout.write(`${renderBanner(f * HUE_STEP, neon)}\n`);
+        process.stdout.write(`${renderBanner(hueOffset, neon)}\n`);
       }
       // Settle on static cyan
       process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
