@@ -599,7 +599,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   } = await downloadPluginFiles(vaultDir, vaultSyncFn);
   result.pluginSkipped = pluginSkipped;
 
-  dlSpinner?.stop('Plugin files ready');
+  dlSpinner?.stop(pluginDownloadFailed ? 'Plugin download failed' : 'Plugin files ready');
 
   if (pluginDownloadFailed) {
     result.exitCode = 1;

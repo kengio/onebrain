@@ -113,7 +113,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       checkVaultYmlKeysFn(vaultDir),
       checkSettingsHooksFn(vaultDir, config),
     ]);
-    sp?.stop();
+    sp?.stop('Checks complete');
   } catch (err) {
     sp?.stop('Health check failed');
     throw err;

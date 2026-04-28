@@ -16,11 +16,10 @@
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { access, readFile } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { cancel, spinner as createSpinner, intro, outro } from '@clack/prompts';
 import pc from 'picocolors';
-import { parse as parseYaml } from 'yaml';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,8 +32,6 @@ export interface UpdateOptions {
   isTTY?: boolean;
   /** Dry run — show what would change and exit 0 without making changes. */
   check?: boolean;
-  /** Override update channel: 'stable' | 'next'. Falls back to vault.yml update_channel. */
-  channel?: 'stable' | 'next';
   /** Mock fetch for tests. */
   fetchFn?: typeof fetch;
   /** Injectable binary install function for tests. */
@@ -207,17 +204,6 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     return result;
   }
 
-  // Read update_channel
-  let _updateChannel: 'stable' | 'next' = opts.channel ?? 'stable';
-  if (!opts.channel) {
-    try {
-      const text = await readFile(join(vaultDir, 'vault.yml'), 'utf8');
-      const raw = (parseYaml(text) ?? {}) as Record<string, unknown>;
-      if (raw['update_channel'] === 'next') _updateChannel = 'next';
-    } catch {
-      /* use default */
-    }
-  }
   // Step 1: Fetch latest version
   let latestVersion: string;
   try {

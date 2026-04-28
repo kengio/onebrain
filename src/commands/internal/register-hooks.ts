@@ -300,10 +300,13 @@ export async function runRegisterHooks(
     process.stdout.write(`register-hooks: ${msg}\n`);
   };
 
+  let hooksSpinner: ReturnType<typeof spinner> | null = null;
+  let permSpinner: ReturnType<typeof spinner> | null = null;
+
   try {
     // ── Steps 1-3: Claude harness only — write .claude/settings.json ─────
     if (harness === 'claude') {
-      const hooksSpinner = isTTY ? spinner() : null;
+      hooksSpinner = isTTY ? spinner() : null;
       hooksSpinner?.start('Registering hooks...');
 
       const settings = await readSettings(settingsPath);
@@ -336,7 +339,7 @@ export async function runRegisterHooks(
       }
 
       // ── Step 2: Permissions ───────────────────────────────────────────────
-      const permSpinner = isTTY ? spinner() : null;
+      permSpinner = isTTY ? spinner() : null;
       permSpinner?.start('Updating permissions...');
 
       result.permissionsAdded = applyPermissions(settings);
@@ -362,6 +365,8 @@ export async function runRegisterHooks(
       note('done');
     }
   } catch (err) {
+    hooksSpinner?.stop('Registration failed');
+    permSpinner?.stop();
     const msg = err instanceof Error ? err.message : String(err);
     result.error = msg;
     process.stderr.write(`register-hooks: error: ${msg}\n`);
