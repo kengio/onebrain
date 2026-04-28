@@ -484,17 +484,59 @@ async function installObsidianPlugins(
 // Banner
 // ---------------------------------------------------------------------------
 
+// BANNER_STYLE: A | B | C | D  (change to preview each option, then hardcode the winner)
+const BANNER_STYLE = 'A';
+
+const BANNER_ART: Record<string, { rows: string[]; color: (s: string) => string }> = {
+  // A: Line Blocks — compact 4-row box outline (cyan)
+  A: {
+    rows: [
+      ' ______   ______   ______  ______   ______   ______  _____  ______  ',
+      '/ |  | \\ | |  \\ \\ | |     | |  | \\ | |  | \\ | |  | |  | |  | |  \\ \\ ',
+      '| |  | | | |  | | | |---- | |--| < | |__| | | |__| |  | |  | |  | | ',
+      '\\_|__|_/ |_|  |_| |_|____ |_|__|_/ |_|  \\_\\ |_|  |_| _|_|_ |_|  |_| ',
+    ],
+    color: (s: string) => pc.bold(pc.cyan(s)),
+  },
+  // B: Delta Corps Priest 1 — thick pixel blocks (magenta)
+  B: {
+    rows: [
+      ' ▄██████▄  ███▄▄▄▄      ▄████████ ▀█████████▄     ▄████████    ▄████████  ▄█  ███▄▄▄▄   ',
+      '███    ███ ███▀▀▀██▄   ███    ███   ███    ███   ███    ███   ███    ███ ███  ███▀▀▀██▄ ',
+      '███    ███ ███   ███   ███    █▀    ███    ███   ███    ███   ███    ███ ███▌ ███   ███ ',
+      '███    ███ ███   ███  ▄███▄▄▄      ▄███▄▄▄██▀   ▄███▄▄▄▄██▀   ███    ███ ███▌ ███   ███ ',
+      '███    ███ ███   ███ ▀▀███▀▀▀     ▀▀███▀▀▀██▄  ▀▀███▀▀▀▀▀   ▀███████████ ███▌ ███   ███ ',
+      '███    ███ ███   ███   ███    █▄    ███    ██▄ ▀███████████   ███    ███ ███  ███   ███ ',
+      '███    ███ ███   ███   ███    ███   ███    ███   ███    ███   ███    ███ ███  ███   ███ ',
+      ' ▀██████▀   ▀█   █▀    ██████████ ▄█████████▀    ███    ███   ███    █▀  █▀    ▀█   █▀  ',
+      '                                                 ███    ███                             ',
+    ],
+    color: (s: string) => pc.bold(pc.magenta(s)),
+  },
+  // C: Future Thin — 3-row thin geometric box-drawing (cyan)
+  C: {
+    rows: ['┌─┐┌┐╷┌─╴┌┐ ┌─┐┌─┐╷┌┐╷', '│ ││└┤├╴ ├┴┐├┬┘├─┤││└┤', '└─┘╵ ╵└─╴└─┘╵└╴╵ ╵╵╵ ╵'],
+    color: (s: string) => pc.bold(pc.cyan(s)),
+  },
+  // D: Graffiti — slanted 6-row outline (magenta)
+  D: {
+    rows: [
+      '________               __________               .__        ',
+      '\\_____  \\   ____   ____\\______   \\____________  |__| ____  ',
+      ' /   |   \\ /    \\_/ __ \\|    |  _/\\_  __ \\__  \\ |  |/    \\ ',
+      '/    |    \\   |  \\  ___/|    |   \\ |  | \\// __ \\|  |   |  \\',
+      '\\_______  /___|  /\\___  >______  / |__|  (____  /__|___|  /',
+      '        \\/     \\/     \\/       \\/             \\/        \\/ ',
+    ],
+    color: (s: string) => pc.bold(pc.magenta(s)),
+  },
+};
+
 function printBanner(): void {
   if (!process.stdout.isTTY) return;
-  const c = (s: string) => pc.bold(pc.magenta(s));
-  const art = [
-    '___           ___          _      ',
-    '  / _ \\ _ _  ___| _ )_ _ __ _(_)_ _  ',
-    " | (_) | ' \\/ -_) _ \\' _/ _\x60| | ' \\ ",
-    '  \\___/|_||_\\___|___/_| \\__,_|_|_||_|',
-  ];
+  const banner = BANNER_ART[BANNER_STYLE] ?? BANNER_ART['A'];
   process.stdout.write('\n');
-  for (const row of art) process.stdout.write(`  ${c(row)}\n`);
+  for (const row of banner.rows) process.stdout.write(`  ${banner.color(row)}\n`);
   process.stdout.write(`\n  ${pc.dim('Your AI Thinking Partner')}\n\n`);
 }
 
