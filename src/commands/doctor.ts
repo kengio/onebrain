@@ -217,6 +217,15 @@ function printDoctorOutput(
   }
 
   // TTY: compact output — no per-line blank lines
+  const CHECK_EMOJI: Record<string, string> = {
+    'vault.yml': '📋',
+    folders: '📁',
+    'qmd-embeddings': '🔍',
+    'orphan-checkpoints': '📍',
+    'plugin-files': '📦',
+    'vault.yml-keys': '⚙️ ',
+    'settings-hooks': '🪝',
+  };
   const bar = pc.cyan('│');
   process.stdout.write(`${bar}\n`);
   for (const result of results) {
@@ -226,6 +235,7 @@ function printDoctorOutput(
         : result.status === 'warn'
           ? pc.yellow('▲')
           : pc.red('■');
+    const emoji = CHECK_EMOJI[result.check] ?? '  ';
     const check =
       result.status === 'ok'
         ? pc.dim(result.check.padEnd(20))
@@ -238,8 +248,8 @@ function printDoctorOutput(
         : result.status === 'warn'
           ? pc.yellow(result.message)
           : pc.red(result.message);
-    process.stdout.write(`${bar}  ${icon}  ${check}  ${msg}\n`);
-    if (result.hint) process.stdout.write(`${bar}      ${pc.dim(`→ ${result.hint}`)}\n`);
+    process.stdout.write(`${bar}  ${icon}  ${emoji}  ${check}  ${msg}\n`);
+    if (result.hint) process.stdout.write(`${bar}         ${pc.dim(`→ ${result.hint}`)}\n`);
   }
   process.stdout.write(`${bar}\n`);
 

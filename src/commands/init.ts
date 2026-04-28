@@ -675,14 +675,14 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   if (isTTY) {
     process.stdout.write(`\n  ${pc.dim('─'.repeat(38))}\n`);
-    process.stdout.write(`  ${pc.bold(pc.cyan('1'))}  Open Obsidian → open this folder as vault\n`);
-    process.stdout.write(`  ${pc.bold(pc.cyan('2'))}  Run ${pc.cyan('claude')}\n`);
     process.stdout.write(
-      `  ${pc.bold(pc.cyan('3'))}  Type ${pc.cyan('/onboarding')} to personalize\n`,
+      `  ${pc.bold(pc.cyan('1'))}  🗂  Open Obsidian → open this folder as vault\n`,
     );
+    process.stdout.write(`  ${pc.bold(pc.cyan('2'))}  🤖  Run ${pc.cyan('claude')}\n`);
     process.stdout.write(
-      `\n  ${pc.bold(pc.cyan('›'))}  ${pc.bold('Ready')}  —  ${pc.cyan('/onboarding')}\n`,
+      `  ${pc.bold(pc.cyan('3'))}  🧠  Type ${pc.cyan('/onboarding')} to personalize\n`,
     );
+    process.stdout.write(`\n  ✨  ${pc.bold('Ready')}  —  ${pc.cyan('/onboarding')}\n`);
   } else {
     writeLine('done: run /onboarding in Claude to finish setup');
   }
