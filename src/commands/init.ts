@@ -673,7 +673,11 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const hooksLine = hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update';
   if (isTTY) {
-    step('Hooks registered   Stop · PostCompact');
+    if (hooksOk) {
+      step('Hooks registered   Stop · PostCompact');
+    } else {
+      warnStep('Hooks not registered — run onebrain update');
+    }
   } else {
     writeLine(`hooks: ${hooksLine}`);
   }

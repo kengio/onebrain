@@ -316,7 +316,6 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 export interface UpdateCommandOptions {
   vaultDir?: string;
   check?: boolean;
-  channel?: 'stable' | 'next';
 }
 
 export async function updateCommand(opts: UpdateCommandOptions = {}): Promise<void> {

@@ -366,7 +366,7 @@ export async function runRegisterHooks(
     }
   } catch (err) {
     hooksSpinner?.stop('Registration failed');
-    permSpinner?.stop();
+    permSpinner?.stop('Permissions failed');
     const msg = err instanceof Error ? err.message : String(err);
     result.error = msg;
     process.stderr.write(`register-hooks: error: ${msg}\n`);
