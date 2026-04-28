@@ -223,7 +223,7 @@ async function syncPluginFiles(
 // ---------------------------------------------------------------------------
 
 async function copyRootDocs(extractedDir: string, vaultRoot: string): Promise<void> {
-  const docs = ['README.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'PLUGIN-CHANGELOG.md'];
+  const docs = ['CONTRIBUTING.md', 'CHANGELOG.md', 'PLUGIN-CHANGELOG.md'];
   for (const doc of docs) {
     const srcPath = join(extractedDir, doc);
     const destPath = join(vaultRoot, doc);

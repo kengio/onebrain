@@ -5,7 +5,6 @@ import { join } from 'node:path';
 
 import {
   checkFolders,
-  checkHarnessBinary,
   checkOrphanCheckpoints,
   checkQmdEmbeddings,
   checkVaultYml,
@@ -18,7 +17,6 @@ import type { VaultConfig } from './index.js';
 // ---------------------------------------------------------------------------
 
 const VALID_YAML = `
-method: onebrain
 update_channel: stable
 qmd_collection: ob-1-test
 folders:
@@ -100,7 +98,7 @@ describe('loadVaultConfig', () => {
   });
 
   it('fills default folder names when folders section is absent', async () => {
-    await writeVaultYml(dir, 'method: onebrain\n');
+    await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
     expect(config.folders.inbox).toBe('00-inbox');
@@ -114,7 +112,7 @@ describe('loadVaultConfig', () => {
   });
 
   it('fills default checkpoint values when checkpoint is absent', async () => {
-    await writeVaultYml(dir, 'method: onebrain\n');
+    await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
     expect(config.checkpoint?.messages).toBe(15);
@@ -122,7 +120,7 @@ describe('loadVaultConfig', () => {
   });
 
   it('fills default update_channel when absent', async () => {
-    await writeVaultYml(dir, 'method: onebrain\n');
+    await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
     expect(config.update_channel).toBe('stable');
@@ -142,8 +140,6 @@ describe('loadVaultConfig', () => {
 
   it('preserves optional fields when present', async () => {
     const yaml = `
-runtime:
-  harness: claude-code
 recap:
   min_sessions: 3
   min_frequency: 7
@@ -151,7 +147,6 @@ recap:
     await writeVaultYml(dir, yaml);
     const config = await loadVaultConfig(dir);
 
-    expect(config.runtime?.harness).toBe('claude-code');
     expect(config.recap?.min_sessions).toBe(3);
     expect(config.recap?.min_frequency).toBe(7);
   });
@@ -256,98 +251,6 @@ describe('checkFolders', () => {
 });
 
 // ---------------------------------------------------------------------------
-// checkHarnessBinary
-// ---------------------------------------------------------------------------
-
-describe('checkHarnessBinary', () => {
-  it('returns ok for "direct" harness without checking PATH', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-      runtime: { harness: 'direct' },
-    };
-    const result = await checkHarnessBinary(config);
-
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns ok when runtime is absent', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-    };
-    const result = await checkHarnessBinary(config);
-
-    expect(result.status).toBe('ok');
-  });
-
-  it('whichFn returns null with claude-code harness → status: warn, hint defined', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-      runtime: { harness: 'claude-code' },
-    };
-    const result = await checkHarnessBinary(config, () => null);
-
-    expect(result.status).toBe('warn');
-    expect(result.check).toBe('runtime.harness');
-    expect(result.hint).toBeDefined();
-  });
-
-  it('whichFn returns path with claude-code harness → status: ok, message contains found', async () => {
-    const config: VaultConfig = {
-      folders: {
-        inbox: '00-inbox',
-        projects: '01-projects',
-        areas: '02-areas',
-        knowledge: '03-knowledge',
-        resources: '04-resources',
-        agent: '05-agent',
-        archive: '06-archive',
-        logs: '07-logs',
-      },
-      checkpoint: { messages: 15, minutes: 30 },
-      update_channel: 'stable',
-      runtime: { harness: 'claude-code' },
-    };
-    const result = await checkHarnessBinary(config, () => '/usr/local/bin/claude');
-
-    expect(result.status).toBe('ok');
-    expect(result.check).toBe('runtime.harness');
-    expect(result.message).toContain('found');
-  });
-});
-
 // ---------------------------------------------------------------------------
 // checkQmdEmbeddings
 // ---------------------------------------------------------------------------

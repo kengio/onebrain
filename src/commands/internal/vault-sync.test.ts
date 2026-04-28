@@ -105,8 +105,7 @@ async function makeVaultDir(): Promise<string> {
   return mkdtemp(join(tmpdir(), 'onebrain-vs-test-'));
 }
 
-const VALID_VAULT_YML =
-  'method: onebrain\nupdate_channel: stable\nfolders:\n  inbox: 00-inbox\n  logs: 07-logs\n';
+const VALID_VAULT_YML = 'update_channel: stable\nfolders:\n  inbox: 00-inbox\n  logs: 07-logs\n';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -141,10 +140,6 @@ describe('runVaultSync', () => {
     const pluginJson = join(vaultDir, '.claude/plugins/onebrain/.claude-plugin/plugin.json');
     const pj = JSON.parse(await readFile(pluginJson, 'utf8'));
     expect(pj.version).toBe('1.11.0');
-
-    // Root docs should be present
-    const readme = await readFile(join(vaultDir, 'README.md'), 'utf8');
-    expect(readme).toContain('# OneBrain');
 
     // vault.yml should have update_channel preserved
     const vaultYml = await readFile(join(vaultDir, 'vault.yml'), 'utf8');

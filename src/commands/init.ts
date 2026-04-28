@@ -4,7 +4,7 @@
  * Steps:
  *   1. Detect existing vault.yml  (--force, non-TTY exit-1, TTY prompt)
  *   2. Create standard folders    (8 + inbox/imports)
- *   3. Write vault.yml            (with harness auto-detect)
+ *   3. Write vault.yml
  *   4. Download plugin files      (skip if .claude/plugins/onebrain/.claude-plugin/plugin.json exists)
  *   5. Register plugin            (skip if source:marketplace entry exists)
  *   6. Run register-hooks
@@ -46,8 +46,6 @@ const binaryVersion = resolveBinaryVersion();
 export interface InitOptions {
   /** Vault root directory (default: process.cwd()). */
   vaultDir?: string;
-  /** Harness override. */
-  harness?: 'claude-code' | 'gemini' | 'direct';
   /** Overwrite existing vault.yml without prompting. */
   force?: boolean;
   /** Whether stdout is a TTY (default: process.stdout.isTTY). */
@@ -74,7 +72,6 @@ export interface InitResult {
   /** Human-readable message (used for non-TTY output / test assertions). */
   message?: string;
   foldersCreated: number;
-  harness: string;
   pluginSkipped: boolean;
   pluginRegistrationSkipped: boolean;
   pluginsInstalled: number;
@@ -118,19 +115,6 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
-/**
- * Auto-detect harness from environment and vault layout.
- * Priority: CLAUDE_CODE_HARNESS env → .claude/ directory → 'direct'
- */
-async function detectHarness(vaultDir: string): Promise<string> {
-  const envHarness = process.env['CLAUDE_CODE_HARNESS'];
-  if (envHarness) return envHarness;
-
-  if (await pathExists(join(vaultDir, '.claude'))) return 'claude-code';
-
-  return 'direct';
-}
-
 // ---------------------------------------------------------------------------
 // Steps
 // ---------------------------------------------------------------------------
@@ -152,7 +136,6 @@ async function createFolders(vaultDir: string): Promise<number> {
 }
 
 const VAULT_YML_DEFAULTS = {
-  method: 'onebrain',
   update_channel: 'stable',
   folders: {
     inbox: '00-inbox',
@@ -168,17 +151,10 @@ const VAULT_YML_DEFAULTS = {
     messages: 15,
     minutes: 30,
   },
-  runtime: {
-    harness: 'claude-code',
-  },
 };
 
-async function writeVaultYml(vaultDir: string, harness: string): Promise<void> {
-  const config = {
-    ...VAULT_YML_DEFAULTS,
-    runtime: { harness },
-  };
-  const content = stringifyYaml(config, { lineWidth: 0 });
+async function writeVaultYml(vaultDir: string): Promise<void> {
+  const content = stringifyYaml(VAULT_YML_DEFAULTS, { lineWidth: 0 });
   await writeFile(join(vaultDir, 'vault.yml'), content, 'utf8');
 }
 
@@ -487,14 +463,14 @@ async function installObsidianPlugins(
 function printBanner(): void {
   if (!process.stdout.isTTY) return;
   const c = (s: string) => pc.bold(pc.cyan(s));
-  const line = pc.cyan(`╶${'─'.repeat(21)}╴`);
+  const line = pc.cyan(`◆${'─'.repeat(26)}◆`);
   process.stdout.write('\n');
   process.stdout.write(`  ${line}\n`);
-  process.stdout.write(`  ${c('┌─┐┌┐╷┌─╴┌┐ ┌─┐┌─┐╷┌┐╷')}\n`);
-  process.stdout.write(`  ${c('│ ││└┤├╴ ├┴┐├┬┘├─┤││└┤')}\n`);
-  process.stdout.write(`  ${c('└─┘╵ ╵└─╴└─┘╵└╴╵ ╵╵╵ ╵')}\n`);
+  process.stdout.write(`    ${c('┌─┐┌┐╷┌─╴┌┐ ┌─┐┌─┐╷┌┐╷')}\n`);
+  process.stdout.write(`    ${c('│ ││└┤├╴ ├┴┐├┬┘├─┤││└┤')}\n`);
+  process.stdout.write(`    ${c('└─┘╵ ╵└─╴└─┘╵└╴╵ ╵╵╵ ╵')}\n`);
   process.stdout.write(`  ${line}\n`);
-  process.stdout.write(`\n  ${pc.dim('Your AI Thinking Partner')}\n\n`);
+  process.stdout.write(`\n    ${pc.dim('Your AI Thinking Partner')}\n\n`);
 }
 
 // ---------------------------------------------------------------------------
@@ -594,15 +570,12 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   // ── Step 3: Write vault.yml ────────────────────────────────────────────────
 
-  const harness = opts.harness ?? (await detectHarness(vaultDir));
-  result.harness = harness;
-  await writeVaultYml(vaultDir, harness);
+  await writeVaultYml(vaultDir);
 
   if (isTTY) {
-    const checkpoint = `checkpoint: ${15} msgs / ${30} min`;
-    log.success(`vault.yml   harness: ${harness} · ${checkpoint}`);
+    log.success(`vault.yml   checkpoint: ${15} msgs / ${30} min`);
   } else {
-    writeLine(`vault.yml: harness=${harness}`);
+    writeLine('vault.yml: written');
   }
 
   // ── Step 4: Download plugin files ─────────────────────────────────────────
@@ -728,7 +701,6 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
 export interface InitCommandOptions {
   vaultDir?: string;
-  harness?: 'claude-code' | 'gemini' | 'direct';
   force?: boolean;
 }
 

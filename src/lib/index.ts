@@ -4,7 +4,6 @@ export type {
   VaultConfig,
   VaultFolders,
   VaultCheckpoint,
-  VaultRuntime,
   VaultStats,
   VaultRecap,
   DoctorResult,

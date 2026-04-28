@@ -233,11 +233,13 @@ function getFix(r: DoctorResult): FixFn | null {
     };
   }
 
-  // vault.yml-keys: onebrain_version deprecated → remove it
+  // vault.yml-keys: deprecated keys → remove them
   if (
     r.check === 'vault.yml-keys' &&
     r.status === 'warn' &&
-    r.message.includes('onebrain_version')
+    (r.message.includes('onebrain_version') ||
+      r.message.includes('deprecated key: method') ||
+      r.message.includes('runtime.harness'))
   ) {
     return async (vaultDir) => {
       const { readFile, writeFile, rename } = await import('node:fs/promises');
@@ -246,7 +248,17 @@ function getFix(r: DoctorResult): FixFn | null {
       const vaultYmlPath = join(vaultDir, 'vault.yml');
       const text = await readFile(vaultYmlPath, 'utf8');
       const raw = (parse(text) ?? {}) as Record<string, unknown>;
-      raw['onebrain_version'] = undefined;
+      if (r.message.includes('onebrain_version')) raw['onebrain_version'] = undefined;
+      if (r.message.includes('deprecated key: method')) raw['method'] = undefined;
+      if (r.message.includes('runtime.harness')) {
+        const runtime = raw['runtime'] as Record<string, unknown> | undefined;
+        if (runtime) {
+          runtime['harness'] = undefined;
+          if (Object.keys(runtime).filter((k) => runtime[k] !== undefined).length === 0) {
+            raw['runtime'] = undefined;
+          }
+        }
+      }
       const updated = stringify(raw, { lineWidth: 0 });
       const tmpPath = `${vaultYmlPath}.tmp`;
       await writeFile(tmpPath, updated, 'utf8');

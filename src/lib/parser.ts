@@ -5,7 +5,6 @@ import type {
   VaultConfig,
   VaultFolders,
   VaultRecap,
-  VaultRuntime,
   VaultStats,
 } from './types.js';
 
@@ -83,10 +82,6 @@ export async function loadVaultConfig(vaultRoot: string): Promise<VaultConfig> {
 
   if (raw['qmd_collection'] !== undefined) {
     config.qmd_collection = raw['qmd_collection'] as string;
-  }
-
-  if (raw['runtime'] !== undefined) {
-    config.runtime = raw['runtime'] as VaultRuntime;
   }
 
   if (raw['stats'] !== undefined) {

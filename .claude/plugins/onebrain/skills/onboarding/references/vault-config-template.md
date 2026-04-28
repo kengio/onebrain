@@ -3,7 +3,6 @@
 Used by onboarding Step 11. Write to vault root as `vault.yml`.
 
 ```yaml
-method: onebrain
 folders:
   inbox: 00-inbox
   import_inbox: 00-inbox/imports

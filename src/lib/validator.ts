@@ -124,7 +124,9 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
       // Fall back through common install locations if Bun.which misses it.
       const resolved =
         Bun.which('qmd') ??
-        Bun.which('qmd', { PATH: `${process.env['HOME'] ?? ''}/.bun/bin:${process.env['PATH'] ?? ''}` });
+        Bun.which('qmd', {
+          PATH: `${process.env['HOME'] ?? ''}/.bun/bin:${process.env['PATH'] ?? ''}`,
+        });
       if (!resolved) {
         return {
           check: 'qmd-embeddings',
@@ -370,7 +372,7 @@ export async function checkPluginFiles(vaultRoot: string): Promise<DoctorResult>
 // checkVaultYmlKeys
 // ---------------------------------------------------------------------------
 
-const REQUIRED_VAULT_YML_KEYS = ['method', 'update_channel', 'folders'] as const;
+const REQUIRED_VAULT_YML_KEYS = ['update_channel', 'folders'] as const;
 const REQUIRED_FOLDER_KEYS = [
   'inbox',
   'projects',
@@ -454,6 +456,12 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
   if (raw['onebrain_version'] !== undefined) {
     warnings.push('deprecated key: onebrain_version (safe to remove)');
   }
+  if (raw['method'] !== undefined) {
+    warnings.push('deprecated key: method (safe to remove)');
+  }
+  if ((raw['runtime'] as Record<string, unknown> | undefined)?.['harness'] !== undefined) {
+    warnings.push('deprecated key: runtime.harness (safe to remove)');
+  }
 
   if (errors.length > 0) {
     const hassMissingKey = errors.some((e) => e.startsWith('missing key:'));
@@ -473,7 +481,10 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
   }
 
   if (warnings.length > 0) {
-    const fixableWarnings = warnings.filter((w) => w.includes('onebrain_version'));
+    const fixableWarnings = warnings.filter(
+      (w) =>
+        w.includes('onebrain_version') || w.includes('method') || w.includes('runtime.harness'),
+    );
     if (fixableWarnings.length > 0) {
       return {
         check: 'vault.yml-keys',
