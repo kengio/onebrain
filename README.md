@@ -170,24 +170,37 @@ OneBrain has three automatic behaviors that run without you doing anything:
 
 ## Installation
 
-### 1. Install the CLI
+### 1. Install Bun
+
+The `onebrain` binary requires [Bun](https://bun.sh) in your `PATH`:
+
+```bash
+# macOS / Linux
+curl -fsSL https://bun.sh/install | bash
+
+# Windows
+powershell -c "irm bun.sh/install.ps1 | iex"
+```
+
+### 2. Install the CLI
 
 ```bash
 npm install -g @onebrain-ai/cli
+# or: bun install -g @onebrain-ai/cli
 ```
 
-### 2. Create and initialize your vault
+### 3. Create and initialize your vault
 
 ```bash
 mkdir my-vault && cd my-vault
 onebrain init
 ```
 
-### 3. Open Obsidian
+### 4. Open Obsidian
 
 File → Open Folder as Vault → select this folder
 
-### 4. Personalize your vault
+### 5. Personalize your vault
 
 In Claude Code: `/onboarding`
 
@@ -364,7 +377,7 @@ Tasks live inline in your notes — the Tasks plugin surfaces them across the va
 
 Verify with `git --version` before running the installer.
 
-**Required for auto-checkpoints, `/doctor`, and `/update`:** [bun](https://bun.sh) or [npm](https://nodejs.org) — used to install the `onebrain` CLI binary (`bun install -g @onebrain-ai/cli`). The binary handles checkpoints, session init, vault-sync, and doctor without requiring Python or Node.js in your PATH.
+**Required:** [bun](https://bun.sh) — the `onebrain` binary runs under Bun and requires it in your `PATH` at runtime. Install via the [official installer](https://bun.sh/docs/installation) or `curl -fsSL https://bun.sh/install | bash`. The binary handles checkpoints, session init, vault-sync, and doctor — no Python or Node.js needed.
 
 **Windows:** Git for Windows (above) includes Git Bash, which provides the `bash` environment required to run all hooks.
 
