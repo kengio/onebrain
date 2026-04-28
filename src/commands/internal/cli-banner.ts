@@ -62,32 +62,21 @@ function hsvToRgb(h: number): [number, number, number] {
 }
 
 const HUE_PER_CHAR = 10; // hue degrees spread per character position
-const DIM = 0.2; // ambient brightness for characters outside the wave
-const WAVE_SIGMA = 3.5; // Gaussian spread of the spotlight (in character widths)
 
-// Renders one line with rainbow hue + spotlight wave brightness
-function neonLine(line: string, hueOffset: number, wavePos: number): string {
-  let nonSpaceIdx = 0;
+function neonLine(line: string, hueOffset: number): string {
   return line
     .split('')
-    .map((ch) => {
+    .map((ch, i) => {
       if (ch === ' ') return ch;
-      const idx = nonSpaceIdx++;
-      const hue = (((idx * HUE_PER_CHAR + hueOffset) % 360) + 360) % 360;
+      const hue = (((i * HUE_PER_CHAR + hueOffset) % 360) + 360) % 360;
       const [r, g, b] = hsvToRgb(hue);
-      const dist = idx - wavePos;
-      const peak = Math.exp(-(dist * dist) / (2 * WAVE_SIGMA * WAVE_SIGMA));
-      const brightness = DIM + (1 - DIM) * peak;
-      return `\x1b[1;38;2;${Math.round(r * brightness)};${Math.round(g * brightness)};${Math.round(b * brightness)}m${ch}\x1b[0m`;
+      return `\x1b[1;38;2;${r};${g};${b}m${ch}\x1b[0m`;
     })
     .join('');
 }
 
-// Count non-space characters in the widest art line (the border: 28 chars)
-const MAX_CHARS = ART_LINES[0].replace(/ /g, '').length; // 28
-
-function renderBanner(hueOffset: number, wavePos: number, neon: boolean): string {
-  const colorLine = (l: string) => (neon ? neonLine(l, hueOffset, wavePos) : pc.bold(pc.cyan(l)));
+function renderBanner(hueOffset: number, neon: boolean): string {
+  const colorLine = (l: string) => (neon ? neonLine(l, hueOffset) : pc.bold(pc.cyan(l)));
   return [
     '',
     ...ART_LINES.map(colorLine),
@@ -105,23 +94,20 @@ export async function printBanner(): Promise<void> {
   const HUE_STEP = 12; // 30 frames × 12° = 360° = exactly 1 full hue cycle
   const FRAMES = 360 / HUE_STEP; // 30 frames ≈ 2.7 s
 
-  // Wave travels from off-screen left to off-screen right over FRAMES
-  const WAVE_RANGE = MAX_CHARS + WAVE_SIGMA * 4;
-  const waveStart = -WAVE_SIGMA * 2;
-
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   if (neon) process.stdout.write('\x1b[?25l');
   try {
-    process.stdout.write(`${renderBanner(0, waveStart, neon)}\n`);
+    process.stdout.write(`${renderBanner(0, neon)}\n`);
     if (neon) {
       for (let f = 1; f < FRAMES; f++) {
         await delay(FRAME_MS);
-        const hueOffset = f * HUE_STEP;
-        const wavePos = waveStart + WAVE_RANGE * (f / (FRAMES - 1));
         process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-        process.stdout.write(`${renderBanner(hueOffset, wavePos, neon)}\n`);
+        process.stdout.write(`${renderBanner(f * HUE_STEP, neon)}\n`);
       }
+      // Settle on static cyan after the rainbow cycle completes
+      process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
+      process.stdout.write(`${renderBanner(0, false)}\n`);
     }
   } finally {
     if (neon) process.stdout.write('\x1b[?25h');
