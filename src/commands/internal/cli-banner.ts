@@ -13,7 +13,7 @@ export function resolveBinaryVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Gradient banner
+// Neon rainbow banner
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
@@ -24,7 +24,6 @@ const ART_LINES = [
   `  ◆${'─'.repeat(26)}◆`,
 ];
 
-// total newlines emitted by renderBanner + the trailing \n in printBanner:
 // 1 (leading blank) + 5 (art) + 1 (blank) + 1 (subtitle) + 1 (trailing blank) = 9
 const BANNER_LINE_COUNT = 1 + ART_LINES.length + 3;
 
@@ -33,26 +32,57 @@ function supportsRgb(): boolean {
   return c === 'truecolor' || c === '24bit';
 }
 
+function hsvToRgb(h: number): [number, number, number] {
+  // s=1, v=1 (full neon saturation/brightness); h in degrees [0, 360)
+  const c = 255;
+  const x = Math.round(c * (1 - Math.abs(((h / 60) % 2) - 1)));
+  const m = 0;
+  let r = m;
+  let g = m;
+  let b = m;
+  if (h < 60) {
+    r = c;
+    g = x;
+  } else if (h < 120) {
+    r = x;
+    g = c;
+  } else if (h < 180) {
+    g = c;
+    b = x;
+  } else if (h < 240) {
+    g = x;
+    b = c;
+  } else if (h < 300) {
+    r = x;
+    b = c;
+  } else {
+    r = c;
+    b = x;
+  }
+  return [r, g, b];
+}
+
 function rgbChar(ch: string, r: number, g: number, b: number): string {
   return `\x1b[1;38;2;${r};${g};${b}m${ch}\x1b[0m`;
 }
 
-function gradientLine(line: string, offset: number): string {
-  const WAVE = 32;
+// Each character maps to a hue; offset shifts the whole wave
+const HUE_PER_CHAR = 10; // degrees of hue spread per character
+
+function neonLine(line: string, hueOffset: number): string {
   return line
     .split('')
     .map((ch, i) => {
       if (ch === ' ') return ch;
-      const t = (((i + offset) % WAVE) / WAVE) * Math.PI * 2;
-      const g = Math.min(255, Math.max(0, Math.round(150 + 105 * Math.sin(t))));
-      const b = Math.min(255, Math.max(0, Math.round(220 - 60 * Math.sin(t))));
-      return rgbChar(ch, 0, g, b);
+      const hue = (((i * HUE_PER_CHAR + hueOffset) % 360) + 360) % 360;
+      const [r, g, b] = hsvToRgb(hue);
+      return rgbChar(ch, r, g, b);
     })
     .join('');
 }
 
-function renderBanner(offset: number, gradient: boolean): string {
-  const colorLine = (l: string) => (gradient ? gradientLine(l, offset) : pc.bold(pc.cyan(l)));
+function renderBanner(hueOffset: number, neon: boolean): string {
+  const colorLine = (l: string) => (neon ? neonLine(l, hueOffset) : pc.bold(pc.cyan(l)));
   return [
     '',
     ...ART_LINES.map(colorLine),
@@ -65,23 +95,23 @@ function renderBanner(offset: number, gradient: boolean): string {
 export async function printBanner(): Promise<void> {
   if (!process.stdout.isTTY) return;
 
-  const gradient = supportsRgb();
-  const FRAMES = 8;
-  const FRAME_MS = 65;
-  const WAVE_STEP = 4;
+  const neon = supportsRgb();
+  const FRAMES = 30;
+  const FRAME_MS = 90;
+  const HUE_STEP = 5; // degrees per frame
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-  if (gradient) process.stdout.write('\x1b[?25l');
+  if (neon) process.stdout.write('\x1b[?25l');
   try {
-    process.stdout.write(`${renderBanner(0, gradient)}\n`);
-    if (gradient) {
+    process.stdout.write(`${renderBanner(0, neon)}\n`);
+    if (neon) {
       for (let f = 1; f < FRAMES; f++) {
         await delay(FRAME_MS);
         process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-        process.stdout.write(`${renderBanner(f * WAVE_STEP, gradient)}\n`);
+        process.stdout.write(`${renderBanner(f * HUE_STEP, neon)}\n`);
       }
     }
   } finally {
-    if (gradient) process.stdout.write('\x1b[?25h');
+    if (neon) process.stdout.write('\x1b[?25h');
   }
 }
