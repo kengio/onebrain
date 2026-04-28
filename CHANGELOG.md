@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.3
+latest_version: 2.1.4
 released: 2026-04-29
 ---
 
@@ -12,6 +12,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.4 — fix: drop bun-windows-arm64 (unsupported in bun v1.2)
+
+- fix(release): remove `bun-windows-arm64` build target — unsupported in bun v1.2.x (regression from v2.1.3)
+- fix(postinstall): remove `win32-arm64` from PLATFORM_MAP — falls back to JS bundle on Windows ARM64
 
 ## v2.1.3 — feat: postinstall binary download + full platform support
 

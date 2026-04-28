@@ -15,7 +15,6 @@ const PLATFORM_MAP: Record<string, string> = {
   'linux-x64': 'onebrain-linux-x64',
   'linux-arm64-musl': 'onebrain-linux-arm64-musl',
   'linux-x64-musl': 'onebrain-linux-x64-musl',
-  'win32-arm64': 'onebrain-windows-arm64.exe',
   'win32-x64': 'onebrain-windows-x64.exe',
 };
 
