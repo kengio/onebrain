@@ -38,7 +38,7 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('runRegisterHooks', () => {
-  test('fresh run on empty settings — Stop + PostCompact registered, 3 permissions added', async () => {
+  test('fresh run on empty settings — Stop + PostCompact registered, full permissions added', async () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
@@ -48,11 +48,16 @@ describe('runRegisterHooks', () => {
       expect(result.hooks[event]).toBe('added');
     }
 
-    // 3 permissions added
-    expect(result.permissionsAdded).toHaveLength(3);
-    expect(result.permissionsAdded).toContain('Bash(onebrain *)');
-    expect(result.permissionsAdded).toContain('Bash(bun install -g @onebrain-ai/cli*)');
-    expect(result.permissionsAdded).toContain('Bash(npm install -g @onebrain-ai/cli*)');
+    // Full permission set added
+    expect(result.permissionsAdded).toHaveLength(14);
+    for (const perm of [
+      'Read', 'Write', 'Edit', 'Glob', 'Grep',
+      'Bash(git *)', 'Bash(bun *)', 'Bash(gh *)', 'Bash(node *)',
+      'Bash(onebrain *)', 'Bash(bun install -g @onebrain-ai/cli*)',
+      'Bash(npm install -g @onebrain-ai/cli*)', 'WebFetch', 'WebSearch',
+    ]) {
+      expect(result.permissionsAdded).toContain(perm);
+    }
 
     // Verify written file structure — no env block
     const settings = await readSettingsFile(tempDir);
@@ -61,7 +66,7 @@ describe('runRegisterHooks', () => {
     expect(settings['env']).toBeUndefined();
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
-    expect(perms).toHaveLength(3);
+    expect(perms).toHaveLength(14);
   });
 
   test('stale PreCompact hook is removed when present in existing settings.json', async () => {

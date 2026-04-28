@@ -61,9 +61,20 @@ const STALE_HOOK_COMMANDS: Record<string, string> = {
 };
 
 const PERMISSIONS_TO_ADD = [
+  'Read',
+  'Write',
+  'Edit',
+  'Glob',
+  'Grep',
+  'Bash(git *)',
+  'Bash(bun *)',
+  'Bash(gh *)',
+  'Bash(node *)',
   'Bash(onebrain *)',
   'Bash(bun install -g @onebrain-ai/cli*)',
   'Bash(npm install -g @onebrain-ai/cli*)',
+  'WebFetch',
+  'WebSearch',
 ];
 
 const ONEBRAIN_MARKER = '# onebrain';
