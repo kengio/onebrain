@@ -32,6 +32,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { intro, outro, spinner } from '@clack/prompts';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+import { detectHarness } from './harness.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -550,20 +551,16 @@ export async function runVaultSync(
 
   // Load vault.yml for config
   let updateChannel = 'stable';
-  let harness = 'claude-code';
   try {
     const vaultYmlText = await readFile(join(vaultRoot, 'vault.yml'), 'utf8');
     const vaultYml = (parseYaml(vaultYmlText) ?? {}) as Record<string, unknown>;
     if (typeof vaultYml['update_channel'] === 'string') {
       updateChannel = vaultYml['update_channel'];
     }
-    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
-    if (runtime && typeof runtime['harness'] === 'string') {
-      harness = runtime['harness'];
-    }
   } catch {
     // vault.yml not found — use defaults
   }
+  const harness = await detectHarness(vaultRoot);
 
   const branch = opts.branch ?? resolveBranch(updateChannel);
   const installedPluginsPath =
@@ -705,8 +702,8 @@ export async function runVaultSync(
       return result;
     }
 
-    // ── Steps 6–7: Non-fatal, claude-code harness only ────────────────────
-    if (harness === 'claude-code') {
+    // ── Steps 6–7: Non-fatal, claude harness only ─────────────────────────
+    if (harness === 'claude') {
       // Step 6: Pin to vault
       startSpinner('Pinning to vault...');
       try {

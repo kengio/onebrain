@@ -21,6 +21,7 @@ import { dirname, join } from 'node:path';
 import { cancel, confirm, spinner as createSpinner, intro, log, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
+import { detectHarness } from './internal/harness.js';
 
 // ---------------------------------------------------------------------------
 // BUILD_VERSION shim
@@ -571,11 +572,12 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   // ── Step 3: Write vault.yml ────────────────────────────────────────────────
 
   await writeVaultYml(vaultDir);
+  const harness = await detectHarness(vaultDir);
 
   if (isTTY) {
-    log.success(`vault.yml   checkpoint: ${15} msgs / ${30} min`);
+    log.success(`vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
   } else {
-    writeLine('vault.yml: written');
+    writeLine(`vault.yml: written (harness=${harness})`);
   }
 
   // ── Step 4: Download plugin files ─────────────────────────────────────────

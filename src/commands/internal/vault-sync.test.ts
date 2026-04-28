@@ -117,6 +117,7 @@ describe('runVaultSync', () => {
 
   beforeEach(async () => {
     vaultDir = await makeVaultDir();
+    await mkdir(join(vaultDir, '.claude'), { recursive: true });
     await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
     tarball = buildMockTarball({});
   });

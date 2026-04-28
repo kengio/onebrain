@@ -9,20 +9,12 @@
  * Non-TTY: plain text prefixed with "register-hooks:"
  */
 
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { intro, log, outro, spinner } from '@clack/prompts';
 import { loadVaultConfig } from '../../lib/index.js';
-
-async function pathExists(p: string): Promise<boolean> {
-  try {
-    await stat(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { detectHarness } from './harness.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -278,10 +270,7 @@ export async function runRegisterHooks(
   const vaultRoot = opts.vaultDir ?? process.cwd();
   const isTTY = process.stdout.isTTY;
 
-  // Detect harness and load optional vault config fields
-  const harness =
-    process.env['CLAUDE_CODE_HARNESS'] ??
-    ((await pathExists(join(vaultRoot, '.claude'))) ? 'claude-code' : 'direct');
+  const harness = await detectHarness(vaultRoot);
   let qmdCollection: string | undefined;
   try {
     const vaultConfig = await loadVaultConfig(vaultRoot);

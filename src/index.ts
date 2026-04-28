@@ -75,14 +75,10 @@ program
   .command('init')
   .description('Initialize a new OneBrain vault')
   .option('--vault-dir <path>', 'vault root directory (default: cwd)')
-  .option('--harness <harness>', 'harness type: claude-code | gemini | direct')
   .option('--force', 'overwrite existing vault.yml without prompting')
-  .action(async (opts: { vaultDir?: string; harness?: string; force?: boolean }) => {
+  .action(async (opts: { vaultDir?: string; force?: boolean }) => {
     await initCommand({
       ...(opts.vaultDir !== undefined ? { vaultDir: opts.vaultDir } : {}),
-      ...(opts.harness !== undefined
-        ? { harness: opts.harness as 'claude-code' | 'gemini' | 'direct' }
-        : {}),
       ...(opts.force !== undefined ? { force: opts.force } : {}),
     });
   });

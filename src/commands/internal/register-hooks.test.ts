@@ -245,19 +245,15 @@ describe('registerGeminiHooks', () => {
       tmpdir(),
       `ob-gemini-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
-    process.env['CLAUDE_CODE_HARNESS'] = 'gemini';
+    process.env['ONEBRAIN_HARNESS'] = 'gemini';
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
-    await writeFile(
-      join(vaultDir, 'vault.yml'),
-      'update_channel: stable\n',
-      'utf8',
-    );
+    await writeFile(join(vaultDir, 'vault.yml'), 'update_channel: stable\n', 'utf8');
   });
 
   afterEach(async () => {
     await rm(vaultDir, { recursive: true, force: true });
     // biome-ignore lint/performance/noDelete: env cleanup requires delete to unset
-    delete process.env['CLAUDE_CODE_HARNESS'];
+    delete process.env['ONEBRAIN_HARNESS'];
   });
 
   test('no .gemini/settings.json (ENOENT) → result.ok === true, no file created', async () => {
