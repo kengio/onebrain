@@ -337,15 +337,9 @@ describe('registerDirectPath', () => {
       `ob-direct-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
-    await writeFile(
-      join(vaultDir, 'vault.yml'),
-      'method: onebrain\nruntime:\n  harness: direct\n',
-      'utf8',
-    );
+    await writeFile(join(vaultDir, 'vault.yml'), 'update_channel: stable\n', 'utf8');
+    process.env['ONEBRAIN_HARNESS'] = 'direct';
 
-    // Register the mock.module factory (structural requirement per spec).
-    // The factory exports a homedir() stub — its effect on already-bound imports
-    // is limited to dynamic re-imports, but we register it here per spec.
     mock.module('node:os', () => ({
       homedir,
       tmpdir,
@@ -354,6 +348,8 @@ describe('registerDirectPath', () => {
 
   afterEach(async () => {
     mock.restore();
+    // biome-ignore lint/performance/noDelete: env cleanup requires delete to unset
+    delete process.env['ONEBRAIN_HARNESS'];
     await rm(vaultDir, { recursive: true, force: true });
   });
 

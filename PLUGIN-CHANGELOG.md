@@ -15,8 +15,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.1.0
 
-- fix(register-hooks): SessionStart hook now registered automatically
-- docs(onboarding): update install.sh reference → onebrain init
+- docs(onboarding): update install.sh reference → onebrain init; remove method/runtime.harness from vault.yml template
+- docs(skills): remove method: onebrain from qmd and reorganize skill examples
+- fix(doctor): --fix removes deprecated vault.yml keys (method, runtime.harness) in addition to onebrain_version
 
 ## v2.0.10 — fix: background agent checkpoint writes; updated hook reason format in INSTRUCTIONS
 

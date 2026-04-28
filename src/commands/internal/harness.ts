@@ -27,6 +27,9 @@ export async function detectHarness(vaultRoot: string): Promise<Harness> {
     if (env === 'claude' || env === 'claude-code') return 'claude';
     if (env === 'gemini') return 'gemini';
     if (env === 'direct') return 'direct';
+    process.stderr.write(
+      `harness: unknown ONEBRAIN_HARNESS value "${env}" — ignoring, falling back to directory detection\n`,
+    );
   }
 
   if (await pathExists(join(vaultRoot, '.gemini'))) return 'gemini';

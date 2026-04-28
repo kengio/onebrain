@@ -20,9 +20,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **BREAKING** change(update): binary-only — run `/update` skill in Claude to sync vault files
 - remove(update): onebrain_version no longer written to vault.yml
 - feat(doctor): intro/outro + clack UX; new checks (plugin-files, vault.yml-keys, settings-hooks)
-- feat(doctor): --fix mode — auto-repair hooks, remove deprecated vault.yml keys
-- fix(register-hooks): SessionStart hook added; PostToolUse auto-detected from qmd_collection
+- feat(doctor): --fix mode — auto-repair hooks, remove deprecated vault.yml keys; removes deprecated vault.yml keys (method, runtime.harness, onebrain_version)
+- fix(register-hooks): PostToolUse auto-detected from qmd_collection; SessionStart removed
 - remove: install.sh and install.ps1 — replaced by onebrain init
+- feat(harness): replace CLAUDE_CODE_HARNESS with ONEBRAIN_HARNESS env var; shared detectHarness() utility detects harness at runtime via env → .gemini/ → .claude/ → direct
+- remove(vault.yml): method and runtime.harness keys removed — harness detected at runtime, no longer stored
 
 ## v2.0.14 — fix: remove session token from hook emit format; deterministic resolveSessionToken
 

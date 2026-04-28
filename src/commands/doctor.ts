@@ -321,8 +321,12 @@ async function applyFixes(
       fixed++;
       if (isTTY) log.success(`Fixed: ${r.check}`);
     } catch (err) {
-      if (isTTY)
-        log.warn(`Could not fix ${r.check}: ${err instanceof Error ? err.message : String(err)}`);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (isTTY) {
+        log.warn(`Could not fix ${r.check}: ${errMsg}`);
+      } else {
+        process.stderr.write(`doctor: fix failed for ${r.check}: ${errMsg}\n`);
+      }
     }
   }
 

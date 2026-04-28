@@ -504,7 +504,6 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     ok: false,
     exitCode: 0,
     foldersCreated: 0,
-    harness: 'direct',
     pluginSkipped: false,
     pluginRegistrationSkipped: false,
     pluginsInstalled: 0,

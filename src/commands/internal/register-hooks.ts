@@ -275,8 +275,12 @@ export async function runRegisterHooks(
   try {
     const vaultConfig = await loadVaultConfig(vaultRoot);
     qmdCollection = vaultConfig.qmd_collection;
-  } catch {
-    // vault.yml missing — use defaults
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      process.stderr.write(
+        `register-hooks: warning: could not read vault.yml: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+    }
   }
 
   const result: RegisterHooksResult = {
@@ -299,54 +303,58 @@ export async function runRegisterHooks(
   try {
     if (isTTY) intro('OneBrain Register Hooks');
 
-    // ── Steps 1-3: Read once, apply all, write once ───────────────────────
-    const hooksSpinner = isTTY ? spinner() : null;
-    hooksSpinner?.start('Registering hooks...');
+    // ── Steps 1-3: Claude harness only — write .claude/settings.json ─────
+    if (harness === 'claude') {
+      const hooksSpinner = isTTY ? spinner() : null;
+      hooksSpinner?.start('Registering hooks...');
 
-    const settings = await readSettings(settingsPath);
-    result.hooks = applyHooks(settings);
+      const settings = await readSettings(settingsPath);
+      result.hooks = applyHooks(settings);
 
-    hooksSpinner?.stop('Hooks registered');
+      hooksSpinner?.stop('Hooks registered');
 
-    if (isTTY) {
-      const hookLine = HOOK_EVENTS.map((e) => {
-        const status = result.hooks[e];
-        const icon = status === 'ok' ? '✓' : status === 'migrated' ? '↑' : '+';
-        return `${e}: ${icon}`;
-      }).join('  ');
-      note(hookLine);
-    } else {
-      const hookLine = HOOK_EVENTS.map((e) => {
-        const status = result.hooks[e];
-        const label =
-          status === 'ok' || status === 'added' || status === 'migrated' ? 'ok' : (status ?? 'ok');
-        return `${e} ${label}`;
-      }).join('  ');
-      note(hookLine);
-    }
-
-    // ── Step 1b: qmd PostToolUse hook (auto-detect from vault.yml) ──────────
-    if (qmdCollection) {
-      const status = applyQmdHook(settings);
-      note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: ok');
-    }
-
-    // ── Step 2: Permissions ───────────────────────────────────────────────
-    const permSpinner = isTTY ? spinner() : null;
-    permSpinner?.start('Updating permissions...');
-
-    result.permissionsAdded = applyPermissions(settings);
-    await writeSettings(settingsPath, settings);
-
-    permSpinner?.stop('Updating permissions...');
-
-    if (isTTY) {
-      for (const perm of PERMISSIONS_TO_ADD) {
-        note(`${perm}: ✓`);
+      if (isTTY) {
+        const hookLine = HOOK_EVENTS.map((e) => {
+          const status = result.hooks[e];
+          const icon = status === 'ok' ? '✓' : status === 'migrated' ? '↑' : '+';
+          return `${e}: ${icon}`;
+        }).join('  ');
+        note(hookLine);
+      } else {
+        const hookLine = HOOK_EVENTS.map((e) => {
+          const status = result.hooks[e];
+          const label =
+            status === 'ok' || status === 'added' || status === 'migrated'
+              ? 'ok'
+              : (status ?? 'ok');
+          return `${e} ${label}`;
+        }).join('  ');
+        note(hookLine);
       }
-    } else {
-      note('permissions ok');
-    }
+
+      // ── Step 1b: qmd PostToolUse hook (auto-detect from vault.yml) ──────────
+      if (qmdCollection) {
+        const status = applyQmdHook(settings);
+        note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: ok');
+      }
+
+      // ── Step 2: Permissions ───────────────────────────────────────────────
+      const permSpinner = isTTY ? spinner() : null;
+      permSpinner?.start('Updating permissions...');
+
+      result.permissionsAdded = applyPermissions(settings);
+      await writeSettings(settingsPath, settings);
+
+      permSpinner?.stop('Updating permissions...');
+
+      if (isTTY) {
+        for (const perm of PERMISSIONS_TO_ADD) {
+          note(`${perm}: ✓`);
+        }
+      } else {
+        note('permissions ok');
+      }
+    } // end claude harness block
 
     // ── Step 4: Gemini harness (non-fatal) ────────────────────────────────
     if (harness === 'gemini') {
