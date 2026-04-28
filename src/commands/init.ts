@@ -484,10 +484,6 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     process.stdout.write(`${msg}\n`);
   }
 
-  function step(msg: string) {
-    process.stdout.write(`  ${pc.bold(pc.cyan('›'))}  ${msg}\n`);
-  }
-
   const delay = (ms: number) =>
     isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
   const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
@@ -540,26 +536,30 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   // ── Step 2: Create standard folders ───────────────────────────────────────
 
+  const sp2 = isTTY ? createSpinner() : null;
+  sp2?.start('📁  Setting up vault structure…');
   const foldersCreated = await createFolders(vaultDir);
   result.foldersCreated = foldersCreated;
 
   if (isTTY) {
-    step(
+    await randDelay();
+    sp2?.stop(
       `📁  Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`,
     );
-    await randDelay();
   } else {
     writeLine(`folders: ${foldersCreated} created`);
   }
 
   // ── Step 3: Write vault.yml ────────────────────────────────────────────────
 
+  const sp3 = isTTY ? createSpinner() : null;
+  sp3?.start('⚙️   Writing vault.yml…');
   await writeVaultYml(vaultDir);
   const harness = await detectHarness(vaultDir);
 
   if (isTTY) {
-    step(`⚙️   vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
     await randDelay();
+    sp3?.stop(`⚙️   vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
   } else {
     writeLine(`vault.yml: written (harness=${harness})`);
   }
@@ -599,23 +599,26 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const installPluginsFn = opts.installPluginsFn ?? installObsidianPlugins;
   const githubToken = process.env['GITHUB_TOKEN'];
+  const sp4b = isTTY ? createSpinner() : null;
+  sp4b?.start('🔌  Installing Obsidian plugins…');
   const pluginResult = await installPluginsFn(vaultDir, {
     ...(githubToken ? { githubToken } : {}),
   });
   result.pluginsInstalled = pluginResult.installed.length;
   result.pluginsFailed = pluginResult.failed.length;
 
-  if (isTTY && pluginResult.installed.length + pluginResult.failed.length > 0) {
-    if (pluginResult.installed.length > 0) {
-      step(
-        `🔌  ${pluginResult.installed.length} plugin${pluginResult.installed.length !== 1 ? 's' : ''} installed`,
-      );
-      await randDelay();
-    }
+  if (isTTY) {
+    await randDelay();
+    const n = pluginResult.installed.length;
+    sp4b?.stop(
+      n > 0
+        ? `🔌  ${n} plugin${n !== 1 ? 's' : ''} installed`
+        : '🔌  No Obsidian plugins to install',
+    );
     for (const f of pluginResult.failed) {
       warnStep(`${f.id} · skipped — install manually in Obsidian Settings`);
     }
-  } else if (!isTTY) {
+  } else {
     if (pluginResult.installed.length > 0)
       writeLine(`plugins: ${pluginResult.installed.join(', ')} installed`);
     if (pluginResult.failed.length > 0)
@@ -624,6 +627,8 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   // ── Step 5: Register plugin ────────────────────────────────────────────────
 
+  const sp5 = isTTY ? createSpinner() : null;
+  sp5?.start('📌  Registering plugin…');
   const { skipped: pluginRegistrationSkipped } = await registerPlugin(
     vaultDir,
     installedPluginsPath,
@@ -631,16 +636,18 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.pluginRegistrationSkipped = pluginRegistrationSkipped;
 
   if (isTTY) {
-    step(
+    await randDelay();
+    sp5?.stop(
       `📌  Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`,
     );
-    await randDelay();
   } else {
     writeLine(`plugin: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : 'registered'}`);
   }
 
   // ── Step 6: Register hooks ─────────────────────────────────────────────────
 
+  const sp6 = isTTY ? createSpinner() : null;
+  sp6?.start('🪝  Registering hooks…');
   let hooksOk = true;
   try {
     await registerHooksFn(vaultDir);
@@ -650,16 +657,15 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     process.stderr.write(`init: register-hooks warning: ${msg}\n`);
   }
 
-  const hooksLine = hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update';
   if (isTTY) {
-    if (hooksOk) {
-      step('🪝  Hooks registered   Stop · PostCompact');
-    } else {
-      warnStep('🪝  Hooks not registered — run onebrain update');
-    }
     await randDelay();
+    sp6?.stop(
+      hooksOk
+        ? '🪝  Hooks registered   Stop · PostCompact'
+        : '🪝  Hooks not registered — run onebrain update',
+    );
   } else {
-    writeLine(`hooks: ${hooksLine}`);
+    writeLine(`hooks: ${hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update'}`);
   }
 
   // ── Done ──────────────────────────────────────────────────────────────────

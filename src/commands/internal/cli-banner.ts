@@ -75,15 +75,19 @@ function neonLine(line: string, hueOffset: number): string {
     .join('');
 }
 
-function renderBanner(hueOffset: number, neon: boolean): string {
+function renderBanner(hueOffset: number, neon: boolean, taglineAlpha = 1): string {
   const colorLine = (l: string) => (neon ? neonLine(l, hueOffset) : pc.bold(pc.cyan(l)));
-  return [
-    '',
-    ...ART_LINES.map(colorLine),
-    '',
-    `    ${pc.bold('Your AI Thinking Partner')}`,
-    '',
-  ].join('\n');
+  const TEXT = 'Your AI Thinking Partner';
+  let tagline: string;
+  if (taglineAlpha <= 0) {
+    tagline = ' '.repeat(TEXT.length);
+  } else if (!neon || taglineAlpha >= 1) {
+    tagline = pc.bold(pc.magenta(TEXT));
+  } else {
+    const v = Math.round(35 + taglineAlpha * 220);
+    tagline = `\x1b[1;38;2;${v};0;${v}m${TEXT}\x1b[0m`;
+  }
+  return ['', ...ART_LINES.map(colorLine), '', `    ${tagline}`, ''].join('\n');
 }
 
 export async function printBanner(): Promise<void> {
@@ -91,34 +95,38 @@ export async function printBanner(): Promise<void> {
 
   const neon = supportsRgb();
   // Two passes of cosine ease-in-out, each 1.5 s → total 3 s
-  // Forward:  hue = 90 × (1 − cos(π × f / N))  →  0° → 180°  (ease in-out)
-  // Reverse:  hue = 90 × (1 + cos(π × f / N))  →  180° → 0°  (ease in-out)
-  const N = 29; // frames per pass (intervals), so 29 × 50 ms = 1.45 s ≈ 1.5 s
+  // Forward:  hue 0°→180°, tagline fades in (alpha 0→1)
+  // Reverse:  hue 180°→0°, tagline fully visible
+  // Then: blink tagline once, settle on static cyan
+  const N = 29; // frames per pass; 29 × 50 ms ≈ 1.45 s
   const FRAME_MS = 50;
 
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   if (neon) process.stdout.write('\x1b[?25l');
   try {
-    process.stdout.write(`${renderBanner(0, neon)}\n`);
+    process.stdout.write(`${renderBanner(0, neon, neon ? 0 : 1)}\n`);
     if (neon) {
-      // Forward: 0° → 180°
+      // Forward: 0° → 180°, tagline fades in
       for (let f = 1; f <= N; f++) {
         await delay(FRAME_MS);
         const hue = Math.round(90 * (1 - Math.cos((Math.PI * f) / N)));
         process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-        process.stdout.write(`${renderBanner(hue, neon)}\n`);
+        process.stdout.write(`${renderBanner(hue, neon, f / N)}\n`);
       }
-      // Reverse: 180° → 0°
+      // Reverse: 180° → 0°, tagline fully visible
       for (let f = 1; f <= N; f++) {
         await delay(FRAME_MS);
         const hue = Math.round(90 * (1 + Math.cos((Math.PI * f) / N)));
         process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-        process.stdout.write(`${renderBanner(hue, neon)}\n`);
+        process.stdout.write(`${renderBanner(hue, neon, 1)}\n`);
       }
-      // Settle on static cyan
+      // Blink: hide tagline, then settle on static cyan
       process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-      process.stdout.write(`${renderBanner(0, false)}\n`);
+      process.stdout.write(`${renderBanner(0, false, 0)}\n`);
+      await delay(150);
+      process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
+      process.stdout.write(`${renderBanner(0, false, 1)}\n`);
     }
   } finally {
     if (neon) process.stdout.write('\x1b[?25h');

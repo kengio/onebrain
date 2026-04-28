@@ -35,6 +35,8 @@ export interface DoctorOptions {
   checkVaultYmlKeysFn?: (vaultDir: string) => Promise<DoctorResult>;
   checkSettingsHooksFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
   registerHooksFn?: (vaultDir: string) => Promise<void>;
+  /** Injectable delay (for tests — pass `async () => {}` to skip animation delays). */
+  delayFn?: (ms: number) => Promise<void>;
 }
 
 export interface DoctorCommandResult {
@@ -93,7 +95,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   }
 
   const sp = isTTY ? createSpinner() : null;
-  const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+  const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
 
   let foldersResult: DoctorResult;

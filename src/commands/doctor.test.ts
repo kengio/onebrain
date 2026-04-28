@@ -282,7 +282,12 @@ describe('runDoctor', () => {
     it('TTY: runDoctor completes with exitCode 0 when all checks pass', async () => {
       // In TTY mode, summary goes through clack outro() which bypasses console.log.
       // We verify the return value instead of capturing console output.
-      const result = await runDoctor({ vaultDir: tempDir, isTTY: true, ...makeAllOkValidators() });
+      const result = await runDoctor({
+        vaultDir: tempDir,
+        isTTY: true,
+        delayFn: async () => {},
+        ...makeAllOkValidators(),
+      });
       expect(result.exitCode).toBe(0);
       expect(result.ok).toBe(true);
       expect(result.errorCount).toBe(0);
