@@ -44,6 +44,11 @@ export function close(msg: string, isError = false, isWarning = false): void {
   }
 }
 
+/** Output a completed-step dot line without a preceding spinner. */
+export function dotLine(emoji: string, label: string): void {
+  out(`${dot}  ${emoji}  ${label}\n`);
+}
+
 // ── Spinner step ───────────────────────────────────────────────────────────────
 
 /**

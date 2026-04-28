@@ -31,7 +31,9 @@ import {
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { intro, outro, spinner } from '@clack/prompts';
+import pc from 'picocolors';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+import { barBlank, barLine, makeStepFn } from './cli-ui.js';
 import { detectHarness } from './harness.js';
 
 // ---------------------------------------------------------------------------
@@ -53,6 +55,8 @@ export interface VaultSyncOptions {
   unlinkFn?: typeof unlink;
   /** When true, also extract .obsidian/ from the tarball (init only). */
   includeObsidian?: boolean;
+  /** When true, suppress clack intro/outro and use cli-ui bar format (called as sub-operation from init). */
+  embedded?: boolean;
 }
 
 export interface VaultSyncResult {
@@ -579,25 +583,37 @@ export async function runVaultSync(
   };
 
   // TTY output helpers
+  const embedded = opts.embedded ?? false;
+  const createEmbeddedStep = embedded ? makeStepFn(true) : null;
   let s: ReturnType<typeof spinner> | null = null;
+  let currentStep: ReturnType<ReturnType<typeof makeStepFn>> = null;
 
-  function startSpinner(msg: string) {
+  function startSpinner(emoji: string, label: string) {
     if (isTTY) {
-      s = spinner();
-      s.start(msg);
+      if (embedded) {
+        currentStep = createEmbeddedStep!(emoji, label);
+      } else {
+        s = spinner();
+        s.start(label);
+      }
     } else {
-      process.stdout.write(`vault-sync: ${msg}\n`);
+      process.stdout.write(`vault-sync: ${label}\n`);
     }
   }
 
-  function stopSpinner(msg: string) {
-    if (isTTY && s) {
-      s.stop(msg);
-      s = null;
+  function stopSpinner(result: string, details?: string[]) {
+    if (isTTY) {
+      if (embedded) {
+        currentStep?.stop(pc.dim(result), details);
+        currentStep = null;
+      } else if (s) {
+        s.stop(result);
+        s = null;
+      }
     }
   }
 
-  if (isTTY) {
+  if (isTTY && !embedded) {
     intro('OneBrain Vault Sync');
   }
 
@@ -605,14 +621,14 @@ export async function runVaultSync(
 
   try {
     // ── Step 1: Download tarball ──────────────────────────────────────────
-    startSpinner('Downloading tarball...');
+    startSpinner('📥', 'Downloading');
     let extractedDir: string;
     try {
       const dl = await downloadTarball(branch, fetchFn);
       tmpDir = dl.tmpDir;
       extractedDir = await extractTarball(dl.tarball, tmpDir);
     } catch (err) {
-      stopSpinner('Download failed');
+      stopSpinner('download failed');
       const msg = err instanceof Error ? err.message : String(err);
       result.error = msg;
       process.stderr.write(`vault-sync: download failed: ${msg}\n`);
@@ -636,13 +652,13 @@ export async function runVaultSync(
     stopSpinner(`kengio/onebrain@${branch} (v${result.version})`);
 
     // ── Step 2: Sync plugin files ─────────────────────────────────────────
-    startSpinner('Syncing plugin files...');
+    startSpinner('📂', 'Syncing files');
     try {
       const { filesAdded, filesRemoved } = await syncPluginFiles(extractedDir, vaultRoot, unlinkFn);
       result.filesAdded = filesAdded;
       result.filesRemoved = filesRemoved;
     } catch (err) {
-      stopSpinner('Plugin sync failed');
+      stopSpinner('plugin sync failed');
       const msg = err instanceof Error ? err.message : String(err);
       result.error = msg;
       process.stderr.write(`vault-sync: plugin sync failed: ${msg}\n`);
@@ -674,13 +690,13 @@ export async function runVaultSync(
     await copyRootDocs(extractedDir, vaultRoot);
 
     // ── Step 4: Merge harness files ───────────────────────────────────────
-    startSpinner('Updating harness files...');
+    startSpinner('🔧', 'Updating harness');
     let importsAdded = 0;
     try {
       importsAdded = await mergeHarnessFiles(extractedDir, vaultRoot);
       result.importsAdded = importsAdded;
     } catch (err) {
-      stopSpinner('Harness merge failed');
+      stopSpinner('harness merge failed');
       const msg = err instanceof Error ? err.message : String(err);
       result.error = msg;
       process.stderr.write(`vault-sync: harness merge failed: ${msg}\n`);
@@ -705,7 +721,7 @@ export async function runVaultSync(
     // ── Steps 6–7: Non-fatal, claude harness only ─────────────────────────
     if (harness === 'claude') {
       // Step 6: Pin to vault
-      startSpinner('Pinning to vault...');
+      startSpinner('📌', 'Pinning to vault');
       try {
         const pinResult = await pinToVault(
           vaultRoot,
@@ -726,7 +742,7 @@ export async function runVaultSync(
       }
 
       // Step 7: Clean plugin cache
-      startSpinner('Cleaning cache...');
+      startSpinner('🧹', 'Cleaning cache');
       try {
         const cacheRemoved = await cleanPluginCache(installedPluginsPath, installedPluginsCacheDir);
         result.cacheRemoved = cacheRemoved;
@@ -745,7 +761,9 @@ export async function runVaultSync(
     result.ok = true;
 
     if (isTTY) {
-      outro(`Done — v${result.version} synced`);
+      if (!embedded) {
+        outro(`Done — v${result.version} synced`);
+      }
     } else {
       process.stdout.write('vault-sync: done\n');
     }

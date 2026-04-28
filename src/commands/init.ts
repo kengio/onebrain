@@ -22,7 +22,7 @@ import { dirname, join } from 'node:path';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
 import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
-import { askYesNo, barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
+import { askYesNo, barBlank, barLine, close, dotLine, makeStepFn, writeLine } from './internal/cli-ui.js';
 
 const binaryVersion = resolveBinaryVersion();
 
@@ -42,7 +42,7 @@ export interface InitOptions {
   /** Injectable vault-sync function (for tests). */
   vaultSyncFn?: (
     vaultDir: string,
-    opts: { branch?: string; includeObsidian?: boolean },
+    opts: { branch?: string; includeObsidian?: boolean; embedded?: boolean },
   ) => Promise<void>;
   /** Injectable community plugin installer function (for tests). */
   installPluginsFn?: (
@@ -157,7 +157,7 @@ async function downloadPluginFiles(
   vaultDir: string,
   vaultSyncFn: (
     vaultDir: string,
-    opts: { branch?: string; includeObsidian?: boolean },
+    opts: { branch?: string; includeObsidian?: boolean; embedded?: boolean },
   ) => Promise<void>,
 ): Promise<{ skipped: boolean; driftWarning?: string; failed?: boolean }> {
   const pluginJsonPath = join(
@@ -190,7 +190,7 @@ async function downloadPluginFiles(
 
   // Plugin files not present — run vault-sync (non-fatal)
   try {
-    await vaultSyncFn(vaultDir, { includeObsidian: true });
+    await vaultSyncFn(vaultDir, { includeObsidian: true, embedded: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`init: vault-sync warning: ${msg}\n`);
@@ -475,7 +475,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   // Injectable dependencies (real implementations lazy-loaded)
   const vaultSyncFn =
     opts.vaultSyncFn ??
-    (async (dir: string, syncOpts: { branch?: string; includeObsidian?: boolean }) => {
+    (async (dir: string, syncOpts: { branch?: string; includeObsidian?: boolean; embedded?: boolean }) => {
       const { vaultSyncCommand } = await import('./internal/vault-sync.js');
       await vaultSyncCommand(dir, syncOpts);
     });
@@ -578,8 +578,22 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   }
 
   // ── Step 4: Download plugin files ─────────────────────────────────────────
+  // Peek first: if plugin files are absent, vault-sync will run and output its
+  // own clack UI. Starting a spinner before vault-sync causes the interval's
+  // \x1b[1A\x1b[2K to erase vault-sync's output lines. Only use the spinner
+  // on the skip path (files already present → no vault-sync output).
 
-  const sp4 = createStep('📦', 'Plugin files');
+  const pluginJsonPath = join(
+    vaultDir,
+    '.claude',
+    'plugins',
+    'onebrain',
+    '.claude-plugin',
+    'plugin.json',
+  );
+  const pluginFilesExist = await pathExists(pluginJsonPath);
+  const sp4 = pluginFilesExist ? createStep('📦', 'Plugin files') : null;
+
   const {
     skipped: pluginSkipped,
     failed: pluginDownloadFailed,
@@ -587,14 +601,24 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.pluginSkipped = pluginSkipped;
 
   if (sp4) {
+    // Skip path — stop the spinner
     if (pluginDownloadFailed) {
       sp4.stop('download failed');
     } else {
       const { skills, agents } = await countPluginContents(vaultDir);
       sp4.stop(
-        pc.dim(pluginSkipped ? 'already installed' : 'downloaded'),
+        pc.dim('already installed'),
         [`${skills} skills · ${agents} agents`],
       );
+    }
+  } else if (isTTY) {
+    // Download path — vault-sync rendered its own UI; output our completion line
+    if (!pluginDownloadFailed) {
+      const { skills, agents } = await countPluginContents(vaultDir);
+      dotLine('📦', 'Plugin files');
+      barLine(pc.dim('downloaded'));
+      barLine(`  · ${skills} skills · ${agents} agents`);
+      barBlank();
     }
   } else {
     if (pluginSkipped) writeLine('plugin-files: skipped');
