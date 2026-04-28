@@ -1,4 +1,4 @@
-import { cancel, intro, log, outro, spinner as createSpinner } from '@clack/prompts';
+import { cancel, spinner as createSpinner, intro, log, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import {
   type DoctorResult,
@@ -102,16 +102,23 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   let vaultYmlKeysResult: DoctorResult;
   let settingsHooksResult: DoctorResult;
   try {
-    [foldersResult, harnessResult, qmdResult, orphanResult, pluginFilesResult, vaultYmlKeysResult, settingsHooksResult] =
-      await Promise.all([
-        checkFoldersFn(vaultDir, config),
-        checkHarnessBinaryFn(config),
-        checkQmdEmbeddingsFn(config),
-        checkOrphanCheckpointsFn(vaultDir, config),
-        checkPluginFilesFn(vaultDir),
-        checkVaultYmlKeysFn(vaultDir),
-        checkSettingsHooksFn(vaultDir, config),
-      ]);
+    [
+      foldersResult,
+      harnessResult,
+      qmdResult,
+      orphanResult,
+      pluginFilesResult,
+      vaultYmlKeysResult,
+      settingsHooksResult,
+    ] = await Promise.all([
+      checkFoldersFn(vaultDir, config),
+      checkHarnessBinaryFn(config),
+      checkQmdEmbeddingsFn(config),
+      checkOrphanCheckpointsFn(vaultDir, config),
+      checkPluginFilesFn(vaultDir),
+      checkVaultYmlKeysFn(vaultDir),
+      checkSettingsHooksFn(vaultDir, config),
+    ]);
     sp?.stop();
   } catch (err) {
     sp?.stop('Health check failed');
@@ -179,7 +186,7 @@ function printDoctorOutput(
     if (errorCount > 0) lines.push(`Summary: ${errorCount} errors, ${warningCount} warnings`);
     else if (warningCount > 0) lines.push(`Summary: ${warningCount} warnings — ok to run`);
     else lines.push('Summary: All checks passed');
-    process.stdout.write(lines.join('\n') + '\n');
+    process.stdout.write(`${lines.join('\n')}\n`);
     return;
   }
 
@@ -206,7 +213,10 @@ function printDoctorOutput(
 // Fix helpers (B3)
 // ---------------------------------------------------------------------------
 
-type FixFn = (vaultDir: string, registerHooksFn?: (vaultDir: string) => Promise<void>) => Promise<void>;
+type FixFn = (
+  vaultDir: string,
+  registerHooksFn?: (vaultDir: string) => Promise<void>,
+) => Promise<void>;
 
 function isFixable(r: DoctorResult): boolean {
   return getFix(r) !== null;
@@ -214,18 +224,28 @@ function isFixable(r: DoctorResult): boolean {
 
 function getFix(r: DoctorResult): FixFn | null {
   // settings-hooks → run register-hooks
-  if (r.check === 'settings-hooks' && r.status === 'warn' && r.message !== 'settings.json contains invalid JSON') {
+  if (
+    r.check === 'settings-hooks' &&
+    r.status === 'warn' &&
+    r.message !== 'settings.json contains invalid JSON'
+  ) {
     return async (vaultDir, registerHooksFn) => {
-      const fn = registerHooksFn ?? (async (dir: string) => {
-        const { runRegisterHooks } = await import('./internal/register-hooks.js');
-        await runRegisterHooks({ vaultDir: dir });
-      });
+      const fn =
+        registerHooksFn ??
+        (async (dir: string) => {
+          const { runRegisterHooks } = await import('./internal/register-hooks.js');
+          await runRegisterHooks({ vaultDir: dir });
+        });
       await fn(vaultDir);
     };
   }
 
   // vault.yml-keys: onebrain_version deprecated → remove it
-  if (r.check === 'vault.yml-keys' && r.status === 'warn' && r.message.includes('onebrain_version')) {
+  if (
+    r.check === 'vault.yml-keys' &&
+    r.status === 'warn' &&
+    r.message.includes('onebrain_version')
+  ) {
     return async (vaultDir) => {
       const { readFile, writeFile, rename } = await import('node:fs/promises');
       const { join } = await import('node:path');
@@ -233,7 +253,7 @@ function getFix(r: DoctorResult): FixFn | null {
       const vaultYmlPath = join(vaultDir, 'vault.yml');
       const text = await readFile(vaultYmlPath, 'utf8');
       const raw = (parse(text) ?? {}) as Record<string, unknown>;
-      delete raw['onebrain_version'];
+      raw['onebrain_version'] = undefined;
       const updated = stringify(raw, { lineWidth: 0 });
       const tmpPath = `${vaultYmlPath}.tmp`;
       await writeFile(tmpPath, updated, 'utf8');
@@ -247,7 +267,10 @@ function getFix(r: DoctorResult): FixFn | null {
       const { mkdir } = await import('node:fs/promises');
       const { join } = await import('node:path');
       const missingStr = r.hint?.replace('Missing: ', '') ?? '';
-      const missing = missingStr.split(', ').map((f) => f.trim()).filter(Boolean);
+      const missing = missingStr
+        .split(', ')
+        .map((f) => f.trim())
+        .filter(Boolean);
       for (const folder of missing) {
         await mkdir(join(vaultDir, folder), { recursive: true });
       }
@@ -293,7 +316,8 @@ async function applyFixes(
       fixed++;
       if (isTTY) log.success(`Fixed: ${r.check}`);
     } catch (err) {
-      if (isTTY) log.warn(`Could not fix ${r.check}: ${err instanceof Error ? err.message : String(err)}`);
+      if (isTTY)
+        log.warn(`Could not fix ${r.check}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
