@@ -250,7 +250,7 @@ function printDoctorOutput(
           ? pc.yellow(result.message)
           : pc.red(result.message);
     process.stdout.write(`${bar}  ${icon}  ${emoji}  ${check}  ${msg}\n`);
-    if (result.hint) process.stdout.write(`${bar}         ${pc.dim(`→ ${result.hint}`)}\n`);
+    if (result.hint) process.stdout.write(`${bar}${' '.repeat(31)}${pc.dim(`→ ${result.hint}`)}\n`);
   }
   process.stdout.write(`${bar}\n`);
 
