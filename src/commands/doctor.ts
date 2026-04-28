@@ -236,12 +236,13 @@ function printDoctorOutput(
           ? pc.yellow('▲')
           : pc.red('■');
     const emoji = CHECK_EMOJI[result.check] ?? '  ';
+    const displayName = result.check.replaceAll('-', ' ').padEnd(20);
     const check =
       result.status === 'ok'
-        ? pc.dim(result.check.padEnd(20))
+        ? pc.dim(displayName)
         : result.status === 'warn'
-          ? pc.yellow(result.check.padEnd(20))
-          : pc.bold(pc.red(result.check.padEnd(20)));
+          ? pc.yellow(displayName)
+          : pc.bold(pc.red(displayName));
     const msg =
       result.status === 'ok'
         ? pc.dim(result.message)
