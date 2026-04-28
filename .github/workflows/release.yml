@@ -150,7 +150,7 @@ jobs:
           VERSION: ${{ needs.verify-tag.outputs.version }}
           RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
         run: |
-          bun build src/index.ts --outfile dist/onebrain --target node \
+          bun build src/index.ts --outfile dist/onebrain --target bun \
             --define BUILD_VERSION="\"$VERSION\"" \
             --define BUILD_DATE="\"$RELEASE_DATE\""
 
