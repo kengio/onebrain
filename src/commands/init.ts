@@ -18,7 +18,7 @@
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { cancel, confirm, spinner as createSpinner } from '@clack/prompts';
+import { cancel, confirm, spinner as createSpinner, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
 import { detectHarness } from './internal/harness.js';
@@ -497,7 +497,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     opts.registerHooksFn ??
     (async (dir: string) => {
       const { runRegisterHooks } = await import('./internal/register-hooks.js');
-      await runRegisterHooks({ vaultDir: dir, isTTY: false });
+      await runRegisterHooks({ vaultDir: dir, isTTY: false, silent: true });
     });
 
   const result: InitResult = {
@@ -602,13 +602,12 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   dlSpinner?.stop('Plugin files ready');
 
   if (pluginDownloadFailed) {
+    result.exitCode = 1;
     if (isTTY) {
       cancel('Could not download plugin files. Check your internet connection and try again.');
-      result.exitCode = 1;
-      return result;
+    } else {
+      writeLine('error: vault-sync failed — run onebrain update to download plugin files');
     }
-    writeLine('error: vault-sync failed — run onebrain update to download plugin files');
-    result.exitCode = 1;
     return result;
   }
   if (driftWarning) {

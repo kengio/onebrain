@@ -88,7 +88,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     }
   }
 
-  const sp = isTTY ? null : createSpinner();
+  const sp = isTTY ? createSpinner() : null;
   sp?.start('Running vault health checks…');
 
   let foldersResult: DoctorResult;

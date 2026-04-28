@@ -253,6 +253,7 @@ async function registerDirectPath(): Promise<void> {
 export interface RegisterHooksOptions {
   vaultDir?: string;
   isTTY?: boolean;
+  silent?: boolean;
 }
 
 export interface RegisterHooksResult {
@@ -295,6 +296,7 @@ export async function runRegisterHooks(
 
   // Output helpers
   const note = (msg: string) => {
+    if (opts.silent) return;
     process.stdout.write(`register-hooks: ${msg}\n`);
   };
 
