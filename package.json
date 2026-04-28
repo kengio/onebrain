@@ -1,6 +1,6 @@
 {
   "name": "@onebrain-ai/cli",
-  "version": "2.0.14",
+  "version": "2.1.0",
   "description": "CLI for OneBrain — personal AI OS for Obsidian with persistent memory, 24+ skills, and Claude Code integration",
   "keywords": [
     "onebrain",
@@ -35,6 +35,7 @@
   "dependencies": {
     "@clack/prompts": "^0.9",
     "commander": "^12",
+    "picocolors": "^1",
     "yaml": "^2"
   },
   "devDependencies": {

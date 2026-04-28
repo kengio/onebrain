@@ -5,10 +5,13 @@
  * offline and fast. Focuses on scenarios not already covered by update.test.ts:
  * - --check dry-run mode output and no-side-effects guarantee
  * - graceful network failure (fetch throws instead of returning error status)
+ *
+ * The command is now binary-only: no vault-sync step, no register-hooks step,
+ * no vault.yml version write.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -30,12 +33,6 @@ async function makeTempVault(): Promise<string> {
 async function writeVaultYml(vaultDir: string, content: Record<string, unknown>): Promise<void> {
   const { stringify } = await import('yaml');
   await writeFile(join(vaultDir, 'vault.yml'), stringify(content), 'utf8');
-}
-
-async function readVaultYml(vaultDir: string): Promise<Record<string, unknown>> {
-  const { parse } = await import('yaml');
-  const text = await readFile(join(vaultDir, 'vault.yml'), 'utf8');
-  return (parse(text) ?? {}) as Record<string, unknown>;
 }
 
 /** Build a mock fetch that returns a fake GitHub releases/latest response. */
@@ -66,14 +63,9 @@ function makeThrowingFetch(): typeof fetch {
 const throwingFetch = makeThrowingFetch();
 
 /** Noop mocks with required return shapes. */
-const noopVaultSync = async (
-  _vaultDir: string,
-  _opts: Record<string, unknown>,
-): Promise<{ filesAdded: number; filesRemoved: number }> => ({ filesAdded: 0, filesRemoved: 0 });
-
 const noopInstallBinary = async (_version: string): Promise<void> => {};
 const noopValidateBinary = async (): Promise<boolean> => true;
-const noopRegisterHooks = async (_vaultDir: string): Promise<void> => {};
+const noopCurrentVersion = async (): Promise<string> => 'v1.10.18';
 
 let tempDir: string;
 
@@ -82,12 +74,21 @@ beforeEach(async () => {
   await writeVaultYml(tempDir, {
     method: 'onebrain',
     update_channel: 'stable',
-    onebrain_version: 'v1.10.18',
   });
 });
 
 afterEach(async () => {
   await rm(tempDir, { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// Type-level test: vaultSyncFn removed from UpdateOptions
+// ---------------------------------------------------------------------------
+
+it('vaultSyncFn is removed from UpdateOptions (type-level test)', () => {
+  // @ts-expect-error — vaultSyncFn was removed in binary-only refactor
+  const _opts: UpdateOptions = { vaultSyncFn: async () => ({ filesAdded: 0, filesRemoved: 0 }) };
+  expect(true).toBe(true); // Just checking the type error above
 });
 
 // ---------------------------------------------------------------------------
@@ -103,10 +104,6 @@ describe('update integration: --check dry-run mode', () => {
       isTTY: false,
       check: true,
       fetchFn: makeMockFetch('v1.99.0'),
-      vaultSyncFn: async (vaultDir, syncOpts) => {
-        sideEffects.push('vault-sync');
-        return noopVaultSync(vaultDir, syncOpts);
-      },
       installBinaryFn: async (version) => {
         sideEffects.push(`install:${version}`);
       },
@@ -114,10 +111,7 @@ describe('update integration: --check dry-run mode', () => {
         sideEffects.push('validate');
         return true;
       },
-      registerHooksFn: async (vaultDir) => {
-        sideEffects.push('register-hooks');
-        return noopRegisterHooks(vaultDir);
-      },
+      currentVersionFn: noopCurrentVersion,
     };
 
     const result = await runUpdate(opts);
@@ -131,28 +125,7 @@ describe('update integration: --check dry-run mode', () => {
     expect(result.currentVersion).toBe('v1.10.18');
 
     // No side-effecting steps called
-    expect(sideEffects).not.toContain('vault-sync');
-    expect(sideEffects).not.toContain('register-hooks');
     expect(sideEffects).toHaveLength(0);
-  });
-
-  it('vault.yml is not modified by dry-run', async () => {
-    const opts: UpdateOptions = {
-      vaultDir: tempDir,
-      isTTY: false,
-      check: true,
-      fetchFn: makeMockFetch('v1.99.0'),
-      vaultSyncFn: noopVaultSync,
-      installBinaryFn: noopInstallBinary,
-      validateBinaryFn: noopValidateBinary,
-      registerHooksFn: noopRegisterHooks,
-    };
-
-    await runUpdate(opts);
-
-    // vault.yml onebrain_version unchanged
-    const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml['onebrain_version']).toBe('v1.10.18');
   });
 
   it('result carries both current and latest version in dry-run mode', async () => {
@@ -161,10 +134,9 @@ describe('update integration: --check dry-run mode', () => {
       isTTY: false,
       check: true,
       fetchFn: makeMockFetch('v1.99.0'),
-      vaultSyncFn: noopVaultSync,
       installBinaryFn: noopInstallBinary,
       validateBinaryFn: noopValidateBinary,
-      registerHooksFn: noopRegisterHooks,
+      currentVersionFn: noopCurrentVersion,
     });
 
     // Both versions available on the result object
@@ -184,10 +156,9 @@ describe('update integration: network unavailable (fetch throws)', () => {
       vaultDir: tempDir,
       isTTY: false,
       fetchFn: throwingFetch,
-      vaultSyncFn: noopVaultSync,
       installBinaryFn: noopInstallBinary,
       validateBinaryFn: noopValidateBinary,
-      registerHooksFn: noopRegisterHooks,
+      currentVersionFn: noopCurrentVersion,
     };
 
     // Should resolve (not throw) — errors go to result, not thrown
@@ -199,23 +170,6 @@ describe('update integration: network unavailable (fetch throws)', () => {
     // Error should be descriptive
     expect(result.error).toMatch(/Fetch failed/i);
   });
-
-  it('vault.yml unchanged when network fails', async () => {
-    const opts: UpdateOptions = {
-      vaultDir: tempDir,
-      isTTY: false,
-      fetchFn: throwingFetch,
-      vaultSyncFn: noopVaultSync,
-      installBinaryFn: noopInstallBinary,
-      validateBinaryFn: noopValidateBinary,
-      registerHooksFn: noopRegisterHooks,
-    };
-
-    await runUpdate(opts);
-
-    const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml['onebrain_version']).toBe('v1.10.18');
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -223,17 +177,13 @@ describe('update integration: network unavailable (fetch throws)', () => {
 // ---------------------------------------------------------------------------
 
 describe('update integration: full end-to-end success', () => {
-  it('all 6 steps complete, vault.yml gets updated version, registerHooks is called', async () => {
+  it('binary install and validate called; no vault.yml version write', async () => {
     const sideEffects: string[] = [];
 
     const opts: UpdateOptions = {
       vaultDir: tempDir,
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
-      vaultSyncFn: async (vaultDir, syncOpts) => {
-        sideEffects.push('vault-sync');
-        return noopVaultSync(vaultDir, syncOpts);
-      },
       installBinaryFn: async (version) => {
         sideEffects.push(`install:${version}`);
       },
@@ -241,9 +191,9 @@ describe('update integration: full end-to-end success', () => {
         sideEffects.push('validate');
         return true;
       },
-      registerHooksFn: async (vaultDir) => {
-        sideEffects.push('register-hooks');
-        return noopRegisterHooks(vaultDir);
+      currentVersionFn: async () => {
+        sideEffects.push('current-version');
+        return 'v1.10.18';
       },
     };
 
@@ -255,34 +205,28 @@ describe('update integration: full end-to-end success', () => {
     expect(result.latestVersion).toBe('v2.0.0');
     expect(result.currentVersion).toBe('v1.10.18');
 
-    // All side-effecting steps were called
-    expect(sideEffects).toContain('vault-sync');
+    // Binary steps were called
     expect(sideEffects).toContain('install:v2.0.0');
     expect(sideEffects).toContain('validate');
-    expect(sideEffects).toContain('register-hooks');
 
-    // vault.yml has the new version
-    const vaultYml = await readVaultYml(tempDir);
-    expect(vaultYml['onebrain_version']).toBe('v2.0.0');
+    // No vault-sync or register-hooks
+    expect(sideEffects).not.toContain('vault-sync');
+    expect(sideEffects).not.toContain('register-hooks');
   });
 });
 
 // ---------------------------------------------------------------------------
-// Atomic gate: validateBinary returns false → registerHooks must NOT be called
+// Atomic gate: validateBinary returns false → install must NOT proceed to success
 // ---------------------------------------------------------------------------
 
 describe('update integration: atomic gate (validateBinary returns false)', () => {
-  it('registerHooks is NOT called when validateBinary returns false', async () => {
+  it('result is failure when validateBinary returns false', async () => {
     const sideEffects: string[] = [];
 
     const opts: UpdateOptions = {
       vaultDir: tempDir,
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),
-      vaultSyncFn: async (vaultDir, syncOpts) => {
-        sideEffects.push('vault-sync');
-        return noopVaultSync(vaultDir, syncOpts);
-      },
       installBinaryFn: async (version) => {
         sideEffects.push(`install:${version}`);
       },
@@ -290,10 +234,7 @@ describe('update integration: atomic gate (validateBinary returns false)', () =>
         sideEffects.push('validate');
         return false; // ATOMIC GATE: validation fails
       },
-      registerHooksFn: async (vaultDir) => {
-        sideEffects.push('register-hooks');
-        return noopRegisterHooks(vaultDir);
-      },
+      currentVersionFn: noopCurrentVersion,
     };
 
     const result = await runUpdate(opts);
@@ -304,8 +245,7 @@ describe('update integration: atomic gate (validateBinary returns false)', () =>
     expect(result.error).toBeDefined();
     expect(result.error).toMatch(/validation failed/i);
 
-    // validate was called, but register-hooks was NOT
+    // validate was called
     expect(sideEffects).toContain('validate');
-    expect(sideEffects).not.toContain('register-hooks');
   });
 });

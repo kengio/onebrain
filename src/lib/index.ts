@@ -17,6 +17,8 @@ export {
   checkFolders,
   checkHarnessBinary,
   checkQmdEmbeddings,
-  checkVersionDrift,
   checkOrphanCheckpoints,
+  checkPluginFiles,
+  checkVaultYmlKeys,
+  checkSettingsHooks,
 } from './validator.js';

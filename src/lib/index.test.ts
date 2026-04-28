@@ -9,7 +9,6 @@ import {
   checkOrphanCheckpoints,
   checkQmdEmbeddings,
   checkVaultYml,
-  checkVersionDrift,
   loadVaultConfig,
 } from './index.js';
 import type { VaultConfig } from './index.js';
@@ -143,7 +142,6 @@ describe('loadVaultConfig', () => {
 
   it('preserves optional fields when present', async () => {
     const yaml = `
-onebrain_version: "1.9.0"
 runtime:
   harness: claude-code
 recap:
@@ -153,7 +151,6 @@ recap:
     await writeVaultYml(dir, yaml);
     const config = await loadVaultConfig(dir);
 
-    expect(config.onebrain_version).toBe('1.9.0');
     expect(config.runtime?.harness).toBe('claude-code');
     expect(config.recap?.min_sessions).toBe(3);
     expect(config.recap?.min_frequency).toBe(7);
@@ -399,96 +396,6 @@ describe('checkQmdEmbeddings', () => {
     expect(result.check).toBe('qmd-embeddings');
     // Either unavailable (ok) or actually ran — both valid
     expect(['ok', 'warn']).toContain(result.status);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// checkVersionDrift
-// ---------------------------------------------------------------------------
-
-describe('checkVersionDrift', () => {
-  let dir: string;
-
-  beforeEach(async () => {
-    dir = await makeTmpDir();
-  });
-
-  afterEach(async () => {
-    await rm(dir, { recursive: true, force: true });
-  });
-
-  const baseConfig: VaultConfig = {
-    folders: {
-      inbox: '00-inbox',
-      projects: '01-projects',
-      areas: '02-areas',
-      knowledge: '03-knowledge',
-      resources: '04-resources',
-      agent: '05-agent',
-      archive: '06-archive',
-      logs: '07-logs',
-    },
-    checkpoint: { messages: 15, minutes: 30 },
-    update_channel: 'stable',
-  };
-
-  it('returns ok when both versions match', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.9.0' }), 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns ok when onebrain_version is absent in config', async () => {
-    const result = await checkVersionDrift(dir, baseConfig);
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns ok when plugin.json is missing', async () => {
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-    const result = await checkVersionDrift(dir, config);
-    expect(result.status).toBe('ok');
-  });
-
-  it('returns warn when versions differ', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ version: '1.8.0' }), 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('warn');
-    expect(result.message).toBe('vault v1.9.0, plugin files v1.8.0');
-    expect(result.hint).toContain('onebrain update');
-  });
-
-  it('plugin.json exists but contains invalid JSON → status: ok, message contains unreadable', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), '{bad json', 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('ok');
-    expect(result.message).toContain('unreadable');
-  });
-
-  it('plugin.json with no version field → status: ok, message contains skip', async () => {
-    const pluginDir = join(dir, '.claude', 'plugins', 'onebrain', '.claude-plugin');
-    await mkdir(pluginDir, { recursive: true });
-    await writeFile(join(pluginDir, 'plugin.json'), JSON.stringify({ id: 'onebrain' }), 'utf8');
-    const config = { ...baseConfig, onebrain_version: '1.9.0' };
-
-    const result = await checkVersionDrift(dir, config);
-
-    expect(result.status).toBe('ok');
-    expect(result.message).toContain('skip');
   });
 });
 

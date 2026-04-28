@@ -85,10 +85,6 @@ export async function loadVaultConfig(vaultRoot: string): Promise<VaultConfig> {
     config.qmd_collection = raw['qmd_collection'] as string;
   }
 
-  if (raw['onebrain_version'] !== undefined) {
-    config.onebrain_version = raw['onebrain_version'] as string;
-  }
-
   if (raw['runtime'] !== undefined) {
     config.runtime = raw['runtime'] as VaultRuntime;
   }

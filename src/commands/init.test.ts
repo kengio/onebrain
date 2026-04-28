@@ -320,4 +320,52 @@ describe('runInit', () => {
     const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
     expect(runtime?.['harness']).toBe('gemini');
   });
+
+  it('installPluginsFn: community-plugins.json missing → pluginsInstalled=0, pluginsFailed=0', async () => {
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: false,
+      vaultSyncFn: noopVaultSync,
+      registerHooksFn: noopRegisterHooks,
+      installPluginsFn: async (_vaultDir, _opts) => {
+        // community-plugins.json doesn't exist — return empty
+        return { installed: [], failed: [] };
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.pluginsInstalled).toBe(0);
+    expect(result.pluginsFailed).toBe(0);
+  });
+
+  it('installPluginsFn: invalid plugin ID → pluginsFailed counted', async () => {
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: false,
+      vaultSyncFn: noopVaultSync,
+      registerHooksFn: noopRegisterHooks,
+      installPluginsFn: async (_vaultDir, _opts) => {
+        // Invalid ID rejected
+        return { installed: [], failed: [{ id: 'bad/id', reason: 'invalid id' }] };
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.pluginsFailed).toBe(1);
+    expect(result.pluginsInstalled).toBe(0);
+  });
+
+  it('vault-sync fatal failure → exitCode 1 (non-TTY)', async () => {
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: false,
+      vaultSyncFn: async (_vaultDir, _opts) => {
+        throw new Error('network error');
+      },
+      registerHooksFn: noopRegisterHooks,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.exitCode).toBe(1);
+  });
 });

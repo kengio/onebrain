@@ -50,6 +50,8 @@ export interface VaultSyncOptions {
   isTTY?: boolean;
   /** Injectable unlink for tests — defaults to node:fs/promises unlink. */
   unlinkFn?: typeof unlink;
+  /** When true, also extract .obsidian/ from the tarball (init only). */
+  includeObsidian?: boolean;
 }
 
 export interface VaultSyncResult {
@@ -317,7 +319,6 @@ async function mergeHarnessFiles(extractedDir: string, vaultRoot: string): Promi
 
 async function updateVaultYml(
   vaultRoot: string,
-  version: string,
   updateChannel: string,
 ): Promise<void> {
   const vaultYmlPath = join(vaultRoot, 'vault.yml');
@@ -330,7 +331,6 @@ async function updateVaultYml(
   }
 
   const raw = (parseYaml(text) ?? {}) as Record<string, unknown>;
-  raw['onebrain_version'] = version;
   raw['update_channel'] = updateChannel;
 
   const updated = stringifyYaml(raw, { lineWidth: 0 });
@@ -658,6 +658,24 @@ export async function runVaultSync(
       `${result.filesAdded} file${result.filesAdded !== 1 ? 's' : ''} synced, ${result.filesRemoved} removed`,
     );
 
+    // ── Step 2b: Sync .obsidian/ (init only) ─────────────────────────────
+    if (opts.includeObsidian) {
+      const sourceObsidian = join(extractedDir, '.obsidian');
+      const destObsidian = join(vaultRoot, '.obsidian');
+      try {
+        const obsidianFiles = await listFilesRecursive(sourceObsidian);
+        for (const srcPath of obsidianFiles) {
+          const rel = relative(sourceObsidian, srcPath);
+          const destPath = join(destObsidian, rel);
+          await mkdir(dirname(destPath), { recursive: true });
+          const content = await readFile(srcPath);
+          await writeFile(destPath, content);
+        }
+      } catch {
+        // .obsidian not in tarball — skip silently
+      }
+    }
+
     // ── Step 3: Copy root docs (non-fatal) ───────────────────────────────
     await copyRootDocs(extractedDir, vaultRoot);
 
@@ -682,7 +700,7 @@ export async function runVaultSync(
 
     // ── Step 5: Write version to vault.yml ───────────────────────────────
     try {
-      await updateVaultYml(vaultRoot, result.version, updateChannel);
+      await updateVaultYml(vaultRoot, updateChannel);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       result.error = msg;

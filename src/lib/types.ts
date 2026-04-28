@@ -40,7 +40,6 @@ export interface VaultConfig {
   qmd_collection?: string;
   checkpoint?: VaultCheckpoint;
   runtime?: VaultRuntime;
-  onebrain_version?: string;
   update_channel?: 'stable' | 'next';
   stats?: VaultStats;
   recap?: VaultRecap;

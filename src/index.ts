@@ -104,9 +104,13 @@ program
 program
   .command('doctor')
   .description('Run vault health checks and report issues')
-  .action(async () => {
+  .option('--fix', 'auto-fix detected issues')
+  .action(async (opts: { fix?: boolean }) => {
     const vaultRoot = findVaultRoot(process.cwd());
-    await doctorCommand({ vaultDir: vaultRoot });
+    await doctorCommand({
+      vaultDir: vaultRoot,
+      ...(opts.fix !== undefined ? { fix: opts.fix } : {}),
+    });
   });
 
 program
@@ -169,13 +173,8 @@ program
   .command('register-hooks', { hidden: true })
   .description('Install Claude Code hooks into settings.json')
   .option('--vault-dir <path>', 'vault root directory (default: cwd)')
-  .option('--qmd', 'also register PostToolUse qmd-reindex hook')
-  .option('--remove-qmd', 'remove PostToolUse qmd-reindex hook')
-  .action(async (opts: { vaultDir?: string; qmd?: boolean; removeQmd?: boolean }) => {
-    await registerHooksCommand(opts.vaultDir, {
-      ...(opts.qmd !== undefined ? { qmd: opts.qmd } : {}),
-      ...(opts.removeQmd !== undefined ? { removeQmd: opts.removeQmd } : {}),
-    });
+  .action(async (opts: { vaultDir?: string }) => {
+    await registerHooksCommand(opts.vaultDir);
   });
 
 program

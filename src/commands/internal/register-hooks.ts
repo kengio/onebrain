@@ -13,7 +13,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { intro, log, outro, spinner } from '@clack/prompts';
-import { parse as parseYaml } from 'yaml';
+import { loadVaultConfig } from '../../lib/index.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,9 +49,10 @@ interface SettingsJson {
 const HOOK_COMMANDS: Record<string, string> = {
   Stop: 'onebrain checkpoint stop',
   PostCompact: 'onebrain checkpoint postcompact',
+  SessionStart: 'onebrain session-init',
 };
 
-const HOOK_EVENTS = ['Stop', 'PostCompact'] as const;
+const HOOK_EVENTS = ['Stop', 'PostCompact', 'SessionStart'] as const;
 
 // Hooks that were registered by previous versions and must be removed on /update.
 const STALE_HOOK_COMMANDS: Record<string, string> = {
@@ -172,24 +173,6 @@ function applyQmdHook(settings: SettingsJson): HookStatus {
   return 'added';
 }
 
-function removeQmdHook(settings: SettingsJson): 'removed' | 'ok' {
-  if (!settings.hooks?.['PostToolUse']) return 'ok';
-  const before = settings.hooks['PostToolUse'].length;
-  const filtered = settings.hooks['PostToolUse'].filter(
-    (g) => !g.hooks?.some((h) => (h.command ?? '').includes('qmd-reindex')),
-  );
-  if (filtered.length === 0) {
-    const remaining: HooksMap = {};
-    for (const [key, val] of Object.entries(settings.hooks)) {
-      if (key !== 'PostToolUse') remaining[key] = val;
-    }
-    settings.hooks = remaining;
-  } else {
-    settings.hooks['PostToolUse'] = filtered;
-  }
-  return before !== filtered.length ? 'removed' : 'ok';
-}
-
 // ---------------------------------------------------------------------------
 // Step 3: Register permissions (idempotent)
 // ---------------------------------------------------------------------------
@@ -268,8 +251,6 @@ async function registerDirectPath(): Promise<void> {
 
 export interface RegisterHooksOptions {
   vaultDir?: string;
-  qmd?: boolean;
-  removeQmd?: boolean;
 }
 
 export interface RegisterHooksResult {
@@ -289,17 +270,15 @@ export async function runRegisterHooks(
   const vaultRoot = opts.vaultDir ?? process.cwd();
   const isTTY = process.stdout.isTTY;
 
-  // Load vault.yml to determine harness
+  // Load vault.yml to determine harness and qmd_collection
   let harness = 'claude-code';
+  let qmdCollection: string | undefined;
   try {
-    const vaultYmlText = await readFile(join(vaultRoot, 'vault.yml'), 'utf8');
-    const vaultYml = (parseYaml(vaultYmlText) ?? {}) as Record<string, unknown>;
-    const runtime = vaultYml['runtime'] as Record<string, unknown> | undefined;
-    if (runtime && typeof runtime['harness'] === 'string') {
-      harness = runtime['harness'];
-    }
+    const vaultConfig = await loadVaultConfig(vaultRoot);
+    harness = vaultConfig.runtime?.harness ?? 'claude-code';
+    qmdCollection = vaultConfig.qmd_collection;
   } catch {
-    // vault.yml missing — use default harness
+    // vault.yml missing — use defaults
   }
 
   const result: RegisterHooksResult = {
@@ -348,15 +327,10 @@ export async function runRegisterHooks(
       note(hookLine);
     }
 
-    // ── Step 1b: qmd PostToolUse hook (optional) ─────────────────────────
-    if (opts.removeQmd) {
-      const status = removeQmdHook(settings);
-      note(
-        status === 'removed' ? 'PostToolUse qmd hook removed' : 'PostToolUse qmd hook not found',
-      );
-    } else if (opts.qmd) {
+    // ── Step 1b: qmd PostToolUse hook (auto-detect from vault.yml) ──────────
+    if (qmdCollection) {
       const status = applyQmdHook(settings);
-      note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: already registered');
+      note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: ok');
     }
 
     // ── Step 2: Permissions ───────────────────────────────────────────────
@@ -406,13 +380,9 @@ export async function runRegisterHooks(
 // CLI entry point
 // ---------------------------------------------------------------------------
 
-export async function registerHooksCommand(
-  vaultDir?: string,
-  flags?: { qmd?: boolean; removeQmd?: boolean },
-): Promise<void> {
+export async function registerHooksCommand(vaultDir?: string): Promise<void> {
   const result = await runRegisterHooks({
     ...(vaultDir !== undefined ? { vaultDir } : {}),
-    ...flags,
   });
   if (!result.ok) {
     process.exit(1);
