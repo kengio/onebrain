@@ -51,10 +51,20 @@ describe('runRegisterHooks', () => {
     // Full permission set added
     expect(result.permissionsAdded).toHaveLength(14);
     for (const perm of [
-      'Read', 'Write', 'Edit', 'Glob', 'Grep',
-      'Bash(git *)', 'Bash(bun *)', 'Bash(gh *)', 'Bash(node *)',
-      'Bash(onebrain *)', 'Bash(bun install -g @onebrain-ai/cli*)',
-      'Bash(npm install -g @onebrain-ai/cli*)', 'WebFetch', 'WebSearch',
+      'Read',
+      'Write',
+      'Edit',
+      'Glob',
+      'Grep',
+      'Bash(git *)',
+      'Bash(bun *)',
+      'Bash(gh *)',
+      'Bash(node *)',
+      'Bash(onebrain *)',
+      'Bash(bun install -g @onebrain-ai/cli*)',
+      'Bash(npm install -g @onebrain-ai/cli*)',
+      'WebFetch',
+      'WebSearch',
     ]) {
       expect(result.permissionsAdded).toContain(perm);
     }
