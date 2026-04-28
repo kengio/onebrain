@@ -116,10 +116,24 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
   }
 
   try {
-    const qmdArgs =
-      process.platform === 'win32'
-        ? ['powershell.exe', '-NoProfile', '-Command', 'qmd status --json']
-        : ['qmd', 'status', '--json'];
+    let qmdArgs: string[];
+    if (process.platform === 'win32') {
+      qmdArgs = ['powershell.exe', '-NoProfile', '-Command', 'qmd status --json'];
+    } else {
+      // Bun.spawn doesn't inherit shell PATH — resolve the binary first.
+      // Fall back through common install locations if Bun.which misses it.
+      const resolved =
+        Bun.which('qmd') ??
+        Bun.which('qmd', { PATH: `${process.env['HOME'] ?? ''}/.bun/bin:${process.env['PATH'] ?? ''}` });
+      if (!resolved) {
+        return {
+          check: 'qmd-embeddings',
+          status: 'ok',
+          message: 'qmd not found in PATH',
+        };
+      }
+      qmdArgs = [resolved, 'status', '--json'];
+    }
     const proc = Bun.spawn(qmdArgs, {
       stdout: 'pipe',
       stderr: 'pipe',

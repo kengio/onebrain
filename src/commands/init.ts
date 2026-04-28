@@ -27,7 +27,17 @@ import { stringify as stringifyYaml } from 'yaml';
 // ---------------------------------------------------------------------------
 
 declare const BUILD_VERSION: string;
-const binaryVersion = typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : 'dev';
+function resolveBinaryVersion(): string {
+  if (typeof BUILD_VERSION !== 'undefined') return BUILD_VERSION;
+  try {
+    // Running from source (bun run) — read version from package.json
+    const pkg = require('../../package.json') as { version?: string };
+    return pkg.version ?? 'dev';
+  } catch {
+    return 'dev';
+  }
+}
+const binaryVersion = resolveBinaryVersion();
 
 // ---------------------------------------------------------------------------
 // Types
@@ -476,11 +486,13 @@ async function installObsidianPlugins(
 
 function printBanner(): void {
   if (!process.stdout.isTTY) return;
-  const bar = '─'.repeat(38);
-  process.stdout.write(`\n  ${pc.dim(bar)}\n`);
-  process.stdout.write(`    ${pc.cyan(pc.bold('OneBrain'))}\n`);
-  process.stdout.write(`    ${pc.dim('Two Minds, Think as One, in OneBrain')}\n`);
-  process.stdout.write(`  ${pc.dim(bar)}\n\n`);
+  const b = (s: string) => pc.cyan(pc.bold(s));
+  process.stdout.write('\n');
+  process.stdout.write(`  ${b(' ████ ████ ')}\n`);
+  process.stdout.write(`  ${b('█    ██   █')}   ${pc.bold('OneBrain')}\n`);
+  process.stdout.write(`  ${b('█    █████ ')}   ${pc.dim('Two Minds, Think as One')}\n`);
+  process.stdout.write(`  ${b('█    ██   █')}\n`);
+  process.stdout.write(`  ${b(' ████ ████ ')}\n\n`);
 }
 
 // ---------------------------------------------------------------------------
