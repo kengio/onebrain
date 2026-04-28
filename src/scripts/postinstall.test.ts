@@ -11,8 +11,8 @@ describe('getBinaryName', () => {
   it('linux x64 musl', () =>
     expect(getBinaryName('linux', 'x64', true)).toBe('onebrain-linux-x64-musl'));
   it('windows x64', () => expect(getBinaryName('win32', 'x64')).toBe('onebrain-windows-x64.exe'));
-  it('windows arm64', () =>
-    expect(getBinaryName('win32', 'arm64')).toBe('onebrain-windows-arm64.exe'));
+  it('windows arm64 → null (unsupported by bun v1.2)', () =>
+    expect(getBinaryName('win32', 'arm64')).toBeNull());
 
   it('unsupported platform → null', () => expect(getBinaryName('freebsd', 'x64')).toBeNull());
   it('unsupported arch → null', () => expect(getBinaryName('linux', 'ia32')).toBeNull());
