@@ -18,7 +18,7 @@
 
 import { access, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { cancel, spinner as createSpinner, intro, log, outro } from '@clack/prompts';
+import { cancel, spinner as createSpinner, intro, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import { parse as parseYaml } from 'yaml';
 
@@ -180,9 +180,13 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     process.stdout.write(`${msg}\n`);
   }
 
+  function step(msg: string) {
+    process.stdout.write(`${pc.bold(pc.green('==>'))} ${msg}\n`);
+  }
+
   if (isTTY) {
     intro('OneBrain Update');
-    log.message(`${pc.dim(vaultDir)}  ·  binary-only`);
+    process.stdout.write(`${pc.gray('│')}  ${pc.dim(vaultDir)}  ·  ${pc.dim('binary-only')}\n`);
   } else {
     writeLine('OneBrain Update');
     writeLine('binary-only');
@@ -237,11 +241,13 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // --check dry run
   if (check) {
     if (isTTY) {
-      log.message(`Current binary: ${currentVersion}`);
-      log.message(`Latest:         ${latestVersion}`);
+      process.stdout.write('\n');
+      process.stdout.write(`   Current  ${pc.dim(currentVersion)}\n`);
+      process.stdout.write(`   Latest   ${pc.green(latestVersion)}\n`);
       if (currentVersion !== latestVersion) {
-        log.message('→ binary would upgrade');
+        process.stdout.write(`   ${pc.green('→ binary would upgrade')}\n`);
       }
+      process.stdout.write('\n');
       outro('Dry run complete — no changes made');
     } else {
       writeLine(`current: ${currentVersion}`);
@@ -256,7 +262,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // Already up to date?
   if (latestVersion === currentVersion) {
     if (isTTY) {
-      log.success(`Already up to date  @onebrain-ai/cli ${latestVersion}`);
+      step(`Already up to date  @onebrain-ai/cli ${latestVersion}`);
       outro('Nothing to do');
     } else {
       writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}`);
@@ -269,7 +275,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 
   // Show upgrade
   if (isTTY) {
-    log.message(`${currentVersion}  →  ${latestVersion}`);
+    step(`${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}`);
   }
 
   // Step 2: Install binary

@@ -12,7 +12,8 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { intro, log, outro, spinner } from '@clack/prompts';
+import { spinner } from '@clack/prompts';
+import pc from 'picocolors';
 import { loadVaultConfig } from '../../lib/index.js';
 import { detectHarness } from './harness.js';
 
@@ -251,6 +252,7 @@ async function registerDirectPath(): Promise<void> {
 
 export interface RegisterHooksOptions {
   vaultDir?: string;
+  isTTY?: boolean;
 }
 
 export interface RegisterHooksResult {
@@ -268,7 +270,7 @@ export async function runRegisterHooks(
   opts: RegisterHooksOptions = {},
 ): Promise<RegisterHooksResult> {
   const vaultRoot = opts.vaultDir ?? process.cwd();
-  const isTTY = process.stdout.isTTY;
+  const isTTY = opts.isTTY ?? process.stdout.isTTY ?? false;
 
   const harness = await detectHarness(vaultRoot);
   let qmdCollection: string | undefined;
@@ -293,16 +295,10 @@ export async function runRegisterHooks(
 
   // Output helpers
   const note = (msg: string) => {
-    if (isTTY) {
-      log.message(msg);
-    } else {
-      process.stdout.write(`register-hooks: ${msg}\n`);
-    }
+    process.stdout.write(`register-hooks: ${msg}\n`);
   };
 
   try {
-    if (isTTY) intro('OneBrain Register Hooks');
-
     // ── Steps 1-3: Claude harness only — write .claude/settings.json ─────
     if (harness === 'claude') {
       const hooksSpinner = isTTY ? spinner() : null;
@@ -311,15 +307,19 @@ export async function runRegisterHooks(
       const settings = await readSettings(settingsPath);
       result.hooks = applyHooks(settings);
 
-      hooksSpinner?.stop('Hooks registered');
+      // ── Step 1b: qmd PostToolUse hook (applied before stop so it appears in hook line) ──
+      let qmdStatus: HookStatus | undefined;
+      if (qmdCollection) qmdStatus = applyQmdHook(settings);
 
       if (isTTY) {
-        const hookLine = HOOK_EVENTS.map((e) => {
+        const parts = HOOK_EVENTS.map((e) => {
           const status = result.hooks[e];
-          const icon = status === 'ok' ? '✓' : status === 'migrated' ? '↑' : '+';
-          return `${e}: ${icon}`;
-        }).join('  ');
-        note(hookLine);
+          const icon = pc.green(status === 'ok' ? '✓' : status === 'migrated' ? '↑' : '+');
+          return `${pc.dim(e)} ${icon}`;
+        });
+        if (qmdStatus)
+          parts.push(`${pc.dim('PostToolUse')} ${pc.green(qmdStatus === 'ok' ? '✓' : '+')}`);
+        hooksSpinner?.stop(`Hooks  ${parts.join('  ')}`);
       } else {
         const hookLine = HOOK_EVENTS.map((e) => {
           const status = result.hooks[e];
@@ -330,12 +330,7 @@ export async function runRegisterHooks(
           return `${e} ${label}`;
         }).join('  ');
         note(hookLine);
-      }
-
-      // ── Step 1b: qmd PostToolUse hook (auto-detect from vault.yml) ──────────
-      if (qmdCollection) {
-        const status = applyQmdHook(settings);
-        note(status === 'added' ? 'PostToolUse qmd: added' : 'PostToolUse qmd: ok');
+        if (qmdStatus) note(`PostToolUse ${qmdStatus === 'added' ? 'added' : 'ok'}`);
       }
 
       // ── Step 2: Permissions ───────────────────────────────────────────────
@@ -345,15 +340,8 @@ export async function runRegisterHooks(
       result.permissionsAdded = applyPermissions(settings);
       await writeSettings(settingsPath, settings);
 
-      permSpinner?.stop('Updating permissions...');
-
-      if (isTTY) {
-        for (const perm of PERMISSIONS_TO_ADD) {
-          note(`${perm}: ✓`);
-        }
-      } else {
-        note('permissions ok');
-      }
+      permSpinner?.stop('Permissions ok');
+      if (!isTTY) note('permissions ok');
     } // end claude harness block
 
     // ── Step 4: Gemini harness (non-fatal) ────────────────────────────────
@@ -368,9 +356,7 @@ export async function runRegisterHooks(
 
     result.ok = true;
 
-    if (isTTY) {
-      outro('Done');
-    } else {
+    if (!isTTY) {
       note('done');
     }
   } catch (err) {

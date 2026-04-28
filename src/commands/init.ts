@@ -18,7 +18,7 @@
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { cancel, confirm, spinner as createSpinner, intro, log, outro } from '@clack/prompts';
+import { cancel, confirm, spinner as createSpinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
 import { detectHarness } from './internal/harness.js';
@@ -497,7 +497,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     opts.registerHooksFn ??
     (async (dir: string) => {
       const { runRegisterHooks } = await import('./internal/register-hooks.js');
-      await runRegisterHooks({ vaultDir: dir });
+      await runRegisterHooks({ vaultDir: dir, isTTY: false });
     });
 
   const result: InitResult = {
@@ -513,6 +513,14 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   // Output helpers
   function writeLine(msg: string) {
     process.stdout.write(`${msg}\n`);
+  }
+
+  function step(msg: string) {
+    process.stdout.write(`${pc.bold(pc.green('==>'))} ${msg}\n`);
+  }
+
+  function warnStep(msg: string) {
+    process.stdout.write(`${pc.bold(pc.yellow('==>'))} ${pc.yellow(msg)}\n`);
   }
 
   // ── Step 1: Detect existing vault.yml ─────────────────────────────────────
@@ -532,8 +540,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     // TTY: prompt user
     if (isTTY) {
       printBanner();
-      intro(`OneBrain v${binaryVersion}`);
-      log.message(pc.dim(vaultDir));
+      process.stdout.write(
+        `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+      );
       const overwrite = await confirm({
         message: 'vault.yml already exists. Overwrite?',
       });
@@ -546,8 +555,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     }
   } else if (isTTY) {
     printBanner();
-    intro(`OneBrain v${binaryVersion}`);
-    log.message(pc.dim(vaultDir));
+    process.stdout.write(
+      `${pc.bold('OneBrain')} ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+    );
   }
 
   // Non-TTY header (TTY uses intro() above)
@@ -561,9 +571,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.foldersCreated = foldersCreated;
 
   if (isTTY) {
-    log.success(
-      `Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`,
-    );
+    step(`Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`);
   } else {
     writeLine(`folders: ${foldersCreated} created`);
   }
@@ -574,7 +582,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   const harness = await detectHarness(vaultDir);
 
   if (isTTY) {
-    log.success(`vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
+    step(`vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
   } else {
     writeLine(`vault.yml: written (harness=${harness})`);
   }
@@ -605,7 +613,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   }
   if (driftWarning) {
     if (isTTY) {
-      log.warn(driftWarning);
+      warnStep(driftWarning);
     } else {
       writeLine(driftWarning);
     }
@@ -623,12 +631,12 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   if (isTTY && pluginResult.installed.length + pluginResult.failed.length > 0) {
     if (pluginResult.installed.length > 0) {
-      log.success(
+      step(
         `${pluginResult.installed.length} plugin${pluginResult.installed.length !== 1 ? 's' : ''} installed`,
       );
     }
     for (const f of pluginResult.failed) {
-      log.warn(`${f.id} · skipped — install manually in Obsidian Settings`);
+      warnStep(`${f.id} · skipped — install manually in Obsidian Settings`);
     }
   } else if (!isTTY) {
     if (pluginResult.installed.length > 0)
@@ -646,7 +654,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.pluginRegistrationSkipped = pluginRegistrationSkipped;
 
   if (isTTY) {
-    log.success(
+    step(
       `Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`,
     );
   } else {
@@ -666,7 +674,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const hooksLine = hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update';
   if (isTTY) {
-    log.success('Hooks registered   Stop · PostCompact');
+    step('Hooks registered   Stop · PostCompact');
   } else {
     writeLine(`hooks: ${hooksLine}`);
   }
@@ -677,18 +685,13 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.exitCode = 0;
 
   if (isTTY) {
-    log.message('');
-    log.message('Next steps', { symbol: pc.bold('1') });
-    log.message('  Open Obsidian → File → Open Folder as Vault → select this folder', {
-      symbol: ' ',
-    });
-    log.message('');
-    log.message('Start your AI assistant', { symbol: pc.bold('2') });
-    log.message('  claude', { symbol: ' ' });
-    log.message('');
-    log.message('Personalize your vault', { symbol: pc.bold('3') });
-    log.message('  /onboarding', { symbol: ' ' });
-    outro('Done');
+    process.stdout.write('\n');
+    process.stdout.write(
+      `   ${pc.bold('1')}  Open Obsidian → File → Open Folder as Vault → select this folder\n`,
+    );
+    process.stdout.write(`   ${pc.bold('2')}  Start your AI assistant: ${pc.cyan('claude')}\n`);
+    process.stdout.write(`   ${pc.bold('3')}  Personalize your vault: ${pc.cyan('/onboarding')}\n`);
+    process.stdout.write(`\n🧠  Run ${pc.cyan('/onboarding')} to get started\n`);
   } else {
     writeLine('done: run /onboarding in Claude to finish setup');
   }

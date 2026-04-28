@@ -36,12 +36,6 @@
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      "*.js",
-      ".obsidian",
-      ".claude/settings.json"
-    ]
+    "ignore": ["node_modules", "dist", "*.js", ".obsidian", ".claude/settings.json"]
   }
 }

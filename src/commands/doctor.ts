@@ -1,4 +1,4 @@
-import { cancel, spinner as createSpinner, intro, log, outro } from '@clack/prompts';
+import { cancel, spinner as createSpinner, intro, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import {
   type DoctorResult,
@@ -62,7 +62,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
 
   if (isTTY) {
     intro('OneBrain Doctor');
-    log.message(pc.dim(vaultDir));
+    process.stdout.write(`${pc.gray('│')}  ${pc.dim(vaultDir)}\n`);
   }
 
   const vaultYmlResult = await checkVaultYmlFn(vaultDir);
@@ -183,14 +183,21 @@ function printDoctorOutput(
     return;
   }
 
-  // TTY: use clack log functions
+  // TTY: compact output — no per-line blank lines
+  const bar = pc.gray('│');
+  process.stdout.write(`${bar}\n`);
   for (const result of results) {
+    const icon =
+      result.status === 'ok'
+        ? pc.green('◆')
+        : result.status === 'warn'
+          ? pc.yellow('▲')
+          : pc.red('■');
     const line = `${result.check.padEnd(20)} ${result.message}`;
-    if (result.status === 'ok') log.success(line);
-    else if (result.status === 'warn') log.warn(line);
-    else log.error(line);
-    if (result.hint) log.message(`→ ${result.hint}`, { symbol: ' ' });
+    process.stdout.write(`${bar}  ${icon} ${line}\n`);
+    if (result.hint) process.stdout.write(`${bar}    ${pc.dim(`→ ${result.hint}`)}\n`);
   }
+  process.stdout.write(`${bar}\n`);
 
   // Summary via outro (ok/warn) or cancel (error)
   if (errorCount > 0) {
@@ -294,7 +301,7 @@ async function applyFixes(
   const fixable = results.filter((r) => r.status !== 'ok').filter(isFixable);
 
   if (fixable.length === 0) {
-    if (isTTY) log.success('All checks passed — nothing to fix');
+    if (isTTY) process.stdout.write(`${pc.green('◆')} All checks passed — nothing to fix\n`);
     else process.stdout.write('nothing to fix\n');
     return;
   }
@@ -319,11 +326,11 @@ async function applyFixes(
     try {
       await fix(vaultDir, registerHooksFn);
       fixed++;
-      if (isTTY) log.success(`Fixed: ${r.check}`);
+      if (isTTY) process.stdout.write(`${pc.green('◆')} Fixed: ${r.check}\n`);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       if (isTTY) {
-        log.warn(`Could not fix ${r.check}: ${errMsg}`);
+        process.stdout.write(`${pc.yellow('▲')} Could not fix ${r.check}: ${errMsg}\n`);
       } else {
         process.stderr.write(`doctor: fix failed for ${r.check}: ${errMsg}\n`);
       }
@@ -331,11 +338,13 @@ async function applyFixes(
   }
 
   if (isTTY) {
-    if (fixed > 0) log.success(`Fixed ${fixed} issue(s)`);
+    if (fixed > 0) process.stdout.write(`${pc.green('◆')} Fixed ${fixed} issue(s)\n`);
     if (unfixable.length > 0) {
-      log.warn(`${unfixable.length} issue(s) require manual action:`);
+      process.stdout.write(
+        `${pc.yellow('▲')} ${unfixable.length} issue(s) require manual action:\n`,
+      );
       for (const r of unfixable) {
-        log.message(`  ${r.check}: ${r.hint ?? 'no auto-fix available'}`, { symbol: ' ' });
+        process.stdout.write(`    ${r.check}: ${r.hint ?? 'no auto-fix available'}\n`);
       }
     }
     outro('Done');
