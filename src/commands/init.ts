@@ -487,7 +487,7 @@ async function installObsidianPlugins(
 function printBanner(): void {
   if (!process.stdout.isTTY) return;
   const c = (s: string) => pc.bold(pc.cyan(s));
-  const line = pc.cyan(`╶${'─'.repeat(26)}╴`);
+  const line = pc.cyan(`╶${'─'.repeat(22)}╴`);
   process.stdout.write('\n');
   process.stdout.write(`  ${line}\n`);
   process.stdout.write(`  ${c('┌─┐┌┐╷┌─╴┌┐ ┌─┐┌─┐╷┌┐╷')}\n`);
