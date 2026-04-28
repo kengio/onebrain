@@ -226,10 +226,7 @@ describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
   let vaultDir: string;
 
   beforeEach(async () => {
-    vaultDir = join(
-      tmpdir(),
-      `ob-qmd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
+    vaultDir = join(tmpdir(), `ob-qmd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
   });
 
@@ -255,11 +252,7 @@ describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
   });
 
   test('qmd_collection absent from vault.yml → PostToolUse NOT added', async () => {
-    await writeFile(
-      join(vaultDir, 'vault.yml'),
-      'method: onebrain\n',
-      'utf8',
-    );
+    await writeFile(join(vaultDir, 'vault.yml'), 'method: onebrain\n', 'utf8');
 
     await runRegisterHooks({ vaultDir });
 

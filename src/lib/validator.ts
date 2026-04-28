@@ -420,7 +420,14 @@ export async function checkPluginFiles(vaultRoot: string): Promise<DoctorResult>
 
 const REQUIRED_VAULT_YML_KEYS = ['method', 'update_channel', 'folders'] as const;
 const REQUIRED_FOLDER_KEYS = [
-  'inbox', 'projects', 'areas', 'knowledge', 'resources', 'agent', 'archive', 'logs',
+  'inbox',
+  'projects',
+  'areas',
+  'knowledge',
+  'resources',
+  'agent',
+  'archive',
+  'logs',
 ] as const;
 
 export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult> {
@@ -478,10 +485,16 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
 
   // checkpoint value validation
   const checkpoint = (raw['checkpoint'] ?? {}) as Record<string, unknown>;
-  if (checkpoint['messages'] !== undefined && (typeof checkpoint['messages'] !== 'number' || checkpoint['messages'] <= 0)) {
+  if (
+    checkpoint['messages'] !== undefined &&
+    (typeof checkpoint['messages'] !== 'number' || checkpoint['messages'] <= 0)
+  ) {
     warnings.push('checkpoint.messages should be a number > 0');
   }
-  if (checkpoint['minutes'] !== undefined && (typeof checkpoint['minutes'] !== 'number' || checkpoint['minutes'] <= 0)) {
+  if (
+    checkpoint['minutes'] !== undefined &&
+    (typeof checkpoint['minutes'] !== 'number' || checkpoint['minutes'] <= 0)
+  ) {
     warnings.push('checkpoint.minutes should be a number > 0');
   }
 

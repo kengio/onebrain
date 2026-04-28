@@ -18,7 +18,7 @@
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { cancel, confirm, intro, log, outro, spinner as createSpinner } from '@clack/prompts';
+import { cancel, confirm, spinner as createSpinner, intro, log, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
 
@@ -45,9 +45,15 @@ export interface InitOptions {
   /** Override path to installed_plugins.json (for tests). */
   installedPluginsPath?: string;
   /** Injectable vault-sync function (for tests). */
-  vaultSyncFn?: (vaultDir: string, opts: { branch?: string; includeObsidian?: boolean }) => Promise<void>;
+  vaultSyncFn?: (
+    vaultDir: string,
+    opts: { branch?: string; includeObsidian?: boolean },
+  ) => Promise<void>;
   /** Injectable community plugin installer function (for tests). */
-  installPluginsFn?: (vaultDir: string, opts: { githubToken?: string }) => Promise<PluginInstallResult>;
+  installPluginsFn?: (
+    vaultDir: string,
+    opts: { githubToken?: string },
+  ) => Promise<PluginInstallResult>;
   /** Injectable register-hooks function (for tests). */
   registerHooksFn?: (vaultDir: string) => Promise<void>;
 }
@@ -172,7 +178,10 @@ async function writeVaultYml(vaultDir: string, harness: string): Promise<void> {
  */
 async function downloadPluginFiles(
   vaultDir: string,
-  vaultSyncFn: (vaultDir: string, opts: { branch?: string; includeObsidian?: boolean }) => Promise<void>,
+  vaultSyncFn: (
+    vaultDir: string,
+    opts: { branch?: string; includeObsidian?: boolean },
+  ) => Promise<void>,
 ): Promise<{ skipped: boolean; driftWarning?: string; failed?: boolean }> {
   const pluginJsonPath = join(
     vaultDir,
@@ -400,7 +409,10 @@ async function installObsidianPlugins(
       const json = (await resp.json()) as Record<string, unknown>;
       assets = (json['assets'] ?? []) as Array<{ name: string; browser_download_url: string }>;
     } catch (err) {
-      failed.push({ id, reason: `release fetch failed: ${err instanceof Error ? err.message : String(err)}` });
+      failed.push({
+        id,
+        reason: `release fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+      });
       continue;
     }
 
@@ -434,7 +446,10 @@ async function installObsidianPlugins(
       } catch (err) {
         if (assetName === 'styles.css') continue; // optional
         pluginFailed = true;
-        failed.push({ id, reason: `download failed (${assetName}): ${err instanceof Error ? err.message : String(err)}` });
+        failed.push({
+          id,
+          reason: `download failed (${assetName}): ${err instanceof Error ? err.message : String(err)}`,
+        });
         break;
       }
     }
@@ -464,15 +479,15 @@ function printBanner(): void {
   const lines = [
     '  ___             ____            _       ',
     ' / _ \\  _ __   ___| __ ) _ __ __ _(_)_ __  ',
-    '| | | | \'_ \\ / _ \\  _ \\| \'__/ _` | | \'_ \\ ',
+    "| | | | '_ \\ / _ \\  _ \\| '__/ _` | | '_ \\ ",
     '| |_| | | | |  __/ |_) | | | (_| | | | | |',
     ' \\___/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|',
   ];
   process.stdout.write('\n');
   for (const line of lines) {
-    process.stdout.write(pc.cyan(pc.bold(line)) + '\n');
+    process.stdout.write(`${pc.cyan(pc.bold(line))}\n`);
   }
-  process.stdout.write('\n' + pc.yellow('  Two Minds, Think as One, in OneBrain') + '\n\n');
+  process.stdout.write(`\n${pc.yellow('  Two Minds, Think as One, in OneBrain')}\n\n`);
 }
 
 // ---------------------------------------------------------------------------
@@ -563,7 +578,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.foldersCreated = foldersCreated;
 
   if (isTTY) {
-    log.success(`Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`);
+    log.success(
+      `Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`,
+    );
   } else {
     writeLine(`folders: ${foldersCreated} created`);
   }
@@ -600,12 +617,12 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
       cancel('Could not download plugin files. Check your internet connection and try again.');
       result.exitCode = 1;
       return result;
-    } else {
-      writeLine('error: vault-sync failed — run onebrain update to download plugin files');
-      result.exitCode = 1;
-      return result;
     }
-  } else if (driftWarning) {
+    writeLine('error: vault-sync failed — run onebrain update to download plugin files');
+    result.exitCode = 1;
+    return result;
+  }
+  if (driftWarning) {
     if (isTTY) {
       log.warn(driftWarning);
     } else {
@@ -617,20 +634,26 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const installPluginsFn = opts.installPluginsFn ?? installObsidianPlugins;
   const githubToken = process.env['GITHUB_TOKEN'];
-  const pluginResult = await installPluginsFn(vaultDir, { ...(githubToken ? { githubToken } : {}) });
+  const pluginResult = await installPluginsFn(vaultDir, {
+    ...(githubToken ? { githubToken } : {}),
+  });
   result.pluginsInstalled = pluginResult.installed.length;
   result.pluginsFailed = pluginResult.failed.length;
 
   if (isTTY && pluginResult.installed.length + pluginResult.failed.length > 0) {
     if (pluginResult.installed.length > 0) {
-      log.success(`${pluginResult.installed.length} plugin${pluginResult.installed.length !== 1 ? 's' : ''} installed`);
+      log.success(
+        `${pluginResult.installed.length} plugin${pluginResult.installed.length !== 1 ? 's' : ''} installed`,
+      );
     }
     for (const f of pluginResult.failed) {
       log.warn(`${f.id} · skipped — install manually in Obsidian Settings`);
     }
   } else if (!isTTY) {
-    if (pluginResult.installed.length > 0) writeLine(`plugins: ${pluginResult.installed.join(', ')} installed`);
-    if (pluginResult.failed.length > 0) writeLine(`plugins-skipped: ${pluginResult.failed.map((f) => f.id).join(', ')}`);
+    if (pluginResult.installed.length > 0)
+      writeLine(`plugins: ${pluginResult.installed.join(', ')} installed`);
+    if (pluginResult.failed.length > 0)
+      writeLine(`plugins-skipped: ${pluginResult.failed.map((f) => f.id).join(', ')}`);
   }
 
   // ── Step 5: Register plugin ────────────────────────────────────────────────
@@ -642,7 +665,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   result.pluginRegistrationSkipped = pluginRegistrationSkipped;
 
   if (isTTY) {
-    log.success(`Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`);
+    log.success(
+      `Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`,
+    );
   } else {
     writeLine(`plugin: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : 'registered'}`);
   }
@@ -660,7 +685,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const hooksLine = hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update';
   if (isTTY) {
-    log.success(`Hooks registered   Stop · PostCompact · SessionStart`);
+    log.success('Hooks registered   Stop · PostCompact · SessionStart');
   } else {
     writeLine(`hooks: ${hooksLine}`);
   }
@@ -673,7 +698,9 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   if (isTTY) {
     log.message('');
     log.message('Next steps', { symbol: pc.bold('1') });
-    log.message('  Open Obsidian → File → Open Folder as Vault → select this folder', { symbol: ' ' });
+    log.message('  Open Obsidian → File → Open Folder as Vault → select this folder', {
+      symbol: ' ',
+    });
     log.message('');
     log.message('Start your AI assistant', { symbol: pc.bold('2') });
     log.message('  claude', { symbol: ' ' });
@@ -682,7 +709,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     log.message('  /onboarding', { symbol: ' ' });
     outro('Done');
   } else {
-    writeLine(`done: run /onboarding in Claude to finish setup`);
+    writeLine('done: run /onboarding in Claude to finish setup');
   }
 
   return result;

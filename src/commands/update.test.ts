@@ -251,7 +251,7 @@ describe('runUpdate', () => {
   });
 
   it('currentVersionFn fails → currentVersion = "unknown", continues normally', async () => {
-    const opts: UpdateOptions = {
+    const _opts: UpdateOptions = {
       vaultDir: tempDir,
       isTTY: false,
       fetchFn: makeMockFetch('v2.0.0'),

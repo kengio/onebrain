@@ -163,7 +163,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         const validators = makeAllOkValidators();
@@ -191,7 +194,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         const validators = makeAllOkValidators();
@@ -215,7 +221,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         const validators = makeAllOkValidators();
@@ -238,7 +247,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
@@ -259,7 +271,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
@@ -336,7 +351,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         const validators = makeAllOkValidators();
@@ -360,7 +378,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
@@ -381,7 +402,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
@@ -404,7 +428,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         const validators = makeAllOkValidators();
@@ -434,7 +461,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         const validators = makeAllOkValidators();
@@ -464,7 +494,10 @@ describe('runDoctor', () => {
       // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
       (process.stdout as any).write = (chunk: string | Uint8Array, ...args: unknown[]): boolean => {
         if (typeof chunk === 'string') outputChunks.push(chunk);
-        return originalWrite(chunk as string, ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]));
+        return originalWrite(
+          chunk as string,
+          ...(args as [BufferEncoding?, ((err?: Error | null) => void)?]),
+        );
       };
       try {
         await runDoctor({ vaultDir: tempDir, isTTY: false, ...makeAllOkValidators() });
@@ -529,7 +562,9 @@ describe('runDoctor', () => {
         isTTY: false,
         fix: true,
         ...makeAllOkValidators(),
-        registerHooksFn: async (_vaultDir) => { registerHooksCalled.called = true; },
+        registerHooksFn: async (_vaultDir) => {
+          registerHooksCalled.called = true;
+        },
       });
 
       expect(result.ok).toBe(true);
@@ -552,7 +587,9 @@ describe('runDoctor', () => {
           message: 'SessionStart hook missing',
           hint: 'Run onebrain doctor --fix',
         }),
-        registerHooksFn: async (_vaultDir) => { registerHooksCalled.called = true; },
+        registerHooksFn: async (_vaultDir) => {
+          registerHooksCalled.called = true;
+        },
       });
 
       expect(result.ok).toBe(true); // warn doesn't make ok=false
@@ -568,9 +605,21 @@ describe('runDoctor', () => {
         vaultDir: tempDir,
         isTTY: false,
         ...makeAllOkValidators(),
-        checkPluginFilesFn: async () => ({ check: 'plugin-files', status: 'error', message: 'missing: INSTRUCTIONS.md' }),
-        checkVaultYmlKeysFn: async () => ({ check: 'vault.yml-keys', status: 'warn', message: 'deprecated key: onebrain_version' }),
-        checkSettingsHooksFn: async () => ({ check: 'settings-hooks', status: 'ok', message: 'hooks ok' }),
+        checkPluginFilesFn: async () => ({
+          check: 'plugin-files',
+          status: 'error',
+          message: 'missing: INSTRUCTIONS.md',
+        }),
+        checkVaultYmlKeysFn: async () => ({
+          check: 'vault.yml-keys',
+          status: 'warn',
+          message: 'deprecated key: onebrain_version',
+        }),
+        checkSettingsHooksFn: async () => ({
+          check: 'settings-hooks',
+          status: 'ok',
+          message: 'hooks ok',
+        }),
       });
 
       expect(result.errorCount).toBe(1);
@@ -578,6 +627,4 @@ describe('runDoctor', () => {
       expect(result.ok).toBe(false);
     });
   });
-
 });
-

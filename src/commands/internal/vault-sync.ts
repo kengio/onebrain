@@ -317,10 +317,7 @@ async function mergeHarnessFiles(extractedDir: string, vaultRoot: string): Promi
 // Step 5: Write version to vault.yml
 // ---------------------------------------------------------------------------
 
-async function updateVaultYml(
-  vaultRoot: string,
-  updateChannel: string,
-): Promise<void> {
+async function updateVaultYml(vaultRoot: string, updateChannel: string): Promise<void> {
   const vaultYmlPath = join(vaultRoot, 'vault.yml');
   let text: string;
   try {

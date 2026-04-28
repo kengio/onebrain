@@ -176,11 +176,13 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 
   const result: UpdateResult = { ok: false, exitCode: 0 };
 
-  function writeLine(msg: string) { process.stdout.write(`${msg}\n`); }
+  function writeLine(msg: string) {
+    process.stdout.write(`${msg}\n`);
+  }
 
   if (isTTY) {
     intro('OneBrain Update');
-    log.message(pc.dim(vaultDir) + '  ·  binary-only');
+    log.message(`${pc.dim(vaultDir)}  ·  binary-only`);
   } else {
     writeLine('OneBrain Update');
     writeLine('binary-only');
@@ -191,20 +193,26 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     await access(join(vaultDir, 'vault.yml'));
   } catch {
     const msg = `vault.yml not found in ${vaultDir}. Run 'onebrain update' from inside an OneBrain vault.`;
-    if (isTTY) { cancel(msg); } else { writeLine(`error: ${msg}`); }
+    if (isTTY) {
+      cancel(msg);
+    } else {
+      writeLine(`error: ${msg}`);
+    }
     result.error = msg;
     result.exitCode = 1;
     return result;
   }
 
   // Read update_channel
-  let updateChannel: 'stable' | 'next' = opts.channel ?? 'stable';
+  let _updateChannel: 'stable' | 'next' = opts.channel ?? 'stable';
   if (!opts.channel) {
     try {
       const text = await readFile(join(vaultDir, 'vault.yml'), 'utf8');
       const raw = (parseYaml(text) ?? {}) as Record<string, unknown>;
-      if (raw['update_channel'] === 'next') updateChannel = 'next';
-    } catch { /* use default */ }
+      if (raw['update_channel'] === 'next') _updateChannel = 'next';
+    } catch {
+      /* use default */
+    }
   }
   // Step 1: Fetch latest version
   let latestVersion: string;
@@ -214,7 +222,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     const msg = err instanceof Error ? err.message : String(err);
     result.error = `Fetch failed: ${msg}`;
     result.exitCode = 1;
-    if (isTTY) { cancel(result.error); } else { process.stderr.write(`update: ${result.error}\n`); }
+    if (isTTY) {
+      cancel(result.error);
+    } else {
+      process.stderr.write(`update: ${result.error}\n`);
+    }
     return result;
   }
   result.latestVersion = latestVersion;
@@ -228,7 +240,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
       log.message(`Current binary: ${currentVersion}`);
       log.message(`Latest:         ${latestVersion}`);
       if (currentVersion !== latestVersion) {
-        log.message(`→ binary would upgrade`);
+        log.message('→ binary would upgrade');
       }
       outro('Dry run complete — no changes made');
     } else {
@@ -272,7 +284,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     installSpinner?.stop('Install failed');
     result.error = `Binary install failed: ${msg}`;
     result.exitCode = 1;
-    if (isTTY) { cancel(result.error); } else { process.stderr.write(`update: ${result.error}\n`); }
+    if (isTTY) {
+      cancel(result.error);
+    } else {
+      process.stderr.write(`update: ${result.error}\n`);
+    }
     return result;
   }
 
@@ -281,7 +297,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   if (!binaryValid) {
     result.error = 'Binary validation failed. Check PATH.';
     result.exitCode = 1;
-    if (isTTY) { cancel(result.error); } else { process.stderr.write(`update: ${result.error}\n`); }
+    if (isTTY) {
+      cancel(result.error);
+    } else {
+      process.stderr.write(`update: ${result.error}\n`);
+    }
     return result;
   }
 
