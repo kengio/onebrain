@@ -231,6 +231,7 @@ describe('runInit', () => {
       cb?: (err?: Error | null) => void,
     ): boolean => {
       if (typeof chunk === 'string') lines.push(chunk);
+      else if (chunk instanceof Uint8Array) lines.push(Buffer.from(chunk).toString('utf8'));
       return originalWrite(chunk, encoding as BufferEncoding, cb);
     };
 

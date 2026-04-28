@@ -1,9 +1,13 @@
 /**
  * patchUtf8 — force UTF-8 Buffer output for all string writes on a stream.
  *
- * setDefaultEncoding('utf8') is a no-op in bun bundles. Monkey-patching write
- * is the only reliable way to guarantee UTF-8 bytes reach the terminal for
- * all output including third-party libraries (picocolors, cli-ui, etc.).
+ * Root cause: bun bundles built with --target node use a Node.js stream shim
+ * whose TTY write path encodes strings with the system locale rather than
+ * UTF-8. This garbles multi-byte characters (box-drawing, emoji, em dash).
+ *
+ * Primary fix: build with --target bun (uses native Bun stream, UTF-8 always).
+ * Defense-in-depth: cli-ui.ts and cli-banner.ts write Buffer.from(str,'utf8').
+ * This function catches any remaining third-party writes (picocolors, Commander).
  */
 
 // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write signature

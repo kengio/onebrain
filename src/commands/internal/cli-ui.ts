@@ -14,27 +14,33 @@ import pc from 'picocolors';
 export const bar = pc.cyan('│');
 export const dot = pc.green('●');
 
+// Force UTF-8 bytes. Bun's TTY write path encodes strings with system locale;
+// writing Buffer bypasses that and always produces correct UTF-8 output.
+function out(str: string): void {
+  process.stdout.write(Buffer.from(str, 'utf8'));
+}
+
 // ── Output helpers ─────────────────────────────────────────────────────────────
 
 export function writeLine(msg: string): void {
-  process.stdout.write(`${msg}\n`);
+  out(`${msg}\n`);
 }
 
 export function barLine(msg: string): void {
-  process.stdout.write(`${bar}  ${msg}\n`);
+  out(`${bar}  ${msg}\n`);
 }
 
 export function barBlank(): void {
-  process.stdout.write(`${bar}\n`);
+  out(`${bar}\n`);
 }
 
 export function close(msg: string, isError = false, isWarning = false): void {
   if (isError) {
-    process.stdout.write(`${pc.cyan('└')}  ${pc.bold(pc.red(msg))}\n`);
+    out(`${pc.cyan('└')}  ${pc.bold(pc.red(msg))}\n`);
   } else if (isWarning) {
-    process.stdout.write(`${pc.cyan('└')}  ${pc.yellow(msg)}\n`);
+    out(`${pc.cyan('└')}  ${pc.yellow(msg)}\n`);
   } else {
-    process.stdout.write(`${pc.cyan('└')}  ${msg}\n`);
+    out(`${pc.cyan('└')}  ${msg}\n`);
   }
 }
 
@@ -53,16 +59,16 @@ export function makeStepFn(isTTY: boolean) {
     if (!isTTY) return null;
     const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     let i = 0;
-    process.stdout.write(`${pc.green(frames[0]!)}  ${emoji}  ${label}…\n`);
+    out(`${pc.green(frames[0]!)}  ${emoji}  ${label}…\n`);
     const timer = setInterval(() => {
       i = (i + 1) % frames.length;
-      process.stdout.write(`\x1b[1A\x1b[2K${pc.green(frames[i]!)}  ${emoji}  ${label}…\n`);
+      out(`\x1b[1A\x1b[2K${pc.green(frames[i]!)}  ${emoji}  ${label}…\n`);
     }, 80);
     return {
       stop(result?: string, details?: string[]) {
         clearInterval(timer);
-        process.stdout.write('\x1b[1A\x1b[2K');
-        process.stdout.write(`${dot}  ${emoji}  ${label}\n`);
+        process.stdout.write(Buffer.from('\x1b[1A\x1b[2K', 'utf8'));
+        out(`${dot}  ${emoji}  ${label}\n`);
         if (result !== undefined) barLine(result);
         if (details) for (const d of details) barLine(`  · ${d}`);
         barBlank();
@@ -79,13 +85,13 @@ export function makeStepFn(isTTY: boolean) {
  * Returns true (Yes), false (No), or null (cancelled).
  */
 export async function askYesNo(question: string): Promise<boolean | null> {
-  process.stdout.write(`${pc.cyan('◆')}  ${question}\n`);
-  process.stdout.write('\x1b[?25l');
+  out(`${pc.cyan('◆')}  ${question}\n`);
+  process.stdout.write(Buffer.from('\x1b[?25l', 'utf8'));
 
   function renderOptions(yes: boolean): void {
     const yesLabel = yes ? `${pc.bold(pc.green('●'))} Yes` : `${pc.dim('○')} Yes`;
     const noLabel = yes ? `${pc.dim('○')} No` : `${pc.bold(pc.green('●'))} No`;
-    process.stdout.write(`\x1b[2K${bar}  ${yesLabel}  /  ${noLabel}\r`);
+    out(`\x1b[2K${bar}  ${yesLabel}  /  ${noLabel}\r`);
   }
 
   const answer = await new Promise<boolean | null>((resolve) => {
@@ -125,8 +131,6 @@ export async function askYesNo(question: string): Promise<boolean | null> {
     stdin.on('data', onData);
   });
 
-  process.stdout.write('\n');
-  process.stdout.write('\x1b[?25h');
-  process.stdout.write('\x1b[1A\x1b[2K');
+  process.stdout.write(Buffer.from('\n\x1b[?25h\x1b[1A\x1b[2K', 'utf8'));
   return answer;
 }

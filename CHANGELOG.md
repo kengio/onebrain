@@ -15,7 +15,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.1.1 — Post-merge fixes
 
-- fix(encoding): force UTF-8 Buffer output for all stdout/stderr writes in bun bundles (box-drawing chars, emoji)
+- fix(encoding): change build target from `--target node` to `--target bun` — Node.js stream shim in bun bundles uses locale-dependent TTY write path that garbles UTF-8 multi-byte chars
+- fix(encoding): write all UI output as `Buffer.from(str, 'utf8')` in cli-ui.ts and cli-banner.ts as defense-in-depth
 - test(encoding): regression tests for patchUtf8 covering all write overloads and unicode chars
 - fix(update): remove vault.yml guard — command now runs from any directory
 - fix(init): add directory confirmation prompt in TTY mode before creating any files

@@ -28,7 +28,7 @@
   },
   "files": ["dist/onebrain"],
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/onebrain --target node",
+    "build": "bun build src/index.ts --outfile dist/onebrain --target bun",
     "test": "bun test --pass-with-no-tests src/",
     "typecheck": "tsc --noEmit"
   },

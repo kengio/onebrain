@@ -102,12 +102,16 @@ function dimLine(line: string): string {
 // Frame printer
 // ---------------------------------------------------------------------------
 
+function outb(str: string): void {
+  process.stdout.write(Buffer.from(str, 'utf8'));
+}
+
 function printFrame(artLines: string[], tagline: string): void {
-  process.stdout.write('\n');
-  for (const l of artLines) process.stdout.write(`${l}\n`);
-  process.stdout.write('\n');
-  process.stdout.write(`${tagline}\n`);
-  process.stdout.write('\n');
+  outb('\n');
+  for (const l of artLines) outb(`${l}\n`);
+  outb('\n');
+  outb(`${tagline}\n`);
+  outb('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -118,19 +122,19 @@ export async function printBanner(): Promise<void> {
   if (!process.stdout.isTTY) return;
 
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-  const up = (n: number) => process.stdout.write(`\x1b[${n}F`);
+  const up = (n: number) => outb(`\x1b[${n}F`);
 
   if (!supportsRgb()) {
     // No true color — static banner
-    process.stdout.write('\n');
-    for (const l of ART_LINES) process.stdout.write(`${pc.bold(pc.cyan(l))}\n`);
-    process.stdout.write('\n');
-    process.stdout.write(`    ${pc.bold(pc.magenta(TAGLINE))}\n`);
-    process.stdout.write('\n');
+    outb('\n');
+    for (const l of ART_LINES) outb(`${pc.bold(pc.cyan(l))}\n`);
+    outb('\n');
+    outb(`    ${pc.bold(pc.magenta(TAGLINE))}\n`);
+    outb('\n');
     return;
   }
 
-  process.stdout.write('\x1b[?25l');
+  outb('\x1b[?25l');
   try {
     // Initial: all dim, tagline blank
     printFrame(ART_LINES.map(dimLine), `    ${' '.repeat(TAGLINE.length)}`);
@@ -220,6 +224,6 @@ export async function printBanner(): Promise<void> {
     up(BANNER_LINE_COUNT);
     printFrame(ART_LINES.map((l, i) => neonLine(l, i)), `    ${pc.bold(pc.magenta(TAGLINE))}\x1b[K`);
   } finally {
-    process.stdout.write('\x1b[?25h');
+    outb('\x1b[?25h');
   }
 }
