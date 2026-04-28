@@ -94,6 +94,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
 
   const sp = isTTY ? createSpinner() : null;
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+  const randDelay = () => delay(Math.floor(Math.random() * 500) + 500);
 
   let foldersResult: DoctorResult;
   let qmdResult: DoctorResult;
@@ -105,22 +106,22 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     if (isTTY) {
       // Sequential with spinner updates so each check is visible
       sp?.start('📋  Checking vault.yml…');
-      await delay(80);
+      await randDelay();
       foldersResult = await checkFoldersFn(vaultDir, config);
       sp?.message('📁  Checking folders…');
-      await delay(80);
+      await randDelay();
       qmdResult = await checkQmdEmbeddingsFn(config);
       sp?.message('🔍  Checking qmd…');
-      await delay(80);
+      await randDelay();
       orphanResult = await checkOrphanCheckpointsFn(vaultDir, config);
       sp?.message('📍  Checking checkpoints…');
-      await delay(80);
+      await randDelay();
       pluginFilesResult = await checkPluginFilesFn(vaultDir);
       sp?.message('📦  Checking plugin files…');
-      await delay(80);
+      await randDelay();
       vaultYmlKeysResult = await checkVaultYmlKeysFn(vaultDir);
       sp?.message('⚙️   Checking settings…');
-      await delay(80);
+      await randDelay();
       settingsHooksResult = await checkSettingsHooksFn(vaultDir, config);
     } else {
       [

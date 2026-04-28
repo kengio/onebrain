@@ -490,6 +490,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   const delay = (ms: number) =>
     isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
+  const randDelay = () => delay(Math.floor(Math.random() * 500) + 500);
 
   function warnStep(msg: string) {
     process.stdout.write(`  ${pc.bold(pc.yellow('›'))}  ${pc.yellow(msg)}\n`);
@@ -546,7 +547,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     step(
       `📁  Vault structure   ${foldersCreated} folder${foldersCreated !== 1 ? 's' : ''} created`,
     );
-    await delay(100);
+    await randDelay();
   } else {
     writeLine(`folders: ${foldersCreated} created`);
   }
@@ -558,7 +559,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
 
   if (isTTY) {
     step(`⚙️   vault.yml   harness: ${harness} · checkpoint: ${15} msgs / ${30} min`);
-    await delay(100);
+    await randDelay();
   } else {
     writeLine(`vault.yml: written (harness=${harness})`);
   }
@@ -609,7 +610,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
       step(
         `🔌  ${pluginResult.installed.length} plugin${pluginResult.installed.length !== 1 ? 's' : ''} installed`,
       );
-      await delay(100);
+      await randDelay();
     }
     for (const f of pluginResult.failed) {
       warnStep(`${f.id} · skipped — install manually in Obsidian Settings`);
@@ -633,7 +634,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     step(
       `📌  Plugin registered   installed_plugins.json: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : '✓'}`,
     );
-    await delay(100);
+    await randDelay();
   } else {
     writeLine(`plugin: ${pluginRegistrationSkipped ? 'skipped (marketplace)' : 'registered'}`);
   }
@@ -656,7 +657,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     } else {
       warnStep('🪝  Hooks not registered — run onebrain update');
     }
-    await delay(100);
+    await randDelay();
   } else {
     writeLine(`hooks: ${hooksLine}`);
   }
