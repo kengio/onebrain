@@ -1,6 +1,6 @@
 {
   "name": "@onebrain-ai/cli",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "CLI for OneBrain — personal AI OS for Obsidian with persistent memory, 24+ skills, and Claude Code integration",
   "keywords": [
     "onebrain",
@@ -26,9 +26,11 @@
   "bin": {
     "onebrain": "dist/onebrain"
   },
-  "files": ["dist/onebrain"],
+  "files": ["dist/onebrain", "dist/postinstall.js"],
   "scripts": {
     "build": "bun build src/index.ts --outfile dist/onebrain --target bun",
+    "build:postinstall": "bun build src/scripts/postinstall.ts --outfile dist/postinstall.js --target node",
+    "postinstall": "node dist/postinstall.js",
     "test": "bun test --pass-with-no-tests src/",
     "typecheck": "tsc --noEmit"
   },

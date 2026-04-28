@@ -87,13 +87,6 @@ function formatReleaseDate(date: Date): string {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function daysBehind(date: Date): string {
-  const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-  if (days <= 0) return 'just released';
-  if (days === 1) return '1 day behind';
-  return `${days} days behind`;
-}
-
 // ---------------------------------------------------------------------------
 // Step 4: Install binary
 // ---------------------------------------------------------------------------
@@ -239,7 +232,9 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   if (check) {
     if (isTTY) {
       if (currentVersion !== latestVersion) {
-        barLine(`⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}  · binary would upgrade`);
+        barLine(
+          `⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}  · binary would upgrade`,
+        );
         barBlank();
       }
       close('Dry run complete — no changes made');

@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.2
+latest_version: 2.1.3
 released: 2026-04-29
 ---
 
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.3 — feat: postinstall binary download + full platform support
+
+- feat(postinstall): `npm install -g` / `bun install -g` now downloads the correct platform-specific compiled binary automatically — no Bun installation required
+- feat(release): add `bun-windows-arm64`, `bun-linux-x64-musl`, `bun-linux-arm64-musl` build targets — 8 platforms total
+- feat(release): `npm-publish` now runs after `create-release` — ensures compiled binaries exist on GitHub Releases before postinstall downloads them
+- fix(release): use `--target bun` in npm-publish step — JS bundle fallback for unsupported platforms
+- fix(update): remove unused `daysBehind` function
+- fix(biome): format validator.ts, cli-banner.ts, init.test.ts, cli-ui.ts
 
 ## v2.1.2 — fix: init fresh install layout + CI typecheck
 

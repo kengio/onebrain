@@ -69,7 +69,7 @@ function hsvToRgb(h: number, floor = 80): [number, number, number] {
 }
 
 const HUE_PER_CHAR = 10; // hue degrees per character (horizontal)
-const HUE_PER_ROW = 30;  // hue degrees per row (vertical) — creates diagonal gradient
+const HUE_PER_ROW = 30; // hue degrees per row (vertical) — creates diagonal gradient
 
 function neonLine(line: string, lineIndex = 0, floor = 80): string {
   return line
@@ -146,11 +146,11 @@ export async function printBanner(): Promise<void> {
       up(BANNER_LINE_COUNT);
       printFrame(
         ART_LINES.map((l, i) => {
-          if (i < scan - 2) return neonLine(l, i);          // settled rainbow
-          if (i === scan - 2) return neonLine(l, i, 120);   // 2nd trailing glow
-          if (i === scan - 1) return neonLine(l, i, 200);   // 1st trailing glow — very bright
-          if (i === scan) return scanLine(l);                // warm cyan electron beam
-          return dimLine(l);                                 // not yet lit
+          if (i < scan - 2) return neonLine(l, i); // settled rainbow
+          if (i === scan - 2) return neonLine(l, i, 120); // 2nd trailing glow
+          if (i === scan - 1) return neonLine(l, i, 200); // 1st trailing glow — very bright
+          if (i === scan) return scanLine(l); // warm cyan electron beam
+          return dimLine(l); // not yet lit
         }),
         `    ${' '.repeat(TAGLINE.length)}`,
       );
@@ -159,7 +159,10 @@ export async function printBanner(): Promise<void> {
     // All rainbow, tagline still blank
     await delay(60);
     up(BANNER_LINE_COUNT);
-    printFrame(ART_LINES.map((l, i) => neonLine(l, i)), `    ${' '.repeat(TAGLINE.length)}`);
+    printFrame(
+      ART_LINES.map((l, i) => neonLine(l, i)),
+      `    ${' '.repeat(TAGLINE.length)}`,
+    );
 
     // Diagonal shimmer — stripe aligned with rainbow iso-hue lines (col - 3*row = d)
     // Sweeps perpendicular to the color gradient, forward then reverse
@@ -171,14 +174,17 @@ export async function printBanner(): Promise<void> {
     }
     function diagFrame(highlight: number): string[] {
       return ART_LINES.map((line, row) =>
-        line.split('').map((ch, col) => {
-          if (ch === ' ') return ch;
-          const d = col - 3 * row;
-          if (Math.abs(d - highlight) <= 1) return `\x1b[1;97m${ch}\x1b[0m`;
-          const hue = (((col * HUE_PER_CHAR - row * HUE_PER_ROW) % 360) + 360) % 360;
-          const [r, g, b] = hsvToRgb(hue);
-          return `\x1b[1;38;2;${r};${g};${b}m${ch}\x1b[0m`;
-        }).join('')
+        line
+          .split('')
+          .map((ch, col) => {
+            if (ch === ' ') return ch;
+            const d = col - 3 * row;
+            if (Math.abs(d - highlight) <= 1) return `\x1b[1;97m${ch}\x1b[0m`;
+            const hue = (((col * HUE_PER_CHAR - row * HUE_PER_ROW) % 360) + 360) % 360;
+            const [r, g, b] = hsvToRgb(hue);
+            return `\x1b[1;38;2;${r};${g};${b}m${ch}\x1b[0m`;
+          })
+          .join(''),
       );
     }
     for (let d = minD; d <= maxD; d++) {
@@ -193,11 +199,14 @@ export async function printBanner(): Promise<void> {
     }
     // Clean rainbow after sweep
     up(BANNER_LINE_COUNT);
-    printFrame(ART_LINES.map((l, i) => neonLine(l, i)), `    ${' '.repeat(TAGLINE.length)}`);
+    printFrame(
+      ART_LINES.map((l, i) => neonLine(l, i)),
+      `    ${' '.repeat(TAGLINE.length)}`,
+    );
     await delay(200);
 
     // Typewriter tagline — cyan cursor follows text
-    const cursor = `\x1b[1;38;2;140;255;255m▌\x1b[0m`;
+    const cursor = '\x1b[1;38;2;140;255;255m▌\x1b[0m';
     for (let len = 1; len <= TAGLINE.length; len++) {
       await delay(32);
       up(BANNER_LINE_COUNT);
@@ -214,15 +223,24 @@ export async function printBanner(): Promise<void> {
     for (let b = 0; b < 2; b++) {
       await delay(600);
       up(BANNER_LINE_COUNT);
-      printFrame(ART_LINES.map((l, i) => neonLine(l, i)), tagWhite);
+      printFrame(
+        ART_LINES.map((l, i) => neonLine(l, i)),
+        tagWhite,
+      );
       await delay(600);
       up(BANNER_LINE_COUNT);
-      printFrame(ART_LINES.map((l, i) => neonLine(l, i)), tagWithCursor);
+      printFrame(
+        ART_LINES.map((l, i) => neonLine(l, i)),
+        tagWithCursor,
+      );
     }
     // Cursor disappears + settle magenta in one step
     await delay(600);
     up(BANNER_LINE_COUNT);
-    printFrame(ART_LINES.map((l, i) => neonLine(l, i)), `    ${pc.bold(pc.magenta(TAGLINE))}\x1b[K`);
+    printFrame(
+      ART_LINES.map((l, i) => neonLine(l, i)),
+      `    ${pc.bold(pc.magenta(TAGLINE))}\x1b[K`,
+    );
   } finally {
     outb('\x1b[?25h');
   }

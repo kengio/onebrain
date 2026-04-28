@@ -11,8 +11,8 @@ import pc from 'picocolors';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-export const bar = pc.cyan('│');
-export const dot = pc.green('●');
+const bar = pc.cyan('│');
+const dot = pc.green('●');
 
 // Force UTF-8 bytes. Bun's TTY write path encodes strings with system locale;
 // writing Buffer bypasses that and always produces correct UTF-8 output.

@@ -327,7 +327,7 @@ describe('runInit', () => {
       isTTY: true,
       confirmFn: async () => {
         callCount++;
-        return callCount === 1 ? true : false; // yes to dir, no to overwrite
+        return callCount === 1; // yes to dir, no to overwrite
       },
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
