@@ -13,7 +13,7 @@ export function resolveBinaryVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Neon rainbow banner
+// Neon banner with running spotlight wave (Claude Code style)
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
@@ -33,13 +33,12 @@ function supportsRgb(): boolean {
 }
 
 function hsvToRgb(h: number): [number, number, number] {
-  // s=1, v=1 (full neon saturation/brightness); h in degrees [0, 360)
+  // s=1, v=1 (full neon); h in [0, 360)
   const c = 255;
   const x = Math.round(c * (1 - Math.abs(((h / 60) % 2) - 1)));
-  const m = 0;
-  let r = m;
-  let g = m;
-  let b = m;
+  let r = 0;
+  let g = 0;
+  let b = 0;
   if (h < 60) {
     r = c;
     g = x;
@@ -62,27 +61,33 @@ function hsvToRgb(h: number): [number, number, number] {
   return [r, g, b];
 }
 
-function rgbChar(ch: string, r: number, g: number, b: number): string {
-  return `\x1b[1;38;2;${r};${g};${b}m${ch}\x1b[0m`;
-}
+const HUE_PER_CHAR = 10; // hue degrees spread per character position
+const DIM = 0.2; // ambient brightness for characters outside the wave
+const WAVE_SIGMA = 3.5; // Gaussian spread of the spotlight (in character widths)
 
-// Each character maps to a hue; offset shifts the whole wave
-const HUE_PER_CHAR = 10; // degrees of hue spread per character
-
-function neonLine(line: string, hueOffset: number): string {
+// Renders one line with rainbow hue + spotlight wave brightness
+function neonLine(line: string, hueOffset: number, wavePos: number): string {
+  let nonSpaceIdx = 0;
   return line
     .split('')
-    .map((ch, i) => {
+    .map((ch) => {
       if (ch === ' ') return ch;
-      const hue = (((i * HUE_PER_CHAR + hueOffset) % 360) + 360) % 360;
+      const idx = nonSpaceIdx++;
+      const hue = (((idx * HUE_PER_CHAR + hueOffset) % 360) + 360) % 360;
       const [r, g, b] = hsvToRgb(hue);
-      return rgbChar(ch, r, g, b);
+      const dist = idx - wavePos;
+      const peak = Math.exp(-(dist * dist) / (2 * WAVE_SIGMA * WAVE_SIGMA));
+      const brightness = DIM + (1 - DIM) * peak;
+      return `\x1b[1;38;2;${Math.round(r * brightness)};${Math.round(g * brightness)};${Math.round(b * brightness)}m${ch}\x1b[0m`;
     })
     .join('');
 }
 
-function renderBanner(hueOffset: number, neon: boolean): string {
-  const colorLine = (l: string) => (neon ? neonLine(l, hueOffset) : pc.bold(pc.cyan(l)));
+// Count non-space characters in the widest art line (the border: 28 chars)
+const MAX_CHARS = ART_LINES[0].replace(/ /g, '').length; // 28
+
+function renderBanner(hueOffset: number, wavePos: number, neon: boolean): string {
+  const colorLine = (l: string) => (neon ? neonLine(l, hueOffset, wavePos) : pc.bold(pc.cyan(l)));
   return [
     '',
     ...ART_LINES.map(colorLine),
@@ -96,19 +101,26 @@ export async function printBanner(): Promise<void> {
   if (!process.stdout.isTTY) return;
 
   const neon = supportsRgb();
-  const FRAMES = 30;
   const FRAME_MS = 90;
-  const HUE_STEP = 5; // degrees per frame
+  const HUE_STEP = 12; // 30 frames × 12° = 360° = exactly 1 full hue cycle
+  const FRAMES = 360 / HUE_STEP; // 30 frames ≈ 2.7 s
+
+  // Wave travels from off-screen left to off-screen right over FRAMES
+  const WAVE_RANGE = MAX_CHARS + WAVE_SIGMA * 4;
+  const waveStart = -WAVE_SIGMA * 2;
+
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   if (neon) process.stdout.write('\x1b[?25l');
   try {
-    process.stdout.write(`${renderBanner(0, neon)}\n`);
+    process.stdout.write(`${renderBanner(0, waveStart, neon)}\n`);
     if (neon) {
       for (let f = 1; f < FRAMES; f++) {
         await delay(FRAME_MS);
+        const hueOffset = f * HUE_STEP;
+        const wavePos = waveStart + WAVE_RANGE * (f / (FRAMES - 1));
         process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
-        process.stdout.write(`${renderBanner(f * HUE_STEP, neon)}\n`);
+        process.stdout.write(`${renderBanner(hueOffset, wavePos, neon)}\n`);
       }
     }
   } finally {
