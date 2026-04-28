@@ -21,23 +21,9 @@ import { dirname, join } from 'node:path';
 import { cancel, confirm, spinner as createSpinner, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
+import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
 import { detectHarness } from './internal/harness.js';
 
-// ---------------------------------------------------------------------------
-// BUILD_VERSION shim
-// ---------------------------------------------------------------------------
-
-declare const BUILD_VERSION: string;
-function resolveBinaryVersion(): string {
-  if (typeof BUILD_VERSION !== 'undefined') return BUILD_VERSION;
-  try {
-    // Running from source (bun run) — read version from package.json
-    const pkg = require('../../package.json') as { version?: string };
-    return pkg.version ?? 'dev';
-  } catch {
-    return 'dev';
-  }
-}
 const binaryVersion = resolveBinaryVersion();
 
 // ---------------------------------------------------------------------------
@@ -455,23 +441,6 @@ async function installObsidianPlugins(
   }
 
   return { installed, failed };
-}
-
-// ---------------------------------------------------------------------------
-// Banner
-// ---------------------------------------------------------------------------
-
-function printBanner(): void {
-  if (!process.stdout.isTTY) return;
-  const c = (s: string) => pc.bold(pc.cyan(s));
-  const line = pc.cyan(`◆${'─'.repeat(26)}◆`);
-  process.stdout.write('\n');
-  process.stdout.write(`  ${line}\n`);
-  process.stdout.write(`    ${c('┌─┐┌┐╷┌─╴┌┐ ┌─┐┌─┐╷┌┐╷')}\n`);
-  process.stdout.write(`    ${c('│ ││└┤├╴ ├┴┐├┬┘├─┤││└┤')}\n`);
-  process.stdout.write(`    ${c('└─┘╵ ╵└─╴└─┘╵└╴╵ ╵╵╵ ╵')}\n`);
-  process.stdout.write(`  ${line}\n`);
-  process.stdout.write(`\n    ${pc.dim('Your AI Thinking Partner')}\n\n`);
 }
 
 // ---------------------------------------------------------------------------

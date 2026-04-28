@@ -1,4 +1,4 @@
-import { cancel, spinner as createSpinner, intro, outro } from '@clack/prompts';
+import { cancel, spinner as createSpinner, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import {
   type DoctorResult,
@@ -12,6 +12,7 @@ import {
   checkVaultYmlKeys,
   loadVaultConfig,
 } from '../lib/index.js';
+import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,8 +62,11 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const checkSettingsHooksFn = opts.checkSettingsHooksFn ?? checkSettingsHooks;
 
   if (isTTY) {
-    intro('OneBrain Doctor');
-    process.stdout.write(`${pc.gray('│')}  ${pc.dim(vaultDir)}\n`);
+    const binaryVersion = resolveBinaryVersion();
+    printBanner();
+    process.stdout.write(
+      `${pc.bold('OneBrain')} ${pc.dim('Doctor')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+    );
   }
 
   const vaultYmlResult = await checkVaultYmlFn(vaultDir);

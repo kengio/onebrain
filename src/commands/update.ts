@@ -18,8 +18,9 @@
 
 import { access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { cancel, spinner as createSpinner, intro, outro } from '@clack/prompts';
+import { cancel, spinner as createSpinner, outro } from '@clack/prompts';
 import pc from 'picocolors';
+import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -182,8 +183,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   }
 
   if (isTTY) {
-    intro('OneBrain Update');
-    process.stdout.write(`${pc.gray('│')}  ${pc.dim(vaultDir)}  ·  ${pc.dim('binary-only')}\n`);
+    const binaryVersion = resolveBinaryVersion();
+    printBanner();
+    process.stdout.write(
+      `${pc.bold('OneBrain')} ${pc.dim('Update')}  ${pc.dim(`v${binaryVersion}`)}  ${pc.dim('—')}  ${pc.dim(vaultDir)}\n\n`,
+    );
   } else {
     writeLine('OneBrain Update');
     writeLine('binary-only');
