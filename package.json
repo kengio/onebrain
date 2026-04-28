@@ -26,9 +26,11 @@
   "bin": {
     "onebrain": "dist/onebrain"
   },
-  "files": ["dist/onebrain"],
+  "files": ["dist/onebrain", "dist/postinstall.js"],
   "scripts": {
     "build": "bun build src/index.ts --outfile dist/onebrain --target bun",
+    "build:postinstall": "bun build src/scripts/postinstall.ts --outfile dist/postinstall.js --target node",
+    "postinstall": "node dist/postinstall.js",
     "test": "bun test --pass-with-no-tests src/",
     "typecheck": "tsc --noEmit"
   },

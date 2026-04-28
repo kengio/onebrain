@@ -13,13 +13,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.1.3 — fix: npm publish target + biome cleanup
+## v2.1.3 — feat: postinstall binary download + full platform support
 
-- fix(release): use `--target bun` in npm-publish step — npm-installed binary was still built with `--target node`, causing UTF-8 garbling despite the v2.1.1 fix
+- feat(postinstall): `npm install -g` / `bun install -g` now downloads the correct platform-specific compiled binary automatically — no Bun installation required
+- feat(release): add `bun-windows-arm64`, `bun-linux-x64-musl`, `bun-linux-arm64-musl` build targets — 8 platforms total
+- feat(release): `npm-publish` now runs after `create-release` — ensures compiled binaries exist on GitHub Releases before postinstall downloads them
+- fix(release): use `--target bun` in npm-publish step — JS bundle fallback for unsupported platforms
 - fix(update): remove unused `daysBehind` function
-- fix(biome): format validator.ts — wrap long lines introduced by exactOptionalPropertyTypes spread fixes
-- fix(biome): replace template literal with string literal in cli-banner.ts cursor definition
-- fix(biome): simplify boolean ternary in init.test.ts confirmFn
+- fix(biome): format validator.ts, cli-banner.ts, init.test.ts, cli-ui.ts
 
 ## v2.1.2 — fix: init fresh install layout + CI typecheck
 

@@ -55,8 +55,17 @@ jobs:
           - target: bun-linux-x64
             output: onebrain-linux-x64
             ext: ""
+          - target: bun-linux-arm64-musl
+            output: onebrain-linux-arm64-musl
+            ext: ""
+          - target: bun-linux-x64-musl
+            output: onebrain-linux-x64-musl
+            ext: ""
           - target: bun-windows-x64
             output: onebrain-windows-x64
+            ext: ".exe"
+          - target: bun-windows-arm64
+            output: onebrain-windows-arm64
             ext: ".exe"
 
     steps:
@@ -131,39 +140,9 @@ jobs:
             onebrain-plugin-v${{ needs.verify-tag.outputs.version }}.zip
             onebrain-plugin-v${{ needs.verify-tag.outputs.version }}.sha256
 
-  # ─── Step 4: npm publish ──────────────────────────────────────────────────
-  npm-publish:
-    needs: [verify-tag, build-binaries, package-plugin]
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.2"
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Compile TypeScript
-        env:
-          VERSION: ${{ needs.verify-tag.outputs.version }}
-          RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
-        run: |
-          bun build src/index.ts --outfile dist/onebrain --target bun \
-            --define BUILD_VERSION="\"$VERSION\"" \
-            --define BUILD_DATE="\"$RELEASE_DATE\""
-
-      - name: Publish to npm
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
-          npm publish --access public
-
-  # ─── Step 5: create GitHub release ───────────────────────────────────────
+  # ─── Step 4: create GitHub release ──────────────────────────────────────
   create-release:
-    needs: [verify-tag, build-binaries, package-plugin, npm-publish]
+    needs: [verify-tag, build-binaries, package-plugin]
     runs-on: ubuntu-latest
     if: ${{ always() && needs.build-binaries.result == 'success' && needs.package-plugin.result == 'success' }}
     permissions:
@@ -198,11 +177,11 @@ jobs:
           VERSION: ${{ needs.verify-tag.outputs.version }}
         run: |
           ASSETS=()
-          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64 linux-arm64-musl linux-x64-musl; do
             ASSETS+=("onebrain-${target}")
             ASSETS+=("onebrain-${target}.sha256")
           done
-          for target in windows-x64; do
+          for target in windows-x64 windows-arm64; do
             ASSETS+=("onebrain-${target}.exe")
             ASSETS+=("onebrain-${target}.sha256")
           done
@@ -222,3 +201,36 @@ jobs:
             --title "OneBrain v${VERSION}" \
             --notes-file release_notes.txt \
             "${FILE_ARGS[@]}"
+
+  # ─── Step 5: npm publish (after release so postinstall can download binaries)
+  npm-publish:
+    needs: [verify-tag, create-release]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build postinstall script
+        run: bun build src/scripts/postinstall.ts --outfile dist/postinstall.js --target node
+
+      - name: Compile TypeScript bundle (fallback for unsupported platforms)
+        env:
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+          RELEASE_DATE: ${{ needs.verify-tag.outputs.release_date }}
+        run: |
+          bun build src/index.ts --outfile dist/onebrain --target bun \
+            --define BUILD_VERSION="\"$VERSION\"" \
+            --define BUILD_DATE="\"$RELEASE_DATE\""
+
+      - name: Publish to npm
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
+          npm publish --access public
