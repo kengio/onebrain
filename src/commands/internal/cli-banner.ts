@@ -17,11 +17,11 @@ export function resolveBinaryVersion(): string {
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
-  `  ◆${'─'.repeat(26)}◆`,
+  `  ◆${'─'.repeat(25)}◆`,
   '    ┌─┐┌┐╷┌─╴┌┐ ┌─┐┌─┐╷┌┐╷',
   '    │ ││└┤├╴ ├┴┐├┬┘├─┤││└┤',
   '    └─┘╵ ╵└─╴└─┘╵└╴╵ ╵╵╵ ╵',
-  `  ◆${'─'.repeat(26)}◆`,
+  `  ◆${'─'.repeat(25)}◆`,
 ];
 
 // 1 (leading blank) + 5 (art) + 1 (blank) + 1 (subtitle) + 1 (trailing blank) = 9
@@ -90,14 +90,15 @@ export async function printBanner(): Promise<void> {
   if (!process.stdout.isTTY) return;
 
   const neon = supportsRgb();
-  const FRAME_MS = 90;
-  const HUE_STEP = 12; // 30 frames × 12° = 360° = exactly 1 full hue cycle
-  const FRAMES = 360 / HUE_STEP; // 30 frames ≈ 2.7 s
+  const FRAME_MS = 45; // 2× speed: 45 ms/frame
+  const HUE_STEP = 12; // 30 frames × 12° = 360° = 1 full hue cycle
+  const FRAMES = 360 / HUE_STEP; // 30 frames per pass
 
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   if (neon) process.stdout.write('\x1b[?25l');
   try {
+    // Forward pass: hue 0 → 348
     process.stdout.write(`${renderBanner(0, neon)}\n`);
     if (neon) {
       for (let f = 1; f < FRAMES; f++) {
@@ -105,7 +106,13 @@ export async function printBanner(): Promise<void> {
         process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
         process.stdout.write(`${renderBanner(f * HUE_STEP, neon)}\n`);
       }
-      // Settle on static cyan after the rainbow cycle completes
+      // Reverse pass: hue 348 → 0
+      for (let f = FRAMES - 1; f >= 0; f--) {
+        await delay(FRAME_MS);
+        process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
+        process.stdout.write(`${renderBanner(f * HUE_STEP, neon)}\n`);
+      }
+      // Settle on static cyan
       process.stdout.write(`\x1b[${BANNER_LINE_COUNT}F`);
       process.stdout.write(`${renderBanner(0, false)}\n`);
     }
