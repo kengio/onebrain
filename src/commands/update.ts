@@ -18,7 +18,7 @@
 
 import { access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { cancel, spinner as createSpinner, outro } from '@clack/prompts';
+import { spinner as createSpinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
 
@@ -179,11 +179,20 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   }
 
   function step(msg: string) {
-    process.stdout.write(`${pc.bold(pc.green('==>'))} ${msg}\n`);
+    process.stdout.write(`  ${pc.bold(pc.cyan('›'))}  ${msg}\n`);
+  }
+
+  function close(msg: string, isError = false) {
+    if (isError) {
+      process.stdout.write(`${pc.red('└')}  ${pc.bold(pc.red(msg))}\n`);
+    } else {
+      process.stdout.write(`${pc.cyan('└')}  ${msg}\n`);
+    }
   }
 
   const delay = (ms: number) =>
     isTTY ? new Promise<void>((r) => setTimeout(r, ms)) : Promise.resolve();
+  const randDelay = () => delay(Math.floor(Math.random() * 1000) + 1000);
 
   if (isTTY) {
     const binaryVersion = resolveBinaryVersion();
@@ -202,7 +211,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   } catch {
     const msg = `vault.yml not found in ${vaultDir}. Run 'onebrain update' from inside an OneBrain vault.`;
     if (isTTY) {
-      cancel(msg);
+      close(msg, true);
     } else {
       writeLine(`error: ${msg}`);
     }
@@ -211,16 +220,32 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     return result;
   }
 
-  // Step 1: Fetch latest version
+  // Step 1a: Check local version
+  const spLocal = isTTY ? createSpinner() : null;
+  spLocal?.start('🔍  Checking local version…');
+  const currentVersion = await currentVersionFn();
+  result.currentVersion = currentVersion;
+  if (isTTY) {
+    await randDelay();
+    spLocal?.stop(`🔍  Local version   ${pc.dim(currentVersion)}`);
+  } else {
+    writeLine(`current: ${currentVersion}`);
+  }
+
+  // Step 1b: Check remote version
+  const spRemote = isTTY ? createSpinner() : null;
+  spRemote?.start('🌐  Checking remote version…');
   let latestVersion: string;
   try {
     latestVersion = await fetchLatestVersion(fetchFn);
+    spRemote?.stop(`🌐  Remote version  ${pc.green(latestVersion)}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    spRemote?.stop('🌐  Remote version unavailable');
     result.error = `Fetch failed: ${msg}`;
     result.exitCode = 1;
     if (isTTY) {
-      cancel(result.error);
+      close(result.error, true);
     } else {
       process.stderr.write(`update: ${result.error}\n`);
     }
@@ -228,23 +253,16 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   }
   result.latestVersion = latestVersion;
 
-  const currentVersion = await currentVersionFn();
-  result.currentVersion = currentVersion;
-
   // --check dry run
   if (check) {
     if (isTTY) {
-      process.stdout.write('\n');
-      process.stdout.write(`   Current  ${pc.dim(currentVersion)}\n`);
-      process.stdout.write(`   Latest   ${pc.green(latestVersion)}\n`);
       if (currentVersion !== latestVersion) {
-        process.stdout.write(`   ${pc.green('→ binary would upgrade')}\n`);
+        step(
+          `⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}  · binary would upgrade`,
+        );
       }
-      process.stdout.write('\n');
-      outro('Dry run complete — no changes made');
+      close('Dry run complete — no changes made');
     } else {
-      writeLine(`current: ${currentVersion}`);
-      writeLine(`latest: ${latestVersion}`);
       writeLine('done: dry run complete — no changes made');
     }
     result.ok = true;
@@ -256,8 +274,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   if (latestVersion === currentVersion) {
     if (isTTY) {
       step(`✅  Already up to date  @onebrain-ai/cli ${latestVersion}`);
-      await delay(100);
-      outro('Nothing to do');
+      close('Nothing to do');
     } else {
       writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}`);
       writeLine('done: nothing to do');
@@ -270,7 +287,6 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // Show upgrade
   if (isTTY) {
     step(`⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}`);
-    await delay(100);
   }
 
   // Step 2: Install binary
@@ -286,7 +302,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     result.error = `Binary install failed: ${msg}`;
     result.exitCode = 1;
     if (isTTY) {
-      cancel(result.error);
+      close(result.error, true);
     } else {
       process.stderr.write(`update: ${result.error}\n`);
     }
@@ -299,7 +315,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     result.error = 'Binary validation failed. Check PATH.';
     result.exitCode = 1;
     if (isTTY) {
-      cancel(result.error);
+      close(result.error, true);
     } else {
       process.stderr.write(`update: ${result.error}\n`);
     }
@@ -310,7 +326,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   result.exitCode = 0;
 
   if (isTTY) {
-    outro('Done — run /update in Claude to sync vault files');
+    close(`Done — run ${pc.cyan('/update')} in Claude to sync vault files`);
   } else {
     writeLine('done: run /update in Claude to sync vault files');
   }
