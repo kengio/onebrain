@@ -485,7 +485,7 @@ async function installObsidianPlugins(
 // ---------------------------------------------------------------------------
 
 // BANNER_STYLE: A | B | C | D  (change to preview each option, then hardcode the winner)
-const BANNER_STYLE = 'A';
+const BANNER_STYLE = 'preview';
 
 const BANNER_ART: Record<string, { rows: string[]; color: (s: string) => string }> = {
   // A: Line Blocks — compact 4-row box outline (cyan)
@@ -534,6 +534,15 @@ const BANNER_ART: Record<string, { rows: string[]; color: (s: string) => string 
 
 function printBanner(): void {
   if (!process.stdout.isTTY) return;
+  if (BANNER_STYLE === 'preview') {
+    for (const [key, banner] of Object.entries(BANNER_ART)) {
+      process.stdout.write(`\n  ${pc.bold(pc.yellow(`── Style ${key} ──`))}\n\n`);
+      for (const row of banner.rows) process.stdout.write(`  ${banner.color(row)}\n`);
+      process.stdout.write(`\n  ${pc.dim('Your AI Thinking Partner')}\n`);
+    }
+    process.stdout.write('\n');
+    return;
+  }
   const banner = BANNER_ART[BANNER_STYLE] ?? BANNER_ART['A'];
   process.stdout.write('\n');
   for (const row of banner.rows) process.stdout.write(`  ${banner.color(row)}\n`);
