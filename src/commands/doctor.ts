@@ -223,7 +223,7 @@ function printDoctorOutput(
     'qmd-embeddings': '🔍',
     'orphan-checkpoints': '📍',
     'plugin-files': '📦',
-    'vault.yml-keys': '⚙️ ',
+    'vault.yml-keys': '⚙️',
     'settings-hooks': '🪝',
   };
   const bar = pc.cyan('│');
