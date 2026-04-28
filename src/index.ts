@@ -12,6 +12,7 @@ import { registerHooksCommand } from './commands/internal/register-hooks.js';
 import { resolveSessionToken, sessionInitCommand } from './commands/internal/session-init.js';
 import { vaultSyncCommand } from './commands/internal/vault-sync.js';
 import { updateCommand } from './commands/update.js';
+import { patchUtf8 } from './lib/patch-utf8.js';
 
 // BUILD_VERSION and BUILD_DATE are injected as string literals at compile time
 // via `bun build --define BUILD_VERSION='"x.y.z"'`. When running without --define
@@ -22,13 +23,9 @@ declare const BUILD_DATE: string;
 const VERSION = typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : '0.0.0-dev';
 const RELEASE_DATE = typeof BUILD_DATE !== 'undefined' ? BUILD_DATE : 'dev';
 
-// Force UTF-8 for string writes to stdout/stderr unconditionally.
-// Fixes garbling of unicode chars (✓, ·, —) on terminals that default to Latin-1
-// or other single-byte encodings (e.g. some macOS/Linux locales, all Windows consoles).
-// On Windows, does not change the console code page — Windows Terminal handles UTF-8
-// natively; legacy cmd.exe consoles require `chcp 65001` separately.
-process.stdout.setDefaultEncoding('utf8');
-process.stderr.setDefaultEncoding('utf8');
+// Force UTF-8 Buffer output for all string writes in the bun bundle.
+patchUtf8(process.stdout);
+patchUtf8(process.stderr);
 
 const VERSION_STRING = `OneBrain v${VERSION} — released ${RELEASE_DATE}`;
 
@@ -85,15 +82,11 @@ program
 
 program
   .command('update')
-  .description('Update OneBrain plugin files from GitHub')
+  .description('Update @onebrain-ai/cli to the latest version')
   .option('--check', 'show what would change and exit without making changes')
-  .option('--channel <channel>', 'update channel: stable | next')
-  .option('--vault-dir <path>', 'vault root directory (default: auto-detect from cwd)')
-  .action(async (opts: { check?: boolean; channel?: string; vaultDir?: string }) => {
+  .action(async (opts: { check?: boolean }) => {
     await updateCommand({
-      vaultDir: opts.vaultDir ?? findVaultRoot(process.cwd()),
       ...(opts.check !== undefined ? { check: opts.check } : {}),
-      ...(opts.channel !== undefined ? { channel: opts.channel as 'stable' | 'next' } : {}),
     });
   });
 

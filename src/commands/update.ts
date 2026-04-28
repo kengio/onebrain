@@ -1,23 +1,20 @@
 /**
- * update — Update OneBrain CLI binary
+ * update — Update @onebrain-ai/cli to the latest version
  *
  * Steps:
- *   0. Guard: vault.yml must exist (prevents running outside a vault)
- *   1. Fetch latest release from GitHub (parse tag_name)
- *   2. Install binary — skipped if already at latest version
- *   3. Validate binary (ATOMIC GATE)
+ *   1. Get current binary version
+ *   2. Fetch latest release from GitHub (parse tag_name)
+ *   3. Install binary — skipped if already at latest version
+ *   4. Validate binary (ATOMIC GATE)
  *
- * Vault file sync (plugin files, INSTRUCTIONS.md, etc.) is handled by the
- * /update skill in Claude Code — not by this command.
+ * Runs from any directory — no vault.yml required.
  *
- * TTY:     uses @clack/prompts layout with spinners for slow steps
+ * TTY:     uses cli-ui primitives
  * Non-TTY: plain text lines
  *
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { access } from 'node:fs/promises';
-import { join } from 'node:path';
 import pc from 'picocolors';
 import { printBanner } from './internal/cli-banner.js';
 import { barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
@@ -27,8 +24,6 @@ import { barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-
 // ---------------------------------------------------------------------------
 
 export interface UpdateOptions {
-  /** Vault root directory (default: process.cwd()). */
-  vaultDir?: string;
   /** Whether stdout is a TTY (default: process.stdout.isTTY). */
   isTTY?: boolean;
   /** Dry run — show what would change and exit 0 without making changes. */
@@ -41,8 +36,6 @@ export interface UpdateOptions {
   validateBinaryFn?: () => Promise<boolean>;
   /** Injectable current version function for tests. */
   currentVersionFn?: () => Promise<{ version: string; publishedAt: Date | null }>;
-  /** Injectable delay function for tests — bypasses artificial pauses. */
-  delayFn?: (ms: number) => Promise<void>;
 }
 
 export interface UpdateResult {
@@ -188,7 +181,6 @@ async function defaultCurrentVersion(): Promise<{ version: string; publishedAt: 
 // ---------------------------------------------------------------------------
 
 export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult> {
-  const vaultDir = opts.vaultDir ?? process.cwd();
   const isTTY = opts.isTTY ?? process.stdout.isTTY ?? false;
   const check = opts.check ?? false;
 
@@ -199,9 +191,6 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 
   const result: UpdateResult = { ok: false, exitCode: 0 };
   const createStep = makeStepFn(isTTY);
-  const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-  const randDelay = () =>
-    isTTY ? delay(Math.floor(Math.random() * 1000) + 1000) : Promise.resolve();
 
   if (isTTY) {
     await printBanner();
@@ -209,33 +198,17 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     writeLine('OneBrain Update');
   }
 
-  // Step 0: Guard
-  try {
-    await access(join(vaultDir, 'vault.yml'));
-  } catch {
-    const msg = `vault.yml not found in ${vaultDir}. Run 'onebrain update' from inside an OneBrain vault.`;
-    if (isTTY) {
-      close(msg, true);
-    } else {
-      writeLine(`error: ${msg}`);
-    }
-    result.error = msg;
-    result.exitCode = 1;
-    return result;
-  }
-
-  // Step 1a: Check local version
+  // Step 1: Get current binary version
   const sp1 = createStep('🔍', 'Local version');
   const { version: currentVersion, publishedAt: localPublishedAt } = await currentVersionFn();
   result.currentVersion = currentVersion;
-  await randDelay();
   const localVersionLabel = localPublishedAt
     ? `${pc.dim(currentVersion)}  ${pc.dim('·')}  ${pc.dim(formatReleaseDate(localPublishedAt))}`
     : pc.dim(currentVersion);
   if (sp1) sp1.stop(localVersionLabel);
-  else writeLine(`current: ${currentVersion}${localPublishedAt ? `  (${formatReleaseDate(localPublishedAt)})` : ''}`);
+  else writeLine(`current: ${currentVersion}`);
 
-  // Step 1b: Check remote version
+  // Step 2: Fetch latest release
   const sp2 = createStep('🌐', 'Remote version');
   let latestVersion: string;
   let publishedAt: Date | null = null;
@@ -243,12 +216,11 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     const release = await fetchLatestRelease(fetchFn);
     latestVersion = release.version;
     publishedAt = release.publishedAt;
-    await randDelay();
-    const isOutdated = latestVersion !== currentVersion;
-    const behindSuffix = isOutdated && publishedAt ? `  ${pc.dim('·')}  ${pc.dim(daysBehind(publishedAt))}` : '';
-    const dateSuffix = publishedAt ? `  ${pc.dim('·')}  ${pc.dim(formatReleaseDate(publishedAt))}${behindSuffix}` : '';
+    const dateSuffix = publishedAt
+      ? `  ${pc.dim('·')}  ${pc.dim(formatReleaseDate(publishedAt))}`
+      : '';
     if (sp2) sp2.stop(`${pc.green(latestVersion)}${dateSuffix}`);
-    else writeLine(`latest: ${latestVersion}${isOutdated && publishedAt ? `  (${daysBehind(publishedAt)})` : ''}`);
+    else writeLine(`latest: ${latestVersion}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (sp2) sp2.stop('unavailable');
@@ -267,9 +239,7 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   if (check) {
     if (isTTY) {
       if (currentVersion !== latestVersion) {
-        barLine(
-          `⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}  · binary would upgrade`,
-        );
+        barLine(`⬆️   ${pc.dim(currentVersion)}  →  ${pc.green(latestVersion)}  · binary would upgrade`);
         barBlank();
       }
       close('Dry run complete — no changes made');
@@ -284,11 +254,9 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
   // Already up to date?
   if (latestVersion === currentVersion) {
     if (isTTY) {
-      const dateSuffix = publishedAt ? `  ·  ${formatReleaseDate(publishedAt)}` : '';
-      close(`Already up to date — @onebrain-ai/cli ${pc.dim(latestVersion)}${pc.dim(dateSuffix)}`);
+      close(`Already up to date — @onebrain-ai/cli ${pc.dim(latestVersion)}`);
     } else {
-      const dateSuffix = publishedAt ? `  (${formatReleaseDate(publishedAt)})` : '';
-      writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}${dateSuffix}`);
+      writeLine(`already up to date: @onebrain-ai/cli ${latestVersion}`);
       writeLine('done: nothing to do');
     }
     result.ok = true;
@@ -302,11 +270,10 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     barBlank();
   }
 
-  // Step 2: Install binary
+  // Step 3: Install binary
   const sp3 = createStep('📦', 'Installing @onebrain-ai/cli');
   try {
     await installBinaryFn(latestVersion);
-    await randDelay();
     if (sp3) sp3.stop(pc.green(latestVersion));
     else writeLine(`upgrading: @onebrain-ai/cli ${latestVersion} installed`);
   } catch (err) {
@@ -322,10 +289,9 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
     return result;
   }
 
-  // Step 3: Validate binary
+  // Step 4: Validate binary (ATOMIC GATE)
   const sp4 = createStep('✅', 'Validating binary');
   const binaryValid = await validateBinaryFn();
-  await randDelay();
   if (!binaryValid) {
     if (sp4) sp4.stop('failed');
     result.error = 'Binary validation failed. Check PATH.';
@@ -356,7 +322,6 @@ export async function runUpdate(opts: UpdateOptions = {}): Promise<UpdateResult>
 // ---------------------------------------------------------------------------
 
 export interface UpdateCommandOptions {
-  vaultDir?: string;
   check?: boolean;
 }
 

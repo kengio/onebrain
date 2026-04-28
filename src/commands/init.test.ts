@@ -285,7 +285,7 @@ describe('runInit', () => {
     expect(result.pluginsInstalled).toBe(0);
   });
 
-  it('vault-sync fatal failure → exitCode 1 (non-TTY)', async () => {
+  it('vault-sync fatal failure → exitCode 1', async () => {
     const result = await runInit({
       vaultDir: tempDir,
       isTTY: false,
@@ -297,5 +297,65 @@ describe('runInit', () => {
 
     expect(result.ok).toBe(false);
     expect(result.exitCode).toBe(1);
+  });
+
+  it('TTY — directory confirm cancelled → aborts before creating any files', async () => {
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: true,
+      confirmFn: async () => false,
+      vaultSyncFn: noopVaultSync,
+      registerHooksFn: noopRegisterHooks,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.exitCode).toBe(0);
+    // Nothing should have been created
+    const hasVaultYml = await fileExists(join(tempDir, 'vault.yml'));
+    const has00inbox = await fileExists(join(tempDir, '00-inbox'));
+    expect(hasVaultYml).toBe(false);
+    expect(has00inbox).toBe(false);
+  });
+
+  it('TTY — existing vault.yml + confirm dir + decline overwrite → aborts without overwriting', async () => {
+    await writeFile(join(tempDir, 'vault.yml'), 'method: legacy\n', 'utf8');
+
+    let callCount = 0;
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: true,
+      confirmFn: async () => {
+        callCount++;
+        return callCount === 1 ? true : false; // yes to dir, no to overwrite
+      },
+      vaultSyncFn: noopVaultSync,
+      registerHooksFn: noopRegisterHooks,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.exitCode).toBe(0);
+    // vault.yml must remain unchanged
+    const text = await readFile(join(tempDir, 'vault.yml'), 'utf8');
+    expect(text).toContain('method: legacy');
+  });
+
+  it('TTY + --force — skips directory confirmation, runs init', async () => {
+    let confirmCalled = false;
+    const result = await runInit({
+      vaultDir: tempDir,
+      isTTY: true,
+      force: true,
+      confirmFn: async () => {
+        confirmCalled = true;
+        return true;
+      },
+      vaultSyncFn: noopVaultSync,
+      registerHooksFn: noopRegisterHooks,
+      installPluginsFn: async () => ({ installed: [], failed: [] }),
+      delayFn: async () => {},
+    });
+
+    expect(result.ok).toBe(true);
+    expect(confirmCalled).toBe(false);
   });
 });

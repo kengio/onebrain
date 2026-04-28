@@ -53,6 +53,8 @@ export interface InitOptions {
   registerHooksFn?: (vaultDir: string) => Promise<void>;
   /** Injectable delay function (for tests — bypasses artificial pauses). */
   delayFn?: (ms: number) => Promise<void>;
+  /** Injectable confirmation prompt (for tests — replaces askYesNo). */
+  confirmFn?: (question: string) => Promise<boolean | null>;
 }
 
 export interface InitResult {
@@ -499,28 +501,21 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
   const delay = opts.delayFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const randDelay = () =>
     isTTY ? delay(Math.floor(Math.random() * 1000) + 1000) : Promise.resolve();
+  const _confirmFn = opts.confirmFn ?? askYesNo;
 
-  // ── Step 1: Detect existing vault.yml ─────────────────────────────────────
+  // ── Step 0/1: Directory confirmation + vault.yml guard ────────────────────
 
   const vaultYmlPath = join(vaultDir, 'vault.yml');
   const vaultYmlExists = await pathExists(vaultYmlPath);
 
-  if (vaultYmlExists && !force) {
-    if (!isTTY) {
-      const msg = 'vault.yml exists. Re-run with --force to overwrite.';
-      process.stdout.write(`${msg}\n`);
-      result.message = msg;
-      result.exitCode = 1;
-      return result;
-    }
+  if (isTTY) {
+    await printBanner();
 
-    // TTY: prompt user
-    if (isTTY) {
-      await printBanner();
-
-      const answer = await askYesNo('vault.yml already exists. Overwrite?');
-
-      if (answer === null || answer === false) {
+    if (!force) {
+      barLine(`${pc.dim('vault root')}  ${pc.cyan(vaultDir)}`);
+      barBlank();
+      const proceed = await _confirmFn('Initialize OneBrain vault here?');
+      if (proceed === null || proceed === false) {
         barLine(pc.dim('No'));
         barBlank();
         close('Aborted');
@@ -530,13 +525,29 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
       }
       barLine('Yes');
       barBlank();
-    }
-  } else if (isTTY) {
-    await printBanner();
-  }
 
-  // Non-TTY header (TTY uses intro() above)
-  if (!isTTY) {
+      if (vaultYmlExists) {
+        const overwrite = await _confirmFn('vault.yml already exists. Overwrite?');
+        if (overwrite === null || overwrite === false) {
+          barLine(pc.dim('No'));
+          barBlank();
+          close('Aborted');
+          result.ok = true;
+          result.exitCode = 0;
+          return result;
+        }
+        barLine('Yes');
+        barBlank();
+      }
+    }
+  } else {
+    if (vaultYmlExists && !force) {
+      const msg = 'vault.yml exists. Re-run with --force to overwrite.';
+      process.stdout.write(`${msg}\n`);
+      result.message = msg;
+      result.exitCode = 1;
+      return result;
+    }
     writeLine('OneBrain Init');
   }
 

@@ -1,6 +1,6 @@
 ---
-latest_version: 2.1.0
-released: 2026-04-28
+latest_version: 2.1.1
+released: 2026-04-29
 ---
 
 # CLI Changelog
@@ -12,6 +12,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.1 — Post-merge fixes
+
+- fix(encoding): force UTF-8 Buffer output for all stdout/stderr writes in bun bundles (box-drawing chars, emoji)
+- test(encoding): regression tests for patchUtf8 covering all write overloads and unicode chars
+- fix(update): remove vault.yml guard — command now runs from any directory
+- fix(init): add directory confirmation prompt in TTY mode before creating any files
+- fix(init): injectable confirmFn for test isolation
 
 ## v2.1.0 — Redesign Install Flow
 
