@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.7
+latest_version: 2.1.5
 released: 2026-04-29
 ---
 
@@ -13,9 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.1.7 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
-
-CLI bumps directly from v2.1.4 → v2.1.7 (no v2.1.5 / v2.1.6 release tags).
+## v2.1.5 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
 
 - feat(cli-banner): 3-phase banner intro — white CRT scan ↓ (hold 600ms), diagonal rainbow flow ↗, white shimmer ↗.
 - feat(cli-banner): rotating tagline via wipe-swap — `Remembers You` → `Catches Insights` → `Thinking Partner`. Prefix cyan, trailing magenta; final shimmer burns trailing to all-cyan settle.
