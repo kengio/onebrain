@@ -13,24 +13,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.1.7 — feat: rotating multi-sentence tagline + 3-phase banner intro
+## v2.1.7 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
 
-- feat(cli-banner): banner intro is now a 3-phase reveal — CRT scan top→bottom builds the art in white, holds 600ms, then a diagonal rainbow flow (bottom-left → top-right) brings it to neon, followed by a white shimmer sweep on the same diagonal.
-- feat(cli-banner): tagline rotates through 3 sentences via wipe-swap transitions — "Your AI Remembers You" → "Your AI Catches Insights" → "Your AI Thinking Partner". Prefix "Your AI" stays neon cyan; trailing 2 words are neon magenta during all sentences.
-- feat(cli-banner): final lock shimmer sweeps the full tagline (prefix + trailing) and burns the magenta trailing out to neon cyan, settling the entire tagline as cyan.
+CLI bumps directly from v2.1.4 → v2.1.7 (no v2.1.5 / v2.1.6 release tags).
+
+- feat(cli-banner): 3-phase banner intro — CRT scan top→bottom builds the art in white, holds 600ms, diagonal rainbow flow (bottom-left → top-right) brings it to neon, followed by a white shimmer sweep on the same diagonal.
+- feat(cli-banner): rotating multi-sentence tagline via wipe-swap transitions — "Your AI Remembers You" → "Your AI Catches Insights" → "Your AI Thinking Partner". Prefix "Your AI" stays neon cyan; trailing 2 words are neon magenta. Final lock shimmer sweeps the full tagline and burns the trailing magenta out to neon cyan; entire tagline settles cyan. Center alignment normalized at col 15.5 (border 26 dashes, art lead 5).
+- fix(doctor): mark qmd-embeddings auto-fix as advisory — plain `onebrain doctor` no longer nudges toward `--fix`; `--fix` still embeds when explicitly invoked. New `advisory?: boolean` on internal Fix interface; `fixableCount` excludes advisory fixes. Hint updated to "Advisory: run /qmd embed when ready (or onebrain doctor --fix)".
+- fix(orphan-scan + validator): drop `merged:` frontmatter filter to match plugin v2.2.0 — any checkpoint file that exists is unmerged by definition. Removes `readMergedField` from validator.
+- chore(tests): update orphan-scan and validator tests for new behavior — legacy `merged: true` checkpoints now count as orphans.
 - chore(cli-banner): static no-truecolor fallback uses the signature "Your AI Thinking Partner" line in cyan.
-
-## v2.1.6 — feat: cyberpunk tagline animation; orphan-scan drops `merged:` filter
-
-- feat(cli-banner): merged typewriter + Matrix-style glitch decode with per-word reading rhythm; cyan cursor tracks the head, white random glyphs in the wake, locks neon magenta. Diagonal art shimmer trimmed to single L→R pass; lock shimmer mirrors it on the tagline. Center alignment normalized at col 15.5 (border 26 dashes, art lead 5).
-- fix(orphan-scan + validator): drop `merged:` frontmatter filter — any checkpoint file that exists is unmerged by definition (matches /wrapup behavior in plugin v2.2.0). Removes `readMergedField` from validator.
-- chore(tests): update orphan-scan and validator tests for new behavior (legacy `merged: true` checkpoints now count as orphans).
-
-## v2.1.5 — fix: doctor qmd-embeddings as advisory; orphan-scan independent of merged: field
-
-- fix(doctor): mark qmd-embeddings auto-fix as advisory — plain `onebrain doctor` no longer nudges toward `--fix` for unembedded docs; embedding still runs when user explicitly invokes `--fix`
-- fix(doctor): update unembedded hint to "Advisory: run /qmd embed when ready (or onebrain doctor --fix)"
-- chore(types): add `advisory?: boolean` to internal `Fix` interface; `fixableCount` now excludes advisory fixes
 
 ## v2.1.4 — fix: drop bun-windows-arm64 (unsupported in bun v1.2)
 

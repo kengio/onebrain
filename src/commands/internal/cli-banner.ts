@@ -17,6 +17,13 @@ export function resolveBinaryVersion(): string {
 //   border:  lead 2 + ◆ + 26 ─ + ◆        (visible col 2..29 → center 15.5)
 //   inner:   lead 5 + 22 chars             (visible col 5..26 → center 15.5)
 //   tagline: lead 4 + 24 chars             (visible col 4..27 → center 15.5)
+//
+// Tagline lead is fixed at 4 spaces — anchors the prefix "Your AI" at col
+// 4..11 across all rotating sentences. Sentence 1 ("Remembers You", 21 chars
+// total) ends at col 24, while sentences 2 and 3 (24 chars) end at col 27.
+// The prefix stays stable; only the right edge varies, which keeps the
+// wipe-swap transitions feeling like the new sentence simply extends further
+// to the right rather than the whole tagline shifting horizontally.
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
@@ -488,8 +495,9 @@ export async function printBanner(): Promise<void> {
   const rainbowArt = ART_LINES.map((l, i) => neonLine(l, i));
   const whiteArt = ART_LINES.map((l) => whiteLine(l));
 
-  outb('\x1b[?25l');
   try {
+    // Hide system cursor inside the try block so the finally always restores it.
+    outb('\x1b[?25l');
     await playBannerIntro(rainbowArt, whiteArt);
 
     // Tagline rotation
