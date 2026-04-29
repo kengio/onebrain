@@ -12,7 +12,15 @@ import {
   loadVaultConfig,
 } from '../lib/index.js';
 import { printBanner } from './internal/cli-banner.js';
-import { askYesNo, barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
+import {
+  askYesNo,
+  barBlank,
+  barLine,
+  barOpen,
+  close,
+  makeStepFn,
+  writeLine,
+} from './internal/cli-ui.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -183,7 +191,14 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const totalChecks = results.length;
   const errorCount = results.filter((r) => r.status === 'error').length;
   const warningCount = results.filter((r) => r.status === 'warn').length;
-  const fixableCount = results.filter((r) => r.status !== 'ok' && getFix(r) !== null).length;
+  // fixableCount drives the "→ Run doctor --fix" hint. Exclude advisory fixes
+  // so checks like qmd-embeddings (potentially long-running, opt-in) do not
+  // nudge the user toward `--fix`. They still run when --fix is invoked.
+  const fixableCount = results.filter((r) => {
+    if (r.status === 'ok') return false;
+    const fix = getFix(r);
+    return fix !== null && !fix.advisory;
+  }).length;
   const showFixHint = !opts.fix && fixableCount > 0;
 
   const summaryParts = [`${totalChecks} checks`];
@@ -278,6 +293,13 @@ type FixFn = (
 interface Fix {
   fn: FixFn;
   description: string;
+  /**
+   * Advisory fixes still run when the user explicitly invokes `--fix`, but they
+   * do not contribute to `fixableCount`, so plain `onebrain doctor` does not
+   * suggest `--fix` solely because of them. Use this for fixes whose work is
+   * potentially long-running or otherwise opt-in (e.g. qmd embedding).
+   */
+  advisory?: boolean;
 }
 
 function getFix(r: DoctorResult): Fix | null {
@@ -347,11 +369,15 @@ function getFix(r: DoctorResult): Fix | null {
     };
   }
 
-  // qmd-embeddings: unembedded docs → qmd update + qmd embed
+  // qmd-embeddings: unembedded docs → qmd update + qmd embed.
+  // Marked advisory so plain `onebrain doctor` does not nudge the user toward
+  // `--fix` solely for embeddings (embedding can be slow). When the user does
+  // run `--fix`, the embedding still happens.
   if (r.check === 'qmd-embeddings' && r.status === 'warn' && r.message.includes('unembedded')) {
     const pendingMatch = r.message.match(/(\d+) unembedded/);
     const count = pendingMatch?.[1] ?? 'some';
     return {
+      advisory: true,
       fn: async (vaultDir) => {
         const { join } = await import('node:path');
         const { parse: parseYaml } = await import('yaml');
@@ -415,14 +441,18 @@ async function applyFixes(
   const fixable = results.filter((r) => r.status !== 'ok' && getFix(r) !== null);
 
   if (fixable.length === 0) {
-    if (isTTY) barLine(`${pc.green('◆')}  Nothing to fix`);
+    // The previous close() already closed the bar pattern with `└`; render
+    // "Nothing to fix" as a plain line (no `│` prefix) to match that closure.
+    if (isTTY) writeLine(`${pc.green('◆')}  Nothing to fix`);
     else writeLine('nothing to fix');
     return;
   }
 
   if (isTTY) {
-    barBlank();
-    barLine(pc.bold(`${fixable.length} fix(es) to apply:`));
+    // The previous close() emitted └. Start a fresh bar group with ┌ so
+    // the fix-application section reads as its own clack-style box.
+    writeLine('');
+    barOpen(pc.bold(`${fixable.length} fix(es) to apply:`));
     barBlank();
     for (const r of fixable) {
       barLine(`  ${pc.cyan('◆')}  ${getFix(r)!.description}`);

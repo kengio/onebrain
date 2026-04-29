@@ -188,10 +188,10 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
         check: 'qmd-embeddings',
         status: 'warn',
         message: summary,
-        hint: 'Run onebrain doctor --fix to reindex and embed',
+        hint: 'Advisory: run /qmd embed when ready (or onebrain doctor --fix)',
         details: [
           `collection: ${config.qmd_collection}`,
-          'Run onebrain doctor --fix to reindex and embed',
+          'Advisory: run /qmd embed when ready (or onebrain doctor --fix)',
         ],
       };
     }
@@ -212,7 +212,9 @@ export async function checkQmdEmbeddings(config: VaultConfig): Promise<DoctorRes
 // ---------------------------------------------------------------------------
 
 /**
- * Count checkpoint files where merged is not true.
+ * Count leftover checkpoint files. Since v2.2.0, /wrapup deletes checkpoints
+ * directly after writing the session log, so any checkpoint file that exists
+ * is unmerged by definition — no `merged:` filter needed.
  */
 export async function checkOrphanCheckpoints(
   vaultRoot: string,
@@ -239,22 +241,7 @@ export async function checkOrphanCheckpoints(
     };
   }
 
-  if (checkpointFiles.length === 0) {
-    return {
-      check: 'orphan-checkpoints',
-      status: 'ok',
-      message: '0 orphans',
-    };
-  }
-
-  let orphanCount = 0;
-
-  for (const filePath of checkpointFiles) {
-    const merged = await readMergedField(filePath);
-    if (merged !== true) {
-      orphanCount++;
-    }
-  }
+  const orphanCount = checkpointFiles.length;
 
   if (orphanCount === 0) {
     return {
@@ -271,33 +258,6 @@ export async function checkOrphanCheckpoints(
     hint: 'Run /wrapup to synthesize and merge them',
     details: ['Run /wrapup to synthesize and merge them'],
   };
-}
-
-/**
- * Read YAML frontmatter from a markdown file and extract the `merged` field.
- * Returns undefined if the file cannot be read or has no frontmatter.
- */
-async function readMergedField(filePath: string): Promise<boolean | undefined> {
-  try {
-    const file = Bun.file(filePath);
-    const text = await file.text();
-
-    // Extract frontmatter between first --- pair
-    if (!text.startsWith('---')) return undefined;
-    const endIdx = text.indexOf('\n---', 3);
-    if (endIdx === -1) return undefined;
-
-    const frontmatter = text.slice(3, endIdx).trim();
-    const parsed = parse(frontmatter) as Record<string, unknown> | null;
-    if (!parsed) return undefined;
-
-    const merged = parsed['merged'];
-    if (merged === true || merged === 'true') return true;
-    if (merged === false || merged === 'false') return false;
-    return undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 // ---------------------------------------------------------------------------

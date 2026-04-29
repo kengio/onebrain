@@ -337,38 +337,41 @@ describe('checkOrphanCheckpoints', () => {
     expect(result.status).toBe('ok');
   });
 
-  it('returns ok when all checkpoints have merged: true', async () => {
+  it('counts every checkpoint file as an orphan, regardless of merged: field', async () => {
+    // Since v2.2.0, /wrapup deletes checkpoints directly after the session
+    // log is verified. Any checkpoint file that exists is unmerged by
+    // definition — including legacy files that still carry merged: true.
     const logsDir = join(dir, '07-logs', '2026', '04');
     await mkdir(logsDir, { recursive: true });
-    const content = '---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nDone.';
-    await writeFile(join(logsDir, '2026-04-24-abc123-checkpoint-01.md'), content, 'utf8');
+    const legacyMerged =
+      '---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nLegacy.';
+    await writeFile(join(logsDir, '2026-04-24-abc123-checkpoint-01.md'), legacyMerged, 'utf8');
 
     const result = await checkOrphanCheckpoints(dir, baseConfig);
-    expect(result.status).toBe('ok');
-    expect(result.message).toContain('0');
+    expect(result.status).toBe('warn');
+    expect(result.message).toContain('1');
   });
 
-  it('returns warn when unmerged checkpoint files exist', async () => {
+  it('returns warn for any checkpoint files present', async () => {
     const logsDir = join(dir, '07-logs', '2026', '04');
     await mkdir(logsDir, { recursive: true });
-    const unmerged =
-      '---\ntags: [checkpoint]\nmerged: false\n---\n\n## What We Worked On\nPending.';
-    const merged = '---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nDone.';
-    await writeFile(join(logsDir, '2026-04-24-abc123-checkpoint-01.md'), unmerged, 'utf8');
-    await writeFile(join(logsDir, '2026-04-24-abc456-checkpoint-01.md'), merged, 'utf8');
+    const a = '---\ntags: [checkpoint]\nmerged: false\n---\n\n## What We Worked On\nA.';
+    const b = '---\ntags: [checkpoint]\nmerged: true\n---\n\n## What We Worked On\nB.';
+    await writeFile(join(logsDir, '2026-04-24-abc123-checkpoint-01.md'), a, 'utf8');
+    await writeFile(join(logsDir, '2026-04-24-abc456-checkpoint-01.md'), b, 'utf8');
 
     const result = await checkOrphanCheckpoints(dir, baseConfig);
 
     expect(result.status).toBe('warn');
-    expect(result.message).toContain('1');
+    expect(result.message).toContain('2');
     expect(result.message).toContain('07-logs');
   });
 
-  it('treats checkpoint without merged field as unmerged', async () => {
+  it('treats checkpoint without merged field as orphan', async () => {
     const logsDir = join(dir, '07-logs', '2026', '04');
     await mkdir(logsDir, { recursive: true });
-    // No merged field in frontmatter
-    const content = '---\ntags: [checkpoint]\n---\n\n## What We Worked On\nMissing merged field.';
+    // No merged field in frontmatter — same outcome as new-format checkpoints
+    const content = '---\ntags: [checkpoint]\n---\n\n## What We Worked On\nNo merged field.';
     await writeFile(join(logsDir, '2026-04-24-def789-checkpoint-01.md'), content, 'utf8');
 
     const result = await checkOrphanCheckpoints(dir, baseConfig);

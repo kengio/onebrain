@@ -169,7 +169,11 @@ When a user message clearly maps to a skill, invoke it directly — no `/command
 
 ## Search Strategy
 
-If qmd MCP tools are available (`mcp__plugin_onebrain_qmd__query` in tool list): load `skills/startup/QMD.md` for full search strategy and index maintenance rules.
+If qmd MCP tools are available (`mcp__plugin_onebrain_qmd__query` in tool list):
+
+- **Default to qmd for any vault content search.** Topic lookup, concept search, "find notes about X", "what did I write about Y", related-notes discovery — these all go through `mcp__plugin_onebrain_qmd__query`. Do not reach for Grep first.
+- **Reserve Glob/Grep/Read for non-content lookups only:** known file paths, frontmatter field checks, exact regex/structural matches inside a known file, task-line scans, file-existence checks. If you find yourself grepping vault `.md` files for a topic or keyword, switch to qmd.
+- See `skills/startup/QMD.md` for full search strategy, sub-query types (lex/vec/hyde), and index maintenance rules.
 
 If qmd tools are NOT available: use Glob/Grep/Read for all vault searches. No special handling needed.
 
@@ -224,7 +228,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
 - Run via Bash: `LC_ALL=en_US.UTF-8 grep -r "- \[ \] .*📅 [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}" "[projects_folder]/" "[inbox_folder]/"` → keep only tasks where date ≤ today; group overdue first, then due today
-- Run `onebrain orphan-scan "[logs_folder]" "[session_token]"` (from vault root) → parse JSON output; read `orphan_count` field. JSON shape: `{"orphan_count":N}`. If the command fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, read frontmatter of each, discard `merged: true` and files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
+- Run `onebrain orphan-scan "[logs_folder]" "[session_token]"` (from vault root) → parse JSON output; read `orphan_count` field. JSON shape: `{"orphan_count":N}`. If the command fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, discard files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
 
 **Step 4 — Send startup status (after Step 3 completes):**
 
@@ -301,38 +305,40 @@ PreCompact is a no-op — it exits 0 without modifying state or emitting any out
 
 **Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 
-**PostCompact auto-wrapup:** When block reason is `auto-wrapup`:
+**PostCompact auto-wrapup:** When block reason is `auto-wrapup`, perform these steps **inline** (do not dispatch a background agent — background agents do not see the main agent's compacted context, so Path B silently failed under the old dispatch model). The work is silent: no output to the user during or after execution.
+
 1. Use `session_token` from context as `<token>`; if not in context, re-run `onebrain session-init` to recover it — if that also fails, abort silently (do not guess the token)
 2. Glob candidate checkpoint files:
    - Current month: `[logs_folder]/YYYY/MM/*-{token}-checkpoint-*.md` (using today's YYYY/MM)
    - Previous month: decrement MM (if MM=01, also decrement YYYY and set MM=12)
    - After globbing, parse the token segment from each filename (`YYYY-MM-DD-{token}-checkpoint-NN.md`) and discard files where the parsed token does not exactly equal `<token>`
-   - Keep only files where frontmatter `merged` is absent or not `true`
+   - Any checkpoint file that exists is unmerged by definition — there is no `merged:` filter
 3. Two paths based on whether checkpoint files were found:
 
-**Path A — checkpoint files found:** Dispatch a background agent (mode: bypassPermissions) with: session_token, checkpoint file paths and content, vault root, session date (from earliest checkpoint filename). The main session continues immediately after dispatching.
+**Path A — checkpoint files found** (synthesize from checkpoints):
 
-**Path A agent steps (background agent performs steps 4–12 silently):**
-
-4. Read all matched checkpoint files and extract their content for synthesis in step 6
-5. Determine session date from earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
-6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free
-7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` (using session YYYY/MM) using the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**)
+4. Read all matched checkpoint files and extract their content
+5. Determine session date from the earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
+6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free, increment NN until free
+7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). All Key Decisions, Action Items, and Open Questions from each checkpoint must appear explicitly — do not collapse into one line.
 8. Verify the session log file exists and is non-empty before continuing
-9. Route action items to project notes — parse `## Action Items` from the verified session log; apply the routing algorithm from /wrapup Step 4b (token scoring against project folder/filename tokens, session-context fallback for score-0 tasks; ties remain skipped); all errors are silent — never fail checkpoint recovery
-10. Delete checkpoint files — only AFTER session log write confirmed (step 8); if any individual delete fails, skip it silently (stale checkpoints are cleaned up by session-init, not here)
-11. Reset the checkpoint hook counter: `onebrain checkpoint reset`
+9. Route action items to project notes — parse `## Action Items` from the verified session log; apply the routing algorithm from /wrapup Step 4b (token scoring against project folder/filename tokens, session-context fallback for score-0 tasks; ties remain skipped); all errors are silent — never fail this path
+10. Delete checkpoint files read in step 4 — only AFTER session log write confirmed (step 8); if an individual delete fails, skip it silently (stale checkpoints are cleaned up later by /doctor)
+11. Run `onebrain checkpoint reset`
 12. Silent — no output to user
 
-**Path B — no checkpoint files:** Dispatch a background agent (mode: bypassPermissions) with: session_token, today's date, vault root, and enough context to write the session log. The main session continues immediately after dispatching. **The background agent executes the following steps:**
-   - Synthesize session log directly from current conversation context (compact just ran so context is still available)
-   - Use today's date (YYYY-MM-DD) for the session log filename and `date:` field
-   - Extract YYYY and MM from today's date for path construction
-   - Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded)
-   - Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
-   - Route action items: parse `## Action Items` from the written session log; apply the routing algorithm from /wrapup Step 4b (token scoring + session-context fallback; ties remain skipped); errors are silent — never fail this path
-   - Run `onebrain checkpoint reset` after writing
-   - Silent — no output to user
+**Path B — no checkpoint files** (synthesize from compacted context):
+
+The main agent has its own compacted context after PostCompact fires — that compacted summary is the source material for the session log. Inline execution is required: a background agent would receive only the prompt text, not the compacted context.
+
+4. Use today's date (YYYY-MM-DD) for the session log filename and `date:` field; extract `YYYY` and `MM` for path construction
+5. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded); verify slot is free, increment NN until free
+6. Synthesize the session log body from the compacted context summary still available to the main agent. If the compacted context is too sparse for a meaningful summary, write a minimal session log with `## What We Worked On` set to `Session compacted; details unavailable beyond context summary.` and empty Action Items / Open Questions — do not skip the write entirely, since a sparse log is better than no log for orphan-recovery accounting.
+7. Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
+8. Verify the session log file exists and is non-empty before continuing
+9. Route action items to project notes — parse `## Action Items` from the verified session log; apply the routing algorithm from /wrapup Step 4b (token scoring + session-context fallback; ties remain skipped); errors are silent — never fail this path
+10. Run `onebrain checkpoint reset`
+11. Silent — no output to user
 
 ---
 

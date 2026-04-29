@@ -2,9 +2,10 @@
  * Shared CLI UI primitives used by init, update, and doctor commands.
  *
  * Layout language (clack-inspired):
+ *   ┌  message          ← barOpen (start a new bar group)
  *   │  message          ← barLine / barBlank
  *   ●  emoji  label     ← createStep (done state)
- *   └  message          ← close
+ *   └  message          ← close (finish bar group)
  */
 
 import pc from 'picocolors';
@@ -32,6 +33,12 @@ export function barLine(msg: string): void {
 
 export function barBlank(): void {
   out(`${bar}\n`);
+}
+
+/** Open a new bar group with a top corner. Use after a previous close()
+ * to start a visually-distinct second section without leaving an orphan │. */
+export function barOpen(msg: string): void {
+  out(`${pc.cyan('┌')}  ${msg}\n`);
 }
 
 export function close(msg: string, isError = false, isWarning = false): void {

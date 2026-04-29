@@ -58,7 +58,6 @@ tags: [checkpoint, session-log]
 date: YYYY-MM-DD
 checkpoint: NN
 trigger: stop
-merged: false
 ---
 ```
 

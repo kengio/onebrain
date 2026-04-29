@@ -101,27 +101,31 @@ describe('runOrphanScan', () => {
     expect(result).toEqual({ orphan_count: 0 });
   });
 
-  it('skips checkpoint files with merged: true', async () => {
+  // Since v2.2.0, /wrapup deletes checkpoints directly after the session log
+  // is verified — any checkpoint file that still exists is unmerged by
+  // definition. Legacy `merged: true` files (and the `merged: "true"` quoted
+  // variant) are now treated identically to unmerged files, so the only thing
+  // that suppresses an orphan is a manual session log for that date or the
+  // current session token match.
+  it('counts legacy checkpoint with merged: true as an orphan', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    // Use a past date so today-skip doesn't apply
     const pastDate = `${thisYear}-${thisMonth}-01`;
     const fname = checkpointName(pastDate, 'token11', 1);
     await writeFile(join(monthDir, fname), checkpointFrontmatter(true), 'utf8');
     const result = await runOrphanScan(logsDir, 'current99');
-    expect(result).toEqual({ orphan_count: 0 });
+    expect(result).toEqual({ orphan_count: 1 });
   });
 
-  it('skips checkpoint files with merged: "true" (quoted string in YAML)', async () => {
+  it('counts legacy checkpoint with merged: "true" (quoted string) as an orphan', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
     const pastDate = `${thisYear}-${thisMonth}-01`;
     const fname = checkpointName(pastDate, 'tokenStrTrue', 1);
-    // Write frontmatter with merged as a quoted string (YAML string "true", not boolean)
     const content = `---\ntags: [checkpoint, session-log]\ndate: ${pastDate}\ncheckpoint: 01\ntrigger: stop\nmerged: "true"\n---\n\n## What We Worked On\n\nTest content.`;
     await writeFile(join(monthDir, fname), content, 'utf8');
     const result = await runOrphanScan(logsDir, 'current99');
-    expect(result).toEqual({ orphan_count: 0 });
+    expect(result).toEqual({ orphan_count: 1 });
   });
 
   it('skips checkpoint files matching current session token', async () => {

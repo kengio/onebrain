@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.4
+latest_version: 2.1.5
 released: 2026-04-29
 ---
 
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.5 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
+
+- feat(cli-banner): 3-phase banner intro — white CRT scan ↓ (hold 600ms), diagonal rainbow flow ↗, white shimmer ↗.
+- feat(cli-banner): rotating tagline via wipe-swap — `Remembers You` → `Catches Insights` → `Thinking Partner`. Prefix cyan, trailing magenta; final shimmer burns trailing to all-cyan settle.
+- feat(cli-banner): center alignment normalized at col 15.5 (border 26 dashes, art lead 5); static no-truecolor fallback uses signature line in cyan.
+- fix(doctor): qmd-embeddings auto-fix marked advisory — plain `doctor` no longer nudges toward `--fix`; `--fix` still embeds. New `advisory?: boolean` on internal Fix interface.
+- fix(orphan-scan + validator): drop `merged:` filter to match plugin v2.2.0 — any leftover checkpoint is unmerged by definition. `readMergedField` removed.
+- fix(doctor --fix): bar-pattern visual cleanup — "Nothing to fix" flush-left; multi-fix opens own `┌` group (new `barOpen` helper).
+- chore(tests): orphan-scan + validator tests reframed — legacy `merged: true` now counts as orphan.
 
 ## v2.1.4 — fix: drop bun-windows-arm64 (unsupported in bun v1.2)
 
@@ -48,16 +58,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.1.0 — Redesign Install Flow
 
-- feat(init): community plugin installer — downloads Tasks, Dataview, Terminal automatically
-- feat(init): ASCII banner + picocolors UX redesign; cancel() on fatal vault-sync failure
-- **BREAKING** change(update): binary-only — run `/update` skill in Claude to sync vault files
-- remove(update): onebrain_version no longer written to vault.yml
-- feat(doctor): intro/outro + clack UX; new checks (plugin-files, vault.yml-keys, settings-hooks)
-- feat(doctor): --fix mode — auto-repair hooks, remove deprecated vault.yml keys; removes deprecated vault.yml keys (method, runtime.harness, onebrain_version)
-- fix(register-hooks): PostToolUse auto-detected from qmd_collection; SessionStart removed
-- remove: install.sh and install.ps1 — replaced by onebrain init
-- feat(harness): replace CLAUDE_CODE_HARNESS with ONEBRAIN_HARNESS env var; shared detectHarness() utility detects harness at runtime via env → .gemini/ → .claude/ → direct
-- remove(vault.yml): method and runtime.harness keys removed — harness detected at runtime, no longer stored
+- **BREAKING** change(update): binary-only — run `/update` skill in Claude to sync vault files; install.sh / install.ps1 removed (replaced by `onebrain init`).
+- feat(init): community plugin installer (Tasks, Dataview, Terminal) + ASCII banner + picocolors UX; cancel() on fatal vault-sync failure.
+- feat(doctor): intro/outro + clack UX; new checks (plugin-files, vault.yml-keys, settings-hooks); `--fix` auto-repairs hooks and removes deprecated keys.
+- feat(harness): replace `CLAUDE_CODE_HARNESS` with `ONEBRAIN_HARNESS`; shared `detectHarness()` resolves runtime via env → `.gemini/` → `.claude/` → direct.
+- fix(register-hooks): PostToolUse auto-detected from `qmd_collection`; SessionStart removed.
+- remove(vault.yml): drop deprecated `method`, `runtime.harness`, `onebrain_version` — harness detected at runtime, version comes from package.json.
 
 ## v2.0.14 — fix: remove session token from hook emit format; deterministic resolveSessionToken
 

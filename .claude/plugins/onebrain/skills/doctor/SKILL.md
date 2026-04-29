@@ -60,7 +60,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 
 **Old unmerged checkpoints:**
 - Glob `[logs_folder]/**/*-checkpoint-*.md`
-- Read the frontmatter of each file; keep files where `merged` is **absent** from frontmatter **or** is not `true` — excluding only files where `merged: true` is explicitly set
+- Any checkpoint file that exists is unmerged by definition — /wrapup deletes checkpoints directly after the session log is confirmed written, so leftover files indicate a session that never wrapped up. Pre-v2.2.0 vaults may contain stragglers with `merged: true` from the legacy flow; treat those the same (the field is no longer authoritative)
 - Keep only files whose date (from filename) is older than 7 days
 - Suggest running /wrapup
 

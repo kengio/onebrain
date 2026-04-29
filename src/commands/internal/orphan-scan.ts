@@ -145,15 +145,6 @@ async function scanMonthDir(
     // Skip tokens already counted (dedup across multiple checkpoint files per session)
     if (seenTokens.has(ftoken)) continue;
 
-    // Skip if already merged (read frontmatter)
-    try {
-      const content = await readFile(join(monthDir, fname), 'utf8');
-      const fm = parseFrontmatter(content);
-      if (fm && (fm['merged'] === true || fm['merged'] === 'true')) continue;
-    } catch {
-      // Can't read frontmatter — treat as unmerged orphan
-    }
-
     // Skip if a manual session log covers this date
     if (await hasManualSessionLog(monthDir, fdate)) continue;
 
