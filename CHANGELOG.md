@@ -17,13 +17,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 CLI bumps directly from v2.1.4 → v2.1.7 (no v2.1.5 / v2.1.6 release tags).
 
-- feat(cli-banner): 3-phase banner intro — CRT scan top→bottom builds the art in white, holds 600ms, diagonal rainbow flow (bottom-left → top-right) brings it to neon, followed by a white shimmer sweep on the same diagonal.
-- feat(cli-banner): rotating multi-sentence tagline via wipe-swap transitions — "Your AI Remembers You" → "Your AI Catches Insights" → "Your AI Thinking Partner". Prefix "Your AI" stays neon cyan; trailing 2 words are neon magenta. Final lock shimmer sweeps the full tagline and burns the trailing magenta out to neon cyan; entire tagline settles cyan. Center alignment normalized at col 15.5 (border 26 dashes, art lead 5).
-- fix(doctor): mark qmd-embeddings auto-fix as advisory — plain `onebrain doctor` no longer nudges toward `--fix`; `--fix` still embeds when explicitly invoked. New `advisory?: boolean` on internal Fix interface; `fixableCount` excludes advisory fixes. Hint updated to "Advisory: run /qmd embed when ready (or onebrain doctor --fix)".
-- fix(orphan-scan + validator): drop `merged:` frontmatter filter to match plugin v2.2.0 — any checkpoint file that exists is unmerged by definition. Removes `readMergedField` from validator.
-- chore(tests): update orphan-scan and validator tests for new behavior — legacy `merged: true` checkpoints now count as orphans.
-- chore(cli-banner): static no-truecolor fallback uses the signature "Your AI Thinking Partner" line in cyan.
-- fix(doctor --fix): "Nothing to fix" line no longer renders a leading `│` bar prefix that contradicts the closed `└` corner from the summary line above.
+- feat(cli-banner): 3-phase banner intro — white CRT scan ↓ (hold 600ms), diagonal rainbow flow ↗, white shimmer ↗.
+- feat(cli-banner): rotating tagline via wipe-swap — `Remembers You` → `Catches Insights` → `Thinking Partner`. Prefix cyan, trailing magenta; final shimmer burns trailing to all-cyan settle.
+- feat(cli-banner): center alignment normalized at col 15.5 (border 26 dashes, art lead 5); static no-truecolor fallback uses signature line in cyan.
+- fix(doctor): qmd-embeddings auto-fix marked advisory — plain `doctor` no longer nudges toward `--fix`; `--fix` still embeds. New `advisory?: boolean` on internal Fix interface.
+- fix(orphan-scan + validator): drop `merged:` filter to match plugin v2.2.0 — any leftover checkpoint is unmerged by definition. `readMergedField` removed.
+- fix(doctor --fix): bar-pattern visual cleanup — "Nothing to fix" flush-left; multi-fix opens own `┌` group (new `barOpen` helper).
+- chore(tests): orphan-scan + validator tests reframed — legacy `merged: true` now counts as orphan.
 
 ## v2.1.4 — fix: drop bun-windows-arm64 (unsupported in bun v1.2)
 

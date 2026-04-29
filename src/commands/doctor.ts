@@ -12,7 +12,15 @@ import {
   loadVaultConfig,
 } from '../lib/index.js';
 import { printBanner } from './internal/cli-banner.js';
-import { askYesNo, barBlank, barLine, close, makeStepFn, writeLine } from './internal/cli-ui.js';
+import {
+  askYesNo,
+  barBlank,
+  barLine,
+  barOpen,
+  close,
+  makeStepFn,
+  writeLine,
+} from './internal/cli-ui.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -441,8 +449,10 @@ async function applyFixes(
   }
 
   if (isTTY) {
-    barBlank();
-    barLine(pc.bold(`${fixable.length} fix(es) to apply:`));
+    // The previous close() emitted └. Start a fresh bar group with ┌ so
+    // the fix-application section reads as its own clack-style box.
+    writeLine('');
+    barOpen(pc.bold(`${fixable.length} fix(es) to apply:`));
     barBlank();
     for (const r of fixable) {
       barLine(`  ${pc.cyan('◆')}  ${getFix(r)!.description}`);

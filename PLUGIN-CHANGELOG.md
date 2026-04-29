@@ -15,12 +15,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.2.0 — fix: PostCompact session log; simplify checkpoint cleanup; stronger qmd-first search
 
-- fix(INSTRUCTIONS PostCompact): rewrite auto-wrapup to inline writes (no background agent dispatch). Path B silently failed because background agents do not see the main agent's compacted context. Path A still consolidates leftover checkpoints into the session log and deletes them, identical to /wrapup.
-- fix(wrapup): remove Step 5 (mark `merged: true`) and Step 6 safety-net scan. Checkpoints are deleted directly after the session log write is verified — the written log is the recovery proof.
-- fix(AUTO-SUMMARY): same simplification — drop `merged: true` annotation; delete checkpoints after session log confirmed.
+- fix(INSTRUCTIONS PostCompact): inline writes replace background-agent dispatch — Path B silently failed because background agents don't see the main agent's compacted context. Path A still consolidates leftover checkpoints + deletes them, identical to /wrapup.
+- fix(wrapup + AUTO-SUMMARY): drop Step 5 (mark `merged: true`) and Step 6 safety-net scan. Checkpoints deleted directly after session log write verified — the log is the recovery proof.
 - fix(session-formats): remove `merged: false` from checkpoint frontmatter template.
 - fix(doctor): orphan-checkpoint check no longer reads `merged:` frontmatter — any leftover checkpoint is unmerged by definition.
-- feat(INSTRUCTIONS Search Strategy + QMD.md): stronger qmd-first guidance — qmd is the explicit default for vault content searches; Grep reserved for non-content lookups (paths, frontmatter, structural patterns, code).
+- feat(INSTRUCTIONS + QMD.md): stronger qmd-first guidance — qmd is the explicit default for vault content searches; Grep reserved for non-content lookups.
 - chore(memory-health-checks): drop the `merged: true` straggler row; ignore the field on legacy files.
 
 ## v2.1.0
