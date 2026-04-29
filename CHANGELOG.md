@@ -60,16 +60,12 @@ CLI bumps directly from v2.1.4 → v2.1.7 (no v2.1.5 / v2.1.6 release tags).
 
 ## v2.1.0 — Redesign Install Flow
 
-- feat(init): community plugin installer — downloads Tasks, Dataview, Terminal automatically
-- feat(init): ASCII banner + picocolors UX redesign; cancel() on fatal vault-sync failure
-- **BREAKING** change(update): binary-only — run `/update` skill in Claude to sync vault files
-- remove(update): onebrain_version no longer written to vault.yml
-- feat(doctor): intro/outro + clack UX; new checks (plugin-files, vault.yml-keys, settings-hooks)
-- feat(doctor): --fix mode — auto-repair hooks, remove deprecated vault.yml keys; removes deprecated vault.yml keys (method, runtime.harness, onebrain_version)
-- fix(register-hooks): PostToolUse auto-detected from qmd_collection; SessionStart removed
-- remove: install.sh and install.ps1 — replaced by onebrain init
-- feat(harness): replace CLAUDE_CODE_HARNESS with ONEBRAIN_HARNESS env var; shared detectHarness() utility detects harness at runtime via env → .gemini/ → .claude/ → direct
-- remove(vault.yml): method and runtime.harness keys removed — harness detected at runtime, no longer stored
+- **BREAKING** change(update): binary-only — run `/update` skill in Claude to sync vault files; install.sh / install.ps1 removed (replaced by `onebrain init`).
+- feat(init): community plugin installer (Tasks, Dataview, Terminal) + ASCII banner + picocolors UX; cancel() on fatal vault-sync failure.
+- feat(doctor): intro/outro + clack UX; new checks (plugin-files, vault.yml-keys, settings-hooks); `--fix` auto-repairs hooks and removes deprecated keys.
+- feat(harness): replace `CLAUDE_CODE_HARNESS` with `ONEBRAIN_HARNESS`; shared `detectHarness()` resolves runtime via env → `.gemini/` → `.claude/` → direct.
+- fix(register-hooks): PostToolUse auto-detected from `qmd_collection`; SessionStart removed.
+- remove(vault.yml): drop deprecated `method`, `runtime.harness`, `onebrain_version` — harness detected at runtime, version comes from package.json.
 
 ## v2.0.14 — fix: remove session token from hook emit format; deterministic resolveSessionToken
 
