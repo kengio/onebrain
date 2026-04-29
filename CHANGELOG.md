@@ -23,6 +23,7 @@ CLI bumps directly from v2.1.4 → v2.1.7 (no v2.1.5 / v2.1.6 release tags).
 - fix(orphan-scan + validator): drop `merged:` frontmatter filter to match plugin v2.2.0 — any checkpoint file that exists is unmerged by definition. Removes `readMergedField` from validator.
 - chore(tests): update orphan-scan and validator tests for new behavior — legacy `merged: true` checkpoints now count as orphans.
 - chore(cli-banner): static no-truecolor fallback uses the signature "Your AI Thinking Partner" line in cyan.
+- fix(doctor --fix): "Nothing to fix" line no longer renders a leading `│` bar prefix that contradicts the closed `└` corner from the summary line above.
 
 ## v2.1.4 — fix: drop bun-windows-arm64 (unsupported in bun v1.2)
 

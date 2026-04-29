@@ -433,7 +433,9 @@ async function applyFixes(
   const fixable = results.filter((r) => r.status !== 'ok' && getFix(r) !== null);
 
   if (fixable.length === 0) {
-    if (isTTY) barLine(`${pc.green('◆')}  Nothing to fix`);
+    // The previous close() already closed the bar pattern with `└`; render
+    // "Nothing to fix" as a plain line (no `│` prefix) to match that closure.
+    if (isTTY) writeLine(`${pc.green('◆')}  Nothing to fix`);
     else writeLine('nothing to fix');
     return;
   }
