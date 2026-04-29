@@ -29,11 +29,12 @@ See `skills/startup/references/session-formats.md` → Session Log Format for fr
 3. Glob checkpoint files:
    - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`
    - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`
-4. Filter: keep only files where frontmatter field `merged` is absent or not `true`
-5. If any found: **read every file in the filtered list** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 : not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
-6. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
+4. If any found: **read every file** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 : not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
+5. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
 
 If none found: continue normally.
+
+> **Note on cleanup:** Checkpoints are deleted (not annotated) after the session log is successfully written. Any checkpoint file that still exists is unmerged by definition; no `merged:` filter is needed.
 
 ---
 
@@ -52,12 +53,11 @@ For each of those two paths, glob `*-checkpoint-*.md`.
 ### Identify Orphans
 
 From all found checkpoint files:
-1. Read frontmatter of all found files; keep only where `merged` is absent or not `true`
-2. Parse session_token from each filename: the alphanumeric segment between the date and the literal word "checkpoint" in pattern `YYYY-MM-DD-{session_token}-checkpoint-NN.md`. If empty, apply Legacy token handling (see below) rather than skipping.
-3. Exclude files where the parsed session_token exactly equals the current session token (those belong to the current session, already handled in Step 1). Do not use substring/contains matching — only exact equality.
-4. Group remaining files by their parsed session_token
+1. Parse session_token from each filename: the alphanumeric segment between the date and the literal word "checkpoint" in pattern `YYYY-MM-DD-{session_token}-checkpoint-NN.md`. If empty, apply Legacy token handling (see below) rather than skipping.
+2. Exclude files where the parsed session_token exactly equals the current session token (those belong to the current session, already handled in Step 1). Do not use substring/contains matching — only exact equality.
+3. Group remaining files by their parsed session_token
 
-**Legacy token handling:** If the parsed segment is a 6-character random string (pre-v1.10.4 format), still include the file in orphan recovery. Group these files under a synthetic key `legacy-{segment}` and process them the same way as regular groups. This ensures migration from v1.10.3 and earlier does not lose checkpoints. Note each legacy file in the Step 8 report as a warning.
+**Legacy token handling:** If the parsed segment is a 6-character random string (pre-v1.10.4 format), still include the file in orphan recovery. Group these files under a synthetic key `legacy-{segment}` and process them the same way as regular groups. This ensures migration from v1.10.3 and earlier does not lose checkpoints. Note each legacy file in the Step 7 report as a warning.
 
 If no orphan groups found: skip to Step 2.
 
@@ -76,13 +76,11 @@ For each orphan group (process in chronological order by date in filename):
 
 **d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). All key decisions, action items, and open questions from checkpoints must appear explicitly — do not collapse into one line.
 
-**e. Write the session log** (per the template above). Verify the file exists and is non-empty before continuing.
+**e. Verify the session log** exists and is non-empty before continuing.
 
-**f. Mark checkpoints as merged:** only after step e succeeds — for each checkpoint file in this group, set `merged: true` (same rules as Step 5).
+**f. Delete checkpoint files** for this group after confirming step e succeeded. Guard: only delete AFTER step e is confirmed. Never delete before.
 
-**g. Delete checkpoint files** for this group after confirming both e and f succeeded. Guard: only delete AFTER step e AND f are confirmed. Never delete before.
-
-**h. Track recovered sessions:** append `{date} → session-NN.md ({C} checkpoints)` to a `recovered_sessions` list for the final report, where `{C}` is the number of checkpoint files merged for this group.
+**g. Track recovered sessions:** append `{date} → session-NN.md ({C} checkpoints)` to a `recovered_sessions` list for the final report, where `{C}` is the number of checkpoint files recovered for this group.
 
 ---
 
@@ -131,7 +129,7 @@ This writes `0:<epoch>:00` into the session state file, triggering a 60-second s
 
 After the session log is written, automatically move action items to the appropriate project note so the startup task scan picks them up.
 
-Store `routed_tasks = []` and `skipped_tasks = []` for use in Step 8.
+Store `routed_tasks = []` and `skipped_tasks = []` for use in Step 7.
 
 **4b-1. Extract tasks.** Parse the `## Action Items` section of the session log just written. Collect all lines matching `- [ ] ...`. If none, skip this step entirely.
 
@@ -179,35 +177,17 @@ For each target file with one or more assigned tasks:
 
 ---
 
-## Step 5: Mark Checkpoints as Merged
+## Step 5: Checkpoint Cleanup
 
-If the Step 1 checkpoint list is non-empty (i.e., at least one file was read and incorporated):
+After the session log from Step 4 is written successfully, delete every checkpoint file path stored in Step 1.
 
-For each checkpoint file path stored in Step 1:
-1. Read the file's frontmatter
-2. Set `merged: true` : handle all variants:
-   - `merged: false` → replace with `merged: true`
-   - `merged: null` or bare `merged:` → replace with `merged: true`
-   - key absent → add `merged: true` to frontmatter
-3. Write the updated file
+Guard: only delete AFTER confirming the session log write succeeded. Never delete before or during write. If an individual delete fails, skip it silently — stale checkpoints are cleaned up later by /doctor or by the next /wrapup.
 
-**Why write before deleting:** Always complete Step 5 (mark merged) before Step 6 (delete). If the write fails, `merged: true` is never set and future /wrapup runs will correctly re-include the checkpoint. Deleting first would lose checkpoint data permanently with no recovery path.
-
-This prevents /wrapup from re-reading the same checkpoints in future sessions.
+> **Why direct delete (no `merged:` annotation):** A successfully written session log is itself the proof that the checkpoint content is preserved. Annotating the checkpoint with `merged: true` and then deleting it adds a write step that can fail and provides no recovery benefit — if the session log write succeeds, the checkpoint is safe to delete; if it fails, we never reach this step.
 
 ---
 
-## Step 6: Checkpoint Cleanup
-
-After session log is written successfully:
-1. Delete checkpoint files merged into this session's log
-2. Safety-net scan: collect the union of (a) the two month paths from Step 1b (current month and previous month), and (b) the unique YYYY/MM directories that any recovered orphan group lived in. For each path in this union, glob `*-checkpoint-*.md` and delete any with `merged: true` that were not already deleted above.
-
-Guard: only delete AFTER confirming session log write succeeded. Never delete before or during write.
-
----
-
-## Step 7: Recap Reminder
+## Step 6: Recap Reminder
 
 At the end of every /wrapup, compute `unrecapped_count` and `last_recapped`:
 
@@ -230,7 +210,7 @@ Display based on condition:
 
 ---
 
-## Step 8: Confirm
+## Step 7: Confirm
 
 Say:
 ──────────────────────────────────────────────────────────────
@@ -253,7 +233,7 @@ Auto-recovered {S} orphan session(s):
   {YYYY-MM-DD} → `session-NN.md` ({C} checkpoints)
 (omit this block if none recovered)
 
-{Recap reminder message from Step 7}
+{Recap reminder message from Step 6}
 
 Good session! See you next time.
 
@@ -266,7 +246,7 @@ Good session! See you next time.
 ## Key Decisions
 
 - Chose $PPID as session token because it is stable within a shell session and unique per terminal window
-- Moved checkpoint delete to AFTER merged: true write — prevents data loss if write fails
+- Delete checkpoints directly after the session log write succeeds — the written log is the recovery proof, no `merged:` annotation needed
 - Kept the state-file reset bash snippet in Step 4 rather than a hook, to avoid hook-ordering issues
 ```
 
@@ -285,6 +265,6 @@ Good session! See you next time.
 
 - **Cross-month midnight sessions.** If a session starts before midnight and /wrapup runs after midnight in a new month, Step 1 looks in "yesterday's folder." Decrementing the month is sufficient for all months except January — for January specifically, also roll back the year (e.g., January 1 → December of the prior year). All other month boundaries only need the month decremented.
 
-- **`merged: false` YAML type.** Some YAML parsers return the string `"false"` rather than boolean `false`. The filter "keep where `merged` is absent or not `true`" should treat both `merged: false` (boolean) and `merged: "false"` (string) as "not merged" — only exact `merged: true` counts.
+- **Pre-v2.2.0 checkpoint files with `merged:` field.** Older vaults may contain checkpoint files that have a `merged: false` or `merged: true` frontmatter field from earlier wrapup runs. The new flow ignores this field entirely — any checkpoint file that exists at /wrapup time is treated as unmerged, regardless of the field's value. The 14-day-old check in /doctor catches any stragglers regardless of the field.
 
 - **Duplicate session slot collision.** If auto-save and a manual /wrapup run nearly simultaneously, both may try to write `session-01.md`. Step 2 already verifies the slot is free before writing — do not skip this check even when synthesizing from checkpoints.
