@@ -10,7 +10,6 @@ import {
   handlePostcompact,
   handleReset,
   handleStop,
-  handleUserPromptSubmit,
   maxCheckpointNnSync,
   postcompactFallback,
   readState,
@@ -673,10 +672,10 @@ describe('postcompactFallback', () => {
 });
 
 // ---------------------------------------------------------------------------
-// handleUserPromptSubmit
+// handleStop wrapup branch (PostCompact follow-up signal)
 // ---------------------------------------------------------------------------
 
-describe('handleUserPromptSubmit', () => {
+describe('handleStop wrapup branch', () => {
   let tmpDir: string;
   let vaultDir: string;
   const now = 1700004000;
@@ -684,95 +683,92 @@ describe('handleUserPromptSubmit', () => {
   beforeEach(async () => {
     tmpDir = await makeTmpDir();
     vaultDir = await makeTmpDir();
+    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
   });
   afterEach(async () => {
     await rm(tmpDir, { recursive: true, force: true });
     await rm(vaultDir, { recursive: true, force: true });
   });
 
-  function setPending(ts: number, pending: 0 | 1 = 1, lastStopNn = '02'): void {
+  function setPending(ts: number, pending: 0 | 1 = 1, lastStopNn = '02', count = 0): void {
     writeState(
       TOKEN,
-      { count: 0, last_ts: ts, last_stop_nn: lastStopNn, wrapup_pending: pending },
+      { count, last_ts: ts, last_stop_nn: lastStopNn, wrapup_pending: pending },
       tmpDir,
     );
   }
 
-  it('wrapup_pending=1 → emits additionalContext payload + clears flag', () => {
+  it('wrapup_pending=1 → emits decision:block reason=auto-wrapup + clears flag', () => {
     setPending(now);
 
     const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now + 5, tmpDir);
+    handleStop(TOKEN, vaultDir, now + 5, tmpDir);
     const out = cap.stop();
 
-    const parsed = JSON.parse(out.trim()) as {
-      hookSpecificOutput: { hookEventName: string; additionalContext: string };
-    };
-    expect(parsed.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('[OneBrain auto-wrapup]');
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('Path B');
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('background sub-agent');
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('mode: bypassPermissions');
-    // Consistency with Stop hook: agent uses its OWN session_token from context.
-    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(`session_token: ${TOKEN}`);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain(
-      'session_token from your context',
-    );
+    const parsed = JSON.parse(out.trim()) as { decision: string; reason: string };
+    expect(parsed.decision).toBe('block');
+    expect(parsed.reason).toBe('auto-wrapup');
 
-    // Flag consumed (one-shot) — other state fields preserved
+    // Flag consumed; last_ts advanced; last_stop_nn preserved
     const after = readState(TOKEN, tmpDir);
     expect(after.wrapup_pending).toBe(0);
-    expect(after.last_ts).toBe(now); // last_ts preserved (still useful for next recency guard)
+    expect(after.last_ts).toBe(now + 5);
+    expect(after.last_stop_nn).toBe('02');
+    expect(after.count).toBe(0);
   });
 
-  it('wrapup_pending=0 → silent exit, no stdout, state unchanged', () => {
-    setPending(now, 0);
+  it('wrapup priority bypasses SKIP_WINDOW (a /wrapup just ran would normally skip)', () => {
+    // Simulate /wrapup-then-/compact: handleReset wrote count=0 + last_ts=now-30s.
+    // Without wrapup priority, SKIP_WINDOW (60s) would suppress this Stop.
+    // With wrapup priority, the auto-wrapup signal fires anyway.
+    setPending(now - 30, 1, '00', 0);
+
     const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
-    expect(out).toBe('');
-    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
+
+    const parsed = JSON.parse(out.trim()) as { reason: string };
+    expect(parsed.reason).toBe('auto-wrapup');
   });
 
-  it('no state file → silent exit (no spurious wrapup directive on cold start)', () => {
+  it('wrapup priority bypasses MIN_ACTIVITY (count<2 normally skips checkpoint)', () => {
+    // count=1 is below MIN_ACTIVITY=2; without wrapup priority this Stop would
+    // not emit anything. With wrapup priority, auto-wrapup fires.
+    setPending(now - 600, 1, '02', 1);
+
     const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
-    expect(out).toBe('');
+
+    const parsed = JSON.parse(out.trim()) as { reason: string };
+    expect(parsed.reason).toBe('auto-wrapup');
   });
 
-  it('payload is valid JSON with single trailing newline', () => {
-    setPending(now);
+  it('wrapup_pending=0 → falls through to regular checkpoint logic', () => {
+    // No pending flag — handleStop follows its normal path. Pick last_ts that
+    // beats SKIP_WINDOW (60s) but stays within time threshold (10min in
+    // VALID_VAULT_YML). Pick count low enough that increment stays below the
+    // 5-message threshold.
+    setPending(now - 200, 0, '00', 2);
+
     const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
-    expect(out.endsWith('\n')).toBe(true);
-    expect(out.trim().split('\n').length).toBe(1);
-    expect(() => JSON.parse(out.trim())).not.toThrow();
+
+    expect(out).toBe(''); // below threshold → no emit
+    const after = readState(TOKEN, tmpDir);
+    expect(after.wrapup_pending).toBe(0);
+    expect(after.count).toBe(3); // incremented from 2 to 3
   });
 
-  it('two consecutive calls: first emits, second is silent (one-shot)', () => {
-    setPending(now);
-
-    const cap1 = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
-    const out1 = cap1.stop();
-    expect(out1).not.toBe('');
-
-    const cap2 = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now + 5, tmpDir);
-    const out2 = cap2.stop();
-    expect(out2).toBe('');
-  });
-
-  it('signal older than 24h is discarded silently — flag cleared, no directive', () => {
+  it('signal older than 24h is discarded silently — flag cleared, no emit', () => {
     const originalWrite = process.stderr.write.bind(process.stderr);
     process.stderr.write = (() => true) as typeof process.stderr.write;
     const yesterday = now - 25 * 60 * 60; // > 24h
     setPending(yesterday);
 
     const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     process.stderr.write = originalWrite;
 
@@ -786,53 +782,38 @@ describe('handleUserPromptSubmit', () => {
     setPending(now - (24 * 60 * 60 + 1));
 
     const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     process.stderr.write = originalWrite;
 
     expect(out).toBe('');
   });
 
-  it('directive instructs the agent to defer to /wrapup-style commands', () => {
+  it('payload is valid JSON with single trailing newline', () => {
     setPending(now);
     const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim()) as {
-      hookSpecificOutput: { additionalContext: string };
-    };
-    // Conflict avoidance — without this, /wrapup right after /compact runs twice.
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('/wrapup');
-    expect(parsed.hookSpecificOutput.additionalContext).toMatch(
-      /IGNORE this directive|let that command handle/i,
-    );
+    expect(out.endsWith('\n')).toBe(true);
+    expect(out.trim().split('\n').length).toBe(1);
+    expect(() => JSON.parse(out.trim())).not.toThrow();
   });
 
-  it('directive includes the date derived from last_ts (PostCompact firing time)', () => {
-    // PostCompact fired at "yesterday" — directive should carry that date even though
-    // the prompt fires today. last_ts is the source of truth for the date.
-    const yesterday = now - 86400;
-    setPending(yesterday);
+  it('two consecutive Stop fires: first emits auto-wrapup, second is regular checkpoint flow', () => {
+    setPending(now);
 
-    const cap = captureStdout();
-    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
+    const cap1 = captureStdout();
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    const out1 = cap1.stop();
+    const parsed1 = JSON.parse(out1.trim()) as { reason: string };
+    expect(parsed1.reason).toBe('auto-wrapup');
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
 
-    const parsed = JSON.parse(out.trim()) as {
-      hookSpecificOutput: { additionalContext: string };
-    };
-    const yDate = new Date(yesterday * 1000);
-    const expectedDate = `${yDate.getFullYear()}-${String(yDate.getMonth() + 1).padStart(2, '0')}-${String(yDate.getDate()).padStart(2, '0')}`;
-    expect(parsed.hookSpecificOutput.additionalContext).toContain(`date: ${expectedDate}`);
-  });
-
-  it('handleStop preserves wrapup_pending across its writes', () => {
-    // Set up: PostCompact has fired (wrapup_pending=1), now Stop fires before
-    // user has a chance to submit a prompt. The pending flag must survive.
-    setPending(now - 100, 1, '00');
-    handleStop(TOKEN, vaultDir, now - 50, tmpDir);
-    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(1);
+    // Second Stop within SKIP_WINDOW after the first wrapup → no emit
+    const cap2 = captureStdout();
+    handleStop(TOKEN, vaultDir, now + 30, tmpDir);
+    const out2 = cap2.stop();
+    expect(out2).toBe('');
   });
 });
 

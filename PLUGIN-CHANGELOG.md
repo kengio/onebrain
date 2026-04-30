@@ -13,12 +13,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.2.1 — fix: PostCompact auto-wrapup trigger via state-file flag + UserPromptSubmit additionalContext
+## v2.2.1 — fix: PostCompact auto-wrapup via Stop hook reason `auto-wrapup` (state-file flag)
 
-- fix(INSTRUCTIONS Auto Checkpoint): replace stale "block reason `auto-wrapup`" trigger language with the state-flag → UserPromptSubmit `additionalContext` flow (matches CLI v2.1.6). PostCompact stdout cannot reach the agent; signal is now delivered on the next user prompt.
+- fix(INSTRUCTIONS Auto Checkpoint): PostCompact silently sets a `wrapup_pending=1` flag in the shared state file; the next Stop hook firing emits `decision:"block",reason:"auto-wrapup"` to deliver the signal to the agent. No new hook registered — the signal piggybacks on the existing Stop hook, matching CLI v2.1.6.
 - fix(INSTRUCTIONS PostCompact auto-wrapup): change Path B from inline execution to background sub-agent dispatch — main agent embeds the compacted context summary in the sub-agent's prompt, then continues responding to the user immediately. No more blocking the next response while the session log writes.
-- fix(INSTRUCTIONS PostCompact dispatch table): remove unreachable PostCompact block-reason rows; add UserPromptSubmit row.
-- fix(INSTRUCTIONS Path A): agent uses its OWN session_token from context (consistent with Stop hook pattern), not the CLI's token from the directive — easier to debug when the two diverge.
+- fix(INSTRUCTIONS PostCompact dispatch table): remove unreachable PostCompact block-reason rows; add Stop-hook auto-wrapup reason row.
+- fix(INSTRUCTIONS Path A/B): agent uses its OWN session_token from context (consistent with Stop hook pattern) — easier to debug when CLI/agent token resolution diverge.
 
 ## v2.2.0 — fix: PostCompact session log; simplify checkpoint cleanup; stronger qmd-first search
 

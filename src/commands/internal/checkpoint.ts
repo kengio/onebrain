@@ -1,7 +1,10 @@
 /**
  * checkpoint — internal command
  *
- * Implements stop/postcompact/user-prompt-submit/reset modes.
+ * Implements stop/postcompact/reset modes. Two block-reason flavors are emitted
+ * from the Stop hook: `NN since <context>` for regular checkpoints, and
+ * `auto-wrapup` for the PostCompact follow-up signal. Both reach the agent via
+ * the same Stop hook → no separate UserPromptSubmit hook is required.
  *
  * State file: $TMPDIR/onebrain-{session_token}.state
  * Format:     count:last_ts:last_stop_nn:wrapup_pending
@@ -9,18 +12,19 @@
  * - count          number of Stop messages since the last checkpoint emission
  * - last_ts        unix seconds of the most recent state-touching event
  * - last_stop_nn   bookkeeping for the most recent checkpoint NN written (debug only)
- * - wrapup_pending 0 or 1 — set by PostCompact, consumed by UserPromptSubmit
+ * - wrapup_pending 0 or 1 — set by PostCompact, consumed by the next Stop hook
  *
  * Checkpoint NN is always derived from actual files on disk — this guarantees
  * sequential numbering even when Claude fails to write a file (e.g. context full).
  *
  * Hook signal delivery:
- * - Stop: emits {decision:"block",reason:"NN since ..."} — Stop hook supports decision/reason.
- * - PostCompact: sets `wrapup_pending=1` in the shared state file (its stdout cannot reach the
- *   agent because PostCompact is observational-only). The signal is consumed by the next
- *   UserPromptSubmit.
- * - UserPromptSubmit: reads state; if `wrapup_pending=1` and not stale, emits an
- *   `additionalContext` directive to the agent and clears the flag.
+ * - Stop: emits {decision:"block",reason:"NN since ..."} for checkpoints, or
+ *   {decision:"block",reason:"auto-wrapup"} when wrapup_pending=1. Wrapup takes
+ *   priority — it bypasses SKIP_WINDOW and the message-count threshold because
+ *   PostCompact intends the very next Stop to deliver the signal.
+ * - PostCompact: sets `wrapup_pending=1` in the shared state file (its stdout
+ *   cannot reach the agent because PostCompact is observational-only). The
+ *   signal is consumed by the next Stop hook firing.
  *
  * Concurrency: each hook runs as its own short-lived CLI subprocess. State writes use
  * atomic write-then-rename (pid-suffixed temp file → POSIX rename) so concurrent writers
@@ -29,7 +33,7 @@
  * sequentially per session.
  *
  * Exit code always 0. Errors go to stderr only.
- * JSON decision blocks and additionalContext payloads go to process.stdout.write (no console.log).
+ * JSON decision blocks go to process.stdout.write (no console.log).
  */
 
 import { readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -59,8 +63,9 @@ export interface CheckpointState {
   last_stop_nn: string;
   /**
    * 0 = no auto-wrapup pending.
-   * 1 = PostCompact fired and is waiting for the next UserPromptSubmit to deliver
-   *     the directive to the agent. Cleared after consumption.
+   * 1 = PostCompact fired and is waiting for the next Stop hook to emit
+   *     `decision:"block",reason:"auto-wrapup"` to the agent. Cleared after
+   *     emission (or silently cleared if the signal exceeds WRAPUP_TTL_SECONDS).
    */
   wrapup_pending: 0 | 1;
 }
@@ -132,9 +137,9 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
 
 /**
  * Write state to $tmpDir/onebrain-{token}.state (4-field format) via atomic
- * write-then-rename. Eliminates torn writes if Stop, PostCompact, and
- * UserPromptSubmit hook processes happen to overlap (rare — hooks fire
- * sequentially in normal Claude Code usage, but defensive anyway).
+ * write-then-rename. Eliminates torn writes if Stop and PostCompact hook
+ * processes happen to overlap (rare — hooks fire sequentially in normal
+ * Claude Code usage, but defensive anyway).
  *
  * Each hook process uses a pid-suffixed temp file so two concurrent writers
  * don't clobber each other's temp files. The final rename is atomic on POSIX.
@@ -304,6 +309,27 @@ export function handleStop(
 ): void {
   const state = readState(token, tmpDir);
 
+  // Wrapup priority: PostCompact set wrapup_pending=1; the very next Stop must
+  // deliver the auto-wrapup signal. This bypasses SKIP_WINDOW and the regular
+  // checkpoint-threshold logic — wrapup replaces the would-be checkpoint
+  // because the session log it produces covers the same ground.
+  if (state.wrapup_pending === 1) {
+    if (state.last_ts > 0 && now - state.last_ts > WRAPUP_TTL_SECONDS) {
+      // Stale signal from a forgotten session that reused this token →
+      // discard silently rather than inject confusing context.
+      process.stderr.write(`checkpoint: discarding stale auto-wrapup signal for token ${token}\n`);
+      writeState(token, { ...state, wrapup_pending: 0 }, tmpDir);
+      return;
+    }
+    emitBlock('auto-wrapup');
+    writeState(
+      token,
+      { count: 0, last_ts: now, last_stop_nn: state.last_stop_nn, wrapup_pending: 0 },
+      tmpDir,
+    );
+    return;
+  }
+
   // SKIP_WINDOW: if count=0 and last_ts is within 60s, this is right after a /wrapup reset
   if (state.count === 0 && state.last_ts > 0 && now - state.last_ts < SKIP_WINDOW) {
     return; // exit 0, state unchanged
@@ -407,110 +433,6 @@ export function handlePostcompact(
 }
 
 // ---------------------------------------------------------------------------
-// user-prompt-submit mode
-// ---------------------------------------------------------------------------
-
-/**
- * Build the auto-wrapup directive shipped to the agent via additionalContext.
- *
- * Kept intentionally short: only the trigger header, conflict-avoidance rule,
- * dispatch instruction, and the session date the agent cannot derive itself.
- * The full Path A/B procedure lives in INSTRUCTIONS.md (Auto Checkpoint
- * section); duplicating it here would just create a second source of truth
- * that drifts.
- *
- * Note on session_token: this directive does NOT propagate the CLI's resolved
- * token. The agent uses its own session_token from context (re-resolving via
- * `onebrain session-init` if needed) — same pattern as the Stop hook. Keeping
- * the two hooks consistent makes debugging easier and prevents agent/CLI from
- * drifting on token-bearing filenames (checkpoint files). The state filename
- * itself encodes the CLI's token, but that stays inside CLI scope.
- *
- * Conflict avoidance: if the user's prompt is itself a wrapup-style command
- * (`/wrapup`, `/onboarding`, etc.), those commands handle session-log creation
- * natively and would collide with a parallel background dispatch.
- */
-function buildAutoWrapupDirective(date: string): string {
-  return [
-    '[OneBrain auto-wrapup]',
-    `PostCompact fired on ${date}; no session log was written for the previous session.`,
-    '',
-    "If the user's current prompt is `/wrapup`, `/onboarding`, or another command that creates a session log, IGNORE this directive — let that command handle it. Otherwise:",
-    '',
-    'Dispatch a background sub-agent (mode: bypassPermissions, asynchronous) to perform PostCompact auto-wrapup per INSTRUCTIONS.md (Auto Checkpoint → PostCompact Path A/B). Continue responding to the user immediately — do NOT block on the session log write.',
-    '',
-    'Pass these values into the sub-agent prompt:',
-    `- date: ${date}`,
-    '- session_token from your context (re-run `onebrain session-init` if not in context)',
-    '- vault paths from CLAUDE.md / vault.yml',
-    '- the compacted context summary you have right now (the sub-agent has no other access to it — embed it in the prompt for Path B fallback)',
-  ].join('\n');
-}
-
-/**
- * Claude Code UserPromptSubmit hook output protocol.
- * The `hookEventName` literal is dictated by Claude Code — typo would silently
- * break delivery, so we encode it at the type level.
- */
-interface UserPromptSubmitOutput {
-  hookSpecificOutput: {
-    hookEventName: 'UserPromptSubmit';
-    additionalContext: string;
-  };
-}
-
-/**
- * UserPromptSubmit hook: if `wrapup_pending=1` is set in state and the signal
- * is fresh (within WRAPUP_TTL_SECONDS of `last_ts`), emit additionalContext to
- * the agent and clear the flag. The directive's `date` is derived from
- * `last_ts` — the moment PostCompact recorded the signal — so it stays
- * accurate even if UserPromptSubmit fires across midnight.
- *
- * Stale signals (`now - last_ts > WRAPUP_TTL_SECONDS`) are cleared silently —
- * they belong to a closed-and-forgotten session and would inject confusing
- * context into an unrelated new session that happened to reuse the same token.
- *
- * No-pending case: silent exit 0.
- *
- * Stdout-then-clear ordering is intentional: if the state-clear write fails
- * after a successful stdout, the next prompt will re-fire the same idempotent
- * directive (duplicate dispatch, not data loss). The reverse order would
- * risk losing the signal entirely if stdout failed after a successful clear.
- */
-export function handleUserPromptSubmit(
-  token: string,
-  _vaultRoot: string,
-  now: number = Math.floor(Date.now() / 1000),
-  tmpDir: string = osTmpdir(),
-): void {
-  const state = readState(token, tmpDir);
-  if (state.wrapup_pending !== 1) return;
-
-  const age = state.last_ts > 0 ? now - state.last_ts : 0;
-  if (age > WRAPUP_TTL_SECONDS) {
-    process.stderr.write(
-      `checkpoint: discarding stale auto-wrapup signal (${age}s old) for token ${token}\n`,
-    );
-    writeState(token, { ...state, wrapup_pending: 0 }, tmpDir);
-    return;
-  }
-
-  // Derive the date from the moment PostCompact fired (last_ts), not `now` —
-  // this keeps the directive accurate across midnight rollover.
-  const date = formatDate(state.last_ts > 0 ? state.last_ts : now);
-
-  const payload: UserPromptSubmitOutput = {
-    hookSpecificOutput: {
-      hookEventName: 'UserPromptSubmit',
-      additionalContext: buildAutoWrapupDirective(date),
-    },
-  };
-  process.stdout.write(`${JSON.stringify(payload)}\n`);
-
-  writeState(token, { ...state, wrapup_pending: 0 }, tmpDir);
-}
-
-// ---------------------------------------------------------------------------
 // postcompact entry point
 // ---------------------------------------------------------------------------
 
@@ -547,9 +469,6 @@ export async function checkpointCommand(
         break;
       case 'postcompact':
         postcompactFallback(token, vaultRoot);
-        break;
-      case 'user-prompt-submit':
-        handleUserPromptSubmit(token, vaultRoot);
         break;
       case 'reset':
         handleReset(token);

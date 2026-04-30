@@ -38,13 +38,13 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('runRegisterHooks', () => {
-  test('fresh run on empty settings — Stop + PostCompact + UserPromptSubmit registered, full permissions added', async () => {
+  test('fresh run on empty settings — Stop + PostCompact registered, full permissions added', async () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
 
-    // Stop, PostCompact, UserPromptSubmit should all be added
-    for (const event of ['Stop', 'PostCompact', 'UserPromptSubmit']) {
+    // Stop and PostCompact should all be added
+    for (const event of ['Stop', 'PostCompact']) {
       expect(result.hooks[event]).toBe('added');
     }
 
@@ -72,14 +72,8 @@ describe('runRegisterHooks', () => {
     // Verify written file structure — no env block
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(Object.keys(hooks)).toHaveLength(3); // Stop + PostCompact + UserPromptSubmit
+    expect(Object.keys(hooks)).toHaveLength(2); // Stop + PostCompact
     expect(settings['env']).toBeUndefined();
-
-    // Verify UserPromptSubmit command points at the new dispatch mode
-    const ups = hooks['UserPromptSubmit'] as Array<{
-      hooks: Array<{ command: string }>;
-    }>;
-    expect(ups[0]?.hooks[0]?.command).toBe('onebrain checkpoint user-prompt-submit');
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
     expect(perms).toHaveLength(14);
@@ -108,10 +102,9 @@ describe('runRegisterHooks', () => {
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown>;
     expect(hooks['PreCompact']).toBeUndefined();
-    // Stop, PostCompact, UserPromptSubmit should be present
+    // Stop and PostCompact should be present
     expect(hooks['Stop']).toBeDefined();
     expect(hooks['PostCompact']).toBeDefined();
-    expect(hooks['UserPromptSubmit']).toBeDefined();
   });
 
   test('hook entries include type:command and matcher fields', async () => {
@@ -123,7 +116,7 @@ describe('runRegisterHooks', () => {
       Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>
     >;
 
-    for (const event of ['Stop', 'PostCompact', 'UserPromptSubmit']) {
+    for (const event of ['Stop', 'PostCompact']) {
       const group = hooks[event]?.[0];
       expect(group).toBeDefined();
       expect(group?.matcher).toBe('');
@@ -140,45 +133,11 @@ describe('runRegisterHooks', () => {
 
     expect(result.ok).toBe(true);
 
-    for (const event of ['Stop', 'PostCompact', 'UserPromptSubmit']) {
+    for (const event of ['Stop', 'PostCompact']) {
       expect(result.hooks[event]).toBe('ok');
     }
 
     expect(result.permissionsAdded).toHaveLength(0);
-  });
-
-  test('upgrade path: existing Stop+PostCompact installs gain UserPromptSubmit on re-run', async () => {
-    const settingsPath = join(tempDir, '.claude', 'settings.json');
-    await writeFile(
-      settingsPath,
-      JSON.stringify({
-        hooks: {
-          Stop: [
-            { matcher: '', hooks: [{ type: 'command', command: 'onebrain checkpoint stop' }] },
-          ],
-          PostCompact: [
-            {
-              matcher: '',
-              hooks: [{ type: 'command', command: 'onebrain checkpoint postcompact' }],
-            },
-          ],
-        },
-      }),
-      'utf8',
-    );
-
-    const result = await runRegisterHooks({ vaultDir: tempDir });
-
-    expect(result.ok).toBe(true);
-    expect(result.hooks['Stop']).toBe('ok');
-    expect(result.hooks['PostCompact']).toBe('ok');
-    expect(result.hooks['UserPromptSubmit']).toBe('added');
-
-    const settings = await readSettingsFile(tempDir);
-    const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
-    expect(hooks['UserPromptSubmit']?.[0]?.hooks[0]?.command).toBe(
-      'onebrain checkpoint user-prompt-submit',
-    );
   });
 
   test('migration: existing checkpoint-hook.sh entry → replaced with binary command', async () => {
@@ -327,7 +286,7 @@ describe('registerGeminiHooks', () => {
     expect(exists).toBe(false);
   });
 
-  test('.gemini/settings.json exists → Stop/PostCompact/UserPromptSubmit written', async () => {
+  test('.gemini/settings.json exists → Stop/PostCompact written', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
     const geminiSettings = join(geminiDir, 'settings.json');
@@ -338,7 +297,7 @@ describe('registerGeminiHooks', () => {
 
     const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    for (const event of ['Stop', 'PostCompact', 'UserPromptSubmit']) {
+    for (const event of ['Stop', 'PostCompact']) {
       expect(hooks[event]).toBeDefined();
       expect(Array.isArray(hooks[event])).toBe(true);
       expect((hooks[event] as unknown[]).length).toBeGreaterThan(0);
