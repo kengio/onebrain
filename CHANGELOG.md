@@ -23,6 +23,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - feat(checkpoint): `writeState` now returns boolean — callers (PostCompact) can detect filesystem failure and avoid silent state advancement that would mask the lost session log.
 - feat(checkpoint): TTL guard on the wrapup flag — stale signals (>24h since last_ts) are cleared silently instead of injecting confusing context into a fresh session that reused the same token.
 - fix(register-hooks): `applyHooks` now writes 3 events (Stop, PostCompact, UserPromptSubmit) instead of 2.
+- perf(checkpoint): skip `findVaultRoot` for `user-prompt-submit` and `reset` modes — those modes read $TMPDIR only, so walking up the directory tree to locate vault.yml is unnecessary. Saves ~5-30ms per UserPromptSubmit invocation (which fires on every user prompt).
 
 ## v2.1.5 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
 
