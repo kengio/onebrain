@@ -1,6 +1,6 @@
 ---
-latest_version: 2.2.0
-released: 2026-04-29
+latest_version: 2.2.1
+released: 2026-04-30
 ---
 
 # Plugin Changelog
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.1 — fix: align with CLI v2.1.6 (Stop-hook-only)
+
+- fix(INSTRUCTIONS): drop entire PostCompact section (Path A/B + auto-wrapup routing). Single dispatch row — `NN since <context>` → write checkpoint. Note added explaining why PostCompact + PreCompact are not registered
+- feat(/wrapup + AUTO-SUMMARY): explicit **preservation rule** — deduplicate, don't summarize. Every unique decision, action item, learning, and topic must appear in the session log. No length cap. Heuristic: combined Key Decisions + Action Items + Open Questions length ≥ sum across all checkpoints
+- fix(/doctor SKILL): hook check rewritten to allowed-events sweep (Stop + PostToolUse only); sample report shows stale-entry warnings instead of PostCompact-specific failure
+- fix(session-formats.md): drop "PostCompact Path A/B" frontmatter case; keep "Recovered from checkpoints" for /wrapup orphan recovery
+- fix(/wrapup SKILL.md): state-file note updated to 3-field `0:<epoch>:00`; PostCompact follow-up signal wording removed
+- fix(/update migration-steps + SKILL): clarify Stop-hook-only registration; session-end synthesis is via AUTO-SUMMARY or manual /wrapup
 
 ## v2.2.0 — fix: PostCompact session log; simplify checkpoint cleanup; stronger qmd-first search
 

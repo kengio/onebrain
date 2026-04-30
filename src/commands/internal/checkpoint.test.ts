@@ -1,5 +1,5 @@
 /**
- * checkpoint.test.ts — tests for checkpoint command (stop/postcompact/reset)
+ * checkpoint.test.ts — tests for checkpoint command (stop/reset)
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
@@ -7,11 +7,9 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  handlePostcompact,
   handleReset,
   handleStop,
   maxCheckpointNnSync,
-  postcompactFallback,
   readState,
   writeState,
 } from './checkpoint.js';
@@ -108,7 +106,17 @@ describe('readState / writeState', () => {
     expect(state.last_stop_nn).toBe('02');
   });
 
-  it('reads 4-field legacy state — ignores pending_stub field', async () => {
+  it('treats 4-field legacy state (pending_checkpoint flag) as malformed → resets to 0:0:00', async () => {
+    await writeFile(stateFile(tmpDir, TOKEN), '0:1000000:02:1', 'utf8');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.count).toBe(0);
+    expect(state.last_ts).toBe(0);
+    expect(state.last_stop_nn).toBe('00');
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+    expect(raw).toBe('0:0:00');
+  });
+
+  it('treats 4-field legacy pending_stub state as malformed → resets to 0:0:00', async () => {
     await writeFile(
       stateFile(tmpDir, TOKEN),
       '0:1000000:03:2026-04-23-41928-checkpoint-04.md',
@@ -116,8 +124,10 @@ describe('readState / writeState', () => {
     );
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(1000000);
-    expect(state.last_stop_nn).toBe('03');
+    expect(state.last_ts).toBe(0);
+    expect(state.last_stop_nn).toBe('00');
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+    expect(raw).toBe('0:0:00');
   });
 
   it('treats v1 2-field state as parse error → resets to 0:0:00', async () => {
@@ -126,7 +136,6 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    // Eager rewrite matches the returned last_ts=0 (not `now`) so disk/return stay in sync
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
     expect(raw).toBe('0:0:00');
   });
@@ -137,7 +146,6 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    // Eager rewrite matches the returned last_ts=0 (not `now`) so disk/return stay in sync
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
     expect(raw).toBe('0:0:00');
   });
@@ -181,6 +189,16 @@ describe('handleReset', () => {
     handleReset(TOKEN, now, tmpDir);
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
     expect(raw).toBe(`0:${now}:00`);
+  });
+
+  it('overwrites legacy 4-field state — slot 4 dropped on reset', async () => {
+    await writeFile(stateFile(tmpDir, TOKEN), '5:1000:03:1', 'utf8');
+    handleReset(TOKEN, 1700000000, tmpDir);
+    const state = readState(TOKEN, tmpDir);
+    expect(state.count).toBe(0);
+    expect(state.last_stop_nn).toBe('00');
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+    expect(raw).toBe('0:1700000000:00'); // 3 fields
   });
 
   it('produces no stdout', () => {
@@ -387,143 +405,6 @@ describe('handleStop', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// handlePostcompact
-// ---------------------------------------------------------------------------
-
-describe('handlePostcompact', () => {
-  let tmpDir: string;
-  let vaultDir: string;
-  const now = 1700001000;
-
-  beforeEach(async () => {
-    tmpDir = await makeTmpDir();
-    vaultDir = await makeTmpDir();
-    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-  });
-  afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  it('no recent checkpoint → emits auto-wrapup block', () => {
-    const oldTs = now - 600; // > 300s → not recent
-    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
-  });
-
-  it('auto-wrapup emitted → state updated: count=0, last_ts=now, last_stop_nn preserved', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    cap.stop();
-
-    const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(now);
-    expect(state.last_stop_nn).toBe('02'); // unchanged
-  });
-
-  it('recent checkpoint (< 5 min) → no emit, last_ts preserved', () => {
-    const recentTs = now - 100; // < 300s
-    writeState(TOKEN, { count: 0, last_ts: recentTs, last_stop_nn: '03' }, tmpDir);
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_ts).toBe(recentTs); // preserved
-    expect(state.last_stop_nn).toBe('03');
-  });
-
-  it('no state file (last_ts=0) → recency guard fails → emits auto-wrapup', () => {
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
-  });
-
-  it('postcompact resets last_ts to now and count to 0 — state ready for next session', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '01' }, tmpDir);
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    cap.stop();
-
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_ts).toBe(now);
-    expect(state.count).toBe(0);
-  });
-
-  it('4-field legacy state (pending_stub) → auto-wrapup still emitted', async () => {
-    const oldTs = now - 600;
-    await writeFile(
-      stateFile(tmpDir, TOKEN),
-      `0:${oldTs}:02:2026-04-23-${TOKEN}-checkpoint-03.md`,
-      'utf8',
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// postcompactFallback
-// ---------------------------------------------------------------------------
-
-describe('postcompactFallback', () => {
-  let tmpDir: string;
-  let vaultDir: string;
-
-  beforeEach(async () => {
-    tmpDir = await makeTmpDir();
-    vaultDir = await makeTmpDir();
-  });
-  afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  const now = 1700002000;
-
-  it('emits auto-wrapup when not recent', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
-  });
-
-  it('no emit when recent (< 5 min since last checkpoint)', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 100, last_stop_nn: '02' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
   });
 });
 

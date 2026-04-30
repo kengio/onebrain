@@ -1,6 +1,6 @@
 ---
-latest_version: 2.1.5
-released: 2026-04-29
+latest_version: 2.1.6
+released: 2026-04-30
 ---
 
 # CLI Changelog
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.6 — fix: drop PostCompact hook; trust Stop hook threshold
+
+- fix(checkpoint): drop PostCompact hook entirely (Claude Code spec: stdout doesn't reach the agent). Stop hook is now the only checkpoint signal — its existing 15-msg / 30-min threshold drives emission across compacts without special handling
+- changed(checkpoint): state file is strictly 3 fields (`count:last_ts:last_stop_nn`). Legacy 4-field (`pending_checkpoint` / `pending_stub`) and v1 2-field files reset to `0:0:00` on first read — costs at most one checkpoint cycle
+- changed(register-hooks + doctor): generalized stale-hook sweep — allowed events are `Stop` + `PostToolUse` only. Any onebrain-* command under any other event (PreCompact, PostCompact, UserPromptSubmit, etc.) is auto-removed on `/update` and `/doctor --fix`. User-added non-onebrain entries preserved
+- removed(checkpoint): `handlePostcompact`, `postcompactFallback`, `'postcompact'` dispatch, `pending_checkpoint` field, `PRECOMPACT_RECENCY` + `PENDING_CHECKPOINT_TTL_SECONDS` constants, post-compact branch in `handleStop`
+- feat(checkpoint): atomic write-rename for state writes (pid-suffixed temp + POSIX rename) — prevents torn reads
+- perf(checkpoint): skip `findVaultRoot` for `reset` mode — touches $TMPDIR only
 
 ## v2.1.5 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
 

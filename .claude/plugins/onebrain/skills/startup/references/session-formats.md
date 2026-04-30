@@ -6,7 +6,7 @@ description: "Canonical templates for checkpoint files and session log files. Re
 # Session File Formats
 
 Shared canonical templates. Referenced by:
-- `INSTRUCTIONS.md` — stop checkpoint writes + postcompact auto-wrapup (Path A and Path B)
+- `INSTRUCTIONS.md` — stop checkpoint writes
 - `skills/wrapup/SKILL.md` — /wrapup session log (Step 4) + orphan recovery (Step 1b)
 - `skills/startup/AUTO-SUMMARY.md` — auto-saved session log
 
@@ -120,7 +120,7 @@ synthesized_from_checkpoints: true
 ---
 ```
 
-**Recovered from checkpoints** (used by: /wrapup orphan recovery, PostCompact Path A):
+**Recovered from checkpoints** (used by: /wrapup orphan recovery for prior sessions whose checkpoints were never wrapped up):
 ```yaml
 ---
 tags: [session-log]
@@ -128,15 +128,5 @@ date: YYYY-MM-DD
 session: NN
 synthesized_from_checkpoints: true
 auto-recovered: true
----
-```
-
-**PostCompact Path B — no checkpoint files (synthesized from context):**
-```yaml
----
-tags: [session-log]
-date: YYYY-MM-DD
-session: NN
-auto-compact: true
 ---
 ```

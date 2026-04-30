@@ -50,15 +50,9 @@ interface SettingsJson {
 
 const HOOK_COMMANDS: Record<string, string> = {
   Stop: 'onebrain checkpoint stop',
-  PostCompact: 'onebrain checkpoint postcompact',
 };
 
-const HOOK_EVENTS = ['Stop', 'PostCompact'] as const;
-
-// Hooks that were registered by previous versions and must be removed on /update.
-const STALE_HOOK_COMMANDS: Record<string, string> = {
-  PreCompact: 'onebrain checkpoint precompact',
-};
+const HOOK_EVENTS = ['Stop'] as const;
 
 const PERMISSIONS_TO_ADD = [
   'Read',
@@ -125,18 +119,39 @@ function checkHookPresence(
   return foundMigrate ? 'migrate' : 'missing';
 }
 
+// Hook events OneBrain is allowed to register (PostToolUse handled separately
+// for qmd). Any onebrain-* command found under any other event is stale and
+// must be removed — this catches PreCompact, PostCompact, UserPromptSubmit,
+// SessionStart, and any future hook that might have been registered before.
+const ALLOWED_HOOK_EVENTS = new Set(['Stop', 'PostToolUse']);
+
 function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
   if (!settings.hooks) settings.hooks = {};
   const hooks = settings.hooks;
   const result: Record<string, HookStatus> = {};
 
-  // Remove stale hooks from previous versions
-  for (const [event, staleCmd] of Object.entries(STALE_HOOK_COMMANDS)) {
-    if (!hooks[event]) continue;
-    hooks[event] = hooks[event].filter(
-      (group) => !group.hooks?.some((entry) => entry.command === staleCmd),
-    );
-    if (hooks[event].length === 0) delete hooks[event];
+  // Remove stale onebrain-* commands under any non-allowed hook event. This
+  // generalizes the legacy STALE_HOOK_COMMANDS approach (which matched only
+  // exact command strings under specific event names) to catch every
+  // onebrain entry registered under an unwanted event.
+  for (const event of Object.keys(hooks)) {
+    if (ALLOWED_HOOK_EVENTS.has(event)) continue;
+    const groups = hooks[event] ?? [];
+    const filtered = groups
+      .map((group) => ({
+        ...group,
+        hooks: (group.hooks ?? []).filter((entry) => {
+          const cmd = entry.command ?? '';
+          // Leave non-onebrain entries alone — those are user-added hooks
+          return !cmd.includes('onebrain');
+        }),
+      }))
+      .filter((group) => (group.hooks?.length ?? 0) > 0);
+    if (filtered.length === 0) {
+      delete hooks[event];
+    } else {
+      hooks[event] = filtered;
+    }
   }
 
   for (const event of HOOK_EVENTS) {

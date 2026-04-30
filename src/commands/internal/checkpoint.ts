@@ -1,20 +1,42 @@
 /**
  * checkpoint — internal command
  *
- * Implements stop/postcompact/reset modes.
+ * Implements stop/reset modes. The Stop hook is the only checkpoint signal
+ * source; session logs are produced only by /wrapup (manual) or AUTO-SUMMARY
+ * (end-of-session signal). PostCompact is intentionally NOT registered —
+ * Claude Code's PostCompact hook is observational-only (its stdout cannot
+ * reach the agent), so any signal we emitted from it would be silently
+ * ignored. Trust the Stop hook's count / time threshold to drive checkpoint
+ * emission; compact events don't get special handling.
  *
  * State file: $TMPDIR/onebrain-{session_token}.state
- * Format: count:last_ts:last_stop_nn
+ * Format:     count:last_ts:last_stop_nn
  *
- * Note: last_stop_nn is kept for backward compat/debugging only.
+ * - count          number of Stop messages since the last checkpoint emission
+ * - last_ts        unix seconds of the most recent state-touching event
+ * - last_stop_nn   bookkeeping for the most recent checkpoint NN written (debug only)
+ *
  * Checkpoint NN is always derived from actual files on disk — this guarantees
  * sequential numbering even when Claude fails to write a file (e.g. context full).
+ *
+ * Hook signal delivery:
+ * - Stop: emits {decision:"block",reason:"NN since <context>"} when count or
+ *   time threshold is met. The agent dispatches a background sub-agent to
+ *   write the checkpoint file capturing the conversation since the last NN.
+ *
+ * Session log creation lives outside this file — see /wrapup skill and
+ * AUTO-SUMMARY. Both consolidate accumulated checkpoint files into one
+ * session log per call ("1 session = 1 session log").
+ *
+ * Concurrency: each hook runs as its own short-lived CLI subprocess. State writes use
+ * atomic write-then-rename (pid-suffixed temp file → POSIX rename) so concurrent writers
+ * cannot tear the file.
  *
  * Exit code always 0. Errors go to stderr only.
  * JSON decision blocks go to process.stdout.write (no console.log).
  */
 
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir as osTmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -24,7 +46,6 @@ import { join } from 'node:path';
 
 const SKIP_WINDOW = 60; // seconds — suppress re-trigger after reset
 const MIN_ACTIVITY = 2; // minimum messages to warrant checkpoint
-const PRECOMPACT_RECENCY = 300; // seconds — postcompact recency guard
 
 // Default thresholds (used when vault.yml is missing/unreadable)
 const DEFAULT_MESSAGES_THRESHOLD = 15;
@@ -48,10 +69,18 @@ function stateFilePath(token: string, tmpDir: string): string {
   return join(tmpDir, `onebrain-${token}.state`);
 }
 
+const FRESH_STATE_DISK = '0:0:00';
+
 /**
  * Read state from $tmpDir/onebrain-{token}.state.
- * Returns default state if file is missing or malformed (v1 compat: < 3 fields → parse error).
- * 4-field state (legacy pending_stub) is accepted — the 4th field is silently ignored.
+ * Returns default state if file is missing or malformed.
+ *
+ * State file must be exactly 3 colon-separated fields. Legacy formats
+ * (v1 2-field, or 4-field state from pre-v2.1.6 `pending_checkpoint` /
+ * pre-v2.0 `pending_stub` filename) are treated as malformed → reset to
+ * fresh state. The reset costs at most one checkpoint cycle of progress
+ * (count resets to 0); time threshold continues to work.
+ *
  * Sync — checkpoint hooks must not add async latency.
  */
 export function readState(token: string, tmpDir: string = osTmpdir()): CheckpointState {
@@ -59,14 +88,12 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
   try {
     const raw = readFileSync(path, 'utf8').trim();
     const parts = raw.split(':');
-    // v1 compat: fewer than 3 fields → treat as parse error
-    if (parts.length < 3) {
-      throw new Error('v1 state format');
+    if (parts.length !== 3) {
+      throw new Error('state file must be exactly 3 fields');
     }
     const count = Number(parts[0]);
     const last_ts = Number(parts[1]);
     const last_stop_nn = parts[2] ?? '00';
-    // parts[3] (legacy pending_stub) silently ignored
 
     if (!Number.isInteger(count) || !Number.isInteger(last_ts) || !/^\d{2}$/.test(last_stop_nn)) {
       throw new Error('malformed state');
@@ -74,14 +101,10 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
 
     return { count, last_ts, last_stop_nn };
   } catch {
-    // Missing or malformed → fresh state
-    // last_ts=0: avoids SKIP_WINDOW on first run (guard requires last_ts > 0)
-    // and avoids false "recent checkpoint" in postcompact recency guard (requires last_ts > 0)
-    // Eagerly rewrite the state file so v1/malformed files don't accumulate.
-    // Use last_ts=0 to match the returned value — callers rely on last_ts=0 to
-    // disable SKIP_WINDOW and recency guards on the first run.
+    // Missing or malformed → fresh state, eagerly rewritten so subsequent reads
+    // short-circuit cleanly.
     try {
-      writeFileSync(stateFilePath(token, tmpDir), '0:0:00', 'utf8');
+      writeFileSync(stateFilePath(token, tmpDir), FRESH_STATE_DISK, 'utf8');
     } catch (writeErr) {
       process.stderr.write(
         `checkpoint: failed to rewrite state file for token ${token}: ${writeErr}\n`,
@@ -96,8 +119,12 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
 }
 
 /**
- * Write state to $tmpDir/onebrain-{token}.state (3-field format).
- * Sync.
+ * Write state to $tmpDir/onebrain-{token}.state (3-field format) via atomic
+ * write-then-rename. The pid-suffixed temp file + POSIX rename mirrors the
+ * pattern used by `register-hooks.ts:writeSettings` and prevents torn reads
+ * if a writer is interrupted mid-write.
+ *
+ * Sync. Errors logged to stderr.
  */
 export function writeState(
   token: string,
@@ -105,11 +132,19 @@ export function writeState(
   tmpDir: string = osTmpdir(),
 ): void {
   const path = stateFilePath(token, tmpDir);
+  const tmpPath = `${path}.tmp.${process.pid}`;
   const content = `${state.count}:${state.last_ts}:${state.last_stop_nn}`;
   try {
-    writeFileSync(path, content, 'utf8');
+    writeFileSync(tmpPath, content, 'utf8');
+    renameSync(tmpPath, path);
   } catch (err) {
     process.stderr.write(`checkpoint: failed to write state file ${path}: ${err}\n`);
+    // Best-effort cleanup of temp file if write succeeded but rename failed.
+    try {
+      unlinkSync(tmpPath);
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -215,6 +250,10 @@ function emitBlock(reason: string): void {
 
 /**
  * Reset state: write 0:<now>:00 to state file.
+ *
+ * Called by the agent after a session log is written via /wrapup. Clears
+ * count and last_stop_nn so the next checkpoint cycle starts from scratch.
+ *
  * No stdout. Exit 0 always.
  */
 export function handleReset(
@@ -252,29 +291,21 @@ export function handleStop(
   const { messagesThreshold, minutesThreshold, logsFolder } = loadVaultSettings(vaultRoot);
   const timeThreshold = minutesThreshold * 60;
 
-  // Elapsed: last_ts=0 is post-compact sentinel → treat as 0 elapsed
+  // Elapsed: last_ts=0 is fresh-state sentinel → treat as 0 elapsed
   const elapsed = state.last_ts === 0 ? 0 : now - state.last_ts;
 
   const thresholdMet = state.count >= messagesThreshold || elapsed >= timeThreshold;
 
   if (!thresholdMet) {
     // Update count but preserve last_ts
-    writeState(
-      token,
-      { count: state.count, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
-      tmpDir,
-    );
+    writeState(token, { ...state }, tmpDir);
     return;
   }
 
   // MIN_ACTIVITY guard: threshold fired but not enough messages
   if (state.count < MIN_ACTIVITY) {
     // Preserve last_ts so time clock doesn't restart
-    writeState(
-      token,
-      { count: state.count, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
-      tmpDir,
-    );
+    writeState(token, { ...state }, tmpDir);
     return;
   }
 
@@ -288,54 +319,6 @@ export function handleStop(
   emitBlock(`${nextNn}${since}`);
 
   writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn }, tmpDir);
-}
-
-// ---------------------------------------------------------------------------
-// postcompact mode
-// ---------------------------------------------------------------------------
-
-/**
- * Postcompact hook: emit auto-wrapup block so Claude synthesizes the session.
- * If the last checkpoint was very recent (compact followed a stop), skip to avoid
- * double-wrapup — the stop checkpoint is already complete.
- */
-export function handlePostcompact(
-  token: string,
-  _vaultRoot: string,
-  now: number = Math.floor(Date.now() / 1000),
-  tmpDir: string = osTmpdir(),
-): void {
-  const state = readState(token, tmpDir);
-
-  // Recency guard: stop checkpoint written within 5 min → compact followed stop → skip
-  if (state.last_ts > 0 && now - state.last_ts < PRECOMPACT_RECENCY) {
-    writeState(
-      token,
-      { count: 0, last_ts: state.last_ts, last_stop_nn: state.last_stop_nn },
-      tmpDir,
-    );
-    return;
-  }
-
-  emitBlock('auto-wrapup');
-  writeState(token, { count: 0, last_ts: now, last_stop_nn: state.last_stop_nn }, tmpDir);
-}
-
-// ---------------------------------------------------------------------------
-// postcompact entry point
-// ---------------------------------------------------------------------------
-
-/**
- * Postcompact entry point: delegates to handlePostcompact.
- * Kept as a separate export for backward compat with existing test imports.
- */
-export function postcompactFallback(
-  token: string,
-  vaultRoot: string,
-  now: number = Math.floor(Date.now() / 1000),
-  tmpDir: string = osTmpdir(),
-): void {
-  handlePostcompact(token, vaultRoot, now, tmpDir);
 }
 
 // ---------------------------------------------------------------------------
@@ -355,9 +338,6 @@ export async function checkpointCommand(
     switch (mode) {
       case 'stop':
         handleStop(token, vaultRoot);
-        break;
-      case 'postcompact':
-        postcompactFallback(token, vaultRoot);
         break;
       case 'reset':
         handleReset(token);
