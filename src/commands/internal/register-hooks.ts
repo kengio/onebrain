@@ -51,9 +51,10 @@ interface SettingsJson {
 const HOOK_COMMANDS: Record<string, string> = {
   Stop: 'onebrain checkpoint stop',
   PostCompact: 'onebrain checkpoint postcompact',
+  UserPromptSubmit: 'onebrain checkpoint user-prompt-submit',
 };
 
-const HOOK_EVENTS = ['Stop', 'PostCompact'] as const;
+const HOOK_EVENTS = ['Stop', 'PostCompact', 'UserPromptSubmit'] as const;
 
 // Hooks that were registered by previous versions and must be removed on /update.
 const STALE_HOOK_COMMANDS: Record<string, string> = {

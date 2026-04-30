@@ -10,6 +10,7 @@ import {
   handlePostcompact,
   handleReset,
   handleStop,
+  handleUserPromptSubmit,
   maxCheckpointNnSync,
   postcompactFallback,
   readState,
@@ -98,17 +99,31 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
+    expect(state.wrapup_pending).toBe(0);
   });
 
-  it('reads 3-field state correctly', async () => {
+  it('reads 3-field legacy state correctly (wrapup_pending defaults to 0)', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), '3:1000000:02', 'utf8');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(3);
     expect(state.last_ts).toBe(1000000);
     expect(state.last_stop_nn).toBe('02');
+    expect(state.wrapup_pending).toBe(0);
   });
 
-  it('reads 4-field legacy state — ignores pending_stub field', async () => {
+  it('reads 4-field state with wrapup_pending=1', async () => {
+    await writeFile(stateFile(tmpDir, TOKEN), '0:1000000:02:1', 'utf8');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.wrapup_pending).toBe(1);
+  });
+
+  it('reads 4-field state with wrapup_pending=0', async () => {
+    await writeFile(stateFile(tmpDir, TOKEN), '0:1000000:02:0', 'utf8');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.wrapup_pending).toBe(0);
+  });
+
+  it('reads 4-field legacy pending_stub format → wrapup_pending=0 (filename ≠ "1")', async () => {
     await writeFile(
       stateFile(tmpDir, TOKEN),
       '0:1000000:03:2026-04-23-41928-checkpoint-04.md',
@@ -118,36 +133,52 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(1000000);
     expect(state.last_stop_nn).toBe('03');
+    expect(state.wrapup_pending).toBe(0); // legacy non-'1' value treated as no pending
   });
 
-  it('treats v1 2-field state as parse error → resets to 0:0:00', async () => {
+  it('treats v1 2-field state as parse error → resets to 0:0:00:0', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), '5:1000000', 'utf8');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    // Eager rewrite matches the returned last_ts=0 (not `now`) so disk/return stay in sync
+    expect(state.wrapup_pending).toBe(0);
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe('0:0:00');
+    expect(raw).toBe('0:0:00:0');
   });
 
-  it('treats malformed state as parse error → resets to 0:0:00', async () => {
+  it('treats malformed state as parse error → resets to 0:0:00:0', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), 'bad:data:here', 'utf8');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    // Eager rewrite matches the returned last_ts=0 (not `now`) so disk/return stay in sync
+    expect(state.wrapup_pending).toBe(0);
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe('0:0:00');
+    expect(raw).toBe('0:0:00:0');
   });
 
-  it('writeState writes 3-field format', () => {
-    writeState(TOKEN, { count: 2, last_ts: 999, last_stop_nn: '01' }, tmpDir);
+  it('writeState writes 4-field format including wrapup_pending', () => {
+    writeState(TOKEN, { count: 2, last_ts: 999, last_stop_nn: '01', wrapup_pending: 1 }, tmpDir);
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(2);
     expect(state.last_ts).toBe(999);
     expect(state.last_stop_nn).toBe('01');
+    expect(state.wrapup_pending).toBe(1);
+  });
+
+  it('writeState returns true on success, false on filesystem error', () => {
+    expect(
+      writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00', wrapup_pending: 0 }, tmpDir),
+    ).toBe(true);
+
+    const originalWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (() => true) as typeof process.stderr.write;
+    const badDir = join(tmpDir, 'does', 'not', 'exist');
+    expect(
+      writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00', wrapup_pending: 0 }, badDir),
+    ).toBe(false);
+    process.stderr.write = originalWrite;
   });
 });
 
@@ -165,13 +196,13 @@ describe('handleReset', () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
-  it('writes 0:<now>:00 to state file', async () => {
+  it('writes 0:<now>:00:0 to state file (clears count, NN, AND wrapup_pending)', async () => {
     const now = 1700000000;
     const cap = captureStdout();
     handleReset(TOKEN, now, tmpDir);
     const out = cap.stop();
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe(`0:${now}:00`);
+    expect(raw).toBe(`0:${now}:00:0`);
     expect(out).toBe('');
   });
 
@@ -180,7 +211,18 @@ describe('handleReset', () => {
     const now = 1700000001;
     handleReset(TOKEN, now, tmpDir);
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe(`0:${now}:00`);
+    expect(raw).toBe(`0:${now}:00:0`);
+  });
+
+  it('clears wrapup_pending=1 to 0 — fresh start for next checkpoint cycle', async () => {
+    // /wrapup just wrote a session log; the auto-wrapup flag must be cleared
+    // so UserPromptSubmit doesn't fire a duplicate background dispatch.
+    writeState(TOKEN, { count: 5, last_ts: 1000, last_stop_nn: '03', wrapup_pending: 1 }, tmpDir);
+    handleReset(TOKEN, 1700000000, tmpDir);
+    const state = readState(TOKEN, tmpDir);
+    expect(state.wrapup_pending).toBe(0);
+    expect(state.count).toBe(0);
+    expect(state.last_stop_nn).toBe('00');
   });
 
   it('produces no stdout', () => {
@@ -212,7 +254,11 @@ describe('handleStop', () => {
   it('SKIP_WINDOW: count=0 and last_ts within 60s → exit 0, state unchanged', async () => {
     const now = 1700000100;
     const recentTs = now - 30; // 30s ago
-    writeState(TOKEN, { count: 0, last_ts: recentTs, last_stop_nn: '01' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: recentTs, last_stop_nn: '01', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -227,7 +273,7 @@ describe('handleStop', () => {
   it('SKIP_WINDOW: count=0 but last_ts > 60s ago → NOT skipped, count increments to 1', () => {
     const now = 1700000100;
     const oldTs = now - 90; // 90s ago
-    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '00' }, tmpDir);
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '00', wrapup_pending: 0 }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -240,7 +286,11 @@ describe('handleStop', () => {
 
   it('threshold not met → no stdout, state updated with incremented count', () => {
     const now = 1700000100;
-    writeState(TOKEN, { count: 2, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 2, last_ts: now - 10, last_stop_nn: '00', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -254,7 +304,7 @@ describe('handleStop', () => {
   it('MIN_ACTIVITY guard: count increments to 1, threshold met by time, but no emit', () => {
     const now = 1700001000;
     const oldTs = now - 700; // 700s > 600s threshold
-    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '01' }, tmpDir);
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '01', wrapup_pending: 0 }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -268,7 +318,11 @@ describe('handleStop', () => {
   it('threshold met (messages) → emits block with NN and since suffix', async () => {
     const now = 1700001000;
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '01' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 4, last_ts: now - 10, last_stop_nn: '01', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -281,7 +335,11 @@ describe('handleStop', () => {
 
   it('threshold met → state reset (count=0, last_ts=now)', async () => {
     const now = 1700001000;
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 4, last_ts: now - 10, last_stop_nn: '00', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -295,7 +353,11 @@ describe('handleStop', () => {
   it('NN derivation: disk scan is authoritative over state last_stop_nn', async () => {
     const now = 1700001000;
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '02' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 4, last_ts: now - 10, last_stop_nn: '02', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -310,7 +372,7 @@ describe('handleStop', () => {
 
   it('elapsed calc: last_ts=0 → elapsed=0, never triggers time threshold alone', () => {
     const now = 1700001000;
-    writeState(TOKEN, { count: 1, last_ts: 0, last_stop_nn: '00' }, tmpDir);
+    writeState(TOKEN, { count: 1, last_ts: 0, last_stop_nn: '00', wrapup_pending: 0 }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -324,7 +386,7 @@ describe('handleStop', () => {
   it('precompact-then-stop same turn: count=0, not in SKIP_WINDOW → count=1, below MIN_ACTIVITY, no emit', () => {
     const now = 1700002000;
     const oldTs = now - 900;
-    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02', wrapup_pending: 0 }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -348,7 +410,7 @@ describe('handleStop', () => {
     const now = 1700000800;
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
     await createCheckpointFile(vaultDir, now, TOKEN, 2);
-    writeState(TOKEN, { count: 4, last_ts: 0, last_stop_nn: '02' }, tmpDir);
+    writeState(TOKEN, { count: 4, last_ts: 0, last_stop_nn: '02', wrapup_pending: 0 }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -364,7 +426,7 @@ describe('handleStop', () => {
 
   it('last_ts=0 + count=0 → SKIP_WINDOW does NOT fire (guard needs last_ts > 0)', () => {
     const now = 1700001500;
-    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00', wrapup_pending: 0 }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -379,7 +441,11 @@ describe('handleStop', () => {
   it('falls back to defaults when vault.yml is missing (messages=15, minutes=30)', () => {
     const emptyVault = tmpDir; // no vault.yml
     const now = 1700001000;
-    writeState(TOKEN, { count: 14, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 14, last_ts: now - 10, last_stop_nn: '00', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handleStop(TOKEN, emptyVault, now, tmpDir);
@@ -409,21 +475,26 @@ describe('handlePostcompact', () => {
     await rm(vaultDir, { recursive: true, force: true });
   });
 
-  it('no recent checkpoint → emits auto-wrapup block', () => {
+  it('no recent checkpoint → sets wrapup_pending=1 (silent stdout)', () => {
     const oldTs = now - 600; // > 300s → not recent
-    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02', wrapup_pending: 0 }, tmpDir);
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
+    expect(out).toBe(''); // PostCompact stdout cannot reach the agent — must stay silent
+    const state = readState(TOKEN, tmpDir);
+    expect(state.wrapup_pending).toBe(1);
+    expect(state.last_ts).toBe(now);
   });
 
-  it('auto-wrapup emitted → state updated: count=0, last_ts=now, last_stop_nn preserved', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
+  it('signal set → state updated: count=0, last_ts=now, last_stop_nn preserved', () => {
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: now - 600, last_stop_nn: '02', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
@@ -433,11 +504,16 @@ describe('handlePostcompact', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(now);
     expect(state.last_stop_nn).toBe('02'); // unchanged
+    expect(state.wrapup_pending).toBe(1);
   });
 
-  it('recent checkpoint (< 5 min) → no emit, last_ts preserved', () => {
+  it('recent checkpoint (< 5 min) → wrapup_pending stays 0, last_ts preserved', () => {
     const recentTs = now - 100; // < 300s
-    writeState(TOKEN, { count: 0, last_ts: recentTs, last_stop_nn: '03' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: recentTs, last_stop_nn: '03', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
@@ -447,20 +523,25 @@ describe('handlePostcompact', () => {
     const state = readState(TOKEN, tmpDir);
     expect(state.last_ts).toBe(recentTs); // preserved
     expect(state.last_stop_nn).toBe('03');
+    expect(state.wrapup_pending).toBe(0);
   });
 
-  it('no state file (last_ts=0) → recency guard fails → emits auto-wrapup', () => {
+  it('no state file (last_ts=0) → recency guard fails → wrapup_pending set', () => {
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
+    expect(out).toBe('');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.wrapup_pending).toBe(1);
   });
 
   it('postcompact resets last_ts to now and count to 0 — state ready for next session', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '01' }, tmpDir);
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: now - 600, last_stop_nn: '01', wrapup_pending: 0 },
+      tmpDir,
+    );
 
     const cap = captureStdout();
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
@@ -471,7 +552,7 @@ describe('handlePostcompact', () => {
     expect(state.count).toBe(0);
   });
 
-  it('4-field legacy state (pending_stub) → auto-wrapup still emitted', async () => {
+  it('4-field legacy state (pending_stub filename) → wrapup_pending set on next compact', async () => {
     const oldTs = now - 600;
     await writeFile(
       stateFile(tmpDir, TOKEN),
@@ -483,9 +564,65 @@ describe('handlePostcompact', () => {
     handlePostcompact(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
 
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
+    expect(out).toBe('');
+    const state = readState(TOKEN, tmpDir);
+    expect(state.wrapup_pending).toBe(1);
+  });
+
+  it('PostCompact fires twice within recency window → wrapup_pending preserved (signal survives)', () => {
+    // First /compact sets wrapup_pending=1. User immediately runs /compact again
+    // (e.g., accidentally double-tapped). The second PostCompact must NOT clear
+    // the flag — the signal hasn't been consumed yet by UserPromptSubmit.
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: now - 600, last_stop_nn: '02', wrapup_pending: 0 },
+      tmpDir,
+    );
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(1); // first call set it
+
+    // Second compact within 5 min — recency guard hits. Must preserve the flag.
+    handlePostcompact(TOKEN, vaultDir, now + 60, tmpDir);
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(1); // still set
+  });
+
+  it('recency-guard skip preserves all state on disk (no overwrite)', () => {
+    // The recency-skip branch is a true no-op — it does not rewrite state.
+    // Cross-session staleness is handled by the 24h TTL guard in
+    // handleUserPromptSubmit, not by clearing the flag here.
+    writeState(
+      TOKEN,
+      { count: 3, last_ts: now - 100, last_stop_nn: '04', wrapup_pending: 1 },
+      tmpDir,
+    );
+    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
+    const state = readState(TOKEN, tmpDir);
+    expect(state.count).toBe(3);
+    expect(state.last_ts).toBe(now - 100);
+    expect(state.last_stop_nn).toBe('04');
+    expect(state.wrapup_pending).toBe(1);
+  });
+
+  it('writeState failure leaves on-disk state unchanged — next compact can retry', () => {
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: now - 600, last_stop_nn: '02', wrapup_pending: 0 },
+      tmpDir,
+    );
+    const originalWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (() => true) as typeof process.stderr.write;
+
+    // Use a non-existent tmpDir to force writeFileSync ENOENT.
+    const badTmpDir = join(tmpDir, 'does', 'not', 'exist');
+    handlePostcompact(TOKEN, vaultDir, now, badTmpDir);
+    process.stderr.write = originalWrite;
+
+    // Original tmpDir's state must be untouched (write went to badTmpDir
+    // and failed). last_ts still old → next PostCompact's recency guard
+    // does not skip → retry succeeds.
+    const state = readState(TOKEN, tmpDir);
+    expect(state.last_ts).toBe(now - 600);
+    expect(state.wrapup_pending).toBe(0);
   });
 });
 
@@ -508,22 +645,194 @@ describe('postcompactFallback', () => {
 
   const now = 1700002000;
 
-  it('emits auto-wrapup when not recent', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 600, last_stop_nn: '02' }, tmpDir);
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    const parsed = JSON.parse(out.trim());
-    expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
-  });
-
-  it('no emit when recent (< 5 min since last checkpoint)', () => {
-    writeState(TOKEN, { count: 0, last_ts: now - 100, last_stop_nn: '02' }, tmpDir);
+  it('sets wrapup_pending when not recent', () => {
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: now - 600, last_stop_nn: '02', wrapup_pending: 0 },
+      tmpDir,
+    );
     const cap = captureStdout();
     postcompactFallback(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     expect(out).toBe('');
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(1);
+  });
+
+  it('no signal when recent (< 5 min since last checkpoint)', () => {
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: now - 100, last_stop_nn: '02', wrapup_pending: 0 },
+      tmpDir,
+    );
+    const cap = captureStdout();
+    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe('');
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// handleUserPromptSubmit
+// ---------------------------------------------------------------------------
+
+describe('handleUserPromptSubmit', () => {
+  let tmpDir: string;
+  let vaultDir: string;
+  const now = 1700004000;
+
+  beforeEach(async () => {
+    tmpDir = await makeTmpDir();
+    vaultDir = await makeTmpDir();
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+    await rm(vaultDir, { recursive: true, force: true });
+  });
+
+  function setPending(ts: number, pending: 0 | 1 = 1, lastStopNn = '02'): void {
+    writeState(
+      TOKEN,
+      { count: 0, last_ts: ts, last_stop_nn: lastStopNn, wrapup_pending: pending },
+      tmpDir,
+    );
+  }
+
+  it('wrapup_pending=1 → emits additionalContext payload + clears flag', () => {
+    setPending(now);
+
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now + 5, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim()) as {
+      hookSpecificOutput: { hookEventName: string; additionalContext: string };
+    };
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('[OneBrain auto-wrapup]');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('Path B');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('background sub-agent');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('mode: bypassPermissions');
+    // Consistency with Stop hook: agent uses its OWN session_token from context.
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(`session_token: ${TOKEN}`);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain(
+      'session_token from your context',
+    );
+
+    // Flag consumed (one-shot) — other state fields preserved
+    const after = readState(TOKEN, tmpDir);
+    expect(after.wrapup_pending).toBe(0);
+    expect(after.last_ts).toBe(now); // last_ts preserved (still useful for next recency guard)
+  });
+
+  it('wrapup_pending=0 → silent exit, no stdout, state unchanged', () => {
+    setPending(now, 0);
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe('');
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
+  });
+
+  it('no state file → silent exit (no spurious wrapup directive on cold start)', () => {
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe('');
+  });
+
+  it('payload is valid JSON with single trailing newline', () => {
+    setPending(now);
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    expect(out.endsWith('\n')).toBe(true);
+    expect(out.trim().split('\n').length).toBe(1);
+    expect(() => JSON.parse(out.trim())).not.toThrow();
+  });
+
+  it('two consecutive calls: first emits, second is silent (one-shot)', () => {
+    setPending(now);
+
+    const cap1 = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out1 = cap1.stop();
+    expect(out1).not.toBe('');
+
+    const cap2 = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now + 5, tmpDir);
+    const out2 = cap2.stop();
+    expect(out2).toBe('');
+  });
+
+  it('signal older than 24h is discarded silently — flag cleared, no directive', () => {
+    const originalWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (() => true) as typeof process.stderr.write;
+    const yesterday = now - 25 * 60 * 60; // > 24h
+    setPending(yesterday);
+
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    process.stderr.write = originalWrite;
+
+    expect(out).toBe(''); // no directive emitted
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0); // stale flag cleared
+  });
+
+  it('signal exactly past TTL boundary (24h + 1s) is discarded', () => {
+    const originalWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (() => true) as typeof process.stderr.write;
+    setPending(now - (24 * 60 * 60 + 1));
+
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    process.stderr.write = originalWrite;
+
+    expect(out).toBe('');
+  });
+
+  it('directive instructs the agent to defer to /wrapup-style commands', () => {
+    setPending(now);
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim()) as {
+      hookSpecificOutput: { additionalContext: string };
+    };
+    // Conflict avoidance — without this, /wrapup right after /compact runs twice.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('/wrapup');
+    expect(parsed.hookSpecificOutput.additionalContext).toMatch(
+      /IGNORE this directive|let that command handle/i,
+    );
+  });
+
+  it('directive includes the date derived from last_ts (PostCompact firing time)', () => {
+    // PostCompact fired at "yesterday" — directive should carry that date even though
+    // the prompt fires today. last_ts is the source of truth for the date.
+    const yesterday = now - 86400;
+    setPending(yesterday);
+
+    const cap = captureStdout();
+    handleUserPromptSubmit(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim()) as {
+      hookSpecificOutput: { additionalContext: string };
+    };
+    const yDate = new Date(yesterday * 1000);
+    const expectedDate = `${yDate.getFullYear()}-${String(yDate.getMonth() + 1).padStart(2, '0')}-${String(yDate.getDate()).padStart(2, '0')}`;
+    expect(parsed.hookSpecificOutput.additionalContext).toContain(`date: ${expectedDate}`);
+  });
+
+  it('handleStop preserves wrapup_pending across its writes', () => {
+    // Set up: PostCompact has fired (wrapup_pending=1), now Stop fires before
+    // user has a chance to submit a prompt. The pending flag must survive.
+    setPending(now - 100, 1, '00');
+    handleStop(TOKEN, vaultDir, now - 50, tmpDir);
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(1);
   });
 });
 
@@ -585,7 +894,7 @@ describe('unicode in checkpoint files', () => {
 
   it('state file with token containing only ASCII — content is valid UTF-8', async () => {
     const now = 1700001000;
-    writeState(TOKEN, { count: 3, last_ts: now, last_stop_nn: '02' }, tmpDir);
+    writeState(TOKEN, { count: 3, last_ts: now, last_stop_nn: '02', wrapup_pending: 0 }, tmpDir);
 
     const stateContent = await Bun.file(stateFile(tmpDir, TOKEN)).text();
     // State file is ASCII, so it's trivially valid UTF-8

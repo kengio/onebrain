@@ -1,6 +1,6 @@
 ---
-latest_version: 2.2.0
-released: 2026-04-29
+latest_version: 2.2.1
+released: 2026-04-30
 ---
 
 # Plugin Changelog
@@ -12,6 +12,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.1 — fix: PostCompact auto-wrapup trigger via state-file flag + UserPromptSubmit additionalContext
+
+- fix(INSTRUCTIONS Auto Checkpoint): replace stale "block reason `auto-wrapup`" trigger language with the state-flag → UserPromptSubmit `additionalContext` flow (matches CLI v2.1.6). PostCompact stdout cannot reach the agent; signal is now delivered on the next user prompt.
+- fix(INSTRUCTIONS PostCompact auto-wrapup): change Path B from inline execution to background sub-agent dispatch — main agent embeds the compacted context summary in the sub-agent's prompt, then continues responding to the user immediately. No more blocking the next response while the session log writes.
+- fix(INSTRUCTIONS PostCompact dispatch table): remove unreachable PostCompact block-reason rows; add UserPromptSubmit row.
+- fix(INSTRUCTIONS Path A): agent uses its OWN session_token from context (consistent with Stop hook pattern), not the CLI's token from the directive — easier to debug when the two diverge.
 
 ## v2.2.0 — fix: PostCompact session log; simplify checkpoint cleanup; stronger qmd-first search
 

@@ -1,6 +1,6 @@
 ---
-latest_version: 2.1.5
-released: 2026-04-29
+latest_version: 2.1.6
+released: 2026-04-30
 ---
 
 # CLI Changelog
@@ -12,6 +12,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.6 — fix: PostCompact auto-wrapup signal delivery via state-file flag + UserPromptSubmit
+
+- fix(checkpoint): PostCompact no longer emits `decision:"block"` JSON — Claude Code's PostCompact hook is observational-only; its stdout is not delivered to the agent, so the auto-wrapup signal never reached it. Replaced with a `wrapup_pending` flag in the existing per-session state file.
+- feat(checkpoint): new `user-prompt-submit` mode reads the state, emits `additionalContext` (which UserPromptSubmit hooks DO support) carrying the auto-wrapup directive, and clears the flag. One-shot signal per /compact event.
+- feat(register-hooks): wire `UserPromptSubmit → onebrain checkpoint user-prompt-submit` (added to HOOK_EVENTS). Idempotent re-run — existing installs gain the new hook on next `register-hooks` call.
+- feat(checkpoint): state file extended from 3 fields to 4 (`count:last_ts:last_stop_nn:wrapup_pending`). 3-field legacy state and 4-field legacy `pending_stub` filename format both parse with `wrapup_pending=0` for backward compatibility.
+- feat(checkpoint): atomic write-rename for state writes — prevents torn writes if Stop, PostCompact, and UserPromptSubmit hook subprocesses overlap. Pid-suffixed temp files avoid two writers clobbering each other's tmp.
+- feat(checkpoint): `writeState` now returns boolean — callers (PostCompact) can detect filesystem failure and avoid silent state advancement that would mask the lost session log.
+- feat(checkpoint): TTL guard on the wrapup flag — stale signals (>24h since last_ts) are cleared silently instead of injecting confusing context into a fresh session that reused the same token.
+- fix(register-hooks): `applyHooks` now writes 3 events (Stop, PostCompact, UserPromptSubmit) instead of 2.
 
 ## v2.1.5 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
 
