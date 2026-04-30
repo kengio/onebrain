@@ -505,11 +505,15 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
 
 const REQUIRED_HOOKS: Array<{ event: string; cmdSubstring: string }> = [
   { event: 'Stop', cmdSubstring: 'onebrain checkpoint stop' },
-  { event: 'PostCompact', cmdSubstring: 'onebrain checkpoint postcompact' },
 ];
 
+// Hook events OneBrain is allowed to register. Any onebrain-* command found
+// under any other hook event (PreCompact, PostCompact, UserPromptSubmit,
+// SessionStart, etc.) is stale and must be removed.
+const ALLOWED_HOOK_EVENTS = new Set(['Stop', 'PostToolUse']);
+
 const QMD_HOOK_SUBSTRING = 'onebrain qmd-reindex';
-const PRECOMPACT_ONEBRAIN_SUBSTRING = 'onebrain';
+const ONEBRAIN_COMMAND_SUBSTRING = 'onebrain';
 const REQUIRED_PERMISSION = 'Bash(onebrain *)';
 const STALE_HOOK_SUBSTRINGS = ['checkpoint-hook.sh', 'session-init.sh'];
 
@@ -573,22 +577,22 @@ export async function checkSettingsHooks(
     }
   }
 
-  // Stale PreCompact hook
-  const precompactGroups = settings.hooks?.['PreCompact'] ?? [];
-  const hasStalePreCompact = precompactGroups.some((g) =>
-    g.hooks?.some((h) => (h.command ?? '').includes(PRECOMPACT_ONEBRAIN_SUBSTRING)),
-  );
-  if (hasStalePreCompact) {
-    warnings.push('stale PreCompact hook found');
-  }
-
-  // Stale bash references
+  // Stale hooks: any onebrain-* command registered under an event NOT in the
+  // allowed set (Stop, PostToolUse). Catches PreCompact, PostCompact,
+  // UserPromptSubmit, SessionStart, and anything else legacy or experimental.
+  // Also catches stale bash-script references (checkpoint-hook.sh, session-init.sh).
   for (const event of Object.keys(settings.hooks ?? {})) {
     const groups = settings.hooks?.[event] ?? [];
     for (const g of groups) {
       for (const h of g.hooks ?? []) {
+        const cmd = h.command ?? '';
+        if (!ALLOWED_HOOK_EVENTS.has(event) && cmd.includes(ONEBRAIN_COMMAND_SUBSTRING)) {
+          warnings.push(
+            `stale ${event} hook found (onebrain CLI only registers Stop + PostToolUse)`,
+          );
+        }
         for (const sub of STALE_HOOK_SUBSTRINGS) {
-          if ((h.command ?? '').includes(sub)) {
+          if (cmd.includes(sub)) {
             warnings.push(`stale bash hook reference: ${sub}`);
           }
         }

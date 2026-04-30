@@ -77,6 +77,74 @@ describe('runRegisterHooks', () => {
     expect(perms).toHaveLength(14);
   });
 
+  test('arbitrary non-allowed hook with onebrain command is treated as stale and removed (e.g. UserPromptSubmit)', async () => {
+    // Catches any future / experimental hook event that may have been
+    // registered by an older CLI version. Only Stop and PostToolUse are
+    // allowed.
+    const settingsPath = join(tempDir, '.claude', 'settings.json');
+    await mkdir(join(tempDir, '.claude'), { recursive: true });
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          UserPromptSubmit: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint user-prompt-submit' }],
+            },
+          ],
+          SessionStart: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain something' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir: tempDir });
+
+    const settings = await readSettingsFile(tempDir);
+    const hooks = settings['hooks'] as Record<string, unknown>;
+    expect(hooks['UserPromptSubmit']).toBeUndefined(); // removed as stale (any onebrain command under non-allowed event)
+    expect(hooks['SessionStart']).toBeUndefined(); // removed as stale
+    expect(hooks['Stop']).toBeDefined();
+  });
+
+  test('non-onebrain entries under non-allowed events are preserved (user-added hooks)', async () => {
+    const settingsPath = join(tempDir, '.claude', 'settings.json');
+    await mkdir(join(tempDir, '.claude'), { recursive: true });
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          UserPromptSubmit: [
+            {
+              matcher: '',
+              hooks: [
+                { type: 'command', command: 'onebrain checkpoint user-prompt-submit' },
+                { type: 'command', command: 'my-custom-script.sh' },
+              ],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir: tempDir });
+
+    const settings = await readSettingsFile(tempDir);
+    const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    // UserPromptSubmit retained because it has a non-onebrain entry left
+    expect(hooks['UserPromptSubmit']).toBeDefined();
+    const ups = hooks['UserPromptSubmit']?.[0]?.hooks ?? [];
+    expect(ups).toHaveLength(1);
+    expect(ups[0]?.command).toBe('my-custom-script.sh');
+  });
+
   test('stale PreCompact and PostCompact hooks are removed when present in existing settings.json', async () => {
     const settingsPath = join(tempDir, '.claude', 'settings.json');
     await mkdir(join(tempDir, '.claude'), { recursive: true });
