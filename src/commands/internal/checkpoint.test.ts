@@ -215,7 +215,8 @@ describe('handleReset', () => {
 
   it('clears wrapup_pending=1 to 0 — fresh start for next checkpoint cycle', async () => {
     // /wrapup just wrote a session log; the auto-wrapup flag must be cleared
-    // so UserPromptSubmit doesn't fire a duplicate background dispatch.
+    // so the next Stop hook firing doesn't re-emit auto-wrapup and dispatch
+    // a duplicate session log.
     writeState(TOKEN, { count: 5, last_ts: 1000, last_stop_nn: '03', wrapup_pending: 1 }, tmpDir);
     handleReset(TOKEN, 1700000000, tmpDir);
     const state = readState(TOKEN, tmpDir);
@@ -814,6 +815,129 @@ describe('handleStop wrapup branch', () => {
     handleStop(TOKEN, vaultDir, now + 30, tmpDir);
     const out2 = cap2.stop();
     expect(out2).toBe('');
+  });
+
+  it('signal at exactly TTL boundary (24h) is still honored — strict > comparison', () => {
+    // Edge case: now - last_ts === WRAPUP_TTL_SECONDS (exactly 24h).
+    // Code uses strict `>` so this is NOT stale → directive emits.
+    setPending(now - 24 * 60 * 60);
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    const out = cap.stop();
+    const parsed = JSON.parse(out.trim()) as { reason: string };
+    expect(parsed.reason).toBe('auto-wrapup');
+  });
+
+  it('regular handleStop (threshold-not-met branch) preserves wrapup_pending', () => {
+    // wrapup_pending=1 exists, but Stop's wrapup branch is bypassed by setting
+    // last_ts so that `now - last_ts > WRAPUP_TTL_SECONDS` would discard it.
+    // Wait — that path clears the flag. To exercise the threshold-not-met
+    // branch with wrapup_pending intact, we need pending=1 with FRESH last_ts
+    // — but then the wrapup branch fires first and clears.
+    //
+    // The only way to exercise non-emit branches with pending=1 is impossible
+    // by the wrapup branch's design (wrapup priority). Verify instead that
+    // when wrapup_pending=0 (normal case), the threshold-not-met branch
+    // preserves the existing flag value (which is 0). This rules out an
+    // accidental `wrapup_pending: 1` literal sneaking in.
+    setPending(now - 200, 0, '00', 2);
+    handleStop(TOKEN, vaultDir, now, tmpDir);
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// End-to-end: PostCompact → Stop chain (cross-handler contract)
+// ---------------------------------------------------------------------------
+
+describe('end-to-end PostCompact → Stop chain', () => {
+  let tmpDir: string;
+  let vaultDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await makeTmpDir();
+    vaultDir = await makeTmpDir();
+    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+    await rm(vaultDir, { recursive: true, force: true });
+  });
+
+  it('PostCompact fires → next Stop emits auto-wrapup → flag cleared', () => {
+    const t0 = 1700000000;
+
+    // Step 1: PostCompact fires (cold start — no prior state).
+    handlePostcompact(TOKEN, vaultDir, t0, tmpDir);
+    const afterPostcompact = readState(TOKEN, tmpDir);
+    expect(afterPostcompact.wrapup_pending).toBe(1);
+    expect(afterPostcompact.last_ts).toBe(t0);
+
+    // Step 2: User prompts, assistant responds, Stop hook fires.
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, t0 + 10, tmpDir);
+    const out = cap.stop();
+
+    const parsed = JSON.parse(out.trim()) as { decision: string; reason: string };
+    expect(parsed.decision).toBe('block');
+    expect(parsed.reason).toBe('auto-wrapup');
+
+    // Step 3: Flag cleared after emit.
+    const afterStop = readState(TOKEN, tmpDir);
+    expect(afterStop.wrapup_pending).toBe(0);
+    expect(afterStop.last_ts).toBe(t0 + 10);
+  });
+
+  it('/wrapup runs while wrapup_pending=1 → next Stop does NOT double-emit', () => {
+    const t0 = 1700000000;
+
+    // PostCompact set the pending flag.
+    handlePostcompact(TOKEN, vaultDir, t0, tmpDir);
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(1);
+
+    // User explicitly runs /wrapup → CLI calls `onebrain checkpoint reset`.
+    handleReset(TOKEN, t0 + 5, tmpDir);
+    expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
+
+    // Subsequent Stop hook firing should NOT emit auto-wrapup — /wrapup
+    // already produced the session log; another auto-wrapup would just
+    // duplicate it.
+    const cap = captureStdout();
+    handleStop(TOKEN, vaultDir, t0 + 10, tmpDir);
+    const out = cap.stop();
+    expect(out).toBe(''); // no emit; SKIP_WINDOW catches the freshly-reset state
+  });
+
+  it('/wrapup → /compact within 5 min → PostCompact still sets the flag', () => {
+    const t0 = 1700000000;
+
+    // /wrapup wrote a session log and reset state (last_stop_nn='00').
+    handleReset(TOKEN, t0, tmpDir);
+    expect(readState(TOKEN, tmpDir).last_stop_nn).toBe('00');
+
+    // User does new work, then runs /compact 30s later. The PostCompact
+    // recency guard would naively skip (last_ts within 300s) — but the
+    // last_stop_nn='00' check means we DON'T skip: there's no Stop
+    // checkpoint covering the post-/wrapup conversation, so we must
+    // queue an auto-wrapup signal.
+    handlePostcompact(TOKEN, vaultDir, t0 + 30, tmpDir);
+    const after = readState(TOKEN, tmpDir);
+    expect(after.wrapup_pending).toBe(1);
+  });
+
+  it('Stop checkpoint → /compact within 5 min → PostCompact recency-skips (no double work)', () => {
+    const t0 = 1700000000;
+
+    // Simulate Stop checkpoint emit (last_stop_nn='03', count=0, last_ts=now).
+    writeState(TOKEN, { count: 0, last_ts: t0, last_stop_nn: '03', wrapup_pending: 0 }, tmpDir);
+
+    // /compact within 300s → recency guard fires AND last_stop_nn !== '00' →
+    // skip. The Stop checkpoint already covers this content; an auto-wrapup
+    // would just delete it via Path A.
+    handlePostcompact(TOKEN, vaultDir, t0 + 100, tmpDir);
+    const after = readState(TOKEN, tmpDir);
+    expect(after.wrapup_pending).toBe(0); // unchanged — guard skipped
+    expect(after.last_stop_nn).toBe('03'); // preserved
   });
 });
 

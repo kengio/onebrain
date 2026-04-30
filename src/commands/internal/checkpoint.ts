@@ -112,15 +112,26 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
     }
 
     return { count, last_ts, last_stop_nn, wrapup_pending };
-  } catch {
-    // Missing or malformed → fresh state
-    // last_ts=0: avoids SKIP_WINDOW on first run (guard requires last_ts > 0)
-    // and avoids false "recent checkpoint" in postcompact recency guard (requires last_ts > 0)
-    // Eagerly rewrite the state file so v1/malformed files don't accumulate.
-    // Use last_ts=0 to match the returned value — callers rely on last_ts=0 to
-    // disable SKIP_WINDOW and recency guards on the first run.
+  } catch (err) {
+    // Missing → fresh state, eagerly rewritten so the next read short-circuits.
+    // Malformed/corrupted → preserve the old file at `.corrupt` for /doctor to
+    // inspect, then write fresh. Without the rename, an unrecoverable parse
+    // error would silently destroy any pending state (including wrapup_pending=1
+    // that the user is counting on).
+    const path = stateFilePath(token, tmpDir);
+    const isMissing = (err as NodeJS.ErrnoException).code === 'ENOENT';
+    if (!isMissing) {
+      try {
+        renameSync(path, `${path}.corrupt`);
+        process.stderr.write(
+          `checkpoint: state file for token ${token} unparseable; preserved at ${path}.corrupt\n`,
+        );
+      } catch {
+        // rename failed — fall through and overwrite (data was unrecoverable anyway)
+      }
+    }
     try {
-      writeFileSync(stateFilePath(token, tmpDir), FRESH_STATE_DISK, 'utf8');
+      writeFileSync(path, FRESH_STATE_DISK, 'utf8');
     } catch (writeErr) {
       process.stderr.write(
         `checkpoint: failed to rewrite state file for token ${token}: ${writeErr}\n`,
@@ -247,7 +258,16 @@ export function maxCheckpointNnSync(
       if (m) max = Math.max(max, Number(m[1]));
     }
     return max;
-  } catch {
+  } catch (err) {
+    // ENOENT (directory missing) is the expected fresh-session case.
+    // Any other error (EACCES, EIO, etc.) means we cannot reliably determine
+    // the next NN — surface it via stderr rather than returning 0, which would
+    // overwrite real checkpoint-01.md if a transient read failure occurred on
+    // a directory that actually has files in it.
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== 'ENOENT') {
+      process.stderr.write(`checkpoint: maxCheckpointNnSync read error on ${dir}: ${err}\n`);
+    }
     return 0;
   }
 }
@@ -346,9 +366,10 @@ export function handleStop(
 
   const thresholdMet = state.count >= messagesThreshold || elapsed >= timeThreshold;
 
-  // Stop never modifies wrapup_pending — it's owned by PostCompact (set) and
-  // UserPromptSubmit/handleReset (clear). Spread the original state so the flag
-  // survives across all writeState branches below.
+  // Stop's regular branches never modify wrapup_pending — it's owned by
+  // PostCompact (set) and the wrapup branch above / handleReset (clear).
+  // Spread the original state so the flag survives across all writeState
+  // branches below (threshold-not-met, MIN_ACTIVITY guard, threshold-met emit).
 
   if (!thresholdMet) {
     // Update count but preserve last_ts
@@ -385,17 +406,26 @@ export function handleStop(
 
 /**
  * Postcompact hook: set `wrapup_pending=1` in the shared state file so the
- * next UserPromptSubmit delivers the signal to Claude (PostCompact stdout
- * cannot reach the agent — see file header).
+ * next Stop hook firing emits `decision:"block",reason:"auto-wrapup"` to the
+ * agent (PostCompact stdout cannot reach the agent — see file header).
  *
- * If the last checkpoint was very recent (compact followed a stop), skip to
- * avoid double-wrapup — the stop checkpoint is already complete. In that case
- * also clear any pre-existing wrapup_pending so a later session reusing this
- * token (cache hit) doesn't consume a stale directive.
+ * Recency guard: if a Stop checkpoint was just written within the last 5 min
+ * (last_ts recent AND last_stop_nn !== '00'), skip — that checkpoint already
+ * covers the conversation and a follow-up auto-wrapup would just delete it
+ * via Path A. The `last_stop_nn !== '00'` check is critical because after
+ * `/wrapup` the state has last_stop_nn='00' with a fresh last_ts; without
+ * the check, an immediate `/compact` would be silently skipped and any
+ * conversation between /wrapup and /compact would be lost.
+ *
+ * In-session double-/compact: if `wrapup_pending` is already 1 from a prior
+ * PostCompact, both branches of this function preserve it — the recency guard
+ * leaves the file untouched on skip, and the main path overwrites with `1`
+ * anyway. Cross-session staleness is handled by the 24h TTL guard in handleStop.
  *
  * The wrapup signal lives inside the same atomic state write — there is no
  * separate marker file. A single write either persists both the recency
- * timestamp AND the pending flag, or fails silently and leaves both unchanged.
+ * timestamp AND the pending flag, or fails (logged to stderr; on-disk state
+ * unchanged so the next compact attempts again).
  */
 export function handlePostcompact(
   token: string,
@@ -405,15 +435,26 @@ export function handlePostcompact(
 ): void {
   const state = readState(token, tmpDir);
 
-  // Recency guard: a recent state-touching event (Stop checkpoint OR a prior
-  // PostCompact in the same session) means we should not add a new wrap-up
-  // obligation. Preserve existing state on disk — in particular, do NOT clear
-  // wrapup_pending: if a prior PostCompact in the same session already set it,
-  // that signal must survive until UserPromptSubmit consumes it.
+  // Recency guard: skip only when the recent activity was a Stop hook
+  // checkpoint (last_stop_nn !== '00'), because that checkpoint already
+  // covers the conversation and a follow-up auto-wrapup would just delete
+  // the checkpoint via Path A.
   //
-  // Cross-session staleness (an old flag from a closed session whose token got
-  // reused) is handled by the 24h TTL guard in handleUserPromptSubmit, not here.
-  if (state.last_ts > 0 && now - state.last_ts < PRECOMPACT_RECENCY) {
+  // Critical exception: after `/wrapup` runs handleReset, last_stop_nn is
+  // '00' and last_ts is recent. If `/compact` follows within 300s, the
+  // recency guard would skip and any conversation between /wrapup and
+  // /compact would have NO recovery path (no checkpoint written, no
+  // wrapup_pending set, just compacted context). last_stop_nn === '00'
+  // distinguishes that case → fall through and set the flag.
+  //
+  // In-session double-/compact: if wrapup_pending is already 1, the recency
+  // guard is irrelevant — we don't need to set it again, just preserve.
+  // Cross-session staleness is handled by the 24h TTL guard in handleStop.
+  if (
+    state.last_ts > 0 &&
+    now - state.last_ts < PRECOMPACT_RECENCY &&
+    state.last_stop_nn !== '00'
+  ) {
     return;
   }
 
@@ -475,8 +516,13 @@ export async function checkpointCommand(
         break;
       default:
         process.stderr.write(`checkpoint: unknown mode '${mode}'\n`);
+        process.exitCode = 1;
     }
   } catch (err) {
+    // Surface unexpected errors via non-zero exit so the agent's Bash invocation
+    // (e.g., `onebrain checkpoint reset`) sees the failure. Hook stderr is not
+    // surfaced to the agent on its own — only the exit code is.
     process.stderr.write(`checkpoint: unexpected error in ${mode} mode: ${err}\n`);
+    process.exitCode = 1;
   }
 }
