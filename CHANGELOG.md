@@ -19,7 +19,7 @@ Claude Code's PostCompact hook is observational-only — its stdout cannot reach
 
 - removed(checkpoint): `handlePostcompact`, `postcompactFallback`, `'postcompact'` dispatch case, `pending_checkpoint` state field, `PRECOMPACT_RECENCY` and `PENDING_CHECKPOINT_TTL_SECONDS` constants, and the post-compact branch in `handleStop`
 - removed(register-hooks): `PostCompact` from `HOOK_EVENTS`; added to `STALE_HOOK_COMMANDS` so existing installs auto-cleanup `.claude/settings.json` on next `/update` (same pattern that cleaned up PreCompact in earlier versions)
-- changed(checkpoint): state file format is 3 fields (`count:last_ts:last_stop_nn`). 4-field legacy state files (`pending_checkpoint` flag or older `pending_stub` filename string) parse correctly — slot 4 is silently ignored
+- changed(checkpoint): state file format is strictly 3 fields (`count:last_ts:last_stop_nn`). Legacy 4-field state files (whether the v2.1.6-pre `pending_checkpoint` flag or the older `pending_stub` filename string) and v1 2-field files are treated as malformed → reset to fresh `0:0:00` on first read. The reset costs at most one checkpoint cycle of progress (count resets to 0)
 - feat(checkpoint): atomic write-rename for state writes (pid-suffixed temp + POSIX rename) — prevents torn reads
 - perf(checkpoint): skip `findVaultRoot` for `reset` mode — touches $TMPDIR only
 

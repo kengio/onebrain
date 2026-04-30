@@ -106,15 +106,17 @@ describe('readState / writeState', () => {
     expect(state.last_stop_nn).toBe('02');
   });
 
-  it('reads 4-field legacy state — slot 4 silently ignored (post-v2.1.6 pending flag)', async () => {
+  it('treats 4-field legacy state (pending_checkpoint flag) as malformed → resets to 0:0:00', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), '0:1000000:02:1', 'utf8');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(1000000);
-    expect(state.last_stop_nn).toBe('02');
+    expect(state.last_ts).toBe(0);
+    expect(state.last_stop_nn).toBe('00');
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+    expect(raw).toBe('0:0:00');
   });
 
-  it('reads 4-field legacy pending_stub format → slot 4 ignored', async () => {
+  it('treats 4-field legacy pending_stub state as malformed → resets to 0:0:00', async () => {
     await writeFile(
       stateFile(tmpDir, TOKEN),
       '0:1000000:03:2026-04-23-41928-checkpoint-04.md',
@@ -122,8 +124,10 @@ describe('readState / writeState', () => {
     );
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(1000000);
-    expect(state.last_stop_nn).toBe('03');
+    expect(state.last_ts).toBe(0);
+    expect(state.last_stop_nn).toBe('00');
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+    expect(raw).toBe('0:0:00');
   });
 
   it('treats v1 2-field state as parse error → resets to 0:0:00', async () => {

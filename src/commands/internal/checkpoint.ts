@@ -75,11 +75,11 @@ const FRESH_STATE_DISK = '0:0:00';
  * Read state from $tmpDir/onebrain-{token}.state.
  * Returns default state if file is missing or malformed.
  *
- * Backward-compat: parses any state file with at least 3 colon-separated
- * fields. Legacy 4-field formats (whether the post-v2.1.6 `pending_checkpoint`
- * flag or the older pre-v2.0 `pending_stub` filename string in slot 4) are
- * silently ignored — slot 4 is no longer load-bearing as of v2.1.6 (the
- * PostCompact hook was removed).
+ * State file must be exactly 3 colon-separated fields. Legacy formats
+ * (v1 2-field, or 4-field state from pre-v2.1.6 `pending_checkpoint` /
+ * pre-v2.0 `pending_stub` filename) are treated as malformed → reset to
+ * fresh state. The reset costs at most one checkpoint cycle of progress
+ * (count resets to 0); time threshold continues to work.
  *
  * Sync — checkpoint hooks must not add async latency.
  */
@@ -88,13 +88,12 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
   try {
     const raw = readFileSync(path, 'utf8').trim();
     const parts = raw.split(':');
-    if (parts.length < 3) {
-      throw new Error('v1 state format');
+    if (parts.length !== 3) {
+      throw new Error('state file must be exactly 3 fields');
     }
     const count = Number(parts[0]);
     const last_ts = Number(parts[1]);
     const last_stop_nn = parts[2] ?? '00';
-    // parts[3] (if present) is silently ignored — see backward-compat note above.
 
     if (!Number.isInteger(count) || !Number.isInteger(last_ts) || !/^\d{2}$/.test(last_stop_nn)) {
       throw new Error('malformed state');
