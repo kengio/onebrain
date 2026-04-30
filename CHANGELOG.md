@@ -13,17 +13,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.1.6 — fix: drop PostCompact hook entirely; trust Stop hook threshold logic
+## v2.1.6 — fix: drop PostCompact hook; trust Stop hook threshold logic
 
-PostCompact's auto-wrapup signal silently failed because Claude Code's PostCompact hook is observational-only — its stdout (`decision:"block"` JSON) never reached the agent. After several iterations of trying to work around this (marker files, state-file flags, force-checkpoint pivots), the cleanest resolution is to drop PostCompact entirely. The Stop hook already fires after every assistant turn and accumulates a message count across compact events; its existing threshold-based emission (15 messages or 30 min) drives checkpoint creation without any compact-specific handling.
+Claude Code's PostCompact hook is observational-only — its stdout cannot reach the agent. The previous "auto-wrapup after compact" mechanism silently never ran. The Stop hook is now the only checkpoint signal source; it fires after every assistant turn, accumulates message count across compact events, and emits checkpoints when its threshold is met (15 messages or 30 min). Compact events require no special handling.
 
-The lost edge case (manual `/compact` in a very short session followed by brief activity then closing the terminal) is rare enough that the ~150 lines of PostCompact-handling code (state field, hook handler, force-checkpoint branch, recency guards, TTL guards, dispatch routing, plus tests) is not worth maintaining for it. Auto-compact (Claude Code triggered when context fills) by definition only fires after substantial conversation, so the regular Stop threshold has already produced checkpoints by then — no special handling needed.
-
-- removed(checkpoint): `handlePostcompact` and `postcompactFallback` functions, `'postcompact'` dispatch case, `PRECOMPACT_RECENCY` and `PENDING_CHECKPOINT_TTL_SECONDS` constants, `pending_checkpoint` state field, and the post-compact priority branch in `handleStop`
-- removed(register-hooks): `PostCompact` from `HOOK_EVENTS` and `HOOK_COMMANDS`; added it to `STALE_HOOK_COMMANDS` so existing installs auto-cleanup the entry from `.claude/settings.json` on next `/update`
-- changed(checkpoint): state file format reverted from 4 fields to 3 (`count:last_ts:last_stop_nn`). 4-field legacy state files (whether the v2.1.6-pre `pending_checkpoint` flag or the older `pending_stub` filename string) parse correctly — slot 4 is silently ignored
-- feat(checkpoint): atomic write-rename for state writes (pid-suffixed temp + POSIX rename) — prevents torn reads if a writer is interrupted mid-write
-- perf(checkpoint): skip `findVaultRoot` for `reset` mode — that mode only touches $TMPDIR
+- removed(checkpoint): `handlePostcompact`, `postcompactFallback`, `'postcompact'` dispatch case, `pending_checkpoint` state field, `PRECOMPACT_RECENCY` and `PENDING_CHECKPOINT_TTL_SECONDS` constants, and the post-compact branch in `handleStop`
+- removed(register-hooks): `PostCompact` from `HOOK_EVENTS`; added to `STALE_HOOK_COMMANDS` so existing installs auto-cleanup `.claude/settings.json` on next `/update` (same pattern that cleaned up PreCompact in earlier versions)
+- changed(checkpoint): state file format is 3 fields (`count:last_ts:last_stop_nn`). 4-field legacy state files (`pending_checkpoint` flag or older `pending_stub` filename string) parse correctly — slot 4 is silently ignored
+- feat(checkpoint): atomic write-rename for state writes (pid-suffixed temp + POSIX rename) — prevents torn reads
+- perf(checkpoint): skip `findVaultRoot` for `reset` mode — touches $TMPDIR only
 
 ## v2.1.5 — feat: cyberpunk banner v2 + checkpoint cleanup consistency
 
