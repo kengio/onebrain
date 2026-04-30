@@ -13,12 +13,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.2.1 — fix: PostCompact auto-wrapup via Stop hook reason `auto-wrapup` (state-file flag)
+## v2.2.1 — fix: PostCompact follow-up via forced Stop checkpoint (clean separation of concerns)
 
-- fix(INSTRUCTIONS Auto Checkpoint): PostCompact silently sets a `wrapup_pending=1` flag in the shared state file; the next Stop hook firing emits `decision:"block",reason:"auto-wrapup"` to deliver the signal to the agent. No new hook registered — the signal piggybacks on the existing Stop hook, matching CLI v2.1.6.
-- fix(INSTRUCTIONS PostCompact auto-wrapup): change Path B from inline execution to background sub-agent dispatch — main agent embeds the compacted context summary in the sub-agent's prompt, then continues responding to the user immediately. No more blocking the next response while the session log writes.
-- fix(INSTRUCTIONS PostCompact dispatch table): remove unreachable PostCompact block-reason rows; add Stop-hook auto-wrapup reason row.
-- fix(INSTRUCTIONS Path A/B): agent uses its OWN session_token from context (consistent with Stop hook pattern) — easier to debug when CLI/agent token resolution diverge.
+The Stop hook is now the SOLE producer of checkpoint signals; session logs are produced ONLY by `/wrapup` (manual) or AUTO-SUMMARY (end-of-session signal). This preserves the **"1 session = 1 session log"** invariant — PostCompact never produces a session log directly; it just queues a checkpoint capture for the next Stop.
+
+- fix(INSTRUCTIONS Auto Checkpoint): collapse the dispatch table — only `NN since <context>` reasons are delivered to the agent, regardless of whether the checkpoint was activity-driven or PostCompact-driven. Drop the unreachable `auto-wrapup` reason row.
+- fix(INSTRUCTIONS PostCompact section): replace 50-line Path A/B procedure with a single paragraph — PostCompact silently sets a state flag that forces the next Stop to emit a checkpoint NN. No special routing for the agent. Session log creation deferred to `/wrapup` or AUTO-SUMMARY.
+- fix(INSTRUCTIONS routing): remove all references to `auto-wrapup` reason and inline PostCompact directive injection.
 
 ## v2.2.0 — fix: PostCompact session log; simplify checkpoint cleanup; stronger qmd-first search
 

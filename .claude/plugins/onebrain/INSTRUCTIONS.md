@@ -295,58 +295,18 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 When a hook sends a message whose reason matches `NN since <context>` (a zero-padded two-digit number followed by ` since start` or ` since checkpoint-NN`), silently spawn a background agent (mode: bypassPermissions) to write the checkpoint. The background agent receives: `session_token` from context (re-run `onebrain session-init` first if not in context — if that fails, abort silently), today's date (YYYY-MM-DD), NN from the reason, `[logs_folder]`, and enough conversation context to write a meaningful checkpoint. The agent writes to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Create parent directories if missing. No output to user.
 
-Stop hooks deliver two flavors of block reason. PostCompact silently sets a `wrapup_pending=1` flag in the shared state file; the very next Stop hook firing turns that flag into a `decision:"block",reason:"auto-wrapup"` emit (the wrapup branch in handleStop bypasses SKIP_WINDOW and the message-count threshold). Determine action from the reason:
-- `Stop hook blocking error` with reason matching `NN since <context>` (zero-padded NN + ` since start` or ` since checkpoint-NN`) → spawn background agent (mode: bypassPermissions) to write the stop checkpoint; if session_token is not in context, re-run `onebrain session-init` first — if that fails, abort silently; agent receives session_token, NN and since-context from the reason, today's date, and `[logs_folder]`; main session continues immediately after dispatching
-- `Stop hook blocking error` with reason `auto-wrapup` → PostCompact auto-wrapup (see below)
+The Stop hook is the SOLE source of checkpoint signals to the agent. Both regular activity-driven checkpoints AND post-compact checkpoints emit the same reason format `NN since <context>` — the agent treats them uniformly: spawn a background sub-agent (mode: bypassPermissions) to write a checkpoint file, then continue.
+
+Determine action from the reason:
+- `Stop hook blocking error` with reason matching `NN since <context>` (zero-padded NN + ` since start` or ` since checkpoint-NN`) → spawn background agent (mode: bypassPermissions) to write the checkpoint; if session_token is not in context, re-run `onebrain session-init` first — if that fails, abort silently; agent receives session_token, NN and since-context from the reason, today's date, and `[logs_folder]`; main session continues immediately after dispatching
 - `PostCompact` block messages → never delivered to the agent (PostCompact is observational-only); ignore if seen
 - Ambiguous or unknown → default to stop checkpoint
 
-PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact sets `wrapup_pending=1` in the shared state file (`$TMPDIR/onebrain-{token}.state`); the flag is consumed by the next Stop hook, which clears it back to 0 after emitting the auto-wrapup reason.
+PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact silently sets `wrapup_pending=1` in the shared state file (`$TMPDIR/onebrain-{token}.state`); the flag forces the very next Stop hook to emit a checkpoint NN regardless of count / threshold / SKIP_WINDOW. The forced checkpoint captures the compacted context summary into a checkpoint file before further conversation accumulates.
 
 **Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 
-**PostCompact auto-wrapup:** When the Stop hook block reason is `auto-wrapup`, **spawn a background sub-agent** (Agent tool, mode: bypassPermissions, run_in_background: true) to perform the work and continue responding to the user immediately — do NOT block on the session log write. The work is silent: no output to the user during or after execution.
-
-The reason field carries no payload beyond the `auto-wrapup` token itself. Pass these values into the sub-agent's prompt:
-- the agent's own `session_token` (from context / re-run `onebrain session-init` if not in context)
-- today's date (YYYY-MM-DD), or the date the previous /compact occurred if known
-- vault paths from CLAUDE.md / vault.yml
-- the main agent's compacted context summary (the sub-agent has no other access to it — embed it directly in the prompt for Path B fallback)
-
-The background sub-agent then performs:
-
-1. Use the agent's own `session_token` and the `date`
-2. Glob candidate checkpoint files:
-   - Current month: `[logs_folder]/YYYY/MM/*-{session_token}-checkpoint-*.md` (using the date)
-   - Previous month: decrement MM (if MM=01, also decrement YYYY and set MM=12)
-   - After globbing, parse the token segment from each filename (`YYYY-MM-DD-{session_token}-checkpoint-NN.md`) and discard files where the parsed token does not exactly equal the agent's `session_token`
-   - Any checkpoint file that exists is unmerged by definition — there is no `merged:` filter
-3. Two paths based on whether checkpoint files were found:
-
-**Path A — checkpoint files found** (synthesize from checkpoints):
-
-4. Read all matched checkpoint files and extract their content
-5. Determine session date from the earliest checkpoint filename date prefix (YYYY-MM-DD); extract `YYYY` and `MM` from this date for all path construction below
-6. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/` (using session YYYY/MM); NN = count + 1 (zero-padded); verify slot is free, increment NN until free
-7. Write recovered session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). All Key Decisions, Action Items, and Open Questions from each checkpoint must appear explicitly — do not collapse into one line.
-8. Verify the session log file exists and is non-empty before continuing
-9. Route action items to project notes — parse `## Action Items` from the verified session log; apply the routing algorithm from /wrapup Step 4b (token scoring against project folder/filename tokens, session-context fallback for score-0 tasks; ties remain skipped); all errors are silent — never fail this path
-10. Delete checkpoint files read in step 4 — only AFTER session log write confirmed (step 8); if an individual delete fails, skip it silently (stale checkpoints are cleaned up later by /doctor)
-11. Run `onebrain checkpoint reset`
-12. Silent — no output to user
-
-**Path B — no checkpoint files** (synthesize from compacted context embedded in prompt):
-
-The main agent's compacted summary travels into the sub-agent's prompt — the sub-agent reads it from there, not from a context the sub-agent does not have.
-
-4. Use today's date (YYYY-MM-DD) for the session log filename and `date:` field; extract `YYYY` and `MM` for path construction
-5. Determine next free session slot: count existing `YYYY-MM-DD-session-*.md` in `[logs_folder]/YYYY/MM/`; NN = count + 1 (zero-padded); verify slot is free, increment NN until free
-6. Synthesize the session log body from the compacted context summary embedded in the prompt. If that summary is too sparse for a meaningful body, write a minimal session log with `## What We Worked On` set to `Session compacted; details unavailable beyond context summary.` and empty Action Items / Open Questions — do not skip the write entirely, since a sparse log is better than no log for orphan-recovery accounting.
-7. Write session log at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md` (case: **PostCompact Path B — no checkpoint files**)
-8. Verify the session log file exists and is non-empty before continuing
-9. Route action items to project notes — parse `## Action Items` from the verified session log; apply the routing algorithm from /wrapup Step 4b (token scoring + session-context fallback; ties remain skipped); errors are silent — never fail this path
-10. Run `onebrain checkpoint reset`
-11. Silent — no output to user
+**Session logs are NOT created from the Stop hook.** They are created only by `/wrapup` (manual) or AUTO-SUMMARY (end-of-session signal); both consolidate accumulated checkpoint files into one session log per call. This preserves the "1 session = 1 session log" invariant. PostCompact never produces a session log directly; it just queues a checkpoint capture for the next Stop.
 
 ---
 

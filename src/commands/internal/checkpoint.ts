@@ -1,10 +1,10 @@
 /**
  * checkpoint — internal command
  *
- * Implements stop/postcompact/reset modes. Two block-reason flavors are emitted
- * from the Stop hook: `NN since <context>` for regular checkpoints, and
- * `auto-wrapup` for the PostCompact follow-up signal. Both reach the agent via
- * the same Stop hook → no separate UserPromptSubmit hook is required.
+ * Implements stop/postcompact/reset modes. The Stop hook is the SOLE producer
+ * of checkpoint signals; session logs are produced only by /wrapup (manual) or
+ * AUTO-SUMMARY (end-of-session signal). This keeps "1 session = 1 session log"
+ * as the user-facing invariant.
  *
  * State file: $TMPDIR/onebrain-{session_token}.state
  * Format:     count:last_ts:last_stop_nn:wrapup_pending
@@ -18,19 +18,23 @@
  * sequential numbering even when Claude fails to write a file (e.g. context full).
  *
  * Hook signal delivery:
- * - Stop: emits {decision:"block",reason:"NN since ..."} for checkpoints, or
- *   {decision:"block",reason:"auto-wrapup"} when wrapup_pending=1. Wrapup takes
- *   priority — it bypasses SKIP_WINDOW and the message-count threshold because
- *   PostCompact intends the very next Stop to deliver the signal.
+ * - Stop: emits {decision:"block",reason:"NN since <context>"} — always. The
+ *   reason is uniform whether the checkpoint was triggered by message count,
+ *   time threshold, or PostCompact follow-up. The agent treats all three the
+ *   same: write a checkpoint file capturing the conversation since the last NN.
  * - PostCompact: sets `wrapup_pending=1` in the shared state file (its stdout
  *   cannot reach the agent because PostCompact is observational-only). The
- *   signal is consumed by the next Stop hook firing.
+ *   flag forces the next Stop to emit a checkpoint NN regardless of count /
+ *   threshold / SKIP_WINDOW — PostCompact's intent is "capture the compacted
+ *   summary into a checkpoint file before more conversation happens".
+ *
+ * Session log creation lives outside this file — see /wrapup skill and
+ * AUTO-SUMMARY in INSTRUCTIONS.md. Both consolidate accumulated checkpoint
+ * files into one session log per call.
  *
  * Concurrency: each hook runs as its own short-lived CLI subprocess. State writes use
  * atomic write-then-rename (pid-suffixed temp file → POSIX rename) so concurrent writers
- * cannot tear the file. Read-modify-write races (one hook reading old state while another
- * is writing) are theoretically possible but practically rare — Claude Code hooks fire
- * sequentially per session.
+ * cannot tear the file.
  *
  * Exit code always 0. Errors go to stderr only.
  * JSON decision blocks go to process.stdout.write (no console.log).
@@ -62,10 +66,16 @@ export interface CheckpointState {
   last_ts: number;
   last_stop_nn: string;
   /**
-   * 0 = no auto-wrapup pending.
-   * 1 = PostCompact fired and is waiting for the next Stop hook to emit
-   *     `decision:"block",reason:"auto-wrapup"` to the agent. Cleared after
-   *     emission (or silently cleared if the signal exceeds WRAPUP_TTL_SECONDS).
+   * 0 = no post-compact follow-up pending.
+   * 1 = PostCompact fired and is waiting for the next Stop hook to force
+   *     a checkpoint emission (capturing the compacted summary in a checkpoint
+   *     file). Cleared after emission, or silently cleared if the signal
+   *     exceeds WRAPUP_TTL_SECONDS.
+   *
+   * The field name `wrapup_pending` is historical — earlier iterations of this
+   * design produced a session log directly, hence "wrapup". The behavior is
+   * now "force-checkpoint" but the field name is preserved for state-file
+   * stability.
    */
   wrapup_pending: 0 | 1;
 }
@@ -112,26 +122,13 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
     }
 
     return { count, last_ts, last_stop_nn, wrapup_pending };
-  } catch (err) {
-    // Missing → fresh state, eagerly rewritten so the next read short-circuits.
-    // Malformed/corrupted → preserve the old file at `.corrupt` for /doctor to
-    // inspect, then write fresh. Without the rename, an unrecoverable parse
-    // error would silently destroy any pending state (including wrapup_pending=1
-    // that the user is counting on).
-    const path = stateFilePath(token, tmpDir);
-    const isMissing = (err as NodeJS.ErrnoException).code === 'ENOENT';
-    if (!isMissing) {
-      try {
-        renameSync(path, `${path}.corrupt`);
-        process.stderr.write(
-          `checkpoint: state file for token ${token} unparseable; preserved at ${path}.corrupt\n`,
-        );
-      } catch {
-        // rename failed — fall through and overwrite (data was unrecoverable anyway)
-      }
-    }
+  } catch {
+    // Missing or malformed → fresh state, eagerly rewritten so subsequent reads
+    // short-circuit cleanly. Filesystem corruption that destroys a pending flag
+    // is exceedingly rare; if it happens, the worst outcome is a missed
+    // auto-wrapup, which /wrapup orphan recovery will pick up at next session.
     try {
-      writeFileSync(path, FRESH_STATE_DISK, 'utf8');
+      writeFileSync(stateFilePath(token, tmpDir), FRESH_STATE_DISK, 'utf8');
     } catch (writeErr) {
       process.stderr.write(
         `checkpoint: failed to rewrite state file for token ${token}: ${writeErr}\n`,
@@ -148,42 +145,31 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
 
 /**
  * Write state to $tmpDir/onebrain-{token}.state (4-field format) via atomic
- * write-then-rename. Eliminates torn writes if Stop and PostCompact hook
- * processes happen to overlap (rare — hooks fire sequentially in normal
- * Claude Code usage, but defensive anyway).
+ * write-then-rename. The pid-suffixed temp file + POSIX rename mirrors the
+ * pattern used by `register-hooks.ts:writeSettings` and prevents torn reads
+ * if a writer is interrupted mid-write.
  *
- * Each hook process uses a pid-suffixed temp file so two concurrent writers
- * don't clobber each other's temp files. The final rename is atomic on POSIX.
- *
- * Returns true on success, false on filesystem failure.
- *
- * Callers that set `wrapup_pending=1` (PostCompact) must check the return value
- * before advancing other guards — a silent write failure followed by the
- * recency guard kicking in would permanently lose the session log.
- *
- * Sync.
+ * Sync. Errors logged to stderr.
  */
 export function writeState(
   token: string,
   state: CheckpointState,
   tmpDir: string = osTmpdir(),
-): boolean {
+): void {
   const path = stateFilePath(token, tmpDir);
   const tmpPath = `${path}.tmp.${process.pid}`;
   const content = `${state.count}:${state.last_ts}:${state.last_stop_nn}:${state.wrapup_pending}`;
   try {
     writeFileSync(tmpPath, content, 'utf8');
     renameSync(tmpPath, path);
-    return true;
   } catch (err) {
     process.stderr.write(`checkpoint: failed to write state file ${path}: ${err}\n`);
-    // Best-effort cleanup of temp file if rename failed (write succeeded).
+    // Best-effort cleanup of temp file if write succeeded but rename failed.
     try {
       unlinkSync(tmpPath);
     } catch {
       // ignore
     }
-    return false;
   }
 }
 
@@ -258,16 +244,7 @@ export function maxCheckpointNnSync(
       if (m) max = Math.max(max, Number(m[1]));
     }
     return max;
-  } catch (err) {
-    // ENOENT (directory missing) is the expected fresh-session case.
-    // Any other error (EACCES, EIO, etc.) means we cannot reliably determine
-    // the next NN — surface it via stderr rather than returning 0, which would
-    // overwrite real checkpoint-01.md if a transient read failure occurred on
-    // a directory that actually has files in it.
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code !== 'ENOENT') {
-      process.stderr.write(`checkpoint: maxCheckpointNnSync read error on ${dir}: ${err}\n`);
-    }
+  } catch {
     return 0;
   }
 }
@@ -329,24 +306,33 @@ export function handleStop(
 ): void {
   const state = readState(token, tmpDir);
 
-  // Wrapup priority: PostCompact set wrapup_pending=1; the very next Stop must
-  // deliver the auto-wrapup signal. This bypasses SKIP_WINDOW and the regular
-  // checkpoint-threshold logic — wrapup replaces the would-be checkpoint
-  // because the session log it produces covers the same ground.
+  // Post-compact priority: PostCompact set wrapup_pending=1; force a checkpoint
+  // emission on this Stop regardless of count / threshold / SKIP_WINDOW /
+  // MIN_ACTIVITY. PostCompact's intent is "the compacted summary needs to land
+  // in a checkpoint file before more conversation accumulates" — without this
+  // forced emission the agent might wait until the regular threshold and lose
+  // freshness in the meantime.
+  //
+  // The emitted reason is uniform with regular checkpoint emissions
+  // (`NN since <context>`) — the agent treats post-compact checkpoints the
+  // same as activity-driven ones. Session log creation is deferred to /wrapup
+  // (manual) or AUTO-SUMMARY (end-of-session), preserving the
+  // "1 session = 1 session log" invariant.
   if (state.wrapup_pending === 1) {
     if (state.last_ts > 0 && now - state.last_ts > WRAPUP_TTL_SECONDS) {
-      // Stale signal from a forgotten session that reused this token →
-      // discard silently rather than inject confusing context.
-      process.stderr.write(`checkpoint: discarding stale auto-wrapup signal for token ${token}\n`);
+      // Stale signal from a forgotten session that reused this token —
+      // discard silently rather than capture a checkpoint with stale context.
       writeState(token, { ...state, wrapup_pending: 0 }, tmpDir);
       return;
     }
-    emitBlock('auto-wrapup');
-    writeState(
-      token,
-      { count: 0, last_ts: now, last_stop_nn: state.last_stop_nn, wrapup_pending: 0 },
-      tmpDir,
-    );
+    const { logsFolder } = loadVaultSettings(vaultRoot);
+    const date = formatDate(now);
+    const maxNn = maxCheckpointNnSync(vaultRoot, date, token, logsFolder);
+    const nextNn = String(maxNn + 1).padStart(2, '0');
+    const since =
+      maxNn === 0 ? ' since start' : ` since checkpoint-${String(maxNn).padStart(2, '0')}`;
+    emitBlock(`${nextNn}${since}`);
+    writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn, wrapup_pending: 0 }, tmpDir);
     return;
   }
 
@@ -516,13 +502,8 @@ export async function checkpointCommand(
         break;
       default:
         process.stderr.write(`checkpoint: unknown mode '${mode}'\n`);
-        process.exitCode = 1;
     }
   } catch (err) {
-    // Surface unexpected errors via non-zero exit so the agent's Bash invocation
-    // (e.g., `onebrain checkpoint reset`) sees the failure. Hook stderr is not
-    // surfaced to the agent on its own — only the exit code is.
     process.stderr.write(`checkpoint: unexpected error in ${mode} mode: ${err}\n`);
-    process.exitCode = 1;
   }
 }

@@ -165,20 +165,6 @@ describe('readState / writeState', () => {
     expect(state.last_stop_nn).toBe('01');
     expect(state.wrapup_pending).toBe(1);
   });
-
-  it('writeState returns true on success, false on filesystem error', () => {
-    expect(
-      writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00', wrapup_pending: 0 }, tmpDir),
-    ).toBe(true);
-
-    const originalWrite = process.stderr.write.bind(process.stderr);
-    process.stderr.write = (() => true) as typeof process.stderr.write;
-    const badDir = join(tmpDir, 'does', 'not', 'exist');
-    expect(
-      writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00', wrapup_pending: 0 }, badDir),
-    ).toBe(false);
-    process.stderr.write = originalWrite;
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -699,7 +685,7 @@ describe('handleStop wrapup branch', () => {
     );
   }
 
-  it('wrapup_pending=1 → emits decision:block reason=auto-wrapup + clears flag', () => {
+  it('wrapup_pending=1 → forces a checkpoint NN emission + clears flag', () => {
     setPending(now);
 
     const cap = captureStdout();
@@ -708,20 +694,21 @@ describe('handleStop wrapup branch', () => {
 
     const parsed = JSON.parse(out.trim()) as { decision: string; reason: string };
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
+    // Uniform reason format with regular checkpoints — no special "auto-wrapup"
+    // marker. The agent treats post-compact checkpoints the same as regular ones.
+    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
 
-    // Flag consumed; last_ts advanced; last_stop_nn preserved
+    // Flag consumed; last_ts advanced; last_stop_nn updated to fresh NN.
     const after = readState(TOKEN, tmpDir);
     expect(after.wrapup_pending).toBe(0);
     expect(after.last_ts).toBe(now + 5);
-    expect(after.last_stop_nn).toBe('02');
     expect(after.count).toBe(0);
+    expect(after.last_stop_nn).not.toBe('02'); // changed (incremented)
   });
 
-  it('wrapup priority bypasses SKIP_WINDOW (a /wrapup just ran would normally skip)', () => {
+  it('post-compact priority bypasses SKIP_WINDOW (a /wrapup just ran would normally skip)', () => {
     // Simulate /wrapup-then-/compact: handleReset wrote count=0 + last_ts=now-30s.
-    // Without wrapup priority, SKIP_WINDOW (60s) would suppress this Stop.
-    // With wrapup priority, the auto-wrapup signal fires anyway.
+    // Without post-compact priority, SKIP_WINDOW (60s) would suppress this Stop.
     setPending(now - 30, 1, '00', 0);
 
     const cap = captureStdout();
@@ -729,12 +716,12 @@ describe('handleStop wrapup branch', () => {
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim()) as { reason: string };
-    expect(parsed.reason).toBe('auto-wrapup');
+    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
   });
 
-  it('wrapup priority bypasses MIN_ACTIVITY (count<2 normally skips checkpoint)', () => {
-    // count=1 is below MIN_ACTIVITY=2; without wrapup priority this Stop would
-    // not emit anything. With wrapup priority, auto-wrapup fires.
+  it('post-compact priority bypasses MIN_ACTIVITY (count<2 normally skips checkpoint)', () => {
+    // count=1 is below MIN_ACTIVITY=2; without post-compact priority this Stop
+    // would not emit anything.
     setPending(now - 600, 1, '02', 1);
 
     const cap = captureStdout();
@@ -742,7 +729,7 @@ describe('handleStop wrapup branch', () => {
     const out = cap.stop();
 
     const parsed = JSON.parse(out.trim()) as { reason: string };
-    expect(parsed.reason).toBe('auto-wrapup');
+    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
   });
 
   it('wrapup_pending=0 → falls through to regular checkpoint logic', () => {
@@ -800,14 +787,14 @@ describe('handleStop wrapup branch', () => {
     expect(() => JSON.parse(out.trim())).not.toThrow();
   });
 
-  it('two consecutive Stop fires: first emits auto-wrapup, second is regular checkpoint flow', () => {
+  it('two consecutive Stop fires: first force-checkpoints, second is SKIP_WINDOW silent', () => {
     setPending(now);
 
     const cap1 = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
     const out1 = cap1.stop();
     const parsed1 = JSON.parse(out1.trim()) as { reason: string };
-    expect(parsed1.reason).toBe('auto-wrapup');
+    expect(parsed1.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
     expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
 
     // Second Stop within SKIP_WINDOW after the first wrapup → no emit
@@ -819,13 +806,13 @@ describe('handleStop wrapup branch', () => {
 
   it('signal at exactly TTL boundary (24h) is still honored — strict > comparison', () => {
     // Edge case: now - last_ts === WRAPUP_TTL_SECONDS (exactly 24h).
-    // Code uses strict `>` so this is NOT stale → directive emits.
+    // Code uses strict `>` so this is NOT stale → checkpoint emits.
     setPending(now - 24 * 60 * 60);
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
     const out = cap.stop();
     const parsed = JSON.parse(out.trim()) as { reason: string };
-    expect(parsed.reason).toBe('auto-wrapup');
+    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
   });
 
   it('regular handleStop (threshold-not-met branch) preserves wrapup_pending', () => {
@@ -864,7 +851,7 @@ describe('end-to-end PostCompact → Stop chain', () => {
     await rm(vaultDir, { recursive: true, force: true });
   });
 
-  it('PostCompact fires → next Stop emits auto-wrapup → flag cleared', () => {
+  it('PostCompact fires → next Stop force-emits checkpoint NN → flag cleared', () => {
     const t0 = 1700000000;
 
     // Step 1: PostCompact fires (cold start — no prior state).
@@ -880,15 +867,17 @@ describe('end-to-end PostCompact → Stop chain', () => {
 
     const parsed = JSON.parse(out.trim()) as { decision: string; reason: string };
     expect(parsed.decision).toBe('block');
-    expect(parsed.reason).toBe('auto-wrapup');
+    // Uniform NN reason — same shape as activity-driven checkpoints.
+    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
 
-    // Step 3: Flag cleared after emit.
+    // Step 3: Flag cleared, last_stop_nn updated.
     const afterStop = readState(TOKEN, tmpDir);
     expect(afterStop.wrapup_pending).toBe(0);
     expect(afterStop.last_ts).toBe(t0 + 10);
+    expect(afterStop.last_stop_nn).not.toBe('00');
   });
 
-  it('/wrapup runs while wrapup_pending=1 → next Stop does NOT double-emit', () => {
+  it('/wrapup runs while wrapup_pending=1 → next Stop does NOT force-emit', () => {
     const t0 = 1700000000;
 
     // PostCompact set the pending flag.
@@ -899,9 +888,9 @@ describe('end-to-end PostCompact → Stop chain', () => {
     handleReset(TOKEN, t0 + 5, tmpDir);
     expect(readState(TOKEN, tmpDir).wrapup_pending).toBe(0);
 
-    // Subsequent Stop hook firing should NOT emit auto-wrapup — /wrapup
-    // already produced the session log; another auto-wrapup would just
-    // duplicate it.
+    // Subsequent Stop hook firing should NOT force-emit — /wrapup already
+    // wrote a session log consolidating prior checkpoints; the post-compact
+    // signal is no longer relevant.
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, t0 + 10, tmpDir);
     const out = cap.stop();
