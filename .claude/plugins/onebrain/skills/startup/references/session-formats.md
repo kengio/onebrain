@@ -6,7 +6,7 @@ description: "Canonical templates for checkpoint files and session log files. Re
 # Session File Formats
 
 Shared canonical templates. Referenced by:
-- `INSTRUCTIONS.md` — stop checkpoint writes (regular + post-compact forced)
+- `INSTRUCTIONS.md` — stop checkpoint writes
 - `skills/wrapup/SKILL.md` — /wrapup session log (Step 4) + orphan recovery (Step 1b)
 - `skills/startup/AUTO-SUMMARY.md` — auto-saved session log
 

@@ -701,7 +701,7 @@ export async function runInit(opts: InitOptions = {}): Promise<InitResult> {
     await randDelay();
     sp6.stop(
       hooksOk ? undefined : 'not registered — run onebrain update',
-      hooksOk ? ['Stop ✓  PostCompact ✓', 'Bash(onebrain *) ✓'] : undefined,
+      hooksOk ? ['Stop ✓', 'Bash(onebrain *) ✓'] : undefined,
     );
   } else {
     writeLine(`hooks: ${hooksOk ? 'ok' : 'warning — hooks not registered; run onebrain update'}`);
