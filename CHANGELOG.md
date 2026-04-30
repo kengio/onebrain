@@ -13,14 +13,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.1.6 — fix: drop PostCompact hook; trust Stop hook threshold logic
+## v2.1.6 — fix: drop PostCompact hook; trust Stop hook threshold
 
-Claude Code's PostCompact hook is observational-only — its stdout cannot reach the agent. The previous "auto-wrapup after compact" mechanism silently never ran. The Stop hook is now the only checkpoint signal source; it fires after every assistant turn, accumulates message count across compact events, and emits checkpoints when its threshold is met (15 messages or 30 min). Compact events require no special handling.
-
-- removed(checkpoint): `handlePostcompact`, `postcompactFallback`, `'postcompact'` dispatch case, `pending_checkpoint` state field, `PRECOMPACT_RECENCY` and `PENDING_CHECKPOINT_TTL_SECONDS` constants, and the post-compact branch in `handleStop`
-- changed(register-hooks): generalized stale-hook sweep — only `Stop` and `PostToolUse` are allowed events. Any onebrain-* command found under any other event (PreCompact, PostCompact, UserPromptSubmit, SessionStart, etc.) is removed automatically on next `/update` and on `/doctor --fix`. User-added non-onebrain entries under those events are preserved.
-- changed(doctor `checkSettingsHooks`): same generalized check — warns user about any onebrain-* hook under non-allowed event
-- changed(checkpoint): state file format is strictly 3 fields (`count:last_ts:last_stop_nn`). Legacy 4-field state files (whether the v2.1.6-pre `pending_checkpoint` flag or the older `pending_stub` filename string) and v1 2-field files are treated as malformed → reset to fresh `0:0:00` on first read. The reset costs at most one checkpoint cycle of progress (count resets to 0)
+- fix(checkpoint): drop PostCompact hook entirely (Claude Code spec: stdout doesn't reach the agent). Stop hook is now the only checkpoint signal — its existing 15-msg / 30-min threshold drives emission across compacts without special handling
+- changed(checkpoint): state file is strictly 3 fields (`count:last_ts:last_stop_nn`). Legacy 4-field (`pending_checkpoint` / `pending_stub`) and v1 2-field files reset to `0:0:00` on first read — costs at most one checkpoint cycle
+- changed(register-hooks + doctor): generalized stale-hook sweep — allowed events are `Stop` + `PostToolUse` only. Any onebrain-* command under any other event (PreCompact, PostCompact, UserPromptSubmit, etc.) is auto-removed on `/update` and `/doctor --fix`. User-added non-onebrain entries preserved
+- removed(checkpoint): `handlePostcompact`, `postcompactFallback`, `'postcompact'` dispatch, `pending_checkpoint` field, `PRECOMPACT_RECENCY` + `PENDING_CHECKPOINT_TTL_SECONDS` constants, post-compact branch in `handleStop`
 - feat(checkpoint): atomic write-rename for state writes (pid-suffixed temp + POSIX rename) — prevents torn reads
 - perf(checkpoint): skip `findVaultRoot` for `reset` mode — touches $TMPDIR only
 
