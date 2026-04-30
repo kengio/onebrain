@@ -1,6 +1,6 @@
 {
   "name": "@onebrain-ai/cli",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "description": "CLI for OneBrain — personal AI OS for Obsidian with persistent memory, 24+ skills, and Claude Code integration",
   "keywords": [
     "onebrain",
@@ -15,7 +15,7 @@
     "productivity",
     "vault"
   ],
-  "homepage": "https://github.com/onebrain-ai/onebrain",
+  "homepage": "https://onebrain.run",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/onebrain-ai/onebrain.git"

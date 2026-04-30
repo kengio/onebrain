@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.7
+latest_version: 2.1.8
 released: 2026-04-30
 ---
 
@@ -12,6 +12,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.8 — chore: point npm `homepage` to onebrain.run
+
+- chore(package.json): `homepage` field updated from `github.com/onebrain-ai/onebrain` → `https://onebrain.run` so npm registry links to the marketing site
+- note: `repository.url` and `bugs` still point to GitHub (correct for npm metadata)
 
 ## v2.1.7 — chore: migrate to onebrain-ai org
 
