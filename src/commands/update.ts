@@ -50,7 +50,7 @@ export interface UpdateResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const GITHUB_REPO = 'https://api.github.com/repos/kengio/onebrain';
+const GITHUB_REPO = 'https://api.github.com/repos/onebrain-ai/onebrain';
 const GITHUB_RELEASES_URL = `${GITHUB_REPO}/releases/latest`;
 
 // ---------------------------------------------------------------------------

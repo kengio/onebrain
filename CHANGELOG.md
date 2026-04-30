@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.6
+latest_version: 2.1.7
 released: 2026-04-30
 ---
 
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.7 — chore: migrate to onebrain-ai org
+
+- chore: GitHub repo transferred from `kengio/onebrain` to `onebrain-ai/onebrain` — npm `@onebrain-ai/cli` package unchanged
+- chore(package.json): update `homepage`, `repository.url`, `bugs` URLs to new org
+- chore(postinstall): release binary download URL points to onebrain-ai/onebrain
+- chore(vault-sync): tarball API URL + extracted folder prefix (`onebrain-ai-onebrain-<sha>`) updated; tests aligned
+- chore(update): `GITHUB_REPO` constant points to onebrain-ai org
+- chore(README): badge URLs updated to new org
+- note: existing GitHub URLs auto-redirect — no breaking change for users with current install
 
 ## v2.1.6 — fix: drop PostCompact hook; trust Stop hook threshold
 

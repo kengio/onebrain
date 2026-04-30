@@ -88,7 +88,7 @@ async function downloadTarball(
   branch: string,
   fetchFn: typeof fetch,
 ): Promise<{ tarball: ArrayBuffer; tmpDir: string }> {
-  const url = `https://api.github.com/repos/kengio/onebrain/tarball/${branch}`;
+  const url = `https://api.github.com/repos/onebrain-ai/onebrain/tarball/${branch}`;
   const response = await fetchFn(url);
   if (!response.ok) {
     const hints: Partial<Record<number, string>> = {
@@ -126,7 +126,7 @@ async function extractTarball(tarball: ArrayBuffer, destDir: string): Promise<st
   // Delete the tarball file now we've extracted
   await unlink(tarPath);
 
-  // Find the top-level directory (should be kengio-onebrain-<sha>/)
+  // Find the top-level directory (should be onebrain-ai-onebrain-<sha>/)
   const entries = await readdir(destDir);
   const topLevel = entries.find((e) => e !== 'bundle.tar.gz');
   if (!topLevel) {
@@ -649,7 +649,7 @@ export async function runVaultSync(
       // Keep 'unknown'
     }
 
-    stopSpinner(`kengio/onebrain@${branch} (v${result.version})`);
+    stopSpinner(`onebrain-ai/onebrain@${branch} (v${result.version})`);
 
     // ── Step 2: Sync plugin files ─────────────────────────────────────────
     startSpinner('📂', 'Syncing files');
