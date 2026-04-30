@@ -20,6 +20,9 @@ The Stop hook is now the SOLE producer of checkpoint signals; session logs are p
 - fix(INSTRUCTIONS Auto Checkpoint): collapse the dispatch table — only `NN since <context>` reasons are delivered to the agent, regardless of whether the checkpoint was activity-driven or PostCompact-driven. Drop the unreachable `auto-wrapup` reason row.
 - fix(INSTRUCTIONS PostCompact section): replace 50-line Path A/B procedure with a single paragraph — PostCompact silently sets a state flag that forces the next Stop to emit a checkpoint NN. No special routing for the agent. Session log creation deferred to `/wrapup` or AUTO-SUMMARY.
 - fix(INSTRUCTIONS routing): remove all references to `auto-wrapup` reason and inline PostCompact directive injection.
+- feat(/wrapup + AUTO-SUMMARY): explicit **preservation rule** — session log writers must deduplicate, not summarize. Every unique decision, action item, learning, and topic from each checkpoint must appear in the session log. Two pieces of content are duplicates only if they describe the same fact. No length cap — sessions can run for hours or days, the log must reflect that span. Quality heuristic: combined Key Decisions + Action Items + Open Questions length ≥ sum across all checkpoints (shorter draft = lost detail).
+- fix(session-formats.md): drop "PostCompact Path A/B" frontmatter case (no longer exists in this design); keep "Recovered from checkpoints" for /wrapup orphan recovery only.
+- fix(/update migration-steps): clarify auto-wrapup entry — session-end synthesis is handled by AUTO-SUMMARY.md or manual /wrapup (was: ambiguous "auto-wrapup" wording).
 
 ## v2.2.0 — fix: PostCompact session log; simplify checkpoint cleanup; stronger qmd-first search
 

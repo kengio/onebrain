@@ -13,8 +13,18 @@ If conditions are met:
 - Write to `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `references/session-formats.md`:
   - Checkpoints found and incorporated → case: **Auto-saved (auto-summary) — checkpoints incorporated**
   - No checkpoints → case: **Auto-saved (auto-summary) — no checkpoints**
-  
-  **Do not write the session log if any checkpoint's content is absent from the relevant sections** — every checkpoint's Key Decisions, Action Items, and Open Questions must appear explicitly in the output.
+
+  **Preservation rule (critical when checkpoints exist):** the session log must preserve **every unique detail** from every checkpoint file glob'd above. Your job is **deduplication, not summarization**. Two pieces of content are duplicates only if they describe the same fact, decision, learning, action item, or question. When in doubt, keep both — the session log is the long-term archive of the session, and missing a unique decision or insight cannot be recovered later (the source checkpoints will be deleted after this write).
+
+  Specifically:
+  - **Key Decisions, Action Items, Open Questions** — list every unique entry as its own bullet. Do not collapse multiple decisions into a single line. Do not paraphrase away specificity (file paths, numbers, named constraints).
+  - **What We Worked On** — every distinct topic from any checkpoint must appear. Order chronologically. Two checkpoints touching the same topic can be merged into one paragraph; two checkpoints on different topics must remain two paragraphs.
+  - **Insights & Learnings, What Worked / Didn't Work** — preserve all unique items. If a learning appears verbatim in two checkpoints, list it once. If two checkpoints have *related but distinct* learnings (e.g., "X works on macOS" + "X breaks on Windows"), keep both.
+  - **No length cap** — the session log can be long if the session was substantive. Sessions can run for many hours or even days; the log must reflect that span.
+
+  Quality heuristic: the session log's combined length of Key Decisions + Action Items + Open Questions should be at least as long as the sum of those sections across all checkpoints. If your draft is shorter, you've lost detail — go back and add the missing items before writing.
+
+  **Do not write the session log if this preservation rule is violated.**
 - **Route action items to project notes** — after the session log is written, automatically move action items so the startup task scan picks them up. This step must never fail the auto-summary; all errors are silently skipped.
   1. Parse `## Action Items` from the session log just written. Collect all `- [ ] ...` lines. If none, skip entirely.
   2. Glob `[projects_folder]/**/*.md`. For each file, collect the folder name and filename stem as candidate keywords.

@@ -63,7 +63,7 @@ You are [agent_name], [user_name]'s personal chief of staff inside their Obsidia
 Old-section mapping (apply when migrating from pre-v1.10.0 structure):
 - `## Agent Identity` + `## Identity` + `## Communication Style` + `## Goals & Focus Areas` + `## Values & Working Principles` + `## AI Personality Instructions` → consolidate into `## Identity & Personality`
 - `## Active Projects` → keep as-is
-- `## Critical Behaviors` → preserve if present; if absent, create with items from `## Values & Working Principles` plus an empty comment; remove any auto-wrapup trigger entry if present (auto-wrapup is now handled by AUTO-SUMMARY.md)
+- `## Critical Behaviors` → preserve if present; if absent, create with items from `## Values & Working Principles` plus an empty comment; remove any auto-wrapup trigger entry if present (session-end synthesis is now handled by AUTO-SUMMARY.md or manual /wrapup)
 - Remove entirely: `## Key Learnings`, `## Key Decisions`, `## Recurring Contexts`
 
 Field extraction hints (for old-section consolidation):
