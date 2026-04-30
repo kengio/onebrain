@@ -16,11 +16,11 @@ Update OneBrain system files from GitHub to the latest version.
    - `next` → `next`
    - `N.x` (e.g. `1.x`, `2.x`) → `N.x`
 3. Read new version from repo's `plugin.json` on the mapped branch using `WebFetch` — never use `git` commands (they hang on Windows waiting for credentials):
-   `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/plugins/onebrain/.claude-plugin/plugin.json`
+   `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/.claude/plugins/onebrain/.claude-plugin/plugin.json`
    where `{branch}` is the mapped branch from step 2.
    Parse the `version` field from the JSON response.
 4. If equal → say: ✅ Already up to date — v{X.X.X}. and stop
-5. If newer → WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/PLUGIN-CHANGELOG.md`; display before proceeding (do not skip or summarize):
+5. If newer → WebFetch `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/PLUGIN-CHANGELOG.md`; display before proceeding (do not skip or summarize):
 
    ```
    ──────────────────────────────────────────────────────────────
@@ -68,14 +68,14 @@ After confirming the vault update (step 7 above), also check if the installed `o
 Skills are markdown instructions — the agent can read the new SKILL.md from GitHub and
 follow it as instructions in the same conversation. No re-invoke needed.
 
-GitHub raw URL template: `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/plugins/onebrain/{path}`
+GitHub raw URL template: `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/.claude/plugins/onebrain/{path}`
 where `{branch}` is the branch mapped from `update_channel` in step 2 of Version Check.
 
 Steps:
 1. **Early bootstrap — download the latest SKILL.md:**
    Use WebFetch + Write to download this file from GitHub and write to vault. `{vault_root}` = the vault's absolute path (the current working directory — the directory containing `.claude/`).
 
-   Raw URL: `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/plugins/onebrain/{path}`
+   Raw URL: `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/.claude/plugins/onebrain/{path}`
 
    Download and write:
    - `skills/update/SKILL.md`
@@ -88,7 +88,7 @@ Steps:
       and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
       - **Full vault sync:** run `onebrain vault-sync "$PWD" --branch {branch}`. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md/PLUGIN-CHANGELOG.md to vault root (overwrite), merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only), pins plugin to vault, and clears plugin cache.
-      - **Settings merge:** WebFetch `https://raw.githubusercontent.com/kengio/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys (skip `onebrain@kengio` — repo-dev-only key, not valid in vault context); `extraKnownMarketplaces` → skip (repo-dev-only config, not valid in vault context); `hooks` → skip (handled by migration Step 6).
+      - **Settings merge:** WebFetch `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys (skip any `onebrain@*` key whose marketplace points to a `directory` source — repo-dev-only, not valid in vault context); `extraKnownMarketplaces` → skip (repo-dev-only config, not valid in vault context); `hooks` → skip (handled by migration Step 6).
    c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 8 migration steps
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
 4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:

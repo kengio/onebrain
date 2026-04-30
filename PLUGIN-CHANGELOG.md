@@ -1,5 +1,5 @@
 ---
-latest_version: 2.2.1
+latest_version: 2.2.2
 released: 2026-04-30
 ---
 
@@ -12,6 +12,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.2 — chore: migrate to onebrain-ai org
+
+- chore(/update SKILL): raw GitHub URL templates updated to `onebrain-ai/onebrain` for plugin file fetches
+- chore(plugin.json): version bump aligned with CLI v2.1.7 org migration
+- note: existing vaults still work via GitHub auto-redirect; `/update` will pick up new URLs going forward
 
 ## v2.2.1 — fix: align with CLI v2.1.6 (Stop-hook-only)
 

@@ -122,7 +122,7 @@ async function main(): Promise<void> {
   }
 
   const destPath = join(__dirname, 'onebrain');
-  const url = `https://github.com/kengio/onebrain/releases/download/v${version}/${binaryName}`;
+  const url = `https://github.com/onebrain-ai/onebrain/releases/download/v${version}/${binaryName}`;
 
   process.stdout.write(`[onebrain] Downloading ${binaryName} v${version}…\n`);
 

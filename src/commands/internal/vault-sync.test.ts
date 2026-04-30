@@ -30,7 +30,7 @@ interface TarballOpts {
 /**
  * Build a minimal fake tarball (.tar.gz) using the tar CLI.
  * Layout mirrors a real GitHub archive:
- *   kengio-onebrain-<sha>/
+ *   onebrain-ai-onebrain-<sha>/
  *     .claude/plugins/onebrain/.claude-plugin/plugin.json
  *     .claude/plugins/onebrain/INSTRUCTIONS.md
  *     .claude/plugins/onebrain/skills/example/SKILL.md
@@ -38,7 +38,7 @@ interface TarballOpts {
  *     CLAUDE.md  GEMINI.md  AGENTS.md
  */
 function buildMockTarball(opts: TarballOpts = {}): Buffer {
-  const prefix = opts.prefix ?? 'kengio-onebrain-abc1234';
+  const prefix = opts.prefix ?? 'onebrain-ai-onebrain-abc1234';
   const version = opts.pluginVersion ?? '1.11.0';
 
   const files: Record<string, string> = {
