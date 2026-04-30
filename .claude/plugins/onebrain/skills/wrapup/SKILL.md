@@ -74,7 +74,7 @@ For each orphan group (process in chronological order by date in filename):
    - Next session number = count of matches + 1 (zero-padded to 2 digits)
    - Verify the slot is free; increment NN until free
 
-**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). All key decisions, action items, and open questions from checkpoints must appear explicitly — do not collapse into one line.
+**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). Apply the **Preservation rule** from Step 4 below: deduplication only, no summarization. Every unique decision, action item, open question, learning, and topic from every checkpoint must appear in the recovered session log.
 
 **e. Verify the session log** exists and is non-empty before continuing.
 
@@ -109,7 +109,15 @@ Reflect on the conversation that just occurred. Identify:
 
 ## Step 4: Write the Session Log
 
-> **If checkpoints were found in Step 1:** do not write the session log until the content of every checkpoint file read in Step 1 is reflected in the sections below. All Key Decisions, Action Items, and Open Questions from checkpoints must appear explicitly : not summarized into a single line.
+> **Preservation rule (critical when checkpoints exist):** the session log must preserve **every unique detail** from every checkpoint file read in Step 1. Your job is **deduplication, not summarization**. Two pieces of content are duplicates only if they describe the same fact, decision, learning, action item, or question. When in doubt, keep both — the session log is the long-term archive of the session, and missing a unique decision or insight cannot be recovered later.
+>
+> Specifically:
+> - **Key Decisions, Action Items, Open Questions** — list every unique entry as its own bullet. Do not collapse multiple decisions into a single line. Do not paraphrase away specificity (file paths, numbers, named constraints).
+> - **What We Worked On** — every distinct topic from any checkpoint must appear. Order chronologically. Two checkpoints touching the same topic can be merged into one paragraph; two checkpoints on different topics must remain two paragraphs.
+> - **Insights & Learnings, What Worked / Didn't Work** — preserve all unique items. If a learning appears verbatim in two checkpoints, list it once. If two checkpoints have *related but distinct* learnings (e.g., "X works on macOS" + "X breaks on Windows"), keep both.
+> - **No length cap** — the session log can be long if the session was substantive. Do not truncate or omit content to hit a perceived target length.
+>
+> Quality heuristic: the session log's combined length of Key Decisions + Action Items + Open Questions should be at least as long as the sum of those sections across all checkpoints. If your draft is shorter, you've lost detail — go back and add the missing items.
 
 Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md`:
 - If checkpoints were incorporated in Step 1 → use **Standard /wrapup — checkpoints incorporated**
@@ -121,7 +129,7 @@ After writing the session log, reset the checkpoint hook counter to prevent spur
 onebrain checkpoint reset
 ```
 
-This writes `0:<epoch>:00:0` into the session state file (4 fields: count, last_ts, last_stop_nn, wrapup_pending) — triggering a 60-second skip window, resetting the message counter, and clearing any pending PostCompact auto-wrapup signal.
+This writes `0:<epoch>:00:0` into the session state file (4 fields: count, last_ts, last_stop_nn, pending_checkpoint) — triggering a 60-second skip window, resetting the message counter, and clearing any pending PostCompact auto-wrapup signal.
 
 ---
 

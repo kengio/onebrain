@@ -17,15 +17,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 PostCompact's auto-wrapup signal silently failed because Claude Code's PostCompact hook is observational-only — its stdout (`decision:"block"` JSON) never reached the agent. Sessions that ran `/compact` produced no follow-up artifact; orphan recovery via `/wrapup` was the only path back.
 
-Fix: PostCompact silently sets `wrapup_pending=1` in the per-session state file. The very next Stop hook firing emits a regular checkpoint NN (`decision:"block",reason:"NN since X"`) — bypassing count/threshold/SKIP_WINDOW/MIN_ACTIVITY guards — to capture the compacted summary into a checkpoint file. Session log creation stays under user control (manual `/wrapup` or end-of-session AUTO-SUMMARY), preserving the **"1 session = 1 session log"** invariant.
+Fix: PostCompact silently sets `pending_checkpoint=1` in the per-session state file. The very next Stop hook firing emits a regular checkpoint NN (`decision:"block",reason:"NN since X"`) — bypassing count/threshold/SKIP_WINDOW/MIN_ACTIVITY guards — to capture the compacted summary into a checkpoint file. Session log creation stays under user control (manual `/wrapup` or end-of-session AUTO-SUMMARY), preserving the **"1 session = 1 session log"** invariant.
 
 - fix(checkpoint): drop the failed `emitBlock('auto-wrapup')` from `handlePostcompact`; replace with state-file flag set
-- feat(checkpoint): handleStop wrapup branch — if `wrapup_pending=1` is set when Stop fires, force a checkpoint NN emission regardless of normal guards. Reason format is uniform with regular checkpoints; the agent treats post-compact checkpoints the same as activity-driven ones
-- feat(checkpoint): state file extended from 3 fields to 4 (`count:last_ts:last_stop_nn:wrapup_pending`). 3-field legacy state and 4-field legacy `pending_stub` filename format both parse with `wrapup_pending=0` for backward compatibility — no migration script needed
+- feat(checkpoint): handleStop post-compact priority branch — if `pending_checkpoint=1` is set when Stop fires, force a checkpoint NN emission regardless of normal guards. Reason format is uniform with regular checkpoints; the agent treats post-compact checkpoints the same as activity-driven ones
+- feat(checkpoint): state file extended from 3 fields to 4 (`count:last_ts:last_stop_nn:pending_checkpoint`). 3-field legacy state and 4-field legacy `pending_stub` filename format both parse with `pending_checkpoint=0` for backward compatibility — no migration script needed
 - feat(checkpoint): atomic write-rename for state writes (pid-suffixed temp + POSIX rename, mirroring `register-hooks.ts:writeSettings`) — prevents torn reads if a writer is interrupted mid-write
-- feat(checkpoint): TTL guard (24h since last_ts) on the wrapup flag — stale signals from forgotten sessions whose token got reused are cleared silently instead of producing a checkpoint with stale context
+- feat(checkpoint): TTL guard (24h since last_ts) on the pending_checkpoint flag — stale signals from forgotten sessions whose token got reused are cleared silently instead of producing a checkpoint with stale context
 - feat(checkpoint): PostCompact recency guard checks `last_stop_nn !== '00'` — skip is correct only when a Stop checkpoint was the recent state-touching event; after `/wrapup` (which writes `last_stop_nn='00'`), an immediate `/compact` correctly queues the wrapup signal instead of silently skipping
-- fix(checkpoint): handleStop preserves `wrapup_pending` across non-emit branches via spread; handleReset clears it (along with count/last_stop_nn) so `/wrapup` produces a clean fresh-start state
+- fix(checkpoint): handleStop preserves `pending_checkpoint` across non-emit branches via spread; handleReset clears it (along with count/last_stop_nn) so `/wrapup` produces a clean fresh-start state
 - perf(checkpoint): skip `findVaultRoot` for `reset` mode — that mode only touches $TMPDIR
 
 ## v2.1.5 — feat: cyberpunk banner v2 + checkpoint cleanup consistency

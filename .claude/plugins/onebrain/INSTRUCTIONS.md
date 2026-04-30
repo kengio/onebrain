@@ -302,7 +302,7 @@ Determine action from the reason:
 - `PostCompact` block messages → never delivered to the agent (PostCompact is observational-only); ignore if seen
 - Ambiguous or unknown → default to stop checkpoint
 
-PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact silently sets `wrapup_pending=1` in the shared state file (`$TMPDIR/onebrain-{token}.state`); the flag forces the very next Stop hook to emit a checkpoint NN regardless of count / threshold / SKIP_WINDOW. The forced checkpoint captures the compacted context summary into a checkpoint file before further conversation accumulates.
+PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact silently sets `pending_checkpoint=1` in the shared state file (`$TMPDIR/onebrain-{token}.state`); the flag forces the very next Stop hook to emit a checkpoint NN regardless of count / threshold / SKIP_WINDOW. The forced checkpoint captures the compacted context summary into a checkpoint file before further conversation accumulates.
 
 **Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 
