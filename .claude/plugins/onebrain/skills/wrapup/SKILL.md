@@ -129,7 +129,7 @@ After writing the session log, reset the checkpoint hook counter to prevent spur
 onebrain checkpoint reset
 ```
 
-This writes `0:<epoch>:00:0` into the session state file (4 fields: count, last_ts, last_stop_nn, pending_checkpoint) — triggering a 60-second skip window, resetting the message counter, and clearing any pending PostCompact follow-up signal so the next Stop hook does not force-emit a stale checkpoint.
+This writes `0:<epoch>:00` into the session state file (3 fields: count, last_ts, last_stop_nn) — triggering a 60-second skip window and resetting the message counter so the next Stop hook starts fresh.
 
 ---
 

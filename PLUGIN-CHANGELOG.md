@@ -13,16 +13,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.2.1 — fix: PostCompact follow-up via forced Stop checkpoint (clean separation of concerns)
+## v2.2.1 — fix: drop PostCompact hook handling from INSTRUCTIONS + skill docs
 
-The Stop hook is now the SOLE producer of checkpoint signals; session logs are produced ONLY by `/wrapup` (manual) or AUTO-SUMMARY (end-of-session signal). This preserves the **"1 session = 1 session log"** invariant — PostCompact never produces a session log directly; it just queues a checkpoint capture for the next Stop.
+Stop hook is now the only checkpoint signal source. PostCompact registration is removed in CLI v2.1.6. INSTRUCTIONS.md no longer mentions PostCompact dispatch routing or `auto-wrapup` reason flavor. Session logs are produced only by `/wrapup` (manual) or AUTO-SUMMARY (end-of-session signal), preserving the **"1 session = 1 session log"** invariant.
 
-- fix(INSTRUCTIONS Auto Checkpoint): collapse the dispatch table — only `NN since <context>` reasons are delivered to the agent, regardless of whether the checkpoint was activity-driven or PostCompact-driven. Drop the unreachable `auto-wrapup` reason row.
-- fix(INSTRUCTIONS PostCompact section): replace 50-line Path A/B procedure with a single paragraph — PostCompact silently sets a state flag that forces the next Stop to emit a checkpoint NN. No special routing for the agent. Session log creation deferred to `/wrapup` or AUTO-SUMMARY.
-- fix(INSTRUCTIONS routing): remove all references to `auto-wrapup` reason and inline PostCompact directive injection.
+- fix(INSTRUCTIONS Auto Checkpoint): collapse to a single dispatch row — `NN since <context>` reason → write checkpoint. PostCompact / PreCompact note added explaining why neither is registered.
+- fix(INSTRUCTIONS PostCompact section): drop entire 50-line Path A/B procedure (no longer applicable).
 - feat(/wrapup + AUTO-SUMMARY): explicit **preservation rule** — session log writers must deduplicate, not summarize. Every unique decision, action item, learning, and topic from each checkpoint must appear in the session log. Two pieces of content are duplicates only if they describe the same fact. No length cap — sessions can run for hours or days, the log must reflect that span. Quality heuristic: combined Key Decisions + Action Items + Open Questions length ≥ sum across all checkpoints (shorter draft = lost detail).
-- fix(session-formats.md): drop "PostCompact Path A/B" frontmatter case (no longer exists in this design); keep "Recovered from checkpoints" for /wrapup orphan recovery only.
-- fix(/update migration-steps): clarify auto-wrapup entry — session-end synthesis is handled by AUTO-SUMMARY.md or manual /wrapup (was: ambiguous "auto-wrapup" wording).
+- fix(session-formats.md): drop "PostCompact Path A/B" frontmatter case; keep "Recovered from checkpoints" for /wrapup orphan recovery only.
+- fix(/wrapup SKILL.md): state-file format note updated to `0:<epoch>:00` (3 fields).
+- fix(/update migration-steps): clarify auto-wrapup entry — session-end synthesis is handled by AUTO-SUMMARY or manual /wrapup.
 
 ## v2.2.0 — fix: PostCompact session log; simplify checkpoint cleanup; stronger qmd-first search
 

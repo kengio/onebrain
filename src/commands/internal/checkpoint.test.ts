@@ -1,5 +1,5 @@
 /**
- * checkpoint.test.ts — tests for checkpoint command (stop/postcompact/reset)
+ * checkpoint.test.ts — tests for checkpoint command (stop/reset)
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
@@ -7,11 +7,9 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  handlePostcompact,
   handleReset,
   handleStop,
   maxCheckpointNnSync,
-  postcompactFallback,
   readState,
   writeState,
 } from './checkpoint.js';
@@ -98,31 +96,25 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    expect(state.pending_checkpoint).toBe(0);
   });
 
-  it('reads 3-field legacy state correctly (pending_checkpoint defaults to 0)', async () => {
+  it('reads 3-field state correctly', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), '3:1000000:02', 'utf8');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(3);
     expect(state.last_ts).toBe(1000000);
     expect(state.last_stop_nn).toBe('02');
-    expect(state.pending_checkpoint).toBe(0);
   });
 
-  it('reads 4-field state with pending_checkpoint=1', async () => {
+  it('reads 4-field legacy state — slot 4 silently ignored (post-v2.1.6 pending flag)', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), '0:1000000:02:1', 'utf8');
     const state = readState(TOKEN, tmpDir);
-    expect(state.pending_checkpoint).toBe(1);
+    expect(state.count).toBe(0);
+    expect(state.last_ts).toBe(1000000);
+    expect(state.last_stop_nn).toBe('02');
   });
 
-  it('reads 4-field state with pending_checkpoint=0', async () => {
-    await writeFile(stateFile(tmpDir, TOKEN), '0:1000000:02:0', 'utf8');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_checkpoint).toBe(0);
-  });
-
-  it('reads 4-field legacy pending_stub format → pending_checkpoint=0 (filename ≠ "1")', async () => {
+  it('reads 4-field legacy pending_stub format → slot 4 ignored', async () => {
     await writeFile(
       stateFile(tmpDir, TOKEN),
       '0:1000000:03:2026-04-23-41928-checkpoint-04.md',
@@ -132,42 +124,34 @@ describe('readState / writeState', () => {
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(1000000);
     expect(state.last_stop_nn).toBe('03');
-    expect(state.pending_checkpoint).toBe(0); // legacy non-'1' value treated as no pending
   });
 
-  it('treats v1 2-field state as parse error → resets to 0:0:00:0', async () => {
+  it('treats v1 2-field state as parse error → resets to 0:0:00', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), '5:1000000', 'utf8');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    expect(state.pending_checkpoint).toBe(0);
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe('0:0:00:0');
+    expect(raw).toBe('0:0:00');
   });
 
-  it('treats malformed state as parse error → resets to 0:0:00:0', async () => {
+  it('treats malformed state as parse error → resets to 0:0:00', async () => {
     await writeFile(stateFile(tmpDir, TOKEN), 'bad:data:here', 'utf8');
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(0);
     expect(state.last_ts).toBe(0);
     expect(state.last_stop_nn).toBe('00');
-    expect(state.pending_checkpoint).toBe(0);
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe('0:0:00:0');
+    expect(raw).toBe('0:0:00');
   });
 
-  it('writeState writes 4-field format including pending_checkpoint', () => {
-    writeState(
-      TOKEN,
-      { count: 2, last_ts: 999, last_stop_nn: '01', pending_checkpoint: 1 },
-      tmpDir,
-    );
+  it('writeState writes 3-field format', () => {
+    writeState(TOKEN, { count: 2, last_ts: 999, last_stop_nn: '01' }, tmpDir);
     const state = readState(TOKEN, tmpDir);
     expect(state.count).toBe(2);
     expect(state.last_ts).toBe(999);
     expect(state.last_stop_nn).toBe('01');
-    expect(state.pending_checkpoint).toBe(1);
   });
 });
 
@@ -185,13 +169,13 @@ describe('handleReset', () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
-  it('writes 0:<now>:00:0 to state file (clears count, NN, AND pending_checkpoint)', async () => {
+  it('writes 0:<now>:00 to state file', async () => {
     const now = 1700000000;
     const cap = captureStdout();
     handleReset(TOKEN, now, tmpDir);
     const out = cap.stop();
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe(`0:${now}:00:0`);
+    expect(raw).toBe(`0:${now}:00`);
     expect(out).toBe('');
   });
 
@@ -200,23 +184,17 @@ describe('handleReset', () => {
     const now = 1700000001;
     handleReset(TOKEN, now, tmpDir);
     const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
-    expect(raw).toBe(`0:${now}:00:0`);
+    expect(raw).toBe(`0:${now}:00`);
   });
 
-  it('clears pending_checkpoint=1 to 0 — fresh start for next checkpoint cycle', async () => {
-    // /wrapup just wrote a session log; the auto-wrapup flag must be cleared
-    // so the next Stop hook firing doesn't re-emit auto-wrapup and dispatch
-    // a duplicate session log.
-    writeState(
-      TOKEN,
-      { count: 5, last_ts: 1000, last_stop_nn: '03', pending_checkpoint: 1 },
-      tmpDir,
-    );
+  it('overwrites legacy 4-field state — slot 4 dropped on reset', async () => {
+    await writeFile(stateFile(tmpDir, TOKEN), '5:1000:03:1', 'utf8');
     handleReset(TOKEN, 1700000000, tmpDir);
     const state = readState(TOKEN, tmpDir);
-    expect(state.pending_checkpoint).toBe(0);
     expect(state.count).toBe(0);
     expect(state.last_stop_nn).toBe('00');
+    const raw = await Bun.file(stateFile(tmpDir, TOKEN)).text();
+    expect(raw).toBe('0:1700000000:00'); // 3 fields
   });
 
   it('produces no stdout', () => {
@@ -248,11 +226,7 @@ describe('handleStop', () => {
   it('SKIP_WINDOW: count=0 and last_ts within 60s → exit 0, state unchanged', async () => {
     const now = 1700000100;
     const recentTs = now - 30; // 30s ago
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: recentTs, last_stop_nn: '01', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 0, last_ts: recentTs, last_stop_nn: '01' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -267,11 +241,7 @@ describe('handleStop', () => {
   it('SKIP_WINDOW: count=0 but last_ts > 60s ago → NOT skipped, count increments to 1', () => {
     const now = 1700000100;
     const oldTs = now - 90; // 90s ago
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: oldTs, last_stop_nn: '00', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -284,11 +254,7 @@ describe('handleStop', () => {
 
   it('threshold not met → no stdout, state updated with incremented count', () => {
     const now = 1700000100;
-    writeState(
-      TOKEN,
-      { count: 2, last_ts: now - 10, last_stop_nn: '00', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 2, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -302,11 +268,7 @@ describe('handleStop', () => {
   it('MIN_ACTIVITY guard: count increments to 1, threshold met by time, but no emit', () => {
     const now = 1700001000;
     const oldTs = now - 700; // 700s > 600s threshold
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: oldTs, last_stop_nn: '01', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '01' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -320,11 +282,7 @@ describe('handleStop', () => {
   it('threshold met (messages) → emits block with NN and since suffix', async () => {
     const now = 1700001000;
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    writeState(
-      TOKEN,
-      { count: 4, last_ts: now - 10, last_stop_nn: '01', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '01' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -337,11 +295,7 @@ describe('handleStop', () => {
 
   it('threshold met → state reset (count=0, last_ts=now)', async () => {
     const now = 1700001000;
-    writeState(
-      TOKEN,
-      { count: 4, last_ts: now - 10, last_stop_nn: '00', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -355,11 +309,7 @@ describe('handleStop', () => {
   it('NN derivation: disk scan is authoritative over state last_stop_nn', async () => {
     const now = 1700001000;
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
-    writeState(
-      TOKEN,
-      { count: 4, last_ts: now - 10, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 4, last_ts: now - 10, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -374,7 +324,7 @@ describe('handleStop', () => {
 
   it('elapsed calc: last_ts=0 → elapsed=0, never triggers time threshold alone', () => {
     const now = 1700001000;
-    writeState(TOKEN, { count: 1, last_ts: 0, last_stop_nn: '00', pending_checkpoint: 0 }, tmpDir);
+    writeState(TOKEN, { count: 1, last_ts: 0, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -388,11 +338,7 @@ describe('handleStop', () => {
   it('precompact-then-stop same turn: count=0, not in SKIP_WINDOW → count=1, below MIN_ACTIVITY, no emit', () => {
     const now = 1700002000;
     const oldTs = now - 900;
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: oldTs, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 0, last_ts: oldTs, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -416,7 +362,7 @@ describe('handleStop', () => {
     const now = 1700000800;
     await createCheckpointFile(vaultDir, now, TOKEN, 1);
     await createCheckpointFile(vaultDir, now, TOKEN, 2);
-    writeState(TOKEN, { count: 4, last_ts: 0, last_stop_nn: '02', pending_checkpoint: 0 }, tmpDir);
+    writeState(TOKEN, { count: 4, last_ts: 0, last_stop_nn: '02' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -432,7 +378,7 @@ describe('handleStop', () => {
 
   it('last_ts=0 + count=0 → SKIP_WINDOW does NOT fire (guard needs last_ts > 0)', () => {
     const now = 1700001500;
-    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00', pending_checkpoint: 0 }, tmpDir);
+    writeState(TOKEN, { count: 0, last_ts: 0, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, vaultDir, now, tmpDir);
@@ -447,11 +393,7 @@ describe('handleStop', () => {
   it('falls back to defaults when vault.yml is missing (messages=15, minutes=30)', () => {
     const emptyVault = tmpDir; // no vault.yml
     const now = 1700001000;
-    writeState(
-      TOKEN,
-      { count: 14, last_ts: now - 10, last_stop_nn: '00', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 14, last_ts: now - 10, last_stop_nn: '00' }, tmpDir);
 
     const cap = captureStdout();
     handleStop(TOKEN, emptyVault, now, tmpDir);
@@ -459,498 +401,6 @@ describe('handleStop', () => {
 
     const parsed = JSON.parse(out.trim());
     expect(parsed.decision).toBe('block');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// handlePostcompact
-// ---------------------------------------------------------------------------
-
-describe('handlePostcompact', () => {
-  let tmpDir: string;
-  let vaultDir: string;
-  const now = 1700001000;
-
-  beforeEach(async () => {
-    tmpDir = await makeTmpDir();
-    vaultDir = await makeTmpDir();
-    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-  });
-  afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  it('no recent checkpoint → sets pending_checkpoint=1 (silent stdout)', () => {
-    const oldTs = now - 600; // > 300s → not recent
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: oldTs, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe(''); // PostCompact stdout cannot reach the agent — must stay silent
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_checkpoint).toBe(1);
-    expect(state.last_ts).toBe(now);
-  });
-
-  it('signal set → state updated: count=0, last_ts=now, last_stop_nn preserved', () => {
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: now - 600, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    cap.stop();
-
-    const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(0);
-    expect(state.last_ts).toBe(now);
-    expect(state.last_stop_nn).toBe('02'); // unchanged
-    expect(state.pending_checkpoint).toBe(1);
-  });
-
-  it('recent checkpoint (< 5 min) → pending_checkpoint stays 0, last_ts preserved', () => {
-    const recentTs = now - 100; // < 300s
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: recentTs, last_stop_nn: '03', pending_checkpoint: 0 },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_ts).toBe(recentTs); // preserved
-    expect(state.last_stop_nn).toBe('03');
-    expect(state.pending_checkpoint).toBe(0);
-  });
-
-  it('no state file (last_ts=0) → recency guard fails → pending_checkpoint set', () => {
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_checkpoint).toBe(1);
-  });
-
-  it('postcompact resets last_ts to now and count to 0 — state ready for next session', () => {
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: now - 600, last_stop_nn: '01', pending_checkpoint: 0 },
-      tmpDir,
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    cap.stop();
-
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_ts).toBe(now);
-    expect(state.count).toBe(0);
-  });
-
-  it('4-field legacy state (pending_stub filename) → pending_checkpoint set on next compact', async () => {
-    const oldTs = now - 600;
-    await writeFile(
-      stateFile(tmpDir, TOKEN),
-      `0:${oldTs}:02:2026-04-23-${TOKEN}-checkpoint-03.md`,
-      'utf8',
-    );
-
-    const cap = captureStdout();
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe('');
-    const state = readState(TOKEN, tmpDir);
-    expect(state.pending_checkpoint).toBe(1);
-  });
-
-  it('PostCompact fires twice within recency window → pending_checkpoint preserved (signal survives)', () => {
-    // First /compact sets pending_checkpoint=1. User immediately runs /compact again
-    // (e.g., accidentally double-tapped). The second PostCompact must NOT clear
-    // the flag — the signal hasn't been consumed yet by UserPromptSubmit.
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: now - 600, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(1); // first call set it
-
-    // Second compact within 5 min — recency guard hits. Must preserve the flag.
-    handlePostcompact(TOKEN, vaultDir, now + 60, tmpDir);
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(1); // still set
-  });
-
-  it('recency-guard skip preserves all state on disk (no overwrite)', () => {
-    // The recency-skip branch is a true no-op — it does not rewrite state.
-    // Cross-session staleness is handled by the 24h TTL guard in
-    // handleUserPromptSubmit, not by clearing the flag here.
-    writeState(
-      TOKEN,
-      { count: 3, last_ts: now - 100, last_stop_nn: '04', pending_checkpoint: 1 },
-      tmpDir,
-    );
-    handlePostcompact(TOKEN, vaultDir, now, tmpDir);
-    const state = readState(TOKEN, tmpDir);
-    expect(state.count).toBe(3);
-    expect(state.last_ts).toBe(now - 100);
-    expect(state.last_stop_nn).toBe('04');
-    expect(state.pending_checkpoint).toBe(1);
-  });
-
-  it('writeState failure leaves on-disk state unchanged — next compact can retry', () => {
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: now - 600, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
-    const originalWrite = process.stderr.write.bind(process.stderr);
-    process.stderr.write = (() => true) as typeof process.stderr.write;
-
-    // Use a non-existent tmpDir to force writeFileSync ENOENT.
-    const badTmpDir = join(tmpDir, 'does', 'not', 'exist');
-    handlePostcompact(TOKEN, vaultDir, now, badTmpDir);
-    process.stderr.write = originalWrite;
-
-    // Original tmpDir's state must be untouched (write went to badTmpDir
-    // and failed). last_ts still old → next PostCompact's recency guard
-    // does not skip → retry succeeds.
-    const state = readState(TOKEN, tmpDir);
-    expect(state.last_ts).toBe(now - 600);
-    expect(state.pending_checkpoint).toBe(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// postcompactFallback
-// ---------------------------------------------------------------------------
-
-describe('postcompactFallback', () => {
-  let tmpDir: string;
-  let vaultDir: string;
-
-  beforeEach(async () => {
-    tmpDir = await makeTmpDir();
-    vaultDir = await makeTmpDir();
-  });
-  afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  const now = 1700002000;
-
-  it('sets pending_checkpoint when not recent', () => {
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: now - 600, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(1);
-  });
-
-  it('no signal when recent (< 5 min since last checkpoint)', () => {
-    writeState(
-      TOKEN,
-      { count: 0, last_ts: now - 100, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
-    const cap = captureStdout();
-    postcompactFallback(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe('');
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// handleStop wrapup branch (PostCompact follow-up signal)
-// ---------------------------------------------------------------------------
-
-describe('handleStop wrapup branch', () => {
-  let tmpDir: string;
-  let vaultDir: string;
-  const now = 1700004000;
-
-  beforeEach(async () => {
-    tmpDir = await makeTmpDir();
-    vaultDir = await makeTmpDir();
-    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-  });
-  afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  function setPending(ts: number, pending: 0 | 1 = 1, lastStopNn = '02', count = 0): void {
-    writeState(
-      TOKEN,
-      { count, last_ts: ts, last_stop_nn: lastStopNn, pending_checkpoint: pending },
-      tmpDir,
-    );
-  }
-
-  it('pending_checkpoint=1 → forces a checkpoint NN emission + clears flag', () => {
-    setPending(now);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now + 5, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim()) as { decision: string; reason: string };
-    expect(parsed.decision).toBe('block');
-    // Uniform reason format with regular checkpoints — no special "auto-wrapup"
-    // marker. The agent treats post-compact checkpoints the same as regular ones.
-    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
-
-    // Flag consumed; last_ts advanced; last_stop_nn updated to fresh NN.
-    const after = readState(TOKEN, tmpDir);
-    expect(after.pending_checkpoint).toBe(0);
-    expect(after.last_ts).toBe(now + 5);
-    expect(after.count).toBe(0);
-    expect(after.last_stop_nn).not.toBe('02'); // changed (incremented)
-  });
-
-  it('post-compact priority bypasses SKIP_WINDOW (a /wrapup just ran would normally skip)', () => {
-    // Simulate /wrapup-then-/compact: handleReset wrote count=0 + last_ts=now-30s.
-    // Without post-compact priority, SKIP_WINDOW (60s) would suppress this Stop.
-    setPending(now - 30, 1, '00', 0);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim()) as { reason: string };
-    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
-  });
-
-  it('post-compact priority bypasses MIN_ACTIVITY (count<2 normally skips checkpoint)', () => {
-    // count=1 is below MIN_ACTIVITY=2; without post-compact priority this Stop
-    // would not emit anything.
-    setPending(now - 600, 1, '02', 1);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim()) as { reason: string };
-    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
-  });
-
-  it('pending_checkpoint=0 → falls through to regular checkpoint logic', () => {
-    // No pending flag — handleStop follows its normal path. Pick last_ts that
-    // beats SKIP_WINDOW (60s) but stays within time threshold (10min in
-    // VALID_VAULT_YML). Pick count low enough that increment stays below the
-    // 5-message threshold.
-    setPending(now - 200, 0, '00', 2);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-
-    expect(out).toBe(''); // below threshold → no emit
-    const after = readState(TOKEN, tmpDir);
-    expect(after.pending_checkpoint).toBe(0);
-    expect(after.count).toBe(3); // incremented from 2 to 3
-  });
-
-  it('signal older than 24h is discarded silently — flag cleared, no emit', () => {
-    const originalWrite = process.stderr.write.bind(process.stderr);
-    process.stderr.write = (() => true) as typeof process.stderr.write;
-    const yesterday = now - 25 * 60 * 60; // > 24h
-    setPending(yesterday);
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    process.stderr.write = originalWrite;
-
-    expect(out).toBe(''); // no directive emitted
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(0); // stale flag cleared
-  });
-
-  it('signal exactly past TTL boundary (24h + 1s) is discarded', () => {
-    const originalWrite = process.stderr.write.bind(process.stderr);
-    process.stderr.write = (() => true) as typeof process.stderr.write;
-    setPending(now - (24 * 60 * 60 + 1));
-
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    process.stderr.write = originalWrite;
-
-    expect(out).toBe('');
-  });
-
-  it('payload is valid JSON with single trailing newline', () => {
-    setPending(now);
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    expect(out.endsWith('\n')).toBe(true);
-    expect(out.trim().split('\n').length).toBe(1);
-    expect(() => JSON.parse(out.trim())).not.toThrow();
-  });
-
-  it('two consecutive Stop fires: first force-checkpoints, second is SKIP_WINDOW silent', () => {
-    setPending(now);
-
-    const cap1 = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out1 = cap1.stop();
-    const parsed1 = JSON.parse(out1.trim()) as { reason: string };
-    expect(parsed1.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(0);
-
-    // Second Stop within SKIP_WINDOW after the first wrapup → no emit
-    const cap2 = captureStdout();
-    handleStop(TOKEN, vaultDir, now + 30, tmpDir);
-    const out2 = cap2.stop();
-    expect(out2).toBe('');
-  });
-
-  it('signal at exactly TTL boundary (24h) is still honored — strict > comparison', () => {
-    // Edge case: now - last_ts === WRAPUP_TTL_SECONDS (exactly 24h).
-    // Code uses strict `>` so this is NOT stale → checkpoint emits.
-    setPending(now - 24 * 60 * 60);
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    const out = cap.stop();
-    const parsed = JSON.parse(out.trim()) as { reason: string };
-    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
-  });
-
-  it('regular handleStop (threshold-not-met branch) preserves pending_checkpoint', () => {
-    // pending_checkpoint=1 exists, but Stop's wrapup branch is bypassed by setting
-    // last_ts so that `now - last_ts > WRAPUP_TTL_SECONDS` would discard it.
-    // Wait — that path clears the flag. To exercise the threshold-not-met
-    // branch with pending_checkpoint intact, we need pending=1 with FRESH last_ts
-    // — but then the wrapup branch fires first and clears.
-    //
-    // The only way to exercise non-emit branches with pending=1 is impossible
-    // by the wrapup branch's design (wrapup priority). Verify instead that
-    // when pending_checkpoint=0 (normal case), the threshold-not-met branch
-    // preserves the existing flag value (which is 0). This rules out an
-    // accidental `pending_checkpoint: 1` literal sneaking in.
-    setPending(now - 200, 0, '00', 2);
-    handleStop(TOKEN, vaultDir, now, tmpDir);
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// End-to-end: PostCompact → Stop chain (cross-handler contract)
-// ---------------------------------------------------------------------------
-
-describe('end-to-end PostCompact → Stop chain', () => {
-  let tmpDir: string;
-  let vaultDir: string;
-
-  beforeEach(async () => {
-    tmpDir = await makeTmpDir();
-    vaultDir = await makeTmpDir();
-    await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
-  });
-  afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
-    await rm(vaultDir, { recursive: true, force: true });
-  });
-
-  it('PostCompact fires → next Stop force-emits checkpoint NN → flag cleared', () => {
-    const t0 = 1700000000;
-
-    // Step 1: PostCompact fires (cold start — no prior state).
-    handlePostcompact(TOKEN, vaultDir, t0, tmpDir);
-    const afterPostcompact = readState(TOKEN, tmpDir);
-    expect(afterPostcompact.pending_checkpoint).toBe(1);
-    expect(afterPostcompact.last_ts).toBe(t0);
-
-    // Step 2: User prompts, assistant responds, Stop hook fires.
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, t0 + 10, tmpDir);
-    const out = cap.stop();
-
-    const parsed = JSON.parse(out.trim()) as { decision: string; reason: string };
-    expect(parsed.decision).toBe('block');
-    // Uniform NN reason — same shape as activity-driven checkpoints.
-    expect(parsed.reason).toMatch(/^\d{2} since (start|checkpoint-\d{2})$/);
-
-    // Step 3: Flag cleared, last_stop_nn updated.
-    const afterStop = readState(TOKEN, tmpDir);
-    expect(afterStop.pending_checkpoint).toBe(0);
-    expect(afterStop.last_ts).toBe(t0 + 10);
-    expect(afterStop.last_stop_nn).not.toBe('00');
-  });
-
-  it('/wrapup runs while pending_checkpoint=1 → next Stop does NOT force-emit', () => {
-    const t0 = 1700000000;
-
-    // PostCompact set the pending flag.
-    handlePostcompact(TOKEN, vaultDir, t0, tmpDir);
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(1);
-
-    // User explicitly runs /wrapup → CLI calls `onebrain checkpoint reset`.
-    handleReset(TOKEN, t0 + 5, tmpDir);
-    expect(readState(TOKEN, tmpDir).pending_checkpoint).toBe(0);
-
-    // Subsequent Stop hook firing should NOT force-emit — /wrapup already
-    // wrote a session log consolidating prior checkpoints; the post-compact
-    // signal is no longer relevant.
-    const cap = captureStdout();
-    handleStop(TOKEN, vaultDir, t0 + 10, tmpDir);
-    const out = cap.stop();
-    expect(out).toBe(''); // no emit; SKIP_WINDOW catches the freshly-reset state
-  });
-
-  it('/wrapup → /compact within 5 min → PostCompact still sets the flag', () => {
-    const t0 = 1700000000;
-
-    // /wrapup wrote a session log and reset state (last_stop_nn='00').
-    handleReset(TOKEN, t0, tmpDir);
-    expect(readState(TOKEN, tmpDir).last_stop_nn).toBe('00');
-
-    // User does new work, then runs /compact 30s later. The PostCompact
-    // recency guard would naively skip (last_ts within 300s) — but the
-    // last_stop_nn='00' check means we DON'T skip: there's no Stop
-    // checkpoint covering the post-/wrapup conversation, so we must
-    // queue an auto-wrapup signal.
-    handlePostcompact(TOKEN, vaultDir, t0 + 30, tmpDir);
-    const after = readState(TOKEN, tmpDir);
-    expect(after.pending_checkpoint).toBe(1);
-  });
-
-  it('Stop checkpoint → /compact within 5 min → PostCompact recency-skips (no double work)', () => {
-    const t0 = 1700000000;
-
-    // Simulate Stop checkpoint emit (last_stop_nn='03', count=0, last_ts=now).
-    writeState(TOKEN, { count: 0, last_ts: t0, last_stop_nn: '03', pending_checkpoint: 0 }, tmpDir);
-
-    // /compact within 300s → recency guard fires AND last_stop_nn !== '00' →
-    // skip. The Stop checkpoint already covers this content; an auto-wrapup
-    // would just delete it via Path A.
-    handlePostcompact(TOKEN, vaultDir, t0 + 100, tmpDir);
-    const after = readState(TOKEN, tmpDir);
-    expect(after.pending_checkpoint).toBe(0); // unchanged — guard skipped
-    expect(after.last_stop_nn).toBe('03'); // preserved
   });
 });
 
@@ -1012,11 +462,7 @@ describe('unicode in checkpoint files', () => {
 
   it('state file with token containing only ASCII — content is valid UTF-8', async () => {
     const now = 1700001000;
-    writeState(
-      TOKEN,
-      { count: 3, last_ts: now, last_stop_nn: '02', pending_checkpoint: 0 },
-      tmpDir,
-    );
+    writeState(TOKEN, { count: 3, last_ts: now, last_stop_nn: '02' }, tmpDir);
 
     const stateContent = await Bun.file(stateFile(tmpDir, TOKEN)).text();
     // State file is ASCII, so it's trivially valid UTF-8

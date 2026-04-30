@@ -131,15 +131,14 @@ program
 
 program
   .command('checkpoint', { hidden: true })
-  .description('Handle checkpoint lifecycle (stop/postcompact/reset)')
-  .argument('<mode>', 'stop | postcompact | reset')
+  .description('Handle checkpoint lifecycle (stop/reset)')
+  .argument('<mode>', 'stop | reset')
   .option('--vault-dir <path>', 'vault root directory (default: auto-detect from cwd)')
   .action(async (mode: string, opts: { vaultDir?: string }) => {
     const token = await resolveSessionToken();
     // findVaultRoot walks up the directory tree (~5-30ms on deep trees). Skip
     // it for `reset` — that mode only touches $TMPDIR.
-    const needsVault = mode === 'stop' || mode === 'postcompact';
-    const vaultRoot = needsVault ? (opts.vaultDir ?? findVaultRoot(process.cwd())) : '';
+    const vaultRoot = mode === 'stop' ? (opts.vaultDir ?? findVaultRoot(process.cwd())) : '';
     await checkpointCommand(mode, token, vaultRoot);
   });
 

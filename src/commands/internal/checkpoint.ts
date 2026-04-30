@@ -1,36 +1,32 @@
 /**
  * checkpoint — internal command
  *
- * Implements stop/postcompact/reset modes. The Stop hook is the SOLE producer
- * of checkpoint signals; session logs are produced only by /wrapup (manual) or
- * AUTO-SUMMARY (end-of-session signal). This keeps "1 session = 1 session log"
- * as the user-facing invariant.
+ * Implements stop/reset modes. The Stop hook is the only checkpoint signal
+ * source; session logs are produced only by /wrapup (manual) or AUTO-SUMMARY
+ * (end-of-session signal). PostCompact is intentionally NOT registered —
+ * Claude Code's PostCompact hook is observational-only (its stdout cannot
+ * reach the agent), so any signal we emitted from it would be silently
+ * ignored. Trust the Stop hook's count / time threshold to drive checkpoint
+ * emission; compact events don't get special handling.
  *
  * State file: $TMPDIR/onebrain-{session_token}.state
- * Format:     count:last_ts:last_stop_nn:pending_checkpoint
+ * Format:     count:last_ts:last_stop_nn
  *
  * - count          number of Stop messages since the last checkpoint emission
  * - last_ts        unix seconds of the most recent state-touching event
  * - last_stop_nn   bookkeeping for the most recent checkpoint NN written (debug only)
- * - pending_checkpoint 0 or 1 — set by PostCompact, consumed by the next Stop hook
  *
  * Checkpoint NN is always derived from actual files on disk — this guarantees
  * sequential numbering even when Claude fails to write a file (e.g. context full).
  *
  * Hook signal delivery:
- * - Stop: emits {decision:"block",reason:"NN since <context>"} — always. The
- *   reason is uniform whether the checkpoint was triggered by message count,
- *   time threshold, or PostCompact follow-up. The agent treats all three the
- *   same: write a checkpoint file capturing the conversation since the last NN.
- * - PostCompact: sets `pending_checkpoint=1` in the shared state file (its stdout
- *   cannot reach the agent because PostCompact is observational-only). The
- *   flag forces the next Stop to emit a checkpoint NN regardless of count /
- *   threshold / SKIP_WINDOW — PostCompact's intent is "capture the compacted
- *   summary into a checkpoint file before more conversation happens".
+ * - Stop: emits {decision:"block",reason:"NN since <context>"} when count or
+ *   time threshold is met. The agent dispatches a background sub-agent to
+ *   write the checkpoint file capturing the conversation since the last NN.
  *
  * Session log creation lives outside this file — see /wrapup skill and
- * AUTO-SUMMARY in INSTRUCTIONS.md. Both consolidate accumulated checkpoint
- * files into one session log per call.
+ * AUTO-SUMMARY. Both consolidate accumulated checkpoint files into one
+ * session log per call ("1 session = 1 session log").
  *
  * Concurrency: each hook runs as its own short-lived CLI subprocess. State writes use
  * atomic write-then-rename (pid-suffixed temp file → POSIX rename) so concurrent writers
@@ -50,8 +46,6 @@ import { join } from 'node:path';
 
 const SKIP_WINDOW = 60; // seconds — suppress re-trigger after reset
 const MIN_ACTIVITY = 2; // minimum messages to warrant checkpoint
-const PRECOMPACT_RECENCY = 300; // seconds — postcompact recency guard
-const PENDING_CHECKPOINT_TTL_SECONDS = 24 * 60 * 60; // pending checkpoint older than this is stale
 
 // Default thresholds (used when vault.yml is missing/unreadable)
 const DEFAULT_MESSAGES_THRESHOLD = 15;
@@ -65,14 +59,6 @@ export interface CheckpointState {
   count: number;
   last_ts: number;
   last_stop_nn: string;
-  /**
-   * 0 = no post-compact follow-up pending.
-   * 1 = PostCompact fired and is waiting for the next Stop hook to force
-   *     a checkpoint emission (capturing the compacted summary into a checkpoint
-   *     file). Cleared after emission, or silently cleared if the signal
-   *     exceeds PENDING_CHECKPOINT_TTL_SECONDS.
-   */
-  pending_checkpoint: 0 | 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,17 +69,17 @@ function stateFilePath(token: string, tmpDir: string): string {
   return join(tmpDir, `onebrain-${token}.state`);
 }
 
-const FRESH_STATE_DISK = '0:0:00:0';
+const FRESH_STATE_DISK = '0:0:00';
 
 /**
  * Read state from $tmpDir/onebrain-{token}.state.
  * Returns default state if file is missing or malformed.
  *
- * Backward-compat: a 3-field legacy file (`count:last_ts:last_stop_nn`) parses
- * with `pending_checkpoint = 0`. A 4-field file from prior versions (which carried
- * a `pending_stub` filename string in slot 4) parses by interpreting any
- * non-`1` value as `pending_checkpoint = 0` — the legacy field never had `1` as a
- * valid value, so this is unambiguous.
+ * Backward-compat: parses any state file with at least 3 colon-separated
+ * fields. Legacy 4-field formats (whether the post-v2.1.6 `pending_checkpoint`
+ * flag or the older pre-v2.0 `pending_stub` filename string in slot 4) are
+ * silently ignored — slot 4 is no longer load-bearing as of v2.1.6 (the
+ * PostCompact hook was removed).
  *
  * Sync — checkpoint hooks must not add async latency.
  */
@@ -102,26 +88,22 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
   try {
     const raw = readFileSync(path, 'utf8').trim();
     const parts = raw.split(':');
-    // v1 compat: fewer than 3 fields → treat as parse error
     if (parts.length < 3) {
       throw new Error('v1 state format');
     }
     const count = Number(parts[0]);
     const last_ts = Number(parts[1]);
     const last_stop_nn = parts[2] ?? '00';
-    // parts[3]: '1' = wrapup pending; anything else (missing, '0', legacy filename) = not pending
-    const pending_checkpoint: 0 | 1 = parts[3] === '1' ? 1 : 0;
+    // parts[3] (if present) is silently ignored — see backward-compat note above.
 
     if (!Number.isInteger(count) || !Number.isInteger(last_ts) || !/^\d{2}$/.test(last_stop_nn)) {
       throw new Error('malformed state');
     }
 
-    return { count, last_ts, last_stop_nn, pending_checkpoint };
+    return { count, last_ts, last_stop_nn };
   } catch {
     // Missing or malformed → fresh state, eagerly rewritten so subsequent reads
-    // short-circuit cleanly. Filesystem corruption that destroys a pending flag
-    // is exceedingly rare; if it happens, the worst outcome is a missed
-    // auto-wrapup, which /wrapup orphan recovery will pick up at next session.
+    // short-circuit cleanly.
     try {
       writeFileSync(stateFilePath(token, tmpDir), FRESH_STATE_DISK, 'utf8');
     } catch (writeErr) {
@@ -133,13 +115,12 @@ export function readState(token: string, tmpDir: string = osTmpdir()): Checkpoin
       count: 0,
       last_ts: 0,
       last_stop_nn: '00',
-      pending_checkpoint: 0,
     };
   }
 }
 
 /**
- * Write state to $tmpDir/onebrain-{token}.state (4-field format) via atomic
+ * Write state to $tmpDir/onebrain-{token}.state (3-field format) via atomic
  * write-then-rename. The pid-suffixed temp file + POSIX rename mirrors the
  * pattern used by `register-hooks.ts:writeSettings` and prevents torn reads
  * if a writer is interrupted mid-write.
@@ -153,7 +134,7 @@ export function writeState(
 ): void {
   const path = stateFilePath(token, tmpDir);
   const tmpPath = `${path}.tmp.${process.pid}`;
-  const content = `${state.count}:${state.last_ts}:${state.last_stop_nn}:${state.pending_checkpoint}`;
+  const content = `${state.count}:${state.last_ts}:${state.last_stop_nn}`;
   try {
     writeFileSync(tmpPath, content, 'utf8');
     renameSync(tmpPath, path);
@@ -269,11 +250,10 @@ function emitBlock(reason: string): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Reset state: write 0:<now>:00:0 to state file.
+ * Reset state: write 0:<now>:00 to state file.
  *
- * Called by the agent after a session log is written (either via /wrapup or
- * via the PostCompact background sub-agent). Clears count, last_stop_nn, and
- * pending_checkpoint in one shot so the next checkpoint cycle starts from scratch.
+ * Called by the agent after a session log is written via /wrapup. Clears
+ * count and last_stop_nn so the next checkpoint cycle starts from scratch.
  *
  * No stdout. Exit 0 always.
  */
@@ -282,7 +262,7 @@ export function handleReset(
   now: number = Math.floor(Date.now() / 1000),
   tmpDir: string = osTmpdir(),
 ): void {
-  writeState(token, { count: 0, last_ts: now, last_stop_nn: '00', pending_checkpoint: 0 }, tmpDir);
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: '00' }, tmpDir);
 }
 
 // ---------------------------------------------------------------------------
@@ -301,40 +281,6 @@ export function handleStop(
 ): void {
   const state = readState(token, tmpDir);
 
-  // Post-compact priority: PostCompact set pending_checkpoint=1; force a checkpoint
-  // emission on this Stop regardless of count / threshold / SKIP_WINDOW /
-  // MIN_ACTIVITY. PostCompact's intent is "the compacted summary needs to land
-  // in a checkpoint file before more conversation accumulates" — without this
-  // forced emission the agent might wait until the regular threshold and lose
-  // freshness in the meantime.
-  //
-  // The emitted reason is uniform with regular checkpoint emissions
-  // (`NN since <context>`) — the agent treats post-compact checkpoints the
-  // same as activity-driven ones. Session log creation is deferred to /wrapup
-  // (manual) or AUTO-SUMMARY (end-of-session), preserving the
-  // "1 session = 1 session log" invariant.
-  if (state.pending_checkpoint === 1) {
-    if (state.last_ts > 0 && now - state.last_ts > PENDING_CHECKPOINT_TTL_SECONDS) {
-      // Stale signal from a forgotten session that reused this token —
-      // discard silently rather than capture a checkpoint with stale context.
-      writeState(token, { ...state, pending_checkpoint: 0 }, tmpDir);
-      return;
-    }
-    const { logsFolder } = loadVaultSettings(vaultRoot);
-    const date = formatDate(now);
-    const maxNn = maxCheckpointNnSync(vaultRoot, date, token, logsFolder);
-    const nextNn = String(maxNn + 1).padStart(2, '0');
-    const since =
-      maxNn === 0 ? ' since start' : ` since checkpoint-${String(maxNn).padStart(2, '0')}`;
-    emitBlock(`${nextNn}${since}`);
-    writeState(
-      token,
-      { count: 0, last_ts: now, last_stop_nn: nextNn, pending_checkpoint: 0 },
-      tmpDir,
-    );
-    return;
-  }
-
   // SKIP_WINDOW: if count=0 and last_ts is within 60s, this is right after a /wrapup reset
   if (state.count === 0 && state.last_ts > 0 && now - state.last_ts < SKIP_WINDOW) {
     return; // exit 0, state unchanged
@@ -346,15 +292,10 @@ export function handleStop(
   const { messagesThreshold, minutesThreshold, logsFolder } = loadVaultSettings(vaultRoot);
   const timeThreshold = minutesThreshold * 60;
 
-  // Elapsed: last_ts=0 is post-compact sentinel → treat as 0 elapsed
+  // Elapsed: last_ts=0 is fresh-state sentinel → treat as 0 elapsed
   const elapsed = state.last_ts === 0 ? 0 : now - state.last_ts;
 
   const thresholdMet = state.count >= messagesThreshold || elapsed >= timeThreshold;
-
-  // Stop's regular branches never modify pending_checkpoint — it's owned by
-  // PostCompact (set) and the post-compact priority branch above / handleReset (clear).
-  // Spread the original state so the flag survives across all writeState
-  // branches below (threshold-not-met, MIN_ACTIVITY guard, threshold-met emit).
 
   if (!thresholdMet) {
     // Update count but preserve last_ts
@@ -378,101 +319,7 @@ export function handleStop(
     maxNn === 0 ? ' since start' : ` since checkpoint-${String(maxNn).padStart(2, '0')}`;
   emitBlock(`${nextNn}${since}`);
 
-  writeState(
-    token,
-    { count: 0, last_ts: now, last_stop_nn: nextNn, pending_checkpoint: state.pending_checkpoint },
-    tmpDir,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// postcompact mode
-// ---------------------------------------------------------------------------
-
-/**
- * Postcompact hook: set `pending_checkpoint=1` in the shared state file so the
- * next Stop hook firing emits `decision:"block",reason:"auto-wrapup"` to the
- * agent (PostCompact stdout cannot reach the agent — see file header).
- *
- * Recency guard: if a Stop checkpoint was just written within the last 5 min
- * (last_ts recent AND last_stop_nn !== '00'), skip — that checkpoint already
- * covers the conversation and a follow-up auto-wrapup would just delete it
- * via Path A. The `last_stop_nn !== '00'` check is critical because after
- * `/wrapup` the state has last_stop_nn='00' with a fresh last_ts; without
- * the check, an immediate `/compact` would be silently skipped and any
- * conversation between /wrapup and /compact would be lost.
- *
- * In-session double-/compact: if `pending_checkpoint` is already 1 from a prior
- * PostCompact, both branches of this function preserve it — the recency guard
- * leaves the file untouched on skip, and the main path overwrites with `1`
- * anyway. Cross-session staleness is handled by the 24h TTL guard in handleStop.
- *
- * The wrapup signal lives inside the same atomic state write — there is no
- * separate marker file. A single write either persists both the recency
- * timestamp AND the pending flag, or fails (logged to stderr; on-disk state
- * unchanged so the next compact attempts again).
- */
-export function handlePostcompact(
-  token: string,
-  _vaultRoot: string,
-  now: number = Math.floor(Date.now() / 1000),
-  tmpDir: string = osTmpdir(),
-): void {
-  const state = readState(token, tmpDir);
-
-  // Recency guard: skip only when the recent activity was a Stop hook
-  // checkpoint (last_stop_nn !== '00'), because that checkpoint already
-  // covers the conversation and a follow-up auto-wrapup would just delete
-  // the checkpoint via Path A.
-  //
-  // Critical exception: after `/wrapup` runs handleReset, last_stop_nn is
-  // '00' and last_ts is recent. If `/compact` follows within 300s, the
-  // recency guard would skip and any conversation between /wrapup and
-  // /compact would have NO recovery path (no checkpoint written, no
-  // pending_checkpoint set, just compacted context). last_stop_nn === '00'
-  // distinguishes that case → fall through and set the flag.
-  //
-  // In-session double-/compact: if pending_checkpoint is already 1, the recency
-  // guard is irrelevant — we don't need to set it again, just preserve.
-  // Cross-session staleness is handled by the 24h TTL guard in handleStop.
-  if (
-    state.last_ts > 0 &&
-    now - state.last_ts < PRECOMPACT_RECENCY &&
-    state.last_stop_nn !== '00'
-  ) {
-    return;
-  }
-
-  // writeState returns false on filesystem failure. We deliberately do not
-  // advance any in-memory state separately — failure to persist the flag
-  // means the session is reported lost via stderr, not silently swallowed.
-  writeState(
-    token,
-    {
-      count: 0,
-      last_ts: now,
-      last_stop_nn: state.last_stop_nn,
-      pending_checkpoint: 1,
-    },
-    tmpDir,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// postcompact entry point
-// ---------------------------------------------------------------------------
-
-/**
- * Postcompact entry point: delegates to handlePostcompact.
- * Kept as a separate export for backward compat with existing test imports.
- */
-export function postcompactFallback(
-  token: string,
-  vaultRoot: string,
-  now: number = Math.floor(Date.now() / 1000),
-  tmpDir: string = osTmpdir(),
-): void {
-  handlePostcompact(token, vaultRoot, now, tmpDir);
+  writeState(token, { count: 0, last_ts: now, last_stop_nn: nextNn }, tmpDir);
 }
 
 // ---------------------------------------------------------------------------
@@ -492,9 +339,6 @@ export async function checkpointCommand(
     switch (mode) {
       case 'stop':
         handleStop(token, vaultRoot);
-        break;
-      case 'postcompact':
-        postcompactFallback(token, vaultRoot);
         break;
       case 'reset':
         handleReset(token);

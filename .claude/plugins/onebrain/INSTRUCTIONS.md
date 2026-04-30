@@ -295,18 +295,17 @@ If the user closes the session without any end-of-session signal, AUTO-SUMMARY d
 
 When a hook sends a message whose reason matches `NN since <context>` (a zero-padded two-digit number followed by ` since start` or ` since checkpoint-NN`), silently spawn a background agent (mode: bypassPermissions) to write the checkpoint. The background agent receives: `session_token` from context (re-run `onebrain session-init` first if not in context — if that fails, abort silently), today's date (YYYY-MM-DD), NN from the reason, `[logs_folder]`, and enough conversation context to write a meaningful checkpoint. The agent writes to `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md`. Create parent directories if missing. No output to user.
 
-The Stop hook is the SOLE source of checkpoint signals to the agent. Both regular activity-driven checkpoints AND post-compact checkpoints emit the same reason format `NN since <context>` — the agent treats them uniformly: spawn a background sub-agent (mode: bypassPermissions) to write a checkpoint file, then continue.
+The Stop hook is the only checkpoint signal source. It emits `decision:"block",reason:"NN since <context>"` whenever the message-count threshold (default 15) or time threshold (default 30 min) is met. The agent dispatches a background sub-agent to write a checkpoint file, then continues.
 
 Determine action from the reason:
 - `Stop hook blocking error` with reason matching `NN since <context>` (zero-padded NN + ` since start` or ` since checkpoint-NN`) → spawn background agent (mode: bypassPermissions) to write the checkpoint; if session_token is not in context, re-run `onebrain session-init` first — if that fails, abort silently; agent receives session_token, NN and since-context from the reason, today's date, and `[logs_folder]`; main session continues immediately after dispatching
-- `PostCompact` block messages → never delivered to the agent (PostCompact is observational-only); ignore if seen
 - Ambiguous or unknown → default to stop checkpoint
 
-PreCompact is a no-op — it exits 0 without modifying state or emitting any output. PostCompact silently sets `pending_checkpoint=1` in the shared state file (`$TMPDIR/onebrain-{token}.state`); the flag forces the very next Stop hook to emit a checkpoint NN regardless of count / threshold / SKIP_WINDOW. The forced checkpoint captures the compacted context summary into a checkpoint file before further conversation accumulates.
+OneBrain registers only the Stop hook (plus a PostToolUse hook for qmd indexing if `qmd_collection` is set in vault.yml). PreCompact and PostCompact are not registered: PreCompact's `decision:"block"` aborts the compact entirely (bad UX), and Claude Code's PostCompact is observational-only — its stdout cannot reach the agent. Compact events (auto or manual) are observed indirectly via the Stop hook's accumulated message count, which carries across compacts and drives the next checkpoint emission via the normal threshold logic.
 
 **Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 
-**Session logs are NOT created from the Stop hook.** They are created only by `/wrapup` (manual) or AUTO-SUMMARY (end-of-session signal); both consolidate accumulated checkpoint files into one session log per call. This preserves the "1 session = 1 session log" invariant. PostCompact never produces a session log directly; it just queues a checkpoint capture for the next Stop.
+**Session logs are NOT created from the Stop hook.** They are created only by `/wrapup` (manual) or AUTO-SUMMARY (end-of-session signal); both consolidate accumulated checkpoint files into one session log per call. This preserves the "1 session = 1 session log" invariant.
 
 ---
 

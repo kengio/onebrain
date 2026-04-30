@@ -38,15 +38,13 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('runRegisterHooks', () => {
-  test('fresh run on empty settings — Stop + PostCompact registered, full permissions added', async () => {
+  test('fresh run on empty settings — Stop registered, full permissions added', async () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
 
-    // Stop and PostCompact should all be added
-    for (const event of ['Stop', 'PostCompact']) {
-      expect(result.hooks[event]).toBe('added');
-    }
+    // Only Stop should be added (PostCompact removed in v2.1.6)
+    expect(result.hooks['Stop']).toBe('added');
 
     // Full permission set added
     expect(result.permissionsAdded).toHaveLength(14);
@@ -72,14 +70,14 @@ describe('runRegisterHooks', () => {
     // Verify written file structure — no env block
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(Object.keys(hooks)).toHaveLength(2); // Stop + PostCompact
+    expect(Object.keys(hooks)).toHaveLength(1); // Stop only
     expect(settings['env']).toBeUndefined();
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
     expect(perms).toHaveLength(14);
   });
 
-  test('stale PreCompact hook is removed when present in existing settings.json', async () => {
+  test('stale PreCompact and PostCompact hooks are removed when present in existing settings.json', async () => {
     const settingsPath = join(tempDir, '.claude', 'settings.json');
     await mkdir(join(tempDir, '.claude'), { recursive: true });
     await writeFile(
@@ -92,6 +90,12 @@ describe('runRegisterHooks', () => {
               hooks: [{ type: 'command', command: 'onebrain checkpoint precompact' }],
             },
           ],
+          PostCompact: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint postcompact' }],
+            },
+          ],
         },
       }),
       'utf8',
@@ -102,9 +106,8 @@ describe('runRegisterHooks', () => {
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<string, unknown>;
     expect(hooks['PreCompact']).toBeUndefined();
-    // Stop and PostCompact should be present
+    expect(hooks['PostCompact']).toBeUndefined(); // removed as stale (v2.1.6)
     expect(hooks['Stop']).toBeDefined();
-    expect(hooks['PostCompact']).toBeDefined();
   });
 
   test('hook entries include type:command and matcher fields', async () => {
@@ -116,12 +119,10 @@ describe('runRegisterHooks', () => {
       Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>
     >;
 
-    for (const event of ['Stop', 'PostCompact']) {
-      const group = hooks[event]?.[0];
-      expect(group).toBeDefined();
-      expect(group?.matcher).toBe('');
-      expect(group?.hooks?.[0]?.type).toBe('command');
-    }
+    const group = hooks['Stop']?.[0];
+    expect(group).toBeDefined();
+    expect(group?.matcher).toBe('');
+    expect(group?.hooks?.[0]?.type).toBe('command');
   });
 
   test('idempotent re-run — nothing changes', async () => {
@@ -132,11 +133,7 @@ describe('runRegisterHooks', () => {
     const result = await runRegisterHooks({ vaultDir: tempDir });
 
     expect(result.ok).toBe(true);
-
-    for (const event of ['Stop', 'PostCompact']) {
-      expect(result.hooks[event]).toBe('ok');
-    }
-
+    expect(result.hooks['Stop']).toBe('ok');
     expect(result.permissionsAdded).toHaveLength(0);
   });
 
@@ -286,7 +283,7 @@ describe('registerGeminiHooks', () => {
     expect(exists).toBe(false);
   });
 
-  test('.gemini/settings.json exists → Stop/PostCompact written', async () => {
+  test('.gemini/settings.json exists → Stop written', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
     const geminiSettings = join(geminiDir, 'settings.json');
@@ -297,11 +294,9 @@ describe('registerGeminiHooks', () => {
 
     const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
     const hooks = settings['hooks'] as Record<string, unknown[]>;
-    for (const event of ['Stop', 'PostCompact']) {
-      expect(hooks[event]).toBeDefined();
-      expect(Array.isArray(hooks[event])).toBe(true);
-      expect((hooks[event] as unknown[]).length).toBeGreaterThan(0);
-    }
+    expect(hooks['Stop']).toBeDefined();
+    expect(Array.isArray(hooks['Stop'])).toBe(true);
+    expect((hooks['Stop'] as unknown[]).length).toBeGreaterThan(0);
   });
 
   test('corrupt JSON in .gemini/settings.json → result.ok === true (swallowed silently)', async () => {
