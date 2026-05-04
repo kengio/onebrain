@@ -1,15 +1,18 @@
 <p align="center">
-  <img src="assets/banner.png" alt="OneBrain — Your personal AI OS" width="100%" />
-</p>
-
-<p align="center">
-  <a href="https://github.com/onebrain-ai/onebrain/releases"><img src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/onebrain-ai/onebrain/main/.claude/plugins/onebrain/.claude-plugin/plugin.json&query=%24.version&label=version&style=flat-square&color=blue" alt="Version" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/onebrain-ai/onebrain?style=flat-square" alt="License" /></a>
-  <a href="https://github.com/onebrain-ai/onebrain/stargazers"><img src="https://img.shields.io/github/stars/onebrain-ai/onebrain?style=flat-square" alt="GitHub Stars" /></a>
-  <a href="https://github.com/onebrain-ai/onebrain/commits/main"><img src="https://img.shields.io/github/last-commit/onebrain-ai/onebrain?style=flat-square" alt="Last Commit" /></a>
+  <img src="assets/banner.png" alt="OneBrain — Your AI Thinking Partner" width="100%" />
 </p>
 
 <h1 align="center">OneBrain</h1>
+
+<h3 align="center">Your AI Thinking Partner — for Obsidian.</h3>
+
+<p align="center">
+  <a href="https://onebrain.run"><img alt="Website" src="https://img.shields.io/badge/onebrain.run-0a0a14?style=for-the-badge&labelColor=ff2d92"></a>
+  <a href="https://x.com/onebrain_run"><img alt="@onebrain_run on X" src="https://img.shields.io/badge/follow-@onebrain__run-000000?style=for-the-badge&logo=x&logoColor=white"></a>
+  <a href="https://www.npmjs.com/package/@onebrain-ai/cli"><img alt="npm" src="https://img.shields.io/npm/v/@onebrain-ai/cli?style=for-the-badge&logo=npm&color=cb3837&label=%40onebrain-ai%2Fcli"></a>
+  <a href="https://github.com/onebrain-ai/onebrain/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/onebrain-ai/onebrain?style=for-the-badge&color=00f3ff&logo=github"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-7c3aed?style=for-the-badge"></a>
+</p>
 
 <p align="center">
   <em>Your AI forgets everything when the session ends.<br>
@@ -34,11 +37,20 @@ OneBrain is an AI operating system layer built on top of Obsidian. It gives your
 
 Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forever. No cloud sync required. No proprietary format. Just your agent, your vault, your data.
 
+> Most tools ask you to query an AI. OneBrain **co-evolves** with you — every preference you teach sharpens the agent, every link it surfaces sharpens you.
+
+**The bidirectional flow:**
+
+- **Human → Agent** — Every preference, decision, and correction becomes persistent memory. The agent calibrates to you with every interaction.
+- **Agent → Human** — Captures, classifies, links, and synthesizes the noise of your day — so your attention stays on what only you can do.
+
 **Works with:** Claude Code · Gemini CLI · any agent that reads Markdown
 
 ---
 
-## Features
+## Built for Synergetic Thinking
+
+OneBrain doesn't just store markdown. Every feature exists to make you and the agent better at each other's job.
 
 | | Feature | Description |
 |---|---|---|
@@ -97,7 +109,29 @@ Turn your AI into a knowledge curator: research, summarize, import files, and bu
 
 ---
 
-## How It Works
+## One Vault, All Projects — The Command Center
+
+Obsidian becomes your dispatch hub for everything you do:
+
+- **Read once, understand all** — agent context lives in one place, never re-explained.
+- **Code in repos, orchestration in vault** — agent dispatches from here to wherever the work actually lives.
+- **Markdown replaces Slack / Linear / Notion** — version-controlled, AI-readable, yours forever.
+
+The agent reaches outward FROM the vault to: **CLI / repo · website · cloud infra · social media · office docs · project notes · research · MCP servers**.
+
+No tab juggling. No tool sprawl.
+
+---
+
+## How It Works — The Path to Co-Evolution
+
+A tightening 3-step loop:
+
+1. **Initiate** — Install the CLI, run `/onboarding`. The agent learns your name, vault, and identity. → `npm install -g @onebrain-ai/cli`
+2. **Capture intent** — Talk in natural language. The agent writes, classifies, and links in real time. → `/braindump` · `/capture` · `/bookmark`
+3. **Mutual evolution** — `/research` and `/distill` expand your knowledge. `/learn` deepens the agent. The loop tightens. → `/research` · `/distill` · `/learn`
+
+### Behind the loop
 
 After `/onboarding`, your AI agent:
 
@@ -346,6 +380,18 @@ OneBrain uses the [Obsidian Tasks](https://publish.obsidian.md/tasks/) plugin fo
 Tasks live inline in your notes — the Tasks plugin surfaces them across the vault. Run `/tasks` to open a live dashboard in Obsidian (`TASKS.md` at vault root) with sections for overdue, due this week, unscheduled, due later, and recently completed.
 
 </details>
+
+## OneBrain Cloud
+
+Multi-device sync and hosted agent runtimes. Your unified intelligence travels with you.
+
+| Tier | What you get | Status |
+|---|---|---|
+| **FREE** | Local vault · OSS skills · BYOK | ✅ Available now |
+| **PRO** | Sync · mobile · hosted runtime | 🟡 [Join waitlist](https://onebrain.run) |
+| **TEAM** | Shared intelligence · team mesh | 🟡 Coming soon |
+
+---
 
 <details>
 <summary><strong>⚙️ Prerequisites & Detailed Setup</strong></summary>
