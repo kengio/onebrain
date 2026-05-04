@@ -37,11 +37,20 @@ OneBrain is an AI operating system layer built on top of Obsidian. It gives your
 
 Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forever. No cloud sync required. No proprietary format. Just your agent, your vault, your data.
 
+> Most tools ask you to query an AI. OneBrain **co-evolves** with you — every preference you teach sharpens the agent, every link it surfaces sharpens you.
+
+**The bidirectional flow:**
+
+- **Human → Agent** — Every preference, decision, and correction becomes persistent memory. The agent calibrates to you with every interaction.
+- **Agent → Human** — Captures, classifies, links, and synthesizes the noise of your day — so your attention stays on what only you can do.
+
 **Works with:** Claude Code · Gemini CLI · any agent that reads Markdown
 
 ---
 
-## Features
+## Built for Synergetic Thinking
+
+OneBrain doesn't just store markdown. Every feature exists to make you and the agent better at each other's job.
 
 | | Feature | Description |
 |---|---|---|
@@ -100,7 +109,29 @@ Turn your AI into a knowledge curator: research, summarize, import files, and bu
 
 ---
 
-## How It Works
+## One Vault, All Projects — The Command Center
+
+Obsidian becomes your dispatch hub for everything you do:
+
+- **Read once, understand all** — agent context lives in one place, never re-explained.
+- **Code in repos, orchestration in vault** — agent dispatches from here to wherever the work actually lives.
+- **Markdown replaces Slack / Linear / Notion** — version-controlled, AI-readable, yours forever.
+
+The agent reaches outward FROM the vault to: **CLI / repo · website · cloud infra · social media · office docs · project notes · research · MCP servers**.
+
+No tab juggling. No tool sprawl.
+
+---
+
+## How It Works — The Path to Co-Evolution
+
+A tightening 3-step loop:
+
+1. **Initiate** — Install the CLI, run `/onboarding`. The agent learns your name, vault, and identity. → `npm install -g @onebrain-ai/cli`
+2. **Capture intent** — Talk in natural language. The agent writes, classifies, and links in real time. → `/braindump` · `/capture` · `/bookmark`
+3. **Mutual evolution** — `/research` and `/distill` expand your knowledge. `/learn` deepens the agent. The loop tightens. → `/research` · `/distill` · `/learn`
+
+### Behind the loop
 
 After `/onboarding`, your AI agent:
 
@@ -349,6 +380,18 @@ OneBrain uses the [Obsidian Tasks](https://publish.obsidian.md/tasks/) plugin fo
 Tasks live inline in your notes — the Tasks plugin surfaces them across the vault. Run `/tasks` to open a live dashboard in Obsidian (`TASKS.md` at vault root) with sections for overdue, due this week, unscheduled, due later, and recently completed.
 
 </details>
+
+## OneBrain Cloud
+
+Multi-device sync and hosted agent runtimes. Your unified intelligence travels with you.
+
+| Tier | What you get | Status |
+|---|---|---|
+| **FREE** | Local vault · OSS skills · BYOK | ✅ Available now |
+| **PRO** | Sync · mobile · hosted runtime | 🟡 [Join waitlist](https://onebrain.run) |
+| **TEAM** | Shared intelligence · team mesh | 🟡 Coming soon |
+
+---
 
 <details>
 <summary><strong>⚙️ Prerequisites & Detailed Setup</strong></summary>
