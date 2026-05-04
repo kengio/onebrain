@@ -54,6 +54,19 @@ async function makeMonthDir(logsDir: string, year: string, month: string): Promi
   return dir;
 }
 
+/**
+ * Return a 2-digit day-of-month string that's guaranteed not to match today.
+ * runOrphanScan skips checkpoints whose date === today (active-session guard),
+ * so any test pinning a checkpoint to today's day would silently see 0 orphans
+ * and fail. If the preferred day collides with today, shift by +14 (still
+ * within month bounds for our usage range of 1–6).
+ */
+function safeDay(preferred: number): string {
+  const today = new Date().getDate();
+  const day = preferred === today ? preferred + 14 : preferred;
+  return String(day).padStart(2, '0');
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -86,7 +99,7 @@ describe('runOrphanScan', () => {
     // One orphan — verifies the shape is { orphan_count: 1 }
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-01`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(1)}`;
     await writeFile(
       join(monthDir, `${pastDate}-snaptoken-checkpoint-01.md`),
       '---\ntags: [checkpoint]\nmerged: false\n---\n\nContent.',
@@ -110,7 +123,7 @@ describe('runOrphanScan', () => {
   it('counts legacy checkpoint with merged: true as an orphan', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-01`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(1)}`;
     const fname = checkpointName(pastDate, 'token11', 1);
     await writeFile(join(monthDir, fname), checkpointFrontmatter(true), 'utf8');
     const result = await runOrphanScan(logsDir, 'current99');
@@ -120,7 +133,7 @@ describe('runOrphanScan', () => {
   it('counts legacy checkpoint with merged: "true" (quoted string) as an orphan', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-01`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(1)}`;
     const fname = checkpointName(pastDate, 'tokenStrTrue', 1);
     const content = `---\ntags: [checkpoint, session-log]\ndate: ${pastDate}\ncheckpoint: 01\ntrigger: stop\nmerged: "true"\n---\n\n## What We Worked On\n\nTest content.`;
     await writeFile(join(monthDir, fname), content, 'utf8');
@@ -131,7 +144,7 @@ describe('runOrphanScan', () => {
   it('skips checkpoint files matching current session token', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-01`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(1)}`;
     const fname = checkpointName(pastDate, 'current99', 1);
     await writeFile(join(monthDir, fname), checkpointFrontmatter(false), 'utf8');
     const result = await runOrphanScan(logsDir, 'current99');
@@ -141,7 +154,7 @@ describe('runOrphanScan', () => {
   it('skips checkpoint when a manual (non-auto-saved) session log exists for that date', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-02`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(2)}`;
     // Write checkpoint (unmerged)
     const cpName = checkpointName(pastDate, 'tokenAA', 1);
     await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
@@ -155,7 +168,7 @@ describe('runOrphanScan', () => {
   it('does NOT skip when only auto-saved session log exists for that date', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-03`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(3)}`;
     // Write checkpoint (unmerged)
     const cpName = checkpointName(pastDate, 'tokenBB', 1);
     await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
@@ -169,7 +182,7 @@ describe('runOrphanScan', () => {
   it('counts unmerged orphan checkpoints from current month', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-04`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(4)}`;
     // Two different tokens
     for (const token of ['tokenCC', 'tokenDD']) {
       const cpName = checkpointName(pastDate, token, 1);
@@ -192,7 +205,7 @@ describe('runOrphanScan', () => {
   it('multiple checkpoints for same token in same month count as one orphan session', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-05`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(5)}`;
     // Same token, two checkpoint files
     for (let i = 1; i <= 2; i++) {
       const cpName = checkpointName(pastDate, 'tokenFF', i);
@@ -206,7 +219,7 @@ describe('runOrphanScan', () => {
   it('handles files with missing frontmatter gracefully (counts as orphan)', async () => {
     const { thisYear, thisMonth } = getMonthParts();
     const monthDir = await makeMonthDir(logsDir, thisYear, thisMonth);
-    const pastDate = `${thisYear}-${thisMonth}-06`;
+    const pastDate = `${thisYear}-${thisMonth}-${safeDay(6)}`;
     const cpName = checkpointName(pastDate, 'tokenGG', 1);
     await writeFile(join(monthDir, cpName), '# No frontmatter here\n\nContent.', 'utf8');
     const result = await runOrphanScan(logsDir, 'current99');
@@ -235,7 +248,7 @@ describe('runOrphanScan', () => {
     // Past date in same month: day 01 (safe to use if today isn't day 01)
     const todayDay = new Date().getDate();
     if (todayDay !== 1) {
-      const pastDate = `${thisYear}-${thisMonth}-01`;
+      const pastDate = `${thisYear}-${thisMonth}-${safeDay(1)}`;
       const pastFname = checkpointName(pastDate, 'pasttoken', 1);
       await writeFile(join(monthDir, pastFname), checkpointFrontmatter(false), 'utf8');
 
