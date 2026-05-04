@@ -164,15 +164,18 @@ async function scanMonthDir(
  * Core logic for orphan-scan.
  * @param logsFolder - absolute path to logs folder
  * @param sessionToken - current session token to exclude
+ * @param now - reference time used for the today-skip and prev-month math.
+ *   Required (no default) so tests can't silently leak the wall clock by
+ *   forgetting to pass it; production callers pass `new Date()` explicitly.
  * @returns OrphanScanResult
  */
 export async function runOrphanScan(
   logsFolder: string,
   sessionToken: string,
+  now: Date,
 ): Promise<OrphanScanResult> {
-  const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts();
+  const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts(now);
 
   const monthDirs: Array<{ year: string; month: string }> = [
     { year: thisYear, month: thisMonth },
@@ -199,6 +202,6 @@ export async function runOrphanScan(
  * Run orphan-scan as a CLI command: print JSON to stdout, always exit 0.
  */
 export async function orphanScanCommand(logsFolder: string, sessionToken: string): Promise<void> {
-  const result = await runOrphanScan(logsFolder, sessionToken);
+  const result = await runOrphanScan(logsFolder, sessionToken, new Date());
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }
