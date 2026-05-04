@@ -1,15 +1,18 @@
 <p align="center">
-  <img src="assets/banner.png" alt="OneBrain — Your personal AI OS" width="100%" />
-</p>
-
-<p align="center">
-  <a href="https://github.com/onebrain-ai/onebrain/releases"><img src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/onebrain-ai/onebrain/main/.claude/plugins/onebrain/.claude-plugin/plugin.json&query=%24.version&label=version&style=flat-square&color=blue" alt="Version" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/onebrain-ai/onebrain?style=flat-square" alt="License" /></a>
-  <a href="https://github.com/onebrain-ai/onebrain/stargazers"><img src="https://img.shields.io/github/stars/onebrain-ai/onebrain?style=flat-square" alt="GitHub Stars" /></a>
-  <a href="https://github.com/onebrain-ai/onebrain/commits/main"><img src="https://img.shields.io/github/last-commit/onebrain-ai/onebrain?style=flat-square" alt="Last Commit" /></a>
+  <img src="assets/banner.png" alt="OneBrain — Your AI Thinking Partner" width="100%" />
 </p>
 
 <h1 align="center">OneBrain</h1>
+
+<h3 align="center">Your AI Thinking Partner — for Obsidian.</h3>
+
+<p align="center">
+  <a href="https://onebrain.run"><img alt="Website" src="https://img.shields.io/badge/onebrain.run-0a0a14?style=for-the-badge&labelColor=ff2d92"></a>
+  <a href="https://x.com/onebrain_run"><img alt="@onebrain_run on X" src="https://img.shields.io/badge/follow-@onebrain__run-000000?style=for-the-badge&logo=x&logoColor=white"></a>
+  <a href="https://www.npmjs.com/package/@onebrain-ai/cli"><img alt="npm" src="https://img.shields.io/npm/v/@onebrain-ai/cli?style=for-the-badge&logo=npm&color=cb3837&label=%40onebrain-ai%2Fcli"></a>
+  <a href="https://github.com/onebrain-ai/onebrain/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/onebrain-ai/onebrain?style=for-the-badge&color=00f3ff&logo=github"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-7c3aed?style=for-the-badge"></a>
+</p>
 
 <p align="center">
   <em>Your AI forgets everything when the session ends.<br>
