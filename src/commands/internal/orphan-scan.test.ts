@@ -18,6 +18,7 @@ import { runOrphanScan } from './orphan-scan.js';
 // All other time-dependent values must derive from PINNED_NOW or be hardcoded.
 // ---------------------------------------------------------------------------
 
+// 12:00Z is mid-day in UTC — safe across all real-world TZs (≥12h from any local midnight).
 const PINNED_NOW = new Date('2026-05-15T12:00:00Z');
 const TODAY = '2026-05-15';
 const THIS_YEAR = '2026';
