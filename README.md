@@ -90,47 +90,6 @@ A great harness already knows how to talk to an LLM, edit files, and run shell c
 
 > Pick a harness for **how it lets you work** (CLI, IDE, mobile, API). Pick OneBrain for **how it remembers you** across all of them.
 
-### Pick Your Harness
-
-Each harness reads OneBrain's instruction file automatically. Install it, run it inside your vault, and the plugin loads on first prompt.
-
-| Harness | Install | Run | Reads |
-|---|---|---|---|
-| **Claude Code** *(recommended)* | `npm install -g @anthropic-ai/claude-code` | `claude` | `CLAUDE.md` |
-| **Gemini CLI** | `npm install -g @google/gemini-cli` | `gemini` | `GEMINI.md` |
-| **OpenAI Codex** | `npm install -g @openai/codex` | `codex` | `AGENTS.md` |
-| **Qwen Code** | `npm install -g @qwen-code/qwen-code` | `qwen` | `AGENTS.md` |
-
-> Auto-checkpoint and the Stop hook are wired up for Claude Code today. The other harnesses get the rest of the skill surface (24+ commands) immediately, and gain hook coverage as upstream support lands.
-
-### Bring Your Own LLM (via Claude Code)
-
-Already love Claude Code? Use it as a universal frontend. Point `ANTHROPIC_BASE_URL` at any OpenAI-compatible endpoint — Claude Code stays the harness, the LLM behind it changes per task.
-
-```bash
-# Recommended: claude-code-router handles Anthropic ↔ provider translation
-npm install -g @musistudio/claude-code-router
-ccr code                                    # first-run config, then launches Claude Code via the router
-# (later) ccr stop                          # tear down the router before going native again
-
-# Or direct: point ANTHROPIC_BASE_URL at any Anthropic-protocol endpoint
-export ANTHROPIC_BASE_URL=https://your-router-or-anthropic-compatible-host
-export ANTHROPIC_API_KEY=sk-byok-key
-cd vault && claude
-
-# Switch back to native Claude any time (manual-export route)
-unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY
-claude
-```
-
-| Route | What it gets you |
-|---|---|
-| **Local** (mlx, ollama, llama.cpp) | Cost-free routine work, full privacy. Pair with [`litellm`](https://github.com/BerriAI/litellm) or [`claude-code-router`](https://github.com/musistudio/claude-code-router). |
-| **Cloud BYOK** (Claude, Gemini, GPT, Groq, OpenRouter) | Pay-as-you-go premium reasoning. One env-var swap, no code changes. |
-| **Hybrid** (route by task or by cost) | Cheap models for routine, premium when it counts. |
-
-Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
-
 ---
 
 ## One Vault, All Projects — The Command Center
@@ -306,7 +265,20 @@ Turn your AI into a knowledge curator: research, summarize, import files, and bu
 
 ## Installation
 
-### 1. Install the CLI
+### Pick Your Harness
+
+Each harness reads OneBrain's instruction file automatically. Install it, run it inside your vault, and the plugin loads on first prompt.
+
+| Harness | Install | Run | Reads |
+|---|---|---|---|
+| **Claude Code** *(recommended)* | `npm install -g @anthropic-ai/claude-code` | `claude` | `CLAUDE.md` |
+| **Gemini CLI** | `npm install -g @google/gemini-cli` | `gemini` | `GEMINI.md` |
+| **OpenAI Codex** | `npm install -g @openai/codex` | `codex` | `AGENTS.md` |
+| **Qwen Code** | `npm install -g @qwen-code/qwen-code` | `qwen` | `AGENTS.md` |
+
+> Auto-checkpoint and the Stop hook are wired up for Claude Code today. The other harnesses get the rest of the skill surface (24+ commands) immediately, and gain hook coverage as upstream support lands.
+
+### 1. Install the OneBrain CLI
 
 ```bash
 npm install -g @onebrain-ai/cli
@@ -328,17 +300,41 @@ File → Open Folder as Vault → select this folder
 
 ### 4. Personalize your vault
 
-In Claude Code: `/onboarding`
+In your harness: `/onboarding`
 
 > **Adding OneBrain to an existing vault?** `cd` into it and run `onebrain init`
+
+### Bring Your Own LLM (via Claude Code)
+
+Already love Claude Code? Use it as a universal frontend. Point `ANTHROPIC_BASE_URL` at any OpenAI-compatible endpoint — Claude Code stays the harness, the LLM behind it changes per task.
+
+```bash
+# Recommended: claude-code-router handles Anthropic ↔ provider translation
+npm install -g @musistudio/claude-code-router
+ccr code                                    # first-run config, then launches Claude Code via the router
+# (later) ccr stop                          # tear down the router before going native again
+
+# Or direct: point ANTHROPIC_BASE_URL at any Anthropic-protocol endpoint
+export ANTHROPIC_BASE_URL=https://your-router-or-anthropic-compatible-host
+export ANTHROPIC_API_KEY=sk-byok-key
+cd vault && claude
+
+# Switch back to native Claude any time (manual-export route)
+unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY
+claude
+```
+
+| Route | What it gets you |
+|---|---|
+| **Local** (mlx, ollama, llama.cpp) | Cost-free routine work, full privacy. Pair with [`litellm`](https://github.com/BerriAI/litellm) or [`claude-code-router`](https://github.com/musistudio/claude-code-router). |
+| **Cloud BYOK** (Claude, Gemini, GPT, Groq, OpenRouter) | Pay-as-you-go premium reasoning. One env-var swap, no code changes. |
+| **Hybrid** (route by task or by cost) | Cheap models for routine, premium when it counts. |
+
+Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
 
 ---
 
 > **After `/update`:** Run `/reload-plugins` to pick up changes in your current session, or simply start a new session.
-
----
-
-> **Choosing a harness?** See [The Harness OS Architecture ↑](#the-harness-os-architecture) for install commands per harness, BYO-LLM via Claude Code, and the full 4-layer stack.
 
 ---
 
