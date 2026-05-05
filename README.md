@@ -49,7 +49,7 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/bidir-flow-dark.svg">
-    <img alt="Bidirectional flow — Human (cyan) sends preferences, decisions, and corrections to Agent (pink); Agent returns captures, links, and synthesis. Every interaction sharpens both." src="assets/diagrams/bidir-flow-light.svg" width="640">
+    <img alt="Bidirectional flow — Human sends preferences, decisions, and corrections to Agent; Agent returns captures, links, and synthesis. Every interaction sharpens both." src="assets/diagrams/bidir-flow-light.svg" width="640">
   </picture>
 </p>
 

@@ -115,7 +115,7 @@
     <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">HARNESS</text>
     <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#7c1ade" letter-spacing="0.3em">AGENTIC_RUNTIME</text>
     <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Bring your own. Switch any time.</text>
-    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">claude code · gemini cli · codex · qwen · cursor</text>
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">claude code · gemini cli · codex · qwen</text>
     <g transform="translate(640, 38)">
       <rect width="124" height="22" fill="rgba(124,26,222,0.18)" stroke="#7c1ade" stroke-opacity="1.0" stroke-width="1"/>
       <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#7c1ade" letter-spacing="0.18em" text-anchor="middle">BYO_HARNESS</text>
