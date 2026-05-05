@@ -59,7 +59,7 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 
 ## The Harness OS Architecture
 
-OneBrain doesn't compete with Claude Code, Gemini CLI, or any other AI harness. It's the OS layer that **orchestrates** them — keeping your context, memory, and skills consistent no matter which harness you're driving, all while your Obsidian vault stays the durable source of truth underneath.
+OneBrain doesn't compete with Claude Code, Gemini CLI, or any other AI harness — **it extends them**. Whichever harness you drive, OneBrain adds the persistent memory, skill surface, and personal calibration that harnesses don't ship with. Same harness; suddenly it remembers who you are, what you're working on, and how you like to work — all while your Obsidian vault stays the durable source of truth underneath.
 
 <p align="center">
   <picture>
@@ -76,6 +76,19 @@ OneBrain doesn't compete with Claude Code, Gemini CLI, or any other AI harness. 
 | 04 | **Obsidian Vault** | Source of truth | Plain Markdown — notes, memory, decisions, knowledge graph |
 
 The **Harness** layer is where most AI tools pick a fight with each other. We don't — pick whichever harness you love. By familiarity, by task, or by cost. Your vault stays the same.
+
+### Extend, don't replace
+
+A great harness already knows how to talk to an LLM, edit files, and run shell commands. It does **not** know who you are, what you've decided last week, or how you prefer to work. OneBrain fills exactly that gap.
+
+| | What OneBrain adds | Why it matters |
+|---|---|---|
+| 🧠 | **Memory** — Identity, preferences, decisions, project state — promoted across four tiers as it earns trust | The harness alone starts every session from zero. OneBrain doesn't. |
+| ⚡ | **Skills** — 24+ vault-aware verbs (`/braindump`, `/research`, `/distill`, `/learn`, `/wrapup`, …) | Pre-built workflows the harness would otherwise need you to script every time. |
+| 🎯 | **Calibration** — Every correction, every preference, every learned habit tunes the agent to *you* | The longer you use it, the sharper it gets — your vault is the training data. |
+| 🔀 | **Continuity** — Context lives in the vault, not the harness | Switch from Claude Code to Gemini CLI to Codex. Same memory. Same skills. Same agent. |
+
+> Pick a harness for **how it lets you work** (CLI, IDE, mobile, API). Pick OneBrain for **how it remembers you** across all of them.
 
 ### Pick Your Harness
 
