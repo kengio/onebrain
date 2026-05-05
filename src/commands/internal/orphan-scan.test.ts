@@ -178,6 +178,23 @@ describe('runOrphanScan', () => {
     expect(result).toEqual({ orphan_count: 1 });
   });
 
+  // Same bug class as the update-log case: /weekly writes
+  // YYYY-MM-DD-weekly.md (no `-session-` infix). Under the old blacklist
+  // it would also fall through and silently suppress the orphan count.
+  it('does NOT skip when only a weekly log exists for that date (no real session log)', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const cpName = checkpointName(PAST_DATE, 'tokenWL', 1);
+    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
+    const weeklyName = `${PAST_DATE}-weekly.md`;
+    await writeFile(
+      join(monthDir, weeklyName),
+      `---\ntags: [weekly-review]\ndate: ${PAST_DATE}\n---\n\n# Weekly Review\n`,
+      'utf8',
+    );
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 1 });
+  });
+
   // Companion case: both an update log AND a manual session log exist
   // for the same date — the manual session log still wins, orphan
   // suppressed. Verifies the whitelist didn't regress the skip behavior.

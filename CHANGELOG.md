@@ -13,10 +13,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.1.10 — fix: orphan-scan filter whitelists `-session-` infix
+## v2.1.10 — fix: whitelist `-session-` infix in orphan-scan + migrate filters
 
-- fix(orphan-scan): `hasManualSessionLog` filter switched from blacklist (`!includes('-checkpoint-')`) to whitelist (`includes('-session-')`). Companion to plugin v2.2.3. Previously, a `/update` migration log (`YYYY-MM-DD-update-vX.Y.Z.md`) sharing a date with an orphan checkpoint would fall through the filter and silently suppress the orphan count — `runOrphanScan` would report `orphan_count: 0` even though the orphan checkpoint was real. The whitelist guarantees we only consider files whose name actually matches the session-log convention.
-- test(orphan-scan): two regression cases — orphan still counts when only an update-log exists for that date; orphan still skipped when both an update-log AND a real session log exist for the same date.
+Companion to plugin v2.2.3. Two CLI sites had the same bug class — blacklisting `-checkpoint-` and accepting any other date-prefixed `.md` file in the logs folder, which let `/update` migration logs (`YYYY-MM-DD-update-vX.Y.Z.md`) and `/weekly` review files (`YYYY-MM-DD-weekly.md`) fall through.
+
+- fix(orphan-scan): `hasManualSessionLog` filter switched to whitelist (`includes('-session-')`). Previously an update or weekly file sharing a date with an orphan checkpoint silently suppressed the orphan count — `runOrphanScan` would report `orphan_count: 0` even though the orphan was real.
+- fix(migrate.runBackfillRecapped): same whitelist switch. The blacklist version was rewriting frontmatter on every non-checkpoint `.md` file in the logs folder, silently injecting a meaningless `recapped: <today>` field into update logs and weekly reviews.
+- test(orphan-scan): three regression cases — orphan still counts when only an update-log or weekly file exists for the date; orphan still skipped when both a non-session log AND a real session log exist on the same date.
+- test(migrate): two regression cases — update-log frontmatter and weekly-review frontmatter are left untouched (idempotent reads, byte-equal contents, no `recapped:` field injected).
 
 ## v2.1.9 — feat: brand-aligned CLI banner (neural-mesh brain + slant wordmark + brand gradient)
 
