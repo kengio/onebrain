@@ -201,10 +201,10 @@ At the end of every /wrapup, compute `unrecapped_count` and `last_recapped`:
 
 **Fast path:** read `stats.last_recap` from `vault.yml` if available.
 **Glob session logs only:** match the `*-session-*.md` file pattern, never bare
-`*.md` — the logs folder also contains checkpoint files, recovered-orphan
-fallbacks, and update logs that never carry `recapped:` and would inflate
-the count if matched. Use `[logs_folder]/YYYY/MM/*-session-*.md` over the
-last 6 months and check the `recapped:` field on each.
+`*.md` — the logs folder also contains checkpoint files (`*-checkpoint-*.md`)
+and `/update` migration logs (`*-update-*.md`) that would inflate the count
+if matched. Use `[logs_folder]/YYYY/MM/*-session-*.md` over the last 6 months
+and check the `recapped:` field on each.
 
 Compute:
 - `unrecapped_count` — number of session logs without `recapped:` field

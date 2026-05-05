@@ -13,14 +13,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.2.3 — fix: session-log glob across /wrapup, /daily, /weekly, /distill
+## v2.2.3 — fix: session-log glob across /wrapup, /daily, /weekly, /distill, /reorganize, INSTRUCTIONS
 
-Same class of bug across four skills: globbing `[logs_folder]/.../*.md` matches checkpoint files, recovered-orphan placeholders, and `/update` migration logs in addition to actual session logs. Tightened every affected pattern to `*-session-*.md` and added an inline note explaining why so it doesn't drift back.
+Same class of bug across multiple skills: globbing `[logs_folder]/.../*.md` matches checkpoint files (`*-checkpoint-*.md`) and `/update` migration logs (`*-update-*.md`) in addition to actual session logs. Tightened every affected pattern to `*-session-*.md` and added an inline note explaining why so it doesn't drift back.
 
-- fix(/wrapup SKILL): Step 6 recap-reminder glob narrowed from `07-logs/YYYY/MM/*.md` to `*-session-*.md`. The bare `*.md` pattern was inflating the displayed unrecapped count (e.g. reporting 10 unrecapped when only 2 actual session logs were unrecapped).
+- fix(/wrapup SKILL): Step 6 recap-reminder glob narrowed from `07-logs/YYYY/MM/*.md` to `*-session-*.md`. The bare `*.md` pattern was inflating the displayed unrecapped count (reporting 10 unrecapped when only 2 actual session logs were unrecapped).
 - fix(/daily SKILL): Phase 1 "find most recent session log" glob narrowed to `*-session-*.md`. Previously a more recent checkpoint or `/update` log could be picked as "most recent", causing the briefing to read the wrong file.
 - fix(/weekly SKILL): Step 1 weekly file list narrowed to `*-session-*.md` so the review doesn't include checkpoint or update logs.
 - fix(/distill SKILL): Step 2 session-log search narrowed to `*-session-*.md` so non-session files in the logs folder don't contribute distillation content.
+- fix(/reorganize SKILL): flat-root logs glob narrowed from `[logs_folder]/*.md` to `*-session-*.md` so a flat checkpoint or update log isn't treated as a legacy session log to migrate.
+- fix(INSTRUCTIONS Recalling Information): Step 3 grep hint now specifies `**/*-session-*.md` so the agent doesn't default to bare `*.md` when searching past decisions.
 
 ## v2.2.2 — chore: migrate to onebrain-ai org
 

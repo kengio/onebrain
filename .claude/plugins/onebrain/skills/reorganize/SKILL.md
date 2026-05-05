@@ -61,7 +61,7 @@ Find notes that are directly in a top-level folder (not already in a subfolder):
 - `[areas_folder]/*.md` : glob top-level only
 - `[knowledge_folder]/*.md` : glob top-level only
 - `[resources_folder]/*.md` : glob top-level only
-- `[logs_folder]/*.md` : flat session log files not yet in a `YYYY/MM/` subfolder
+- `[logs_folder]/*-session-*.md` : flat session log files not yet in a `YYYY/MM/` subfolder (use the `*-session-*.md` pattern so a flat-root `*-checkpoint-*.md` or `*-update-*.md` file is not treated as a session log to migrate)
 
 Also check `[archive_folder]/*.md` for any flat archive files.
 

@@ -15,7 +15,7 @@ Best run on Friday afternoon or over the weekend.
 
 Determine the current week's date range (Mon–Sun).
 
-List all session log files in `[logs_folder]/**/*-session-*.md` from this week. If there are none, check the past 7 days. (Use the `*-session-*.md` pattern, not bare `*.md` — the logs folder also contains checkpoint files, recovered-orphan placeholders, and `/update` migration logs that would inflate the weekly review.)
+List all session log files in `[logs_folder]/**/*-session-*.md` from this week. If there are none, check the past 7 days. (Use the `*-session-*.md` pattern, not bare `*.md` — the logs folder also contains `*-checkpoint-*.md` and `*-update-*.md` files that would inflate the weekly review.)
 
 Report:
 > I found N sessions this week:
