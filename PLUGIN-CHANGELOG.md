@@ -1,6 +1,6 @@
 ---
-latest_version: 2.2.2
-released: 2026-04-30
+latest_version: 2.2.3
+released: 2026-05-05
 ---
 
 # Plugin Changelog
@@ -12,6 +12,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.3 — fix: /wrapup recap-count glob
+
+- fix(/wrapup SKILL): Step 6 recap-reminder glob narrowed from `07-logs/YYYY/MM/*.md` to `*-session-*.md`. The bare `*.md` pattern was matching checkpoint files, recovered-orphan placeholders, and `/update` migration logs — none of which carry `recapped:` — so the displayed unrecapped count was wildly inflated (e.g. reporting 10 unrecapped when only 2 actual session logs were unrecapped).
 
 ## v2.2.2 — chore: migrate to onebrain-ai org
 

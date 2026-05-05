@@ -200,8 +200,11 @@ Guard: only delete AFTER confirming the session log write succeeded. Never delet
 At the end of every /wrapup, compute `unrecapped_count` and `last_recapped`:
 
 **Fast path:** read `stats.last_recap` from `vault.yml` if available.
-**Fallback:** if `vault.yml` stats missing, glob session logs from last 6 months only
-(`07-logs/YYYY/MM/*.md`) and check `recapped:` field.
+**Glob session logs only:** match the `*-session-*.md` file pattern, never bare
+`*.md` — the logs folder also contains checkpoint files, recovered-orphan
+fallbacks, and update logs that never carry `recapped:` and would inflate
+the count if matched. Use `[logs_folder]/YYYY/MM/*-session-*.md` over the
+last 6 months and check the `recapped:` field on each.
 
 Compute:
 - `unrecapped_count` — number of session logs without `recapped:` field
