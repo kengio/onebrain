@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 80 720 165" width="720" height="165" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 60 720 192" width="720" height="192" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
   <title id="title">Bidirectional flow — Human ↔ Agent</title>
   <desc id="desc">Two circles connected by curved arrows. Human (left, cyan) sends preferences, decisions, and corrections to Agent (right, pink). Agent returns captures, links, and synthesis. Each interaction sharpens both.</desc>
 
@@ -63,13 +63,13 @@
   <!-- Top arc: HUMAN → AGENT -->
   <g class="arc-down">
     <path d="M 224 130 Q 360 70 496 130" fill="none" stroke="#c91075" stroke-width="1.4" marker-end="url(#ah-pink)"/>
-    <text x="360" y="95" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.25em" class="text-soft">PREFERENCES · DECISIONS · CORRECTIONS</text>
+    <text x="360" y="78" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.25em" class="text-soft">PREFERENCES · DECISIONS · CORRECTIONS</text>
   </g>
 
   <!-- Bottom arc: AGENT → HUMAN -->
   <g class="arc-up">
     <path d="M 496 186 Q 360 246 224 186" fill="none" stroke="#00788c" stroke-width="1.4" marker-end="url(#ah-cyan)"/>
-    <text x="360" y="226" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.25em" class="text-soft">CAPTURES · LINKS · SYNTHESIS</text>
+    <text x="360" y="244" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.25em" class="text-soft">CAPTURES · LINKS · SYNTHESIS</text>
   </g>
 
 </svg>

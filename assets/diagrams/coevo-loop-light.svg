@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-200 -200 400 400" width="400" height="400" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-225 -200 450 395" width="450" height="395" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
   <title id="title">The Path to Co-Evolution — three-step loop</title>
   <desc id="desc">Three nodes arranged in a triangle: 01 INITIATE at top, 02 CAPTURE_INTENT at bottom-right, 03 MUTUAL_EVOLUTION at bottom-left. Curved arrows flow clockwise between them, visualizing the recurring co-evolution loop.</desc>
 
@@ -79,9 +79,5 @@
     <text x="0" y="17" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">EVOLUTION</text>
     <text x="0" y="31" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#00788c">/recap · /distill · /learn</text>
   </g>
-
-  <!-- Center label -->
-  <text x="0" y="0" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9" letter-spacing="0.36em" class="text-fade">CO_EVOLUTION_LOOP</text>
-  <text x="0" y="16" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.30em" class="text-mute">tightens with every cycle</text>
 
 </svg>
