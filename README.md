@@ -84,14 +84,16 @@ Already love Claude Code? Use it as a universal frontend. Point `ANTHROPIC_BASE_
 
 ```bash
 # Recommended: claude-code-router handles Anthropic ↔ provider translation
-npx @musistudio/claude-code-router          # interactive provider config
+npm install -g @musistudio/claude-code-router
+ccr code                                    # first-run config, then launches Claude Code via the router
+# (later) ccr stop                          # tear down the router before going native again
 
-# Direct: point ANTHROPIC_BASE_URL at any Anthropic-protocol endpoint
+# Or direct: point ANTHROPIC_BASE_URL at any Anthropic-protocol endpoint
 export ANTHROPIC_BASE_URL=https://your-router-or-anthropic-compatible-host
 export ANTHROPIC_API_KEY=sk-byok-key
 cd vault && claude
 
-# Switch back to native Claude any time
+# Switch back to native Claude any time (manual-export route)
 unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY
 claude
 ```
