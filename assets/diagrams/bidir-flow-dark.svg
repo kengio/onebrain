@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" width="720" height="280" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
+  <title id="title">Bidirectional flow — Human ↔ Agent</title>
+  <desc id="desc">Two circles connected by curved arrows. Human (left, cyan) sends preferences, decisions, and corrections to Agent (right, pink). Agent returns captures, links, and synthesis. Each interaction sharpens both.</desc>
+
+  <style>
+    .text-strong { fill: #ffffff; }
+    .text-soft   { fill: rgba(255,255,255,0.78); }
+    .text-fade   { fill: rgba(255,255,255,0.50); }
+    .text-mute   { fill: rgba(255,255,255,0.35); }
+    .frame-corner { stroke: rgba(255,255,255,0.22); }
+    .grid-line    { stroke: rgba(255,255,255,0.06); }
+    .divider      { stroke: rgba(255,255,255,0.10); }
+
+    .arc-down   { animation: arc-pulse 5s linear infinite; }
+    .arc-up     { animation: arc-pulse 5s linear infinite; animation-delay: 2.5s; }
+    @keyframes arc-pulse {
+      0%, 35%, 100% { opacity: 0.5; }
+      8%            { opacity: 1; }
+    }
+
+    .core-h { animation: core-h-breathe 6s ease-in-out infinite; transform-origin: 0 0; }
+    .core-a { animation: core-a-breathe 6s ease-in-out infinite; animation-delay: 3s; transform-origin: 0 0; }
+    @keyframes core-h-breathe {
+      0%, 100% { stroke-width: 1.5; stroke-opacity: 0.65; }
+      50%      { stroke-width: 2.5; stroke-opacity: 1.0; }
+    }
+    @keyframes core-a-breathe {
+      0%, 100% { stroke-width: 1.5; stroke-opacity: 0.65; }
+      50%      { stroke-width: 2.5; stroke-opacity: 1.0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .arc-down, .arc-up, .core-h, .core-a { animation: none; opacity: 0.7; }
+    }
+  </style>
+
+  <defs>
+    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" class="grid-line" stroke-width="0.5"/>
+    </pattern>
+    <marker id="ah-pink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff2d92"/>
+    </marker>
+    <marker id="ah-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#00f3ff"/>
+    </marker>
+  </defs>
+
+  <rect width="720" height="280" fill="url(#grid-pattern)"/>
+
+  <g class="frame-corner" stroke-width="1" fill="none">
+    <path d="M 24 40 L 24 24 L 40 24"/>
+    <path d="M 680 24 L 696 24 L 696 40"/>
+    <path d="M 696 240 L 696 256 L 680 256"/>
+    <path d="M 40 256 L 24 256 L 24 240"/>
+  </g>
+
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="10" letter-spacing="0.3em">
+    <circle cx="44" cy="55" r="3" fill="#ff2d92"/>
+    <text x="56" y="59" class="text-fade">ONEBRAIN // CO_EVOLUTION_FLOW</text>
+    <text x="676" y="59" text-anchor="end" class="text-fade">LOOP_v1.0 · 02_AGENTS</text>
+  </g>
+  <line x1="24" y1="78" x2="696" y2="78" class="divider" stroke-width="1"/>
+
+  <g transform="translate(180,158)">
+    <circle class="core-h" cx="0" cy="0" r="48" fill="rgba(2,2,4,0.92)" stroke="#00f3ff"/>
+    <text x="0" y="-2" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="20" letter-spacing="0.06em" class="text-strong">HUMAN</text>
+    <text x="0" y="16" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9" letter-spacing="0.32em" fill="#00f3ff">YOU</text>
+  </g>
+
+  <g transform="translate(540,158)">
+    <circle class="core-a" cx="0" cy="0" r="48" fill="rgba(2,2,4,0.92)" stroke="#ff2d92"/>
+    <text x="0" y="-2" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="20" letter-spacing="0.06em" class="text-strong">AGENT</text>
+    <text x="0" y="16" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9" letter-spacing="0.32em" fill="#ff2d92">ONEBRAIN</text>
+  </g>
+
+  <g class="arc-down">
+    <path d="M 224 130 Q 360 70 496 130" fill="none" stroke="#ff2d92" stroke-width="1.4" marker-end="url(#ah-pink)"/>
+    <text x="360" y="95" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.25em" class="text-soft">PREFERENCES · DECISIONS · CORRECTIONS</text>
+  </g>
+
+  <g class="arc-up">
+    <path d="M 496 186 Q 360 246 224 186" fill="none" stroke="#00f3ff" stroke-width="1.4" marker-end="url(#ah-cyan)"/>
+    <text x="360" y="226" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" letter-spacing="0.25em" class="text-soft">CAPTURES · LINKS · SYNTHESIS</text>
+  </g>
+
+  <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" letter-spacing="0.25em">
+    <text x="56" y="270" class="text-mute">EVERY_INTERACTION_SHARPENS_BOTH</text>
+    <text x="676" y="270" text-anchor="end" class="text-mute">ONEBRAIN.RUN</text>
+  </g>
+</svg>

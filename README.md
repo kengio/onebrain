@@ -46,6 +46,13 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 - **Human → Agent** — Every preference, decision, and correction becomes persistent memory. The agent calibrates to you with every interaction.
 - **Agent → Human** — Captures, classifies, links, and synthesizes the noise of your day — so your attention stays on what only you can do.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/bidir-flow-dark.svg">
+    <img alt="Bidirectional flow — Human (cyan) sends preferences, decisions, and corrections to Agent (pink); Agent returns captures, links, and synthesis. Every interaction sharpens both." src="assets/diagrams/bidir-flow-light.svg" width="640">
+  </picture>
+</p>
+
 **Harness-agnostic** — Claude Code · Gemini CLI · OpenAI Codex · Qwen · or BYO LLM via API key. [See the architecture ↓](#the-harness-os-architecture)
 
 ---
@@ -113,6 +120,116 @@ Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
 
 ---
 
+## One Vault, All Projects — The Command Center
+
+Obsidian becomes your dispatch hub for everything you do:
+
+- **Read once, understand all** — agent context lives in one place, never re-explained.
+- **Code in repos, orchestration in vault** — agent dispatches from here to wherever the work actually lives.
+- **Markdown replaces Slack / Linear / Notion** — version-controlled, AI-readable, yours forever.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/vault-hub-dark.svg">
+    <img alt="Obsidian as command center — eight spokes radiate from the vault to CLI/repo, website, cloud infra, social media, office docs, project notes, research, and MCP server" src="assets/diagrams/vault-hub-light.svg" width="640">
+  </picture>
+</p>
+
+The agent reaches outward FROM the vault to every surface where the work actually lives. No tab juggling. No tool sprawl.
+
+---
+
+## The Path to Co-Evolution
+
+A tightening 3-step loop that sharpens with every cycle.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/coevo-loop-dark.svg">
+    <img alt="Co-Evolution loop — three nodes (01 INITIATE at top, 02 CAPTURE_INTENT at bottom-right, 03 MUTUAL_EVOLUTION at bottom-left) connected by curved arrows flowing clockwise" src="assets/diagrams/coevo-loop-light.svg" width="540">
+  </picture>
+</p>
+
+1. **Initiate** — Install the CLI, run `/onboarding`. The agent learns your name, vault, and identity. → `npm install -g @onebrain-ai/cli`
+2. **Capture intent** — Talk in natural language. The agent writes, classifies, and links in real time. → `/braindump` · `/capture` · `/bookmark`
+3. **Mutual evolution** — `/research` and `/distill` expand your knowledge. `/learn` deepens the agent. The loop tightens. → `/research` · `/distill` · `/learn`
+
+### Behind the loop
+
+After `/onboarding`, your AI agent:
+
+1. **Loads your identity** — name, role, goals, communication style, active projects
+2. **Greets you with context** — inbox status, overdue tasks, patterns from recent sessions
+3. **Remembers everything** — decisions, preferences, and insights accumulate over time
+4. **Suggests next actions** — based on what's in your vault, not what it can infer from scratch
+
+---
+
+## Memory System
+
+OneBrain uses a four-tier memory system — knowledge sinks downward as it gets validated, while the agent recalls upward on demand. The Semantic tier has two loading modes (always-loaded and lazy-loaded).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/memory-tiers-dark.svg">
+    <img alt="Memory tiers — four-stage persistence stack: WORKING (00-inbox + current session) at top, EPISODIC (07-logs), SEMANTIC (05-agent/MEMORY.md + memory/), and KNOWLEDGE (03-knowledge) at the base" src="assets/diagrams/memory-tiers-light.svg" width="780">
+  </picture>
+</p>
+
+| Tier | Location | What it stores | Promoted by |
+|------|----------|---------------|-------------|
+| **Working** | `00-inbox/` + current session | Raw captures, active conversation | `/consolidate`, `/wrapup` |
+| **Episodic** | `07-logs/YYYY/MM/` | Session summaries, decisions, action items | `/wrapup`, auto-checkpoint |
+| **Semantic** (always-loaded) | `05-agent/MEMORY.md` + `05-agent/MEMORY-INDEX.md` | Identity + Active Projects + Critical Behaviors + memory file registry | `/learn`, `/onboarding` |
+| **Semantic** (lazy-loaded) | `05-agent/memory/` | Behavioral patterns, domain facts — loaded on demand via MEMORY-INDEX.md | `/learn`, `/recap`, `/memory-review` |
+| **Knowledge** | `03-knowledge/` | Permanent synthesized notes | `/distill` |
+
+### Memory Promotion
+
+Each tier has specific skills responsible for writing to it. Knowledge moves down the stack only as fast as it earns trust.
+
+| Layer | Storage | Written by |
+|---|---|---|
+| Session log | `07-logs/` | `/wrapup` (end of session) |
+| Memory files | `05-agent/memory/` | `/learn` (user-driven, single fact), `/recap` (batch synthesis), `/memory-review` (edits) |
+| Always-loaded — Identity | `05-agent/MEMORY.md` | `/onboarding` (one-time), manual edits |
+| Always-loaded — Active Projects | `05-agent/MEMORY.md` | `/learn` (project lifecycle events), manual edits |
+| Always-loaded — Critical Behaviors | `05-agent/MEMORY.md` | `/learn` only (user explicitly teaches behavior; must meet all 3 threshold conditions) |
+| Always-loaded — Memory registry | `05-agent/MEMORY-INDEX.md` | Any skill writing to `memory/` (`/learn`, `/recap`, `/memory-review`) |
+
+**Promotion pipeline:**
+session → session log (`/wrapup`) → `memory/` files (`/recap`) → `MEMORY.md` Critical Behaviors (`/learn`)
+
+**Rules:**
+- `/wrapup` writes session logs only — does not promote to `memory/`
+- `/learn` writes to `memory/` immediately; only skill that writes to MEMORY.md Critical Behaviors
+- `/recap` batch-promotes from session logs → `memory/` only — does NOT write to MEMORY.md
+- Only behaviors applying every session with high-impact failure if missed → MEMORY.md Critical Behaviors
+- `MEMORY-INDEX.md` is loaded every session alongside `MEMORY.md` — it is the registry that enables lazy-loading of `memory/` files; updated automatically by any skill that writes to `memory/`
+
+### Automatic Session Saving
+
+OneBrain has automatic behaviors that run without you doing anything:
+
+| Behavior | Trigger | What it does |
+|----------|---------|-------------|
+| **Auto Checkpoint** | Every 15 messages, every 30 min, or before context compression | Writes a checkpoint file to `07-logs/YYYY/MM/` as a safety net |
+| **Auto Session Summary** | You say "bye", "good night", "I'm done for today", etc. — only if `/wrapup` was not already run this session AND ≥ 3 exchanges | Saves a silent session log (marked `auto-saved: true`) without showing any output |
+
+**How they work together:**
+
+- Say "bye" → Auto Session Summary fires silently and saves a session log. No extra steps needed.
+- If you already ran `/wrapup` manually and then say "bye": Auto Session Summary **skips** — the log was already written.
+- If the session ends with no signal (browser closed, terminal killed): Auto Checkpoint files serve as the recovery mechanism. At next session start, Phase 2 automatically synthesizes any orphaned checkpoints into a session log.
+
+**`/wrapup` is manual only.** Run it yourself when you want a visible, full session summary with output shown.
+
+**The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
+
+> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `npm install -g @onebrain-ai/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
+
+---
+
 ## Built for Synergetic Thinking
 
 OneBrain doesn't just store markdown. Every feature exists to make you and the agent better at each other's job.
@@ -174,104 +291,6 @@ Turn your AI into a knowledge curator: research, summarize, import files, and bu
 
 ---
 
-## One Vault, All Projects — The Command Center
-
-Obsidian becomes your dispatch hub for everything you do:
-
-- **Read once, understand all** — agent context lives in one place, never re-explained.
-- **Code in repos, orchestration in vault** — agent dispatches from here to wherever the work actually lives.
-- **Markdown replaces Slack / Linear / Notion** — version-controlled, AI-readable, yours forever.
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/vault-hub-dark.svg">
-    <img alt="Obsidian as command center — eight spokes radiate from the vault to CLI/repo, website, cloud infra, social media, office docs, project notes, research, and MCP server" src="assets/diagrams/vault-hub-light.svg" width="640">
-  </picture>
-</p>
-
-The agent reaches outward FROM the vault to every surface where the work actually lives. No tab juggling. No tool sprawl.
-
----
-
-## How It Works — The Path to Co-Evolution
-
-A tightening 3-step loop:
-
-1. **Initiate** — Install the CLI, run `/onboarding`. The agent learns your name, vault, and identity. → `npm install -g @onebrain-ai/cli`
-2. **Capture intent** — Talk in natural language. The agent writes, classifies, and links in real time. → `/braindump` · `/capture` · `/bookmark`
-3. **Mutual evolution** — `/research` and `/distill` expand your knowledge. `/learn` deepens the agent. The loop tightens. → `/research` · `/distill` · `/learn`
-
-### Behind the loop
-
-After `/onboarding`, your AI agent:
-
-1. **Loads your identity** — name, role, goals, communication style, active projects
-2. **Greets you with context** — inbox status, overdue tasks, patterns from recent sessions
-3. **Remembers everything** — decisions, preferences, and insights accumulate over time
-4. **Suggests next actions** — based on what's in your vault, not what it can infer from scratch
-
-### Memory System
-
-OneBrain uses a four-tier memory system — each tier is more compressed and longer-lived than the one below. The Semantic tier has two loading modes (always-loaded and lazy-loaded):
-
-| Tier | Location | What it stores | Promoted by |
-|------|----------|---------------|-------------|
-| **Working** | `00-inbox/` + current session | Raw captures, active conversation | `/consolidate`, `/wrapup` |
-| **Episodic** | `07-logs/YYYY/MM/` | Session summaries, decisions, action items | `/wrapup`, auto-checkpoint |
-| **Semantic** (always-loaded) | `05-agent/MEMORY.md` + `05-agent/MEMORY-INDEX.md` | Identity + Active Projects + Critical Behaviors + memory file registry | `/learn`, `/onboarding` |
-| **Semantic** (lazy-loaded) | `05-agent/memory/` | Behavioral patterns, domain facts — loaded on demand via MEMORY-INDEX.md | `/learn`, `/recap`, `/memory-review` |
-| **Knowledge** | `03-knowledge/` | Permanent synthesized notes | `/distill` |
-
----
-
-## Memory Promotion
-
-OneBrain organizes agent memory across three layers. Each layer has specific skills responsible for writing to it.
-
-| Layer | Storage | Written by |
-|---|---|---|
-| Session log | `07-logs/` | `/wrapup` (end of session) |
-| Memory files | `05-agent/memory/` | `/learn` (user-driven, single fact), `/recap` (batch synthesis), `/memory-review` (edits) |
-| Always-loaded — Identity | `05-agent/MEMORY.md` | `/onboarding` (one-time), manual edits |
-| Always-loaded — Active Projects | `05-agent/MEMORY.md` | `/learn` (project lifecycle events), manual edits |
-| Always-loaded — Critical Behaviors | `05-agent/MEMORY.md` | `/learn` only (user explicitly teaches behavior; must meet all 3 threshold conditions) |
-| Always-loaded — Memory registry | `05-agent/MEMORY-INDEX.md` | Any skill writing to `memory/` (`/learn`, `/recap`, `/memory-review`) |
-
-**Promotion pipeline:**
-session → session log (`/wrapup`) → `memory/` files (`/recap`) → `MEMORY.md` Critical Behaviors (`/learn`)
-
-**Rules:**
-- `/wrapup` writes session logs only — does not promote to `memory/`
-- `/learn` writes to `memory/` immediately; only skill that writes to MEMORY.md Critical Behaviors
-- `/recap` batch-promotes from session logs → `memory/` only — does NOT write to MEMORY.md
-- Only behaviors applying every session with high-impact failure if missed → MEMORY.md Critical Behaviors
-- `MEMORY-INDEX.md` is loaded every session alongside `MEMORY.md` — it is the registry that enables lazy-loading of `memory/` files; updated automatically by any skill that writes to `memory/`
-
----
-
-## Automatic Session Saving
-
-OneBrain has three automatic behaviors that run without you doing anything:
-
-| Behavior | Trigger | What it does |
-|----------|---------|-------------|
-| **Auto Checkpoint** | Every 15 messages, every 30 min, or before context compression | Writes a checkpoint file to `07-logs/YYYY/MM/` as a safety net |
-| **Auto Session Summary** | You say "bye", "good night", "I'm done for today", etc. — only if `/wrapup` was not already run this session AND ≥ 3 exchanges | Saves a silent session log (marked `auto-saved: true`) without showing any output |
-
-**How they work together:**
-
-- Say "bye" → Auto Session Summary fires silently and saves a session log. No extra steps needed.
-- If you already ran `/wrapup` manually and then say "bye": Auto Session Summary **skips** — the log was already written.
-- If the session ends with no signal (browser closed, terminal killed): Auto Checkpoint files serve as the recovery mechanism. At next session start, Phase 2 automatically synthesizes any orphaned checkpoints into a session log.
-
-**`/wrapup` is manual only.** Run it yourself when you want a visible, full session summary with output shown.
-
-**The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
-
-> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `npm install -g @onebrain-ai/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
-
----
-
 ## Installation
 
 ### 1. Install the CLI
@@ -312,9 +331,9 @@ In Claude Code: `/onboarding`
 
 <a id="commands"></a>
 
-<details>
-<summary><strong>📋 24+ Commands</strong></summary>
-<br>
+## 📋 24+ Commands
+
+The full skill surface, alphabetized by workflow.
 
 | Command | What it does |
 |---------|-------------|
@@ -343,8 +362,6 @@ In Claude Code: `/onboarding`
 | `/doctor` | Vault + config health check — broken links, orphan notes, stale memory entries, inbox backlog |
 | `/update` | Update skills, config, and plugins from GitHub |
 | `/help` | List all available commands with descriptions |
-
-</details>
 
 <details>
 <summary><strong>📁 Vault Structure</strong></summary>
@@ -413,28 +430,9 @@ Checkpoints: `07-logs/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-NN.md` — a
 
 </details>
 
-<details>
-<summary><strong>🧠 Memory System</strong></summary>
-<br>
+## Task Syntax
 
-OneBrain uses a four-tier memory system, where knowledge flows upward as it gets validated. The Semantic tier has two loading modes (always-loaded and lazy-loaded):
-
-**Tier 1 — Working memory** (`00-inbox/` + current session)
-Everything that hasn't been processed yet. Captures from `/braindump`, `/capture`, and quick notes land here. Process with `/consolidate` to move into the knowledge base.
-
-**Tier 2 — Episodic memory** (`07-logs/`)
-Session logs: `YYYY-MM-DD-session-NN.md` in `YYYY/MM/` subfolders. Contains summaries, decisions, insights, and action items from each session. Generated by `/wrapup`.
-Checkpoints: `YYYY-MM-DD-{session_token}-checkpoint-NN.md` — auto-generated mid-session by hooks. Incorporated and deleted by `/wrapup`.
-
-**Tier 3 — Semantic memory** (`05-agent/MEMORY.md` + `05-agent/MEMORY-INDEX.md` + `05-agent/memory/`)
-Always loaded at session start: `MEMORY.md` holds Identity, Active Projects, and Critical Behaviors (~55 lines target). `MEMORY-INDEX.md` is the registry of all `memory/` files — loaded every session, enables lazy-loading. Individual `memory/` files are lazy-loaded on demand via MEMORY-INDEX.md. Only `/learn` writes to MEMORY.md Critical Behaviors. Use `/doctor --fix` to audit and repair stale entries.
-
-**Tier 4 — Knowledge base** (`03-knowledge/`)
-Permanent, synthesized notes. `/distill` crystallizes a completed topic thread into a structured note in `03-knowledge/`.
-
-### Task Syntax
-
-OneBrain uses the [Obsidian Tasks](https://publish.obsidian.md/tasks/) plugin format:
+OneBrain creates tasks in [Obsidian Tasks](https://publish.obsidian.md/tasks/) plugin format:
 
 ```
 - [ ] Task description 📅 2026-03-25
@@ -443,7 +441,7 @@ OneBrain uses the [Obsidian Tasks](https://publish.obsidian.md/tasks/) plugin fo
 
 Tasks live inline in your notes — the Tasks plugin surfaces them across the vault. Run `/tasks` to open a live dashboard in Obsidian (`TASKS.md` at vault root) with sections for overdue, due this week, unscheduled, due later, and recently completed.
 
-</details>
+---
 
 ## OneBrain Cloud
 
