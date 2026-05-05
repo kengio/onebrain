@@ -15,7 +15,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.1.9 — feat: brand-aligned CLI banner (neural-mesh brain + slant wordmark + brand gradient)
 
-- feat(cli-banner): redesign banner — branching-tree neural-network brain icon (5×9 dots-and-lines, asymmetric "tree of thought") on the left, ANSI Shadow block "OneBrain" wordmark on the right with a mild forward italic slant `[3,2,2,1,1,0]` evoking the website's Chakra-Petch-italic feel
+- feat(cli-banner): redesign banner — branching-tree neural-network brain icon (5×9 dots-and-lines, asymmetric "tree of thought") on the left, upright ANSI Shadow block "OneBrain" wordmark on the right
 - feat(cli-banner): canonical uppercase tagline "YOUR AI THINKING PARTNER" + secondary subtitle "A unified intelligence in your Obsidian vault" rendered as a faint cyan layered tagline below the primary line
 - feat(cli-banner): replace full-hue rainbow with a 3-stop magenta → mid-pink → cyan brand gradient (matches the SVG brain logo's stops); animation is now scoped to the brain icon only — wordmark renders solid white (matches website logo), borders settle to brand cyan as a static accent. Brain uses a local gradient remap so it traverses the full magenta→cyan range like the SVG, plus a "neural firing" white pulse flashes brain cells as the gradient front passes
 - feat(cli-banner): non-interactive output (piped, redirected, CI logs) now prints a static brand-colored banner instead of nothing — truecolor host paints brand RGB, 16-color falls back to `pc.cyan`; animation only runs when stdout is an interactive TTY with truecolor

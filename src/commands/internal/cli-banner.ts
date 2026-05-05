@@ -13,15 +13,13 @@ export function resolveBinaryVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Banner data — branching-tree brain icon (left) + ANSI Shadow block "OneBrain"
-// wordmark (right) with a mild forward italic slant.
+// Banner data — branching-tree brain icon (left) + upright ANSI Shadow block
+// "OneBrain" wordmark (right).
 //
 // Layout:
-//   border:    lead 2 + ◆ + 81 ─ + ◆       (total 85 cols)
-//   inner:     lead 3 + brain(9) + gap(2) + slant(0..3) + wordmark(64)
-//                                          (≤ 81 visible cols)
-//   tagline:   lead 14 + 24 chars          (anchored under the bottom — non-
-//                                          slanted — row of the wordmark)
+//   border:    lead 2 + ◆ + 78 ─ + ◆       (total 82 cols)
+//   inner:     lead 3 + brain(9) + gap(2) + wordmark(64) = 78 visible cols
+//   tagline:   lead 14 + 24 chars          (anchored under wordmark's first col)
 //   subtitle:  lead 14 + 45 chars
 //
 // Brain icon (5 rows × 9 cols, all 1-col Unicode) — branching-tree neural
@@ -30,30 +28,26 @@ export function resolveBinaryVersion(): string {
 // is the only animated region; gradient flow + shimmer + neural-pulse all
 // paint inside its bounding box only.
 //
-// Wordmark — hand-laid ANSI Shadow block letters with a per-row leading-
-// shift italic of `[3, 2, 2, 1, 1, 0]` that slants the top of each letter
-// forward, evoking the Chakra-Petch-italic feel of the visual brand
-// wordmark. Rendered solid white (matches the website logo's white-on-dark
-// wordmark) — never animated, never gradient.
+// Wordmark — hand-laid ANSI Shadow block letters, rendered upright in solid
+// white (matches the website logo's white-on-dark wordmark) — never
+// animated, never gradient.
 //
 // Borders (top/bottom `◆──◆` lines) are static brand cyan — a quiet accent
 // that frames the white wordmark + animated brain.
 //
 // Tagline lead = 14 spaces (lead 3 + brain 9 + gap 2) anchors the prefix
-// "YOUR AI" directly under the wordmark's bottom (non-slanted) row.
-// Subtitle reaches near the right border — intentional; reads as a
-// secondary descriptive layer below the canonical brand tagline.
+// "YOUR AI" directly under the wordmark's first column.
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
-  `  ◆${'─'.repeat(81)}◆`,
-  '     ●━●━●        ██████╗ ███╗   ██╗███████╗██████╗ ██████╗  █████╗ ██╗███╗   ██╗',
-  '    ╱│╲ │ ╲     ██╔═══██╗████╗  ██║██╔════╝██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║ ',
-  '   ● ●━●━● ●    ██║   ██║██╔██╗ ██║█████╗  ██████╔╝██████╔╝███████║██║██╔██╗ ██║ ',
-  '    ╲│╱ │ ╱    ██║   ██║██║╚██╗██║██╔══╝  ██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║  ',
-  '     ●━●━●     ╚██████╔╝██║ ╚████║███████╗██████╔╝██║  ██║██║  ██║██║██║ ╚████║  ',
-  '               ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝   ',
-  `  ◆${'─'.repeat(81)}◆`,
+  `  ◆${'─'.repeat(78)}◆`,
+  '     ●━●━●     ██████╗ ███╗   ██╗███████╗██████╗ ██████╗  █████╗ ██╗███╗   ██╗',
+  '    ╱│╲ │ ╲   ██╔═══██╗████╗  ██║██╔════╝██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║',
+  '   ● ●━●━● ●  ██║   ██║██╔██╗ ██║█████╗  ██████╔╝██████╔╝███████║██║██╔██╗ ██║',
+  '    ╲│╱ │ ╱   ██║   ██║██║╚██╗██║██╔══╝  ██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║',
+  '     ●━●━●    ╚██████╔╝██║ ╚████║███████╗██████╔╝██║  ██║██║  ██║██║██║ ╚████║',
+  '               ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝',
+  `  ◆${'─'.repeat(78)}◆`,
 ];
 
 const PREFIX = 'YOUR AI ';
