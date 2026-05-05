@@ -100,15 +100,14 @@ describe('printBanner — non-TTY (piped/CI) static path', () => {
     expect(all).not.toContain('\x1b[36m');
   });
 
-  it('renders gradient on logo + solid white wordmark', async () => {
+  it('renders wordmark cells with the brand gradient (animation lives on the word)', async () => {
     await printBanner();
     const all = spy.chunks.join('');
-    // Logo carries the brand gradient — many distinct truecolor SGR codes.
+    // The wordmark is the gradient canvas — many distinct truecolor SGR
+    // codes should appear (not a flat solid color).
     const matches = all.match(/38;2;\d+;\d+;\d+/g) ?? [];
     const unique = new Set(matches);
     expect(unique.size).toBeGreaterThan(5);
-    // Wordmark cells render bold white — locks in "logo animates, wordmark stays".
-    expect(all).toContain('\x1b[1;97m');
   });
 });
 

@@ -13,43 +13,33 @@ export function resolveBinaryVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Banner data — pixel-art logo (16 rows × 30 cols, made of `d`, `0`, `6`
-// glyphs) on the left + figlet "big" font camelcase "OneBrain" wordmark
-// (6 rows × 43 cols), vertically centered next to the logo.
+// Banner data — figlet "big" font camelcase "OneBrain" wordmark, alone.
+// No top/bottom border, no logo — the wordmark IS the brand mark, and the
+// gradient + shimmer animation paints directly on the letters.
 //
 // Layout:
-//   inner:     lead 3 + logo 30 + gap 3 + wordmark 43 = 79 visible cols
-//   tagline:   lead 36 + 24 chars  (anchored under the wordmark column)
-//   subtitle:  lead 36 + 45 chars
+//   inner:     lead 5 + wordmark (43 cols, 6 rows)   = 48 visible cols
+//   tagline:   lead 5  + 24 chars                    (anchored to wordmark left)
+//   subtitle:  lead 5  + 45 chars
 //
-// Logo cells animate with the brand gradient (magenta → mid-pink → cyan)
-// along the diagonal sweep + neural-firing white pulse — same engine as
-// the prior brain icon, just a larger 16×30 canvas. Wordmark cells render
-// solid white throughout (matches the website logo's white-on-dark
-// wordmark) — never animated.
+// The "big" figlet font has natural mixed-case glyph support (uppercase O/B,
+// lowercase n/e/r/a/i/n) and a chunky outlined+filled feel that reads as a
+// block-letter brand mark in the terminal. Each letter cell takes the brand
+// gradient (magenta → mid-pink → cyan) along the diagonal sweep, so the
+// wordmark itself becomes the canvas for the animation.
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
-  '',
-  '                   dd',
-  '            dddddd    0',
-  '          d    0      00 000',
-  '      d    d  d   0 0  0  0',
-  '    d   d d   0    0   00000000       ____             ____            _',
-  '   dddd  00 0  0    00     0    6    / __ \\           |  _ \\          (_)',
-  '   d d0d  00  000   0  000          | |  | |_ __   ___| |_) |_ __ __ _ _ _ __',
-  "   d    0      0 0  0     0   6     | |  | | '_ \\ / _ \\  _ <| '__/ _` | | '_ \\",
-  '     00           0   0     66      | |__| | | | |  __/ |_) | | | (_| | | | | |',
-  '          00 00      66  666  66     \\____/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|',
-  '             00  0 0      6',
-  '                  666',
-  '                      66',
-  '                        6',
-  '',
+  '  ____             ____            _       ',
+  ' / __ \\           |  _ \\          (_)      ',
+  '| |  | |_ __   ___| |_) |_ __ __ _ _ _ __  ',
+  "| |  | | '_ \\ / _ \\  _ <| '__/ _` | | '_ \\ ",
+  '| |__| | | | |  __/ |_) | | | (_| | | | | |',
+  ' \\____/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|',
 ];
 
 const PREFIX = 'YOUR AI ';
-const TAGLINE_LEAD = '                                    '; // 36 spaces — anchors under wordmark column
+const TAGLINE_LEAD = '     '; // 5 spaces — anchors under wordmark column
 export const TAGLINE_FALLBACK = `${PREFIX}THINKING PARTNER`;
 export const SUBTITLE = 'A unified intelligence in your Obsidian vault';
 const BANNER_LINE_COUNT = 1 + ART_LINES.length + 3;
@@ -158,30 +148,9 @@ const [DIAG_MIN, DIAG_MAX] = ((): [number, number] => {
 })();
 const DIAG_RANGE = DIAG_MAX - DIAG_MIN;
 
-// Logo bounding box (lead 3 + 30-col art) — only logo cells animate and carry
-// the brand gradient. The brand SVG paints the brain mark with the *full*
-// magenta→cyan gradient across its bounding box, so we remap the logo's
-// local diagonal range to t ∈ [0,1] independently of the global banner
-// gradient. Without this, cells far from the diagonal would clip to a
-// single brand stop.
-const LOGO_COL_MIN = 3;
-const LOGO_COL_MAX = 32;
-const LOGO_ROW_MIN = 0;
-const LOGO_ROW_MAX = 15;
-const LOGO_DIAG_MIN = LOGO_COL_MIN - 3 * LOGO_ROW_MAX;
-const LOGO_DIAG_MAX = LOGO_COL_MAX - 3 * LOGO_ROW_MIN;
-const LOGO_DIAG_RANGE = LOGO_DIAG_MAX - LOGO_DIAG_MIN;
-
-function inLogoCell(row: number, col: number): boolean {
-  return row >= LOGO_ROW_MIN && row <= LOGO_ROW_MAX && col >= LOGO_COL_MIN && col <= LOGO_COL_MAX;
-}
-
 function gradientForCell(row: number, col: number): Rgb {
   const d = col - 3 * row;
-  const t = inLogoCell(row, col)
-    ? (d - LOGO_DIAG_MIN) / LOGO_DIAG_RANGE
-    : (d - DIAG_MIN) / DIAG_RANGE;
-  return brandGradient(t);
+  return brandGradient((d - DIAG_MIN) / DIAG_RANGE);
 }
 
 const WHITE_SGR = '\x1b[1;97m';
@@ -196,12 +165,8 @@ function neonLine(line: string, lineIndex = 0): string {
     .split('')
     .map((ch, col) => {
       if (ch === ' ') return ch;
-      if (inLogoCell(lineIndex, col)) {
-        const [r, g, b] = gradientForCell(lineIndex, col);
-        return rgb(r, g, b, ch);
-      }
-      // Wordmark cells (and any non-logo, non-space cell) render solid white.
-      return whiteCell(ch);
+      const [r, g, b] = gradientForCell(lineIndex, col);
+      return rgb(r, g, b, ch);
     })
     .join('');
 }
@@ -327,23 +292,16 @@ async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<
   await delay(600);
 
   // Phase 1B — brand gradient (magenta → cyan) flows diagonally across the
-  // logo, mirroring the SVG brand mark's gradient direction. The wordmark
-  // stays solid white — only the logo animates so the moving piece reads
-  // cleanly. As the gradient front crosses logo cells, flash white for a
-  // few diagonal positions to read as a "neural firing" pulse.
-  const PULSE_TRAIL = 3;
-
+  // wordmark itself, mirroring the SVG brand logo's gradient direction.
+  // Every glyph cell takes its own gradient color along the diagonal sweep.
   function flowFrame(frontD: number): string[] {
     return ART_LINES.map((line, row) =>
       line
         .split('')
         .map((ch, col) => {
           if (ch === ' ') return ch;
-          if (!inLogoCell(row, col)) return whiteCell(ch);
           const d = col - 3 * row;
           if (d <= frontD) {
-            const ageBehindFront = frontD - d;
-            if (ageBehindFront <= PULSE_TRAIL) return whiteCell(ch);
             const [r, g, b] = gradientForCell(row, col);
             return rgb(r, g, b, ch);
           }
@@ -363,14 +321,13 @@ async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<
   await delay(180);
 
   // Phase 1C — white shimmer sweeps the same diagonal direction over the
-  // logo only; wordmark cells stay solid white throughout.
+  // gradient-painted wordmark; non-highlight cells stay in their gradient.
   function shimmerArtFrame(highlight: number): string[] {
     return ART_LINES.map((line, row) =>
       line
         .split('')
         .map((ch, col) => {
           if (ch === ' ') return ch;
-          if (!inLogoCell(row, col)) return whiteCell(ch);
           const d = col - 3 * row;
           if (Math.abs(d - highlight) <= 1) return whiteCell(ch);
           const [r, g, b] = gradientForCell(row, col);
