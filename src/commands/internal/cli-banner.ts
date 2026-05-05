@@ -13,50 +13,47 @@ export function resolveBinaryVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Banner data — brain icon (left) + slant-italic "OneBrain" wordmark (right)
+// Banner data — branching-tree brain icon (left) + ANSI Shadow block "OneBrain"
+// wordmark (right) with a mild forward italic slant.
 //
 // Layout:
-//   border:    lead 2 + ◆ + 56 ─ + ◆       (visible col 2..59)
-//   inner:     lead 5 + brain(7) + gap(2) + wordmark(43) = 52 visible chars
-//                                          (visible col 5..56 → 2-col padding inside border)
-//   tagline:   lead 14 + 24 chars          (left-anchored to wordmark column)
-//   subtitle:  lead 14 + 45 chars          (visible col 14..58, just inside border)
+//   border:    lead 2 + ◆ + 81 ─ + ◆       (total 85 cols)
+//   inner:     lead 3 + brain(9) + gap(2) + slant(0..3) + wordmark(64)
+//                                          (≤ 81 visible cols)
+//   tagline:   lead 14 + 24 chars          (anchored under the bottom — non-
+//                                          slanted — row of the wordmark)
+//   subtitle:  lead 14 + 45 chars
 //
-// Brain icon (5 rows, 7 cols, all 1-col Unicode) — abstract neural-mesh form,
-// echoes the gradient brain in the website / GitHub brand mark. Sits to the
-// left of the wordmark to mirror the canonical horizontal brand arrangement.
-// The brain is the only animated region; gradient flow + shimmer + neural
-// pulse all paint inside its bounding box only.
+// Brain icon (5 rows × 9 cols, all 1-col Unicode) — branching-tree neural
+// network: 3 nodes top, 5 nodes middle (widest, with two outlying side
+// nodes), 3 nodes bottom. Reads as an asymmetric "tree of thought." Brain
+// is the only animated region; gradient flow + shimmer + neural-pulse all
+// paint inside its bounding box only.
 //
-// Wordmark — figlet "slant" font for "OneBrain", chosen for its italic slant
-// to evoke the Chakra-Petch-italic feel of the visual brand wordmark while
-// staying terminal-renderable. Rendered solid white throughout (matches the
-// website logo's white-on-dark wordmark) — never animated, never gradient.
+// Wordmark — hand-laid ANSI Shadow block letters with a per-row leading-
+// shift italic of `[3, 2, 2, 1, 1, 0]` that slants the top of each letter
+// forward, evoking the Chakra-Petch-italic feel of the visual brand
+// wordmark. Rendered solid white (matches the website logo's white-on-dark
+// wordmark) — never animated, never gradient.
 //
 // Borders (top/bottom `◆──◆` lines) are static brand cyan — a quiet accent
-// that frames the white wordmark + animated brain without competing for
-// attention.
+// that frames the white wordmark + animated brain.
 //
-// Tagline lead is fixed at 14 spaces — left-anchors the prefix "YOUR AI"
-// directly under the wordmark's first column across all rotating sentences.
-// The prefix stays stable; only the right edge varies, which keeps the
-// wipe-swap transitions feeling like the new sentence simply extends further
-// to the right rather than the whole tagline shifting horizontally.
-// Subtitle ("A unified intelligence in your Obsidian vault") is wider than
-// the tagline and reaches near the right border — intentional; reads as a
+// Tagline lead = 14 spaces (lead 3 + brain 9 + gap 2) anchors the prefix
+// "YOUR AI" directly under the wordmark's bottom (non-slanted) row.
+// Subtitle reaches near the right border — intentional; reads as a
 // secondary descriptive layer below the canonical brand tagline.
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
-  `  ◆${'─'.repeat(56)}◆`,
-  '     ╭●━●━●╮     ____             ____             _     ',
-  '     ●╲│╱│╲●    / __ \\____  ___  / __ )_________ _(_)___ ',
-  // Slant font line 3 contains a literal `` ` ``; single-quoted string passes
-  // the backtick through unescaped while \\ still produces one backslash.
-  '     ●━●━●━●   / / / / __ \\/ _ \\/ __  / ___/ __ `/ / __ \\',
-  '     ●╱│╲│╱●  / /_/ / / / /  __/ /_/ / /  / /_/ / / / / /',
-  '     ╰●━●━●╯  \\____/_/ /_/\\___/_____/_/   \\__,_/_/_/ /_/ ',
-  `  ◆${'─'.repeat(56)}◆`,
+  `  ◆${'─'.repeat(81)}◆`,
+  '     ●━●━●        ██████╗ ███╗   ██╗███████╗██████╗ ██████╗  █████╗ ██╗███╗   ██╗',
+  '    ╱│╲ │ ╲     ██╔═══██╗████╗  ██║██╔════╝██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║ ',
+  '   ● ●━●━● ●    ██║   ██║██╔██╗ ██║█████╗  ██████╔╝██████╔╝███████║██║██╔██╗ ██║ ',
+  '    ╲│╱ │ ╱    ██║   ██║██║╚██╗██║██╔══╝  ██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║  ',
+  '     ●━●━●     ╚██████╔╝██║ ╚████║███████╗██████╔╝██║  ██║██║  ██║██║██║ ╚████║  ',
+  '               ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝   ',
+  `  ◆${'─'.repeat(81)}◆`,
 ];
 
 const PREFIX = 'YOUR AI ';
@@ -169,15 +166,18 @@ const [DIAG_MIN, DIAG_MAX] = ((): [number, number] => {
 })();
 const DIAG_RANGE = DIAG_MAX - DIAG_MIN;
 
-// Brain icon occupies cols 5..11 in art rows 1..5. The brand SVG paints the
-// brain with the *full* magenta→cyan gradient across its bounding box, so we
-// remap the brain's local diagonal range to t ∈ [0,1] independently of the
-// global banner gradient. Without this, the brain icon — which sits in the
-// magenta half of the global diagonal — would render solid pink, losing the
-// canonical magenta→cyan sweep that defines the brand mark.
+// Brain icon occupies cols 3..11 in art rows 1..5 (lead 3 + 9-col brain
+// bounding box; individual rows render only 5–9 chars and the predicate
+// safely covers spaces, which the renderer skips anyway). The brand SVG
+// paints the brain with the *full* magenta→cyan gradient across its
+// bounding box, so we remap the brain's local diagonal range to t ∈ [0,1]
+// independently of the global banner gradient. Without this, the brain
+// icon — which sits in the magenta half of the global diagonal — would
+// render solid pink, losing the canonical magenta→cyan sweep that defines
+// the brand mark.
 const BRAIN_ROW_MIN = 1;
 const BRAIN_ROW_MAX = 5;
-const BRAIN_COL_MIN = 5;
+const BRAIN_COL_MIN = 3;
 const BRAIN_COL_MAX = 11;
 const BRAIN_DIAG_MIN = BRAIN_COL_MIN - 3 * BRAIN_ROW_MAX;
 const BRAIN_DIAG_MAX = BRAIN_COL_MAX - 3 * BRAIN_ROW_MIN;
