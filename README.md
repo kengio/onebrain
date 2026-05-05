@@ -9,6 +9,7 @@
   <a href="https://onebrain.run"><img alt="Website" src="https://img.shields.io/badge/onebrain.run-0a0a14?style=for-the-badge&labelColor=ff2d92"></a>
   <a href="https://x.com/onebrain_run"><img alt="@onebrain_run on X" src="https://img.shields.io/badge/follow-@onebrain__run-000000?style=for-the-badge&logo=x&logoColor=white"></a>
   <a href="https://www.npmjs.com/package/@onebrain-ai/cli"><img alt="npm" src="https://img.shields.io/npm/v/@onebrain-ai/cli?style=for-the-badge&logo=npm&color=cb3837&label=%40onebrain-ai%2Fcli"></a>
+  <a href="PLUGIN-CHANGELOG.md"><img alt="Plugin version" src="https://img.shields.io/github/package-json/v/onebrain-ai/onebrain?filename=.claude%2Fplugins%2Fonebrain%2F.claude-plugin%2Fplugin.json&style=for-the-badge&label=plugin&color=ff2d92"></a>
   <a href="https://github.com/onebrain-ai/onebrain/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/onebrain-ai/onebrain?style=for-the-badge&color=00f3ff&logo=github"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-7c3aed?style=for-the-badge"></a>
 </p>
@@ -49,19 +50,21 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 
 ## The Harness OS Architecture
 
-OneBrain doesn't compete with Claude Code, Gemini CLI, or any other AI harness. It sits **underneath them** — the OS layer that keeps your context, memory, and skills consistent no matter which harness you're driving.
+OneBrain doesn't compete with Claude Code, Gemini CLI, or any other AI harness. It's the OS layer that **orchestrates** them — keeping your context, memory, and skills consistent no matter which harness you're driving, all while your Obsidian vault stays the durable source of truth underneath.
 
 <p align="center">
-  <img alt="OneBrain Harness OS — 5-layer architecture: Obsidian Vault, OneBrain Plugin, OneBrain CLI, Harness, LLM" src="assets/diagrams/harness-os-stack.svg" width="780">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/harness-os-stack-dark.svg">
+    <img alt="OneBrain Harness OS — 4-layer architecture: OneBrain (plugin + CLI) on top, Harness, LLM, Obsidian Vault as the source of truth at the base" src="assets/diagrams/harness-os-stack-light.svg" width="780">
+  </picture>
 </p>
 
 | # | Layer | Role | What lives here |
 |---|---|---|---|
-| 01 | **Obsidian Vault** | Cognitive interface | Plain Markdown — notes, memory, decisions, knowledge graph |
-| 02 | **OneBrain Plugin** | Skills + hooks | 24+ skills + lifecycle hooks, loaded into any harness |
-| 03 | **OneBrain CLI** | Harness orchestrator | Indexing, checkpoints, vault sync, harness routing |
-| 04 | **Harness** | Agentic runtime | Bring your own — Claude Code · Gemini CLI · Codex · Qwen · ... |
-| 05 | **LLM** | Intelligence source | Local (mlx, ollama) · cloud (claude, gemini, gpt) · raw API |
+| 01 | **OneBrain** | OS layer (plugin + CLI) | 24+ skills · lifecycle hooks · vault sync · indexing · checkpoints · harness routing |
+| 02 | **Harness** | Agentic runtime | Bring your own — Claude Code · Gemini CLI · Codex · Qwen · ... |
+| 03 | **LLM** | Intelligence source | Local (mlx, ollama) · cloud (claude, gemini, gpt) · raw API |
+| 04 | **Obsidian Vault** | Source of truth | Plain Markdown — notes, memory, decisions, knowledge graph |
 
 The **Harness** layer is where most AI tools pick a fight with each other. We don't — pick whichever harness you love. By familiarity, by task, or by cost. Your vault stays the same.
 
@@ -296,7 +299,7 @@ In Claude Code: `/onboarding`
 
 ---
 
-> **Choosing a harness?** See [The Harness OS Architecture ↑](#the-harness-os-architecture) for install commands per harness, BYO-LLM via Claude Code, and the full 5-layer stack.
+> **Choosing a harness?** See [The Harness OS Architecture ↑](#the-harness-os-architecture) for install commands per harness, BYO-LLM via Claude Code, and the full 4-layer stack.
 
 ---
 
