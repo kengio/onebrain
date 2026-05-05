@@ -1,0 +1,196 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-280 -210 560 420" width="640" role="img" aria-labelledby="title desc" font-family="'JetBrains Mono', ui-monospace, monospace">
+  <title id="title">Obsidian as Command Center</title>
+  <desc id="desc">Hub-and-spoke diagram (dark theme). Obsidian vault sits at the center, with eight spokes radiating outward to CLI/repo, website, cloud infra, social media, office docs, project notes, research, and MCP server.</desc>
+
+  <style>
+    .ring        { fill: none; stroke: #bc13fe; stroke-opacity: 0.22; stroke-dasharray: 3 5; transform-origin: 0 0; }
+    .spoke       { stroke: #bc13fe; stroke-opacity: 0.45; stroke-width: 1; }
+    .node        { fill: #bc13fe; }
+    .node-label  { fill: rgba(255,255,255,0.78); font-size: 11px; letter-spacing: 0.18em; }
+    .particle    { fill: #ffffff; }
+    .ping        { fill: none; stroke: #bc13fe; stroke-width: 1.5; }
+    .core        { fill: rgba(2,2,4,0.92); stroke: #bc13fe; stroke-width: 1.5; transform-origin: 0 0; }
+    .core-label  { fill: #ffffff; font-size: 11.5px; font-weight: 700; letter-spacing: 0.16em; }
+    .core-sub    { fill: #bc13fe; font-size: 9px; letter-spacing: 0.32em; }
+    .core-logo-shell { fill: #bc13fe; fill-opacity: 0.22; stroke: #bc13fe; stroke-width: 1.3; stroke-linejoin: round; }
+    .core-logo-cut   { fill: none; stroke: #bc13fe; stroke-width: 0.9; stroke-opacity: 0.85; stroke-linecap: round; }
+
+    @keyframes ring-spin { to { transform: rotate(360deg); } }
+    @keyframes core-breathe {
+      0%, 100% { stroke-width: 1.5; stroke-opacity: 0.6; }
+      50%      { stroke-width: 2.5; stroke-opacity: 1.0; }
+    }
+    .ring { animation: ring-spin 120s linear infinite; }
+    .core { animation: core-breathe 9s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ring, .core { animation: none; }
+      .particle, .ping { display: none; }
+    }
+  </style>
+
+  <!-- Outer guide ring (slowly rotating) -->
+  <circle class="ring" cx="0" cy="0" r="150"/>
+
+  <!-- N — CLI / REPO -->
+  <line class="spoke" x1="0" y1="0" x2="0" y2="-150"/>
+  <circle class="node" cx="0" cy="-150" r="5"/>
+  <text class="node-label" x="0" y="-183" text-anchor="middle">CLI / REPO</text>
+
+  <!-- NE — WEBSITE -->
+  <line class="spoke" x1="0" y1="0" x2="106.07" y2="-106.07"/>
+  <circle class="node" cx="106.07" cy="-106.07" r="5"/>
+  <text class="node-label" x="123.74" y="-119.74" text-anchor="start">WEBSITE</text>
+
+  <!-- E — CLOUD INFRA -->
+  <line class="spoke" x1="0" y1="0" x2="150" y2="0"/>
+  <circle class="node" cx="150" cy="0" r="5"/>
+  <text class="node-label" x="175" y="4" text-anchor="start">CLOUD INFRA</text>
+
+  <!-- SE — SOCIAL MEDIA -->
+  <line class="spoke" x1="0" y1="0" x2="106.07" y2="106.07"/>
+  <circle class="node" cx="106.07" cy="106.07" r="5"/>
+  <text class="node-label" x="123.74" y="127.74" text-anchor="start">SOCIAL MEDIA</text>
+
+  <!-- S — OFFICE DOCS -->
+  <line class="spoke" x1="0" y1="0" x2="0" y2="150"/>
+  <circle class="node" cx="0" cy="150" r="5"/>
+  <text class="node-label" x="0" y="189" text-anchor="middle">OFFICE DOCS</text>
+
+  <!-- SW — PROJECT NOTES -->
+  <line class="spoke" x1="0" y1="0" x2="-106.07" y2="106.07"/>
+  <circle class="node" cx="-106.07" cy="106.07" r="5"/>
+  <text class="node-label" x="-123.74" y="127.74" text-anchor="end">PROJECT NOTES</text>
+
+  <!-- W — RESEARCH -->
+  <line class="spoke" x1="0" y1="0" x2="-150" y2="0"/>
+  <circle class="node" cx="-150" cy="0" r="5"/>
+  <text class="node-label" x="-175" y="4" text-anchor="end">RESEARCH</text>
+
+  <!-- NW — MCP SERVER -->
+  <line class="spoke" x1="0" y1="0" x2="-106.07" y2="-106.07"/>
+  <circle class="node" cx="-106.07" cy="-106.07" r="5"/>
+  <text class="node-label" x="-123.74" y="-119.74" text-anchor="end">MCP SERVER</text>
+
+  <!-- Animated flow: particles travel along spokes, pings flash at the active end -->
+  <!-- N — out to CLI/REPO (8.5s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L 0,-150" dur="8.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="8.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L 0,-150" dur="8.5s" begin="4.25s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="8.5s" begin="4.25s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="0" cy="-150" r="5" opacity="0">
+    <animate attributeName="r" values="5;5;13" keyTimes="0;0.86;1" dur="8.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;0.9;0" keyTimes="0;0.86;0.93;1" dur="8.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- NE — in from WEBSITE (7.5s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 106.07,-106.07 L 0,0" dur="7.5s" begin="0.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="7.5s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 106.07,-106.07 L 0,0" dur="7.5s" begin="4.15s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="7.5s" begin="4.15s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="106.07" cy="-106.07" r="5" opacity="0">
+    <animate attributeName="r" values="5;13;13" keyTimes="0;0.12;1" dur="7.5s" begin="0.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.9;0;0;0" keyTimes="0;0.12;0.99;1" dur="7.5s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- E — out to CLOUD INFRA (9.5s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L 150,0" dur="9.5s" begin="0.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="9.5s" begin="0.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L 150,0" dur="9.5s" begin="5.55s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="9.5s" begin="5.55s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="150" cy="0" r="5" opacity="0">
+    <animate attributeName="r" values="5;5;13" keyTimes="0;0.86;1" dur="9.5s" begin="0.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;0.9;0" keyTimes="0;0.86;0.93;1" dur="9.5s" begin="0.8s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- SE — in from SOCIAL MEDIA (10s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 106.07,106.07 L 0,0" dur="10s" begin="1.2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="10s" begin="1.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 106.07,106.07 L 0,0" dur="10s" begin="6.2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="10s" begin="6.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="106.07" cy="106.07" r="5" opacity="0">
+    <animate attributeName="r" values="5;13;13" keyTimes="0;0.12;1" dur="10s" begin="1.2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.9;0;0;0" keyTimes="0;0.12;0.99;1" dur="10s" begin="1.2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- S — out to OFFICE DOCS (9s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L 0,150" dur="9s" begin="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="9s" begin="1.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L 0,150" dur="9s" begin="6.1s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="9s" begin="6.1s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="0" cy="150" r="5" opacity="0">
+    <animate attributeName="r" values="5;5;13" keyTimes="0;0.86;1" dur="9s" begin="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;0.9;0" keyTimes="0;0.86;0.93;1" dur="9s" begin="1.6s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- SW — in from PROJECT NOTES (7s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M -106.07,106.07 L 0,0" dur="7s" begin="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="7s" begin="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M -106.07,106.07 L 0,0" dur="7s" begin="5.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="7s" begin="5.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="-106.07" cy="106.07" r="5" opacity="0">
+    <animate attributeName="r" values="5;13;13" keyTimes="0;0.12;1" dur="7s" begin="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.9;0;0;0" keyTimes="0;0.12;0.99;1" dur="7s" begin="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- W — out to RESEARCH (10.5s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L -150,0" dur="10.5s" begin="2.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="10.5s" begin="2.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M 0,0 L -150,0" dur="10.5s" begin="7.65s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="10.5s" begin="7.65s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="-150" cy="0" r="5" opacity="0">
+    <animate attributeName="r" values="5;5;13" keyTimes="0;0.86;1" dur="10.5s" begin="2.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;0;0.9;0" keyTimes="0;0.86;0.93;1" dur="10.5s" begin="2.4s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- NW — in from MCP SERVER (8s) -->
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M -106.07,-106.07 L 0,0" dur="8s" begin="2.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="8s" begin="2.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="particle" cx="0" cy="0" r="3" opacity="0">
+    <animateMotion path="M -106.07,-106.07 L 0,0" dur="8s" begin="6.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.92;1" dur="8s" begin="6.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="ping" cx="-106.07" cy="-106.07" r="5" opacity="0">
+    <animate attributeName="r" values="5;13;13" keyTimes="0;0.12;1" dur="8s" begin="2.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.9;0;0;0" keyTimes="0;0.12;0.99;1" dur="8s" begin="2.8s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Center: Obsidian vault as command center -->
+  <circle class="core" cx="0" cy="0" r="52"/>
+  <g transform="translate(0,-23)">
+    <path class="core-logo-shell" d="M 0 -9 L 7.79 -4.5 L 7.79 4.5 L 0 9 L -7.79 4.5 L -7.79 -4.5 Z"/>
+    <path class="core-logo-cut"   d="M 0 -9 L 0 0 M 0 0 L 7.79 4.5 M 0 0 L -7.79 4.5"/>
+  </g>
+  <text class="core-label" x="0" y="3"  text-anchor="middle">OBSIDIAN</text>
+  <text class="core-sub"   x="0" y="19" text-anchor="middle">vault</text>
+</svg>

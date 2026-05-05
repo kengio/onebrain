@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-225 -200 450 395" width="450" height="395" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
+  <title id="title">The Path to Co-Evolution — three-step loop</title>
+  <desc id="desc">Three nodes arranged in a triangle: 01 INITIATE at top, 02 CAPTURE_INTENT at bottom-right, 03 MUTUAL_EVOLUTION at bottom-left. Curved arrows flow clockwise between them, visualizing the recurring co-evolution loop.</desc>
+
+  <style>
+    .text-strong { fill: #ffffff; }
+    .text-soft   { fill: rgba(255,255,255,0.78); }
+    .text-fade   { fill: rgba(255,255,255,0.50); }
+    .text-mute   { fill: rgba(255,255,255,0.35); }
+
+    .leg { animation: leg-pulse 4.5s linear infinite; }
+    .leg-2 { animation-delay: 1.5s; }
+    .leg-3 { animation-delay: 3s; }
+    @keyframes leg-pulse {
+      0%, 33%, 100% { opacity: 0.5; }
+      10%           { opacity: 1; }
+    }
+
+    .ring-orbit { animation: ring-orbit-spin 90s linear infinite; transform-origin: 0 0; }
+    @keyframes ring-orbit-spin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .leg, .ring-orbit { animation: none; opacity: 0.5; }
+    }
+  </style>
+
+  <defs>
+    <marker id="ah-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff2d92"/>
+    </marker>
+    <marker id="ah-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#bc13fe"/>
+    </marker>
+    <marker id="ah-3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#00f3ff"/>
+    </marker>
+  </defs>
+
+  <circle class="ring-orbit" cx="0" cy="0" r="180" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="3 5"/>
+
+  <g class="leg">
+    <path d="M 27 -83.2 Q 82.2 -47.5 85.6 18.2" fill="none" stroke="#ff2d92" stroke-width="1.6" marker-end="url(#ah-1)"/>
+  </g>
+  <g class="leg leg-2">
+    <path d="M 58.6 65 Q 0 110 -58.6 65" fill="none" stroke="#bc13fe" stroke-width="1.6" marker-end="url(#ah-2)"/>
+  </g>
+  <g class="leg leg-3">
+    <path d="M -85.6 18.2 Q -82.2 -47.5 -27 -83.2" fill="none" stroke="#00f3ff" stroke-width="1.6" marker-end="url(#ah-3)"/>
+  </g>
+
+  <g transform="translate(0,-130)">
+    <circle cx="0" cy="0" r="54" fill="rgba(2,2,4,0.92)" stroke="#ff2d92" stroke-width="1.5"/>
+    <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#ff2d92" letter-spacing="0.18em">01</text>
+    <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" class="text-strong">INITIATE</text>
+    <text x="0" y="22" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.30em" fill="#ff2d92">/onboarding</text>
+  </g>
+
+  <g transform="translate(112.6,65)">
+    <circle cx="0" cy="0" r="54" fill="rgba(2,2,4,0.92)" stroke="#bc13fe" stroke-width="1.5"/>
+    <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#bc13fe" letter-spacing="0.18em">02</text>
+    <text x="0" y="3" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">CAPTURE</text>
+    <text x="0" y="17" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">INTENT</text>
+    <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#bc13fe">/braindump · /capture</text>
+  </g>
+
+  <g transform="translate(-112.6,65)">
+    <circle cx="0" cy="0" r="54" fill="rgba(2,2,4,0.92)" stroke="#00f3ff" stroke-width="1.5"/>
+    <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#00f3ff" letter-spacing="0.18em">03</text>
+    <text x="0" y="3" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">MUTUAL</text>
+    <text x="0" y="17" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">EVOLUTION</text>
+    <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#00f3ff">/recap · /distill · /learn</text>
+  </g>
+
+</svg>

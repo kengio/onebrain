@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 100 880 492" width="880" height="492" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
+  <title id="title">OneBrain Harness OS — 4-Layer Architecture (dark)</title>
+  <desc id="desc">Four stacked layers from top to bottom: OneBrain (plugin and CLI — skills, hooks, vault sync, indexing, checkpoints), Harness (Claude Code, Gemini CLI, Codex, Qwen), LLM (local, cloud, or API), and Obsidian Vault as the source of truth (plain Markdown notes, memory, decisions, knowledge graph).</desc>
+
+  <style>
+    .text-strong { fill: #ffffff; }
+    .text-soft   { fill: rgba(255,255,255,0.70); }
+    .text-fade   { fill: rgba(255,255,255,0.50); }
+    .text-mute   { fill: rgba(255,255,255,0.35); }
+    .frame-corner { stroke: rgba(255,255,255,0.22); }
+    .grid-line    { stroke: rgba(255,255,255,0.06); }
+    .divider      { stroke: rgba(255,255,255,0.10); }
+    .arrow-line   { stroke: rgba(255,255,255,0.50); }
+    .arrow-head   { stroke: rgba(255,255,255,0.60); }
+
+    .arrow-pulse-down { animation: arrow-down-pulse 4.5s linear infinite; }
+    .arrow-pulse-up   { animation: arrow-up-pulse   4.5s linear infinite; }
+    .delay-1 { animation-delay: 1.5s; }
+    .delay-2 { animation-delay: 3s; }
+
+    @keyframes arrow-down-pulse {
+      0%, 22%, 100% { opacity: 0.55; }
+      6%            { opacity: 1; }
+    }
+    @keyframes arrow-up-pulse {
+      0%, 50%, 72%, 100% { opacity: 0.55; }
+      56%                { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .arrow-pulse-down, .arrow-pulse-up { animation: none; opacity: 0.55; }
+    }
+  </style>
+
+  <defs>
+    <linearGradient id="g-onebrain" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#ff2d92" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ff2d92" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="g-harness" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#bc13fe" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#bc13fe" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="g-llm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#c8ff00" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#c8ff00" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="g-vault" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#00f3ff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00f3ff" stop-opacity="0.05"/>
+    </linearGradient>
+
+    <linearGradient id="spine-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ff2d92" stop-opacity="0.6"/>
+      <stop offset="33%"  stop-color="#bc13fe" stop-opacity="0.6"/>
+      <stop offset="66%"  stop-color="#c8ff00" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#00f3ff" stop-opacity="0.6"/>
+    </linearGradient>
+
+    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" class="grid-line" stroke-width="0.5"/>
+    </pattern>
+
+    <filter id="soft-glow" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Vertical accent spine running through all layers -->
+  <line x1="48" y1="110" x2="48" y2="582" stroke="url(#spine-grad)" stroke-width="2" stroke-dasharray="2 4" opacity="0.55"/>
+
+
+  <!-- ════════ LAYER 01 — ONEBRAIN ════════ -->
+  <g transform="translate(60, 110)">
+    <rect width="780" height="100" fill="none" stroke="#ff2d92" stroke-opacity="0.45" stroke-width="1"/>
+    <rect width="780" height="3" fill="url(#g-onebrain)" filter="url(#soft-glow)"/>
+    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#ff2d92" stroke-width="1.5" fill="none"/>
+    <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#ff2d92" stroke-width="1.5" fill="none"/>
+    <text x="22" y="66" font-size="26" aria-hidden="true">🧠</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#ff2d92" letter-spacing="0.08em">LAYER_01</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">ONEBRAIN</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#ff2d92" letter-spacing="0.3em">PLUGIN · CLI · ORCHESTRATOR</text>
+    <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">The OS layer driving every harness consistently.</text>
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">skills · hooks · sync · indexing · checkpoints</text>
+    <g transform="translate(640, 38)">
+      <rect width="124" height="22" fill="rgba(255,45,146,0.08)" stroke="#ff2d92" stroke-opacity="0.5" stroke-width="1"/>
+      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#ff2d92" letter-spacing="0.18em" text-anchor="middle">OS_LAYER</text>
+    </g>
+  </g>
+
+  <!-- arrow 01 → 02 -->
+  <g transform="translate(440, 214)">
+    <g class="arrow-pulse-down">
+      <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
+      <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
+    </g>
+    <g class="arrow-pulse-up">
+      <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
+      <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
+    </g>
+  </g>
+
+  <!-- ════════ LAYER 02 — HARNESS ════════ -->
+  <g transform="translate(60, 234)">
+    <rect width="780" height="100" fill="none" stroke="#bc13fe" stroke-opacity="0.45" stroke-width="1"/>
+    <rect width="780" height="3" fill="url(#g-harness)" filter="url(#soft-glow)"/>
+    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#bc13fe" stroke-width="1.5" fill="none"/>
+    <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#bc13fe" stroke-width="1.5" fill="none"/>
+    <text x="22" y="66" font-size="26" aria-hidden="true">🤖</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#bc13fe" letter-spacing="0.08em">LAYER_02</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">HARNESS</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#bc13fe" letter-spacing="0.3em">AGENTIC_RUNTIME</text>
+    <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Bring your own. Switch any time.</text>
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">claude code · gemini cli · codex · qwen</text>
+    <g transform="translate(640, 38)">
+      <rect width="124" height="22" fill="rgba(188,19,254,0.08)" stroke="#bc13fe" stroke-opacity="0.5" stroke-width="1"/>
+      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#bc13fe" letter-spacing="0.18em" text-anchor="middle">BYO_HARNESS</text>
+    </g>
+  </g>
+
+  <!-- arrow 02 → 03 -->
+  <g transform="translate(440, 338)">
+    <g class="arrow-pulse-down delay-1">
+      <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
+      <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
+    </g>
+    <g class="arrow-pulse-up delay-1">
+      <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
+      <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
+    </g>
+  </g>
+
+  <!-- ════════ LAYER 03 — LLM ════════ -->
+  <g transform="translate(60, 358)">
+    <rect width="780" height="100" fill="none" stroke="#c8ff00" stroke-opacity="0.45" stroke-width="1"/>
+    <rect width="780" height="3" fill="url(#g-llm)" filter="url(#soft-glow)"/>
+    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#c8ff00" stroke-width="1.5" fill="none"/>
+    <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#c8ff00" stroke-width="1.5" fill="none"/>
+    <text x="22" y="66" font-size="26" aria-hidden="true">✨</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#c8ff00" letter-spacing="0.08em">LAYER_03</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">LLM</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c8ff00" letter-spacing="0.3em">INTELLIGENCE_SOURCE</text>
+    <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Powered by anything. OneBrain stays the same.</text>
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">local: mlx, ollama · cloud: claude, gemini, gpt</text>
+    <g transform="translate(640, 38)">
+      <rect width="124" height="22" fill="rgba(200,255,0,0.08)" stroke="#c8ff00" stroke-opacity="0.5" stroke-width="1"/>
+      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c8ff00" letter-spacing="0.18em" text-anchor="middle">RAW_TOKENS</text>
+    </g>
+  </g>
+
+  <!-- arrow 03 → 04 -->
+  <g transform="translate(440, 462)">
+    <g class="arrow-pulse-down delay-2">
+      <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
+      <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
+    </g>
+    <g class="arrow-pulse-up delay-2">
+      <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
+      <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
+    </g>
+  </g>
+
+  <!-- ════════ LAYER 04 — OBSIDIAN VAULT (base · source of truth) ════════ -->
+  <g transform="translate(60, 482)">
+    <rect width="780" height="100" fill="none" stroke="#00f3ff" stroke-opacity="0.45" stroke-width="1"/>
+    <rect width="780" height="3" fill="url(#g-vault)" filter="url(#soft-glow)"/>
+    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#00f3ff" stroke-width="1.5" fill="none"/>
+    <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#00f3ff" stroke-width="1.5" fill="none"/>
+    <text x="22" y="66" font-size="26" aria-hidden="true">💎</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#00f3ff" letter-spacing="0.08em">LAYER_04</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">OBSIDIAN VAULT</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#00f3ff" letter-spacing="0.3em">SOURCE_OF_TRUTH</text>
+    <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Plain Markdown · durable state for every layer.</text>
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">notes · memory · decisions · knowledge graph</text>
+    <g transform="translate(640, 38)">
+      <rect width="124" height="22" fill="rgba(0,243,255,0.08)" stroke="#00f3ff" stroke-opacity="0.5" stroke-width="1"/>
+      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#00f3ff" letter-spacing="0.18em" text-anchor="middle">BASE_LAYER</text>
+    </g>
+  </g>
+
+</svg>
