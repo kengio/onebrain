@@ -100,13 +100,14 @@ describe('printBanner — non-TTY (piped/CI) static path', () => {
     expect(all).not.toContain('\x1b[36m');
   });
 
-  it('renders wordmark cells in solid white (animation scoped to brain only)', async () => {
+  it('renders wordmark cells with the brand gradient (animation lives on the word)', async () => {
     await printBanner();
     const all = spy.chunks.join('');
-    // Wordmark is wrapped in the bold-white SGR ESC[1;97m for every non-space
-    // character — the slant figlet "OneBrain" has many of these. Locks in
-    // "wordmark white, brain animated" split per the website logo treatment.
-    expect(all).toContain('\x1b[1;97m');
+    // The wordmark is the gradient canvas — we should see many distinct
+    // truecolor codes across its cells (not a single solid color).
+    const matches = all.match(/38;2;\d+;\d+;\d+/g) ?? [];
+    const unique = new Set(matches);
+    expect(unique.size).toBeGreaterThan(5);
   });
 });
 

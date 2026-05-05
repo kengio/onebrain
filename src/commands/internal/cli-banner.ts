@@ -13,45 +13,33 @@ export function resolveBinaryVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Banner data — branching-tree brain icon (left) + upright ANSI Shadow block
-// "OneBrain" wordmark (right).
+// Banner data — figlet "big" font camelcase "OneBrain" wordmark, alone.
+// No top/bottom border, no brain icon — the wordmark IS the brand mark, and
+// the gradient + shimmer animation now paints directly on the letters.
 //
 // Layout:
-//   border:    lead 2 + ◆ + 78 ─ + ◆       (total 82 cols)
-//   inner:     lead 3 + brain(9) + gap(2) + wordmark(64) = 78 visible cols
-//   tagline:   lead 14 + 24 chars          (anchored under wordmark's first col)
-//   subtitle:  lead 14 + 45 chars
+//   inner:     lead 5 + wordmark (43 cols, 6 rows)   = 48 visible cols
+//   tagline:   lead 5  + 24 chars                    (anchored to wordmark left)
+//   subtitle:  lead 5  + 45 chars
 //
-// Brain icon (5 rows × 9 cols, all 1-col Unicode) — branching-tree neural
-// network: 3 nodes top, 5 nodes middle (widest, with two outlying side
-// nodes), 3 nodes bottom. Reads as an asymmetric "tree of thought." Brain
-// is the only animated region; gradient flow + shimmer + neural-pulse all
-// paint inside its bounding box only.
-//
-// Wordmark — hand-laid ANSI Shadow block letters, rendered upright in solid
-// white (matches the website logo's white-on-dark wordmark) — never
-// animated, never gradient.
-//
-// Borders (top/bottom `◆──◆` lines) are static brand cyan — a quiet accent
-// that frames the white wordmark + animated brain.
-//
-// Tagline lead = 14 spaces (lead 3 + brain 9 + gap 2) anchors the prefix
-// "YOUR AI" directly under the wordmark's first column.
+// The "big" figlet font has natural mixed-case glyph support (uppercase O/B,
+// lowercase n/e/r/a/i/n) and a chunky outlined+filled feel that reads as a
+// block-letter brand mark in the terminal. Each letter cell takes the brand
+// gradient (magenta → mid-pink → cyan) along the diagonal sweep, so the
+// wordmark itself becomes the canvas for the animation.
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
-  `  ◆${'─'.repeat(78)}◆`,
-  '     ●━●━●     ██████╗ ███╗   ██╗███████╗██████╗ ██████╗  █████╗ ██╗███╗   ██╗',
-  '    ╱│╲ │ ╲   ██╔═══██╗████╗  ██║██╔════╝██╔══██╗██╔══██╗██╔══██╗██║████╗  ██║',
-  '   ● ●━●━● ●  ██║   ██║██╔██╗ ██║█████╗  ██████╔╝██████╔╝███████║██║██╔██╗ ██║',
-  '    ╲│╱ │ ╱   ██║   ██║██║╚██╗██║██╔══╝  ██╔══██╗██╔══██╗██╔══██║██║██║╚██╗██║',
-  '     ●━●━●    ╚██████╔╝██║ ╚████║███████╗██████╔╝██║  ██║██║  ██║██║██║ ╚████║',
-  '               ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝',
-  `  ◆${'─'.repeat(78)}◆`,
+  '  ____             ____            _       ',
+  ' / __ \\           |  _ \\          (_)      ',
+  '| |  | |_ __   ___| |_) |_ __ __ _ _ _ __  ',
+  '| |  | | \'_ \\ / _ \\  _ <| \'__/ _` | | \'_ \\ ',
+  '| |__| | | | |  __/ |_) | | | (_| | | | | |',
+  ' \\____/|_| |_|\\___|____/|_|  \\__,_|_|_| |_|',
 ];
 
 const PREFIX = 'YOUR AI ';
-const TAGLINE_LEAD = '              '; // 14 spaces — anchors under wordmark column
+const TAGLINE_LEAD = '     '; // 5 spaces — anchors under wordmark column
 export const TAGLINE_FALLBACK = `${PREFIX}THINKING PARTNER`;
 export const SUBTITLE = 'A unified intelligence in your Obsidian vault';
 const BANNER_LINE_COUNT = 1 + ART_LINES.length + 3;
@@ -160,44 +148,9 @@ const [DIAG_MIN, DIAG_MAX] = ((): [number, number] => {
 })();
 const DIAG_RANGE = DIAG_MAX - DIAG_MIN;
 
-// Brain icon occupies cols 3..11 in art rows 1..5 (lead 3 + 9-col brain
-// bounding box; individual rows render only 5–9 chars and the predicate
-// safely covers spaces, which the renderer skips anyway). The brand SVG
-// paints the brain with the *full* magenta→cyan gradient across its
-// bounding box, so we remap the brain's local diagonal range to t ∈ [0,1]
-// independently of the global banner gradient. Without this, the brain
-// icon — which sits in the magenta half of the global diagonal — would
-// render solid pink, losing the canonical magenta→cyan sweep that defines
-// the brand mark.
-const BRAIN_ROW_MIN = 1;
-const BRAIN_ROW_MAX = 5;
-const BRAIN_COL_MIN = 3;
-const BRAIN_COL_MAX = 11;
-const BRAIN_DIAG_MIN = BRAIN_COL_MIN - 3 * BRAIN_ROW_MAX;
-const BRAIN_DIAG_MAX = BRAIN_COL_MAX - 3 * BRAIN_ROW_MIN;
-const BRAIN_DIAG_RANGE = BRAIN_DIAG_MAX - BRAIN_DIAG_MIN;
-
-function inBrainCell(row: number, col: number): boolean {
-  return (
-    row >= BRAIN_ROW_MIN && row <= BRAIN_ROW_MAX && col >= BRAIN_COL_MIN && col <= BRAIN_COL_MAX
-  );
-}
-
 function gradientForCell(row: number, col: number): Rgb {
   const d = col - 3 * row;
-  const t = inBrainCell(row, col)
-    ? (d - BRAIN_DIAG_MIN) / BRAIN_DIAG_RANGE
-    : (d - DIAG_MIN) / DIAG_RANGE;
-  return brandGradient(t);
-}
-
-// Per-cell role: only the brain icon animates and carries the brand gradient.
-// The wordmark stays solid white to match the website logo (white wordmark on
-// dark theme); the top/bottom border lines render as a static brand-cyan
-// accent. This split keeps the visual focus on the brain — the moving part —
-// and prevents the slant wordmark from competing for attention.
-function isBorderRow(row: number): boolean {
-  return row === 0 || row === ART_LINES.length - 1;
+  return brandGradient((d - DIAG_MIN) / DIAG_RANGE);
 }
 
 const WHITE_SGR = '\x1b[1;97m';
@@ -207,22 +160,13 @@ function whiteCell(ch: string): string {
   return `${WHITE_SGR}${ch}${SGR_RESET}`;
 }
 
-// Color a non-brain cell — borders go brand cyan, wordmark stays solid white.
-function staticCellColor(row: number, ch: string): string {
-  if (isBorderRow(row)) return rgbStr(PREFIX_COLOR, ch);
-  return whiteCell(ch);
-}
-
 function neonLine(line: string, lineIndex = 0): string {
   return line
     .split('')
     .map((ch, col) => {
       if (ch === ' ') return ch;
-      if (inBrainCell(lineIndex, col)) {
-        const [r, g, b] = gradientForCell(lineIndex, col);
-        return rgb(r, g, b, ch);
-      }
-      return staticCellColor(lineIndex, ch);
+      const [r, g, b] = gradientForCell(lineIndex, col);
+      return rgb(r, g, b, ch);
     })
     .join('');
 }
@@ -348,25 +292,17 @@ async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<
   await delay(600);
 
   // Phase 1B — brand gradient (magenta → cyan) flows diagonally across the
-  // brain icon, mirroring the SVG brain logo's gradient direction. The
-  // wordmark stays solid white and the borders settle to brand cyan during
-  // this phase — only the brain animates so the moving piece reads cleanly
-  // against a static brand-themed frame. As the gradient front crosses
-  // brain cells, flash white for a few diagonal positions to read as a
-  // "neural firing" pulse — small distinctive brand signature.
-  const PULSE_TRAIL = 3;
-
+  // wordmark itself, mirroring the SVG brand logo's gradient direction. The
+  // wordmark IS the animation target — every glyph cell takes its own
+  // gradient color along the diagonal sweep.
   function flowFrame(frontD: number): string[] {
     return ART_LINES.map((line, row) =>
       line
         .split('')
         .map((ch, col) => {
           if (ch === ' ') return ch;
-          if (!inBrainCell(row, col)) return staticCellColor(row, ch);
           const d = col - 3 * row;
           if (d <= frontD) {
-            const ageBehindFront = frontD - d;
-            if (ageBehindFront <= PULSE_TRAIL) return whiteCell(ch);
             const [r, g, b] = gradientForCell(row, col);
             return rgb(r, g, b, ch);
           }
@@ -386,14 +322,13 @@ async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<
   await delay(180);
 
   // Phase 1C — white shimmer sweeps the same diagonal direction over the
-  // brain only; wordmark + border cells stay in their static colors.
+  // gradient-painted wordmark; non-highlight cells stay in their gradient.
   function shimmerArtFrame(highlight: number): string[] {
     return ART_LINES.map((line, row) =>
       line
         .split('')
         .map((ch, col) => {
           if (ch === ' ') return ch;
-          if (!inBrainCell(row, col)) return staticCellColor(row, ch);
           const d = col - 3 * row;
           if (Math.abs(d - highlight) <= 1) return whiteCell(ch);
           const [r, g, b] = gradientForCell(row, col);
