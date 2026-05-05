@@ -23,7 +23,7 @@ Determine today's date (`YYYY-MM-DD`) and current local time (local machine time
 
 ### Previous Session Recap (Morning Mode Only)
 
-Glob `[logs_folder]/**/*.md`. Find the most recent session log (today or earlier). On Mondays this will typically be Friday's log unless there is already a session today. If no prior session exists, skip this section silently.
+Glob `[logs_folder]/**/*-session-*.md` (session logs only — never bare `*.md`, which would also match checkpoints, recovered-orphan files, and `/update` migration logs and could pick the wrong file as "most recent"). Find the most recent session log (today or earlier). On Mondays this will typically be Friday's log unless there is already a session today. If no prior session exists, skip this section silently.
 
 Read that session log. Extract main topics and any unchecked action items.
 
@@ -36,7 +36,7 @@ Grep `[projects_folder]/**/*.md` and `[inbox_folder]/*.md` for task lines matchi
 
 **Source 2 : Open action items from last session:**
 If morning mode: already loaded from recap step above; extract unchecked `- [ ]` items from the `## Action Items` section.
-If normal mode: Glob `[logs_folder]/**/*.md`. Find the most recent session log (today or earlier). Read that log and extract unchecked `- [ ]` items from the `## Action Items` section.
+If normal mode: Glob `[logs_folder]/**/*-session-*.md` (session logs only — never bare `*.md`, which would also match checkpoints, recovered-orphan files, and `/update` migration logs and could pick the wrong file as "most recent"). Find the most recent session log (today or earlier). Read that log and extract unchecked `- [ ]` items from the `## Action Items` section.
 
 ### Display the Briefing
 

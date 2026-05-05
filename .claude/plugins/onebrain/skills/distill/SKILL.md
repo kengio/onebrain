@@ -25,7 +25,7 @@ Search across the vault for notes related to the topic. Use 2–3 specific keywo
 
 Use qmd if available for content searches; Grep/Glob as fallback.
 
-1. **Session logs**: Search `[logs_folder]/**/*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections
+1. **Session logs**: Search `[logs_folder]/**/*-session-*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections. (Use the `*-session-*.md` pattern, not bare `*.md` — checkpoint/update logs in the same folder shouldn't contribute distillation content.)
 2. **Inbox**: Search `[inbox_folder]/*.md` for related content
 3. **memory/ files**: Search `[agent_folder]/memory/` for related entries — match topic keywords against filename and frontmatter `topics:` field
 4. **Project/knowledge notes**: Search `[projects_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, and `[resources_folder]/**/*.md` — filter by note title or first 100 words
