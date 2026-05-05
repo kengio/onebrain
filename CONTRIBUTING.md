@@ -9,7 +9,8 @@ Good contributions include:
 - New slash commands (skills)
 - New background agents (focused autonomous tasks dispatched by skills)
 - Improvements to existing skills — clearer instructions, better prompts, edge case handling
-- Bug fixes in install scripts
+- Fixes to the `onebrain` CLI binary (TypeScript / Bun source under `src/`)
+- New harness adapters (instruction file + tool-name reference for an additional AI harness)
 - README and documentation improvements
 
 ## Project Structure
@@ -46,17 +47,21 @@ Skills are plain Markdown files. The AI reads them at runtime — no compilation
 
 ## Multi-Harness Support
 
-OneBrain runs on three AI harnesses. Each has a root entrypoint file that loads harness-specific context before delegating to the shared INSTRUCTIONS.md:
+OneBrain is harness-agnostic — it ships entrypoint files for the major AI harnesses, plus a generic `AGENTS.md` for everything else. Each entrypoint loads harness-specific context before delegating to the shared `INSTRUCTIONS.md`:
 
 | File | Harness | Loads |
 |---|---|---|
-| `CLAUDE.md` | Claude Code | `INSTRUCTIONS.md` directly |
+| `CLAUDE.md` | Claude Code *(reference harness)* | `INSTRUCTIONS.md` directly |
 | `GEMINI.md` | Gemini CLI | `references/gemini-tools.md` → `INSTRUCTIONS.md` |
-| `AGENTS.md` | Codex CLI | `references/codex-tools.md` → `INSTRUCTIONS.md` |
+| `AGENTS.md` | OpenAI Codex · Qwen Code · any AGENTS-spec harness | `references/codex-tools.md` → `INSTRUCTIONS.md` |
+
+Users can also drive any of the above with a different LLM behind it (local via litellm/ollama proxy, or any cloud BYOK). See [README → The Harness OS Architecture](README.md#the-harness-os-architecture) for the user-facing flow.
 
 **INSTRUCTIONS.md is harness-neutral** — it uses Claude Code tool names throughout. The `references/` files translate those names to each harness's equivalents.
 
 When editing INSTRUCTIONS.md or skills, use Claude Code tool names (`Read`, `Write`, `Edit`, `Bash`, `Agent`, etc.) — the harness mapping handles translation automatically.
+
+**Adding a new harness:** create a root entrypoint file (e.g. `MYHARNESS.md`) that points to `INSTRUCTIONS.md`, plus an optional `references/myharness-tools.md` for tool-name remapping. Update the table above and the install matrix in `README.md`.
 
 ## Skills vs Agents — When to Use Which
 
@@ -226,12 +231,15 @@ MEMORY-INDEX.md must be kept in sync at all times. Every skill that creates, upd
 - Update → update row Description and Type columns if changed
 - After any change: set MEMORY-INDEX.md frontmatter `updated:` to today
 
-## Install Scripts
+## Vault Bootstrap
 
-- [`install.sh`](install.sh) — bash, targets macOS and Linux
-- [`install.ps1`](install.ps1) — PowerShell 5+, targets Windows
+Vault setup is owned by the `onebrain` CLI binary (`src/`), **not** by shell scripts in this repo. The user flow is:
 
-Both scripts download the repo tarball, extract it, remove themselves from the vault, and install community plugins. Keep them simple — vault setup belongs in `/onboarding`, not here.
+1. `npm install -g @onebrain-ai/cli` — installs the CLI globally
+2. `onebrain init` — in a new or existing folder, writes `vault.yml`, scaffolds the 8 standard folders, downloads the latest plugin bundle, installs the recommended Obsidian community plugins, and registers Stop / PostCompact hooks. Aborts safely if a `vault.yml` already exists
+3. `/onboarding` — inside the chosen harness, personalises identity + active projects
+
+There are no `install.sh` or `install.ps1` scripts to maintain — the equivalent logic lives in the CLI's `init` and `update` commands and ships with each release. Bug fixes for vault bootstrap belong in `src/commands/init.ts` and `src/commands/update.ts`.
 
 ## Pull Request Guidelines
 
