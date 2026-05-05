@@ -101,10 +101,17 @@
   </g>
 
   <!-- arrow 01 → 02 -->
-  <g transform="translate(440, 213)" opacity="0.6">
-    <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" repeatCount="indefinite"/>
-    <line x1="0" y1="0" x2="0" y2="8" class="arrow-line" stroke-width="1"/>
-    <path d="M -3 6 L 0 10 L 3 6" fill="none" class="arrow-head" stroke-width="1"/>
+  <g transform="translate(440, 213)">
+    <g opacity="0.6">
+      <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" repeatCount="indefinite"/>
+      <line x1="-7" y1="0" x2="-7" y2="8" class="arrow-line" stroke-width="1"/>
+      <path d="M -10 6 L -7 10 L -4 6" fill="none" class="arrow-head" stroke-width="1"/>
+    </g>
+    <g opacity="0.6">
+      <animate attributeName="opacity" values="0.6;0.6;1;0.6;0.6" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" repeatCount="indefinite"/>
+      <line x1="7" y1="2" x2="7" y2="10" class="arrow-line" stroke-width="1"/>
+      <path d="M 4 4 L 7 0 L 10 4" fill="none" class="arrow-head" stroke-width="1"/>
+    </g>
   </g>
 
   <!-- ════════ LAYER 02 — HARNESS ════════ -->
@@ -126,10 +133,17 @@
   </g>
 
   <!-- arrow 02 → 03 -->
-  <g transform="translate(440, 329)" opacity="0.6">
-    <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
-    <line x1="0" y1="0" x2="0" y2="8" class="arrow-line" stroke-width="1"/>
-    <path d="M -3 6 L 0 10 L 3 6" fill="none" class="arrow-head" stroke-width="1"/>
+  <g transform="translate(440, 329)">
+    <g opacity="0.6">
+      <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
+      <line x1="-7" y1="0" x2="-7" y2="8" class="arrow-line" stroke-width="1"/>
+      <path d="M -10 6 L -7 10 L -4 6" fill="none" class="arrow-head" stroke-width="1"/>
+    </g>
+    <g opacity="0.6">
+      <animate attributeName="opacity" values="0.6;0.6;1;0.6;0.6" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
+      <line x1="7" y1="2" x2="7" y2="10" class="arrow-line" stroke-width="1"/>
+      <path d="M 4 4 L 7 0 L 10 4" fill="none" class="arrow-head" stroke-width="1"/>
+    </g>
   </g>
 
   <!-- ════════ LAYER 03 — LLM ════════ -->
@@ -151,10 +165,17 @@
   </g>
 
   <!-- arrow 03 → 04 -->
-  <g transform="translate(440, 445)" opacity="0.6">
-    <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
-    <line x1="0" y1="0" x2="0" y2="8" class="arrow-line" stroke-width="1"/>
-    <path d="M -3 6 L 0 10 L 3 6" fill="none" class="arrow-head" stroke-width="1"/>
+  <g transform="translate(440, 445)">
+    <g opacity="0.6">
+      <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
+      <line x1="-7" y1="0" x2="-7" y2="8" class="arrow-line" stroke-width="1"/>
+      <path d="M -10 6 L -7 10 L -4 6" fill="none" class="arrow-head" stroke-width="1"/>
+    </g>
+    <g opacity="0.6">
+      <animate attributeName="opacity" values="0.6;0.6;1;0.6;0.6" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
+      <line x1="7" y1="2" x2="7" y2="10" class="arrow-line" stroke-width="1"/>
+      <path d="M 4 4 L 7 0 L 10 4" fill="none" class="arrow-head" stroke-width="1"/>
+    </g>
   </g>
 
   <!-- ════════ LAYER 04 — OBSIDIAN VAULT (base · source of truth) ════════ -->
