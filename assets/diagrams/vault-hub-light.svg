@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-280 -210 560 420" width="640" role="img" aria-labelledby="title desc" font-family="'JetBrains Mono', ui-monospace, monospace">
+  <title id="title">Obsidian as Command Center</title>
+  <desc id="desc">Hub-and-spoke diagram (light theme). Obsidian vault sits at the center, with eight spokes radiating outward to CLI/repo, website, cloud infra, social media, office docs, project notes, research, and MCP server.</desc>
+
+  <style>
+    .ring        { fill: none; stroke: #7c1ade; stroke-opacity: 0.28; stroke-dasharray: 3 5; transform-origin: 0 0; }
+    .spoke       { stroke: #7c1ade; stroke-opacity: 0.55; stroke-width: 1; }
+    .node        { fill: #7c1ade; }
+    .node-label  { fill: rgba(10,10,20,0.82); font-size: 11px; letter-spacing: 0.18em; }
+    .core        { fill: #ffffff; stroke: #7c1ade; stroke-width: 1.5; transform-origin: 0 0; }
+    .core-label  { fill: #0a0a14; font-size: 11.5px; font-weight: 700; letter-spacing: 0.16em; }
+    .core-sub    { fill: #7c1ade; font-size: 9px; letter-spacing: 0.32em; }
+    .core-logo-shell { fill: #7c1ade; fill-opacity: 0.22; stroke: #7c1ade; stroke-width: 1.3; stroke-linejoin: round; }
+    .core-logo-cut   { fill: none; stroke: #7c1ade; stroke-width: 0.9; stroke-opacity: 0.85; stroke-linecap: round; }
+
+    @keyframes ring-spin { to { transform: rotate(360deg); } }
+    @keyframes core-breathe {
+      0%, 100% { stroke-width: 1.5; stroke-opacity: 0.65; }
+      50%      { stroke-width: 2.5; stroke-opacity: 1.00; }
+    }
+    .ring { animation: ring-spin 120s linear infinite; }
+    .core { animation: core-breathe 9s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ring, .core { animation: none; }
+    }
+  </style>
+
+  <!-- Outer guide ring (slowly rotating) -->
+  <circle class="ring" cx="0" cy="0" r="150"/>
+
+  <!-- N — CLI / REPO -->
+  <line class="spoke" x1="0" y1="0" x2="0" y2="-150"/>
+  <circle class="node" cx="0" cy="-150" r="5"/>
+  <text class="node-label" x="0" y="-183" text-anchor="middle">CLI / REPO</text>
+
+  <!-- NE — WEBSITE -->
+  <line class="spoke" x1="0" y1="0" x2="106.07" y2="-106.07"/>
+  <circle class="node" cx="106.07" cy="-106.07" r="5"/>
+  <text class="node-label" x="123.74" y="-119.74" text-anchor="start">WEBSITE</text>
+
+  <!-- E — CLOUD INFRA -->
+  <line class="spoke" x1="0" y1="0" x2="150" y2="0"/>
+  <circle class="node" cx="150" cy="0" r="5"/>
+  <text class="node-label" x="175" y="4" text-anchor="start">CLOUD INFRA</text>
+
+  <!-- SE — SOCIAL MEDIA -->
+  <line class="spoke" x1="0" y1="0" x2="106.07" y2="106.07"/>
+  <circle class="node" cx="106.07" cy="106.07" r="5"/>
+  <text class="node-label" x="123.74" y="127.74" text-anchor="start">SOCIAL MEDIA</text>
+
+  <!-- S — OFFICE DOCS -->
+  <line class="spoke" x1="0" y1="0" x2="0" y2="150"/>
+  <circle class="node" cx="0" cy="150" r="5"/>
+  <text class="node-label" x="0" y="189" text-anchor="middle">OFFICE DOCS</text>
+
+  <!-- SW — PROJECT NOTES -->
+  <line class="spoke" x1="0" y1="0" x2="-106.07" y2="106.07"/>
+  <circle class="node" cx="-106.07" cy="106.07" r="5"/>
+  <text class="node-label" x="-123.74" y="127.74" text-anchor="end">PROJECT NOTES</text>
+
+  <!-- W — RESEARCH -->
+  <line class="spoke" x1="0" y1="0" x2="-150" y2="0"/>
+  <circle class="node" cx="-150" cy="0" r="5"/>
+  <text class="node-label" x="-175" y="4" text-anchor="end">RESEARCH</text>
+
+  <!-- NW — MCP SERVER -->
+  <line class="spoke" x1="0" y1="0" x2="-106.07" y2="-106.07"/>
+  <circle class="node" cx="-106.07" cy="-106.07" r="5"/>
+  <text class="node-label" x="-123.74" y="-119.74" text-anchor="end">MCP SERVER</text>
+
+  <!-- Center: Obsidian vault as command center -->
+  <circle class="core" cx="0" cy="0" r="52"/>
+  <g transform="translate(0,-23)">
+    <path class="core-logo-shell" d="M 0 -9 L 7.79 -4.5 L 7.79 4.5 L 0 9 L -7.79 4.5 L -7.79 -4.5 Z"/>
+    <path class="core-logo-cut"   d="M 0 -9 L 0 0 M 0 0 L 7.79 4.5 M 0 0 L -7.79 4.5"/>
+  </g>
+  <text class="core-label" x="0" y="3"  text-anchor="middle">OBSIDIAN</text>
+  <text class="core-sub"   x="0" y="19" text-anchor="middle">vault</text>
+</svg>

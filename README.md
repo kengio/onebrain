@@ -8,9 +8,11 @@
 <p align="center">
   <a href="https://onebrain.run"><img alt="Website" src="https://img.shields.io/badge/onebrain.run-0a0a14?style=for-the-badge&labelColor=ff2d92"></a>
   <a href="https://x.com/onebrain_run"><img alt="@onebrain_run on X" src="https://img.shields.io/badge/follow-@onebrain__run-000000?style=for-the-badge&logo=x&logoColor=white"></a>
+  <a href="https://github.com/onebrain-ai/onebrain/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/onebrain-ai/onebrain?style=for-the-badge&color=00f3ff&logo=github"></a>
+</p>
+<p align="center">
   <a href="https://www.npmjs.com/package/@onebrain-ai/cli"><img alt="npm" src="https://img.shields.io/npm/v/@onebrain-ai/cli?style=for-the-badge&logo=npm&color=cb3837&label=%40onebrain-ai%2Fcli"></a>
   <a href="PLUGIN-CHANGELOG.md"><img alt="Plugin version" src="https://img.shields.io/github/package-json/v/onebrain-ai/onebrain?filename=.claude%2Fplugins%2Fonebrain%2F.claude-plugin%2Fplugin.json&style=for-the-badge&label=plugin&color=ff2d92"></a>
-  <a href="https://github.com/onebrain-ai/onebrain/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/onebrain-ai/onebrain?style=for-the-badge&color=00f3ff&logo=github"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-7c3aed?style=for-the-badge"></a>
 </p>
 
@@ -180,9 +182,14 @@ Obsidian becomes your dispatch hub for everything you do:
 - **Code in repos, orchestration in vault** — agent dispatches from here to wherever the work actually lives.
 - **Markdown replaces Slack / Linear / Notion** — version-controlled, AI-readable, yours forever.
 
-The agent reaches outward FROM the vault to: **CLI / repo · website · cloud infra · social media · office docs · project notes · research · MCP servers**.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/vault-hub-dark.svg">
+    <img alt="Obsidian as command center — eight spokes radiate from the vault to CLI/repo, website, cloud infra, social media, office docs, project notes, research, and MCP server" src="assets/diagrams/vault-hub-light.svg" width="640">
+  </picture>
+</p>
 
-No tab juggling. No tool sprawl.
+The agent reaches outward FROM the vault to every surface where the work actually lives. No tab juggling. No tool sprawl.
 
 ---
 

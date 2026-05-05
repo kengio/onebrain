@@ -81,15 +81,17 @@
   <!-- Vertical accent spine running through all layers -->
   <line x1="48" y1="110" x2="48" y2="558" stroke="url(#spine-grad)" stroke-width="2" stroke-dasharray="2 4" opacity="0.55"/>
 
+
   <!-- ════════ LAYER 01 — ONEBRAIN ════════ -->
   <g transform="translate(60, 110)">
     <rect width="780" height="100" fill="none" stroke="#ff2d92" stroke-opacity="0.45" stroke-width="1"/>
     <rect width="780" height="3" fill="url(#g-onebrain)" filter="url(#soft-glow)"/>
     <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#ff2d92" stroke-width="1.5" fill="none"/>
     <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#ff2d92" stroke-width="1.5" fill="none"/>
-    <text x="22" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#ff2d92" letter-spacing="0.08em">LAYER_01</text>
-    <text x="22" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">ONEBRAIN</text>
-    <text x="22" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#ff2d92" letter-spacing="0.3em">PLUGIN · CLI · ORCHESTRATOR</text>
+    <text x="22" y="66" font-size="26" aria-hidden="true">🧠</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#ff2d92" letter-spacing="0.08em">LAYER_01</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">ONEBRAIN</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#ff2d92" letter-spacing="0.3em">PLUGIN · CLI · ORCHESTRATOR</text>
     <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">The OS layer driving every harness consistently.</text>
     <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">skills · hooks · sync · indexing · checkpoints</text>
     <g transform="translate(640, 38)">
@@ -100,6 +102,7 @@
 
   <!-- arrow 01 → 02 -->
   <g transform="translate(440, 213)" opacity="0.55">
+    <animate attributeName="opacity" values="0.55;1;0.55;0.55" keyTimes="0;0.06;0.22;1" dur="4.5s" repeatCount="indefinite"/>
     <line x1="0" y1="0" x2="0" y2="8" class="arrow-line" stroke-width="1"/>
     <path d="M -3 6 L 0 10 L 3 6" fill="none" class="arrow-head" stroke-width="1"/>
   </g>
@@ -110,9 +113,10 @@
     <rect width="780" height="3" fill="url(#g-harness)" filter="url(#soft-glow)"/>
     <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#bc13fe" stroke-width="1.5" fill="none"/>
     <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#bc13fe" stroke-width="1.5" fill="none"/>
-    <text x="22" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#bc13fe" letter-spacing="0.08em">LAYER_02</text>
-    <text x="22" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">HARNESS</text>
-    <text x="22" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#bc13fe" letter-spacing="0.3em">AGENTIC_RUNTIME</text>
+    <text x="22" y="66" font-size="26" aria-hidden="true">🤖</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#bc13fe" letter-spacing="0.08em">LAYER_02</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">HARNESS</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#bc13fe" letter-spacing="0.3em">AGENTIC_RUNTIME</text>
     <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Bring your own. Switch any time.</text>
     <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">claude code · gemini cli · codex · qwen · cursor</text>
     <g transform="translate(640, 38)">
@@ -123,6 +127,7 @@
 
   <!-- arrow 02 → 03 -->
   <g transform="translate(440, 329)" opacity="0.55">
+    <animate attributeName="opacity" values="0.55;1;0.55;0.55" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
     <line x1="0" y1="0" x2="0" y2="8" class="arrow-line" stroke-width="1"/>
     <path d="M -3 6 L 0 10 L 3 6" fill="none" class="arrow-head" stroke-width="1"/>
   </g>
@@ -133,9 +138,10 @@
     <rect width="780" height="3" fill="url(#g-llm)" filter="url(#soft-glow)"/>
     <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#c8ff00" stroke-width="1.5" fill="none"/>
     <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#c8ff00" stroke-width="1.5" fill="none"/>
-    <text x="22" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#c8ff00" letter-spacing="0.08em">LAYER_03</text>
-    <text x="22" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">LLM</text>
-    <text x="22" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c8ff00" letter-spacing="0.3em">INTELLIGENCE_SOURCE</text>
+    <text x="22" y="66" font-size="26" aria-hidden="true">✨</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#c8ff00" letter-spacing="0.08em">LAYER_03</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">LLM</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c8ff00" letter-spacing="0.3em">INTELLIGENCE_SOURCE</text>
     <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Powered by anything. OneBrain stays the same.</text>
     <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">local: mlx, ollama · cloud: claude, gemini, gpt</text>
     <g transform="translate(640, 38)">
@@ -146,6 +152,7 @@
 
   <!-- arrow 03 → 04 -->
   <g transform="translate(440, 445)" opacity="0.55">
+    <animate attributeName="opacity" values="0.55;1;0.55;0.55" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
     <line x1="0" y1="0" x2="0" y2="8" class="arrow-line" stroke-width="1"/>
     <path d="M -3 6 L 0 10 L 3 6" fill="none" class="arrow-head" stroke-width="1"/>
   </g>
@@ -156,9 +163,10 @@
     <rect width="780" height="3" fill="url(#g-vault)" filter="url(#soft-glow)"/>
     <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#00f3ff" stroke-width="1.5" fill="none"/>
     <path d="M 766 100 L 780 100 M 780 86 L 780 100" stroke="#00f3ff" stroke-width="1.5" fill="none"/>
-    <text x="22" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#00f3ff" letter-spacing="0.08em">LAYER_04</text>
-    <text x="22" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">OBSIDIAN VAULT</text>
-    <text x="22" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#00f3ff" letter-spacing="0.3em">SOURCE_OF_TRUTH</text>
+    <text x="22" y="66" font-size="26" aria-hidden="true">💎</text>
+    <text x="70" y="34" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#00f3ff" letter-spacing="0.08em">LAYER_04</text>
+    <text x="70" y="64" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="22" class="text-strong" letter-spacing="0.04em">OBSIDIAN VAULT</text>
+    <text x="70" y="80" font-family="'JetBrains Mono', monospace" font-size="9" fill="#00f3ff" letter-spacing="0.3em">SOURCE_OF_TRUTH</text>
     <text x="320" y="50" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Plain Markdown · durable state for every layer.</text>
     <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">notes · memory · decisions · knowledge graph</text>
     <g transform="translate(640, 38)">
