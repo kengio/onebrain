@@ -43,7 +43,66 @@ Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forev
 - **Human → Agent** — Every preference, decision, and correction becomes persistent memory. The agent calibrates to you with every interaction.
 - **Agent → Human** — Captures, classifies, links, and synthesizes the noise of your day — so your attention stays on what only you can do.
 
-**Works with:** Claude Code · Gemini CLI · any agent that reads Markdown
+**Harness-agnostic** — Claude Code · Gemini CLI · OpenAI Codex · Qwen · or BYO LLM via API key. [See the architecture ↓](#the-harness-os-architecture)
+
+---
+
+## The Harness OS Architecture
+
+OneBrain doesn't compete with Claude Code, Gemini CLI, or any other AI harness. It sits **underneath them** — the OS layer that keeps your context, memory, and skills consistent no matter which harness you're driving.
+
+<p align="center">
+  <img alt="OneBrain Harness OS — 5-layer architecture: Obsidian Vault, OneBrain Plugin, OneBrain CLI, Harness, LLM" src="assets/diagrams/harness-os-stack.svg" width="780">
+</p>
+
+| # | Layer | Role | What lives here |
+|---|---|---|---|
+| 01 | **Obsidian Vault** | Cognitive interface | Plain Markdown — notes, memory, decisions, knowledge graph |
+| 02 | **OneBrain Plugin** | Skills + hooks | 24+ skills + lifecycle hooks, loaded into any harness |
+| 03 | **OneBrain CLI** | Harness orchestrator | Indexing, checkpoints, vault sync, harness routing |
+| 04 | **Harness** | Agentic runtime | Bring your own — Claude Code · Gemini CLI · Codex · Qwen · ... |
+| 05 | **LLM** | Intelligence source | Local (mlx, ollama) · cloud (claude, gemini, gpt) · raw API |
+
+The **Harness** layer is where most AI tools pick a fight with each other. We don't — pick whichever harness you love. By familiarity, by task, or by cost. Your vault stays the same.
+
+### Pick Your Harness
+
+Each harness reads OneBrain's instruction file automatically. Install it, run it inside your vault, and the plugin loads on first prompt.
+
+| Harness | Install | Run | Reads |
+|---|---|---|---|
+| **Claude Code** *(recommended)* | `npm install -g @anthropic-ai/claude-code` | `claude` | `CLAUDE.md` |
+| **Gemini CLI** | `npm install -g @google/gemini-cli` | `gemini` | `GEMINI.md` |
+| **OpenAI Codex** | `npm install -g @openai/codex` | `codex` | `AGENTS.md` |
+| **Qwen Code** | `npm install -g @qwen-code/qwen-code` | `qwen` | `AGENTS.md` |
+
+> Auto-checkpoint and the Stop hook are wired up for Claude Code today. The other harnesses get the rest of the skill surface (24+ commands) immediately, and gain hook coverage as upstream support lands.
+
+### Bring Your Own LLM (via Claude Code)
+
+Already love Claude Code? Use it as a universal frontend. Point `ANTHROPIC_BASE_URL` at any OpenAI-compatible endpoint — Claude Code stays the harness, the LLM behind it changes per task.
+
+```bash
+# Recommended: claude-code-router handles Anthropic ↔ provider translation
+npx @musistudio/claude-code-router          # interactive provider config
+
+# Direct: point ANTHROPIC_BASE_URL at any Anthropic-protocol endpoint
+export ANTHROPIC_BASE_URL=https://your-router-or-anthropic-compatible-host
+export ANTHROPIC_API_KEY=sk-byok-key
+cd vault && claude
+
+# Switch back to native Claude any time
+unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY
+claude
+```
+
+| Route | What it gets you |
+|---|---|
+| **Local** (mlx, ollama, llama.cpp) | Cost-free routine work, full privacy. Pair with [`litellm`](https://github.com/BerriAI/litellm) or [`claude-code-router`](https://github.com/musistudio/claude-code-router). |
+| **Cloud BYOK** (Claude, Gemini, GPT, Groq, OpenRouter) | Pay-as-you-go premium reasoning. One env-var swap, no code changes. |
+| **Hybrid** (route by task or by cost) | Cheap models for routine, premium when it counts. |
+
+Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
 
 ---
 
@@ -57,7 +116,7 @@ OneBrain doesn't just store markdown. Every feature exists to make you and the a
 | 🖥️ | **Personal AI OS** | Full local stack: Claude Code + Obsidian + tmux + Telegram — no cloud infra needed |
 | ⚡ | **24+ Skills** | Braindump, research, consolidate, bookmark, import files, daily briefing, and more |
 | 📂 | **Vault-native Markdown** | Plain Markdown, no lock-in. Your data stays yours forever |
-| 🤖 | **Multi-agent** | Works with Claude Code, Gemini CLI, or any agent that reads Markdown |
+| 🔀 | **Multi-Harness OS** | Switch between Claude Code, Gemini CLI, Codex, Qwen, or BYO LLM — context never breaks. [See architecture ↑](#the-harness-os-architecture) |
 | 🔌 | **Zero Config** | Clone, open in Obsidian, run `/onboarding`. Ready in under 2 minutes |
 | 📓 | **Session Logs & Checkpoints** | Every conversation saved with summaries and action items. Auto-checkpoints fire every 15 messages or 30 min so nothing is lost mid-session *(auto-checkpoint requires Claude Code)* |
 | 💾 | **Auto Session Summary** | When you say "bye", the agent silently saves a complete session log — no `/wrapup` needed |
@@ -235,13 +294,7 @@ In Claude Code: `/onboarding`
 
 ---
 
-## Supported Agents
-
-| Agent | Instruction file | Setup |
-|-------|-----------------|-------|
-| Claude Code | `CLAUDE.md` | Loaded automatically |
-| Gemini CLI | `GEMINI.md` | Loaded automatically |
-| Any agent | `AGENTS.md` | Read manually or via system prompt |
+> **Choosing a harness?** See [The Harness OS Architecture ↑](#the-harness-os-architecture) for install commands per harness, BYO-LLM via Claude Code, and the full 5-layer stack.
 
 ---
 
