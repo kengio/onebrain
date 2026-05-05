@@ -273,7 +273,7 @@ When the user asks you to recall something (a decision, preference, fact, or pas
 
 1. **`[agent_folder]/MEMORY.md`** : already in context; check here first
 2. **`[agent_folder]/memory/`** : MEMORY-INDEX.md is already in context — match query keywords against its Topics column to identify relevant files, then read those files. If no topic match, grep memory/ directly. Use qmd if available for broader semantic search.
-3. **`[logs_folder]/`** : grep session logs for past decisions and discussions
+3. **`[logs_folder]/`** : grep session logs (`**/*-session-*.md` only — exclude `*-checkpoint-*.md` and `*-update-*.md` which carry no decisions) for past decisions and discussions
 
 Stop as soon as you find a confident answer. If the answer spans multiple layers, synthesize across them.
 
