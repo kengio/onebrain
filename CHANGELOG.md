@@ -15,9 +15,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.1.9 — feat: brand-aligned CLI banner (neural-mesh brain + slant wordmark + brand gradient)
 
-- feat(cli-banner): redesign banner — figlet "big" font camelcase "OneBrain" wordmark, alone (no borders, no brain icon); the wordmark itself becomes the brand mark and the animation canvas
-- feat(cli-banner): canonical uppercase tagline "YOUR AI THINKING PARTNER" + secondary subtitle "A unified intelligence in your Obsidian vault" rendered as a faint cyan layered tagline below the primary line
-- feat(cli-banner): replace full-hue rainbow with a 3-stop magenta → mid-pink → cyan brand gradient (matches the SVG brain logo's stops); animation now paints directly on the wordmark — every glyph cell takes its own gradient color along the diagonal sweep, with the white shimmer settling each cell back to its gradient color
+- feat(cli-banner): redesign banner — pixel-art logo (16×30 dot/character art) on the left + figlet "big" font camelcase "OneBrain" wordmark (6×43, vertically centered next to logo); no borders
+- feat(cli-banner): canonical uppercase tagline "YOUR AI THINKING PARTNER" + secondary subtitle "A unified intelligence in your Obsidian vault" rendered as a faint cyan layered tagline below the primary line, anchored under the wordmark column
+- feat(cli-banner): replace full-hue rainbow with a 3-stop magenta → mid-pink → cyan brand gradient (matches the SVG brain logo's stops); animation paints on the logo cells with local gradient remap (full magenta→cyan range across the logo bounding box) plus a "neural firing" white pulse — wordmark renders solid white throughout, never animated
 - feat(cli-banner): non-interactive output (piped, redirected, CI logs) now prints a static brand-colored banner instead of nothing — truecolor host paints brand RGB, 16-color falls back to `pc.cyan`; animation only runs when stdout is an interactive TTY with truecolor
 - fix(cli-banner): brand colors now align with website CI — `PREFIX_COLOR` `[0,243,255]` (#00f3ff), `TRAILING_COLOR` `[255,45,146]` (#ff2d92); shimmer trail settles on brand cyan, subtitle uses brand cyan dimmed along its own hue axis, dim-state stays inside the cyan family
 - fix(cli-banner): honor `FORCE_COLOR=3` / `ONEBRAIN_FORCE_TTY=1` overrides for stdout-isTTY detection — partial fix for #131 (Git Bash MinTTY on Windows); animation now reachable for users whose terminals under-report TTY-ness
