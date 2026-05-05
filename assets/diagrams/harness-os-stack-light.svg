@@ -12,6 +12,24 @@
     .divider      { stroke: rgba(10,10,20,0.18); }
     .arrow-line   { stroke: rgba(10,10,20,0.65); }
     .arrow-head   { stroke: rgba(10,10,20,0.75); }
+
+    .arrow-pulse-down { animation: arrow-down-pulse 4.5s linear infinite; }
+    .arrow-pulse-up   { animation: arrow-up-pulse   4.5s linear infinite; }
+    .delay-1 { animation-delay: 1.5s; }
+    .delay-2 { animation-delay: 3s; }
+
+    @keyframes arrow-down-pulse {
+      0%, 22%, 100% { opacity: 0.6; }
+      6%            { opacity: 1; }
+    }
+    @keyframes arrow-up-pulse {
+      0%, 50%, 72%, 100% { opacity: 0.6; }
+      56%                { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .arrow-pulse-down, .arrow-pulse-up { animation: none; opacity: 0.6; }
+    }
   </style>
 
   <defs>
@@ -102,13 +120,11 @@
 
   <!-- arrow 01 → 02 -->
   <g transform="translate(440, 214)">
-    <g opacity="0.6">
-      <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" repeatCount="indefinite"/>
+    <g class="arrow-pulse-down">
       <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
       <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
-    <g opacity="0.6">
-      <animate attributeName="opacity" values="0.6;0.6;1;0.6;0.6" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" repeatCount="indefinite"/>
+    <g class="arrow-pulse-up">
       <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
       <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
@@ -134,13 +150,11 @@
 
   <!-- arrow 02 → 03 -->
   <g transform="translate(440, 338)">
-    <g opacity="0.6">
-      <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
+    <g class="arrow-pulse-down delay-1">
       <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
       <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
-    <g opacity="0.6">
-      <animate attributeName="opacity" values="0.6;0.6;1;0.6;0.6" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
+    <g class="arrow-pulse-up delay-1">
       <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
       <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
@@ -166,13 +180,11 @@
 
   <!-- arrow 03 → 04 -->
   <g transform="translate(440, 462)">
-    <g opacity="0.6">
-      <animate attributeName="opacity" values="0.6;1;0.6;0.6" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
+    <g class="arrow-pulse-down delay-2">
       <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
       <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
-    <g opacity="0.6">
-      <animate attributeName="opacity" values="0.6;0.6;1;0.6;0.6" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
+    <g class="arrow-pulse-up delay-2">
       <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
       <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
