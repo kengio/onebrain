@@ -120,8 +120,13 @@ export async function runBackfillRecapped(
       for (const fname of files) {
         const fpath = join(monthPath, fname);
 
-        // Skip checkpoint files
-        if (fname.includes('-checkpoint-')) {
+        // Whitelist: only session logs get the `recapped:` frontmatter
+        // backfill. The logs folder also contains `*-checkpoint-*.md`,
+        // `*-update-vX.Y.Z.md`, and `*-weekly.md` — none of which carry
+        // a `recapped:` field by convention. The previous blacklist
+        // (`-checkpoint-` only) silently mutated update + weekly log
+        // frontmatter with a meaningless `recapped:` value.
+        if (!fname.includes('-session-')) {
           continue;
         }
 

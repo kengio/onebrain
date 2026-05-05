@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.9
+latest_version: 2.1.10
 released: 2026-05-05
 ---
 
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.10 — fix: whitelist `-session-` infix in orphan-scan + migrate filters
+
+Companion to plugin v2.2.3. Two CLI sites had the same bug class — blacklisting `-checkpoint-` and accepting any other date-prefixed `.md` file in the logs folder, which let `/update` migration logs (`YYYY-MM-DD-update-vX.Y.Z.md`) and `/weekly` review files (`YYYY-MM-DD-weekly.md`) fall through.
+
+- fix(orphan-scan): `hasManualSessionLog` filter switched to whitelist (`includes('-session-')`). Previously an update or weekly file sharing a date with an orphan checkpoint silently suppressed the orphan count — `runOrphanScan` would report `orphan_count: 0` even though the orphan was real.
+- fix(migrate.runBackfillRecapped): same whitelist switch. The blacklist version was rewriting frontmatter on every non-checkpoint `.md` file in the logs folder, silently injecting a meaningless `recapped: <today>` field into update logs and weekly reviews.
+- test(orphan-scan): three regression cases — orphan still counts when only an update-log or weekly file exists for the date; orphan still skipped when both a non-session log AND a real session log exist on the same date.
+- test(migrate): two regression cases — update-log frontmatter and weekly-review frontmatter are left untouched (idempotent reads, byte-equal contents, no `recapped:` field injected).
 
 ## v2.1.9 — feat: brand-aligned CLI banner (neural-mesh brain + slant wordmark + brand gradient)
 
