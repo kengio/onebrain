@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 620" width="880" height="620" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 644" width="880" height="644" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
   <title id="title">OneBrain Harness OS — 4-Layer Architecture (dark)</title>
   <desc id="desc">Four stacked layers from top to bottom: OneBrain (plugin and CLI — skills, hooks, vault sync, indexing, checkpoints), Harness (Claude Code, Gemini CLI, Codex, Qwen), LLM (local, cloud, or API), and Obsidian Vault as the source of truth (plain Markdown notes, memory, decisions, knowledge graph).</desc>
 
@@ -53,14 +53,14 @@
   </defs>
 
   <!-- Subtle grid only — background is transparent -->
-  <rect width="880" height="620" fill="url(#grid-pattern)"/>
+  <rect width="880" height="644" fill="url(#grid-pattern)"/>
 
   <!-- HUD frame corners -->
   <g class="frame-corner" stroke-width="1" fill="none">
     <path d="M 24 40 L 24 24 L 40 24"/>
     <path d="M 840 24 L 856 24 L 856 40"/>
-    <path d="M 856 580 L 856 596 L 840 596"/>
-    <path d="M 40 596 L 24 596 L 24 580"/>
+    <path d="M 856 604 L 856 620 L 840 620"/>
+    <path d="M 40 620 L 24 620 L 24 604"/>
   </g>
 
   <!-- Top eyebrow row -->
@@ -79,7 +79,7 @@
   </g>
 
   <!-- Vertical accent spine running through all layers -->
-  <line x1="48" y1="110" x2="48" y2="558" stroke="url(#spine-grad)" stroke-width="2" stroke-dasharray="2 4" opacity="0.55"/>
+  <line x1="48" y1="110" x2="48" y2="582" stroke="url(#spine-grad)" stroke-width="2" stroke-dasharray="2 4" opacity="0.55"/>
 
 
   <!-- ════════ LAYER 01 — ONEBRAIN ════════ -->
@@ -101,21 +101,21 @@
   </g>
 
   <!-- arrow 01 → 02 -->
-  <g transform="translate(440, 213)">
+  <g transform="translate(440, 214)">
     <g opacity="0.55">
       <animate attributeName="opacity" values="0.55;1;0.55;0.55" keyTimes="0;0.06;0.22;1" dur="4.5s" repeatCount="indefinite"/>
-      <line x1="-7" y1="0" x2="-7" y2="8" class="arrow-line" stroke-width="1"/>
-      <path d="M -10 6 L -7 10 L -4 6" fill="none" class="arrow-head" stroke-width="1"/>
+      <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
+      <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
     <g opacity="0.55">
       <animate attributeName="opacity" values="0.55;0.55;1;0.55;0.55" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" repeatCount="indefinite"/>
-      <line x1="7" y1="2" x2="7" y2="10" class="arrow-line" stroke-width="1"/>
-      <path d="M 4 4 L 7 0 L 10 4" fill="none" class="arrow-head" stroke-width="1"/>
+      <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
+      <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
   </g>
 
   <!-- ════════ LAYER 02 — HARNESS ════════ -->
-  <g transform="translate(60, 226)">
+  <g transform="translate(60, 234)">
     <rect width="780" height="100" fill="none" stroke="#bc13fe" stroke-opacity="0.45" stroke-width="1"/>
     <rect width="780" height="3" fill="url(#g-harness)" filter="url(#soft-glow)"/>
     <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#bc13fe" stroke-width="1.5" fill="none"/>
@@ -133,21 +133,21 @@
   </g>
 
   <!-- arrow 02 → 03 -->
-  <g transform="translate(440, 329)">
+  <g transform="translate(440, 338)">
     <g opacity="0.55">
       <animate attributeName="opacity" values="0.55;1;0.55;0.55" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
-      <line x1="-7" y1="0" x2="-7" y2="8" class="arrow-line" stroke-width="1"/>
-      <path d="M -10 6 L -7 10 L -4 6" fill="none" class="arrow-head" stroke-width="1"/>
+      <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
+      <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
     <g opacity="0.55">
       <animate attributeName="opacity" values="0.55;0.55;1;0.55;0.55" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" begin="1.5s" repeatCount="indefinite"/>
-      <line x1="7" y1="2" x2="7" y2="10" class="arrow-line" stroke-width="1"/>
-      <path d="M 4 4 L 7 0 L 10 4" fill="none" class="arrow-head" stroke-width="1"/>
+      <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
+      <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
   </g>
 
   <!-- ════════ LAYER 03 — LLM ════════ -->
-  <g transform="translate(60, 342)">
+  <g transform="translate(60, 358)">
     <rect width="780" height="100" fill="none" stroke="#c8ff00" stroke-opacity="0.45" stroke-width="1"/>
     <rect width="780" height="3" fill="url(#g-llm)" filter="url(#soft-glow)"/>
     <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#c8ff00" stroke-width="1.5" fill="none"/>
@@ -165,21 +165,21 @@
   </g>
 
   <!-- arrow 03 → 04 -->
-  <g transform="translate(440, 445)">
+  <g transform="translate(440, 462)">
     <g opacity="0.55">
       <animate attributeName="opacity" values="0.55;1;0.55;0.55" keyTimes="0;0.06;0.22;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
-      <line x1="-7" y1="0" x2="-7" y2="8" class="arrow-line" stroke-width="1"/>
-      <path d="M -10 6 L -7 10 L -4 6" fill="none" class="arrow-head" stroke-width="1"/>
+      <line x1="-9" y1="0" x2="-9" y2="12" class="arrow-line" stroke-width="1.4"/>
+      <path d="M -14 9 L -9 16 L -4 9" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
     <g opacity="0.55">
       <animate attributeName="opacity" values="0.55;0.55;1;0.55;0.55" keyTimes="0;0.50;0.56;0.72;1" dur="4.5s" begin="3s" repeatCount="indefinite"/>
-      <line x1="7" y1="2" x2="7" y2="10" class="arrow-line" stroke-width="1"/>
-      <path d="M 4 4 L 7 0 L 10 4" fill="none" class="arrow-head" stroke-width="1"/>
+      <line x1="9" y1="4" x2="9" y2="16" class="arrow-line" stroke-width="1.4"/>
+      <path d="M 4 7 L 9 0 L 14 7" fill="none" class="arrow-head" stroke-width="1.4"/>
     </g>
   </g>
 
   <!-- ════════ LAYER 04 — OBSIDIAN VAULT (base · source of truth) ════════ -->
-  <g transform="translate(60, 458)">
+  <g transform="translate(60, 482)">
     <rect width="780" height="100" fill="none" stroke="#00f3ff" stroke-opacity="0.45" stroke-width="1"/>
     <rect width="780" height="3" fill="url(#g-vault)" filter="url(#soft-glow)"/>
     <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#00f3ff" stroke-width="1.5" fill="none"/>
@@ -198,13 +198,13 @@
 
   <!-- Bottom side label: FOUNDATION -->
   <g font-family="'Chakra Petch', sans-serif" font-weight="700" font-size="11" letter-spacing="0.25em">
-    <text x="56" y="578" class="text-soft">↓ FOUNDATION · WHERE TRUTH LIVES</text>
+    <text x="56" y="602" class="text-soft">↓ FOUNDATION · WHERE TRUTH LIVES</text>
   </g>
 
   <!-- Bottom divider + footer -->
-  <line x1="24" y1="588" x2="856" y2="588" class="divider" stroke-width="1"/>
+  <line x1="24" y1="612" x2="856" y2="612" class="divider" stroke-width="1"/>
   <g font-family="'JetBrains Mono', ui-monospace, monospace" font-size="9" letter-spacing="0.25em">
-    <text x="56" y="608" class="text-mute">CONTEXT_FLOWS_BOTH_WAYS · VAULT_REMAINS_HARNESS_AGNOSTIC</text>
-    <text x="836" y="608" text-anchor="end" class="text-mute">ONEBRAIN.RUN</text>
+    <text x="56" y="632" class="text-mute">CONTEXT_FLOWS_BOTH_WAYS · VAULT_REMAINS_HARNESS_AGNOSTIC</text>
+    <text x="836" y="632" text-anchor="end" class="text-mute">ONEBRAIN.RUN</text>
   </g>
 </svg>
