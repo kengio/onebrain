@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.9
+latest_version: 2.1.10
 released: 2026-05-05
 ---
 
@@ -12,6 +12,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.10 — fix: orphan-scan filter whitelists `-session-` infix
+
+- fix(orphan-scan): `hasManualSessionLog` filter switched from blacklist (`!includes('-checkpoint-')`) to whitelist (`includes('-session-')`). Companion to plugin v2.2.3. Previously, a `/update` migration log (`YYYY-MM-DD-update-vX.Y.Z.md`) sharing a date with an orphan checkpoint would fall through the filter and silently suppress the orphan count — `runOrphanScan` would report `orphan_count: 0` even though the orphan checkpoint was real. The whitelist guarantees we only consider files whose name actually matches the session-log convention.
+- test(orphan-scan): two regression cases — orphan still counts when only an update-log exists for that date; orphan still skipped when both an update-log AND a real session log exist for the same date.
 
 ## v2.1.9 — feat: brand-aligned CLI banner (neural-mesh brain + slant wordmark + brand gradient)
 

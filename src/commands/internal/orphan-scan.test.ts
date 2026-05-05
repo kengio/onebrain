@@ -158,6 +158,44 @@ describe('runOrphanScan', () => {
     expect(result).toEqual({ orphan_count: 1 });
   });
 
+  // Regression: previously the `hasManualSessionLog` filter excluded
+  // `-checkpoint-` files but accepted any other date-prefixed `.md`. A
+  // `/update` migration log written on the same date as an orphan
+  // checkpoint would fall through and silently suppress the orphan
+  // count. Filter now whitelists `-session-` so the orphan still counts.
+  it('does NOT skip when only an update-log exists for that date (no real session log)', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const cpName = checkpointName(PAST_DATE, 'tokenUL', 1);
+    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
+    // /update writes YYYY-MM-DD-update-vX.Y.Z.md (no `-session-` infix)
+    const updateName = `${PAST_DATE}-update-v2.1.10.md`;
+    await writeFile(
+      join(monthDir, updateName),
+      `---\ntags: [update-log]\ndate: ${PAST_DATE}\nfrom_version: 2.1.9\nto_version: 2.1.10\n---\n\n# Update Log\n\n- [x] Step 1\n`,
+      'utf8',
+    );
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 1 });
+  });
+
+  // Companion case: both an update log AND a manual session log exist
+  // for the same date — the manual session log still wins, orphan
+  // suppressed. Verifies the whitelist didn't regress the skip behavior.
+  it('still skips when both an update-log and a manual session log exist for that date', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const cpName = checkpointName(PAST_DATE, 'tokenULSL', 1);
+    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
+    await writeFile(
+      join(monthDir, `${PAST_DATE}-update-v2.1.10.md`),
+      `---\ntags: [update-log]\ndate: ${PAST_DATE}\n---\n\nUpdate.`,
+      'utf8',
+    );
+    const logName = sessionLogName(PAST_DATE, 1);
+    await writeFile(join(monthDir, logName), sessionLogFrontmatter(false), 'utf8');
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
   it('counts unmerged orphan checkpoints from current month', async () => {
     const monthDir = await makeThisMonthDir(logsDir);
     for (const token of ['tokenCC', 'tokenDD']) {

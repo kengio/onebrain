@@ -89,8 +89,15 @@ async function listMdFiles(dir: string): Promise<string[]> {
  */
 async function hasManualSessionLog(monthDir: string, date: string): Promise<boolean> {
   const files = await listMdFiles(monthDir);
+  // Whitelist `-session-` infix (not blacklist `-checkpoint-`). The logs
+  // folder also contains `*-update-vX.Y.Z.md` migration logs from `/update`.
+  // With the previous blacklist filter, those would fall through and silently
+  // suppress the orphan count for any date that happens to have an update
+  // log alongside a real orphan checkpoint (false-positive "session already
+  // wrapped" → orphan_count under-reports). The whitelist guarantees we
+  // only consider files that actually look like session logs.
   const sessionLogs = files.filter(
-    (f) => f.startsWith(date) && !f.includes('-checkpoint-') && f.endsWith('.md'),
+    (f) => f.startsWith(date) && f.includes('-session-') && f.endsWith('.md'),
   );
 
   for (const logName of sessionLogs) {
