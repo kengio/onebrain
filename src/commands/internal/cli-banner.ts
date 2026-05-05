@@ -13,30 +13,49 @@ export function resolveBinaryVersion(): string {
 }
 
 // ---------------------------------------------------------------------------
-// Banner data — center axis at col 15.5
-//   border:  lead 2 + ◆ + 26 ─ + ◆        (visible col 2..29 → center 15.5)
-//   inner:   lead 5 + 22 chars             (visible col 5..26 → center 15.5)
-//   tagline: lead 4 + 24 chars             (visible col 4..27 → center 15.5)
+// Banner data — brain icon (left) + slant-italic "OneBrain" wordmark (right)
 //
-// Tagline lead is fixed at 4 spaces — anchors the prefix "Your AI" at col
-// 4..11 across all rotating sentences. Sentence 1 ("Remembers You", 21 chars
-// total) ends at col 24, while sentences 2 and 3 (24 chars) end at col 27.
+// Layout:
+//   border:    lead 2 + ◆ + 56 ─ + ◆       (visible col 2..59)
+//   inner:     lead 5 + brain(7) + gap(2) + wordmark(43) = 52 visible chars
+//                                          (visible col 5..56 → 2-col padding inside border)
+//   tagline:   lead 14 + 24 chars          (left-anchored to wordmark column)
+//   subtitle:  lead 14 + 45 chars          (visible col 14..58, just inside border)
+//
+// Brain icon (5 rows, 7 cols, all 1-col Unicode) — abstract neural-mesh form,
+// echoes the gradient brain in the website / GitHub brand mark. Sits to the
+// left of the wordmark to mirror the canonical horizontal brand arrangement.
+//
+// Wordmark — figlet "slant" font for "OneBrain", chosen for its italic slant
+// to evoke the Chakra-Petch-italic feel of the visual brand wordmark while
+// staying terminal-renderable.
+//
+// Tagline lead is fixed at 14 spaces — left-anchors the prefix "YOUR AI"
+// directly under the wordmark's first column across all rotating sentences.
 // The prefix stays stable; only the right edge varies, which keeps the
 // wipe-swap transitions feeling like the new sentence simply extends further
 // to the right rather than the whole tagline shifting horizontally.
+// Subtitle ("A unified intelligence in your Obsidian vault") is wider than
+// the tagline and reaches near the right border — intentional; reads as a
+// secondary descriptive layer below the canonical brand tagline.
 // ---------------------------------------------------------------------------
 
 const ART_LINES = [
-  `  ◆${'─'.repeat(26)}◆`,
-  '     ┌─┐┌┐╷┌─╴┌┐ ┌─┐┌─┐╷┌┐╷',
-  '     │ ││└┤├╴ ├┴┐├┬┘├─┤││└┤',
-  '     └─┘╵ ╵└─╴└─┘╵└╴╵ ╵╵╵ ╵',
-  `  ◆${'─'.repeat(26)}◆`,
+  `  ◆${'─'.repeat(56)}◆`,
+  '     ╭●━●━●╮     ____             ____             _     ',
+  '     ●╲│╱│╲●    / __ \\____  ___  / __ )_________ _(_)___ ',
+  // Slant font line 3 contains a literal `` ` ``; single-quoted string passes
+  // the backtick through unescaped while \\ still produces one backslash.
+  '     ●━●━●━●   / / / / __ \\/ _ \\/ __  / ___/ __ `/ / __ \\',
+  '     ●╱│╲│╱●  / /_/ / / / /  __/ /_/ / /  / /_/ / / / / /',
+  '     ╰●━●━●╯  \\____/_/ /_/\\___/_____/_/   \\__,_/_/_/ /_/ ',
+  `  ◆${'─'.repeat(56)}◆`,
 ];
 
-const PREFIX = 'Your AI ';
-const TAGLINE_LEAD = '    '; // 4 spaces — fits longest sentence at center
-const TAGLINE_FALLBACK = `${PREFIX}Thinking Partner`;
+const PREFIX = 'YOUR AI ';
+const TAGLINE_LEAD = '              '; // 14 spaces — anchors under wordmark column
+export const TAGLINE_FALLBACK = `${PREFIX}THINKING PARTNER`;
+export const SUBTITLE = 'A unified intelligence in your Obsidian vault';
 const BANNER_LINE_COUNT = 1 + ART_LINES.length + 3;
 
 type Rgb = [number, number, number];
@@ -48,19 +67,26 @@ interface Sentence {
   wordTicks: number[];
 }
 
-// Color scheme:
-//   "Your AI" prefix   → neon cyan throughout
-//   trailing 2 words   → neon magenta during all sentences
+// Color scheme — aligned with website CI brand palette:
+//   "YOUR AI" prefix   → brand cyan #00f3ff throughout
+//   trailing 2 words   → brand magenta #ff2d92 during all sentences
 //   final lock shimmer → sweeps full tagline; behind the head, every char
-//                        settles to neon cyan (magenta "burns out" to cyan)
-const PREFIX_COLOR: Rgb = [120, 230, 255];
-const TRAILING_COLOR: Rgb = [255, 80, 255];
-const FINAL_COLOR: Rgb = [120, 230, 255];
+//                        settles to brand cyan (magenta "burns out" to cyan)
+//   subtitle           → brand cyan dimmed along its own hue axis, reads as
+//                        a secondary descriptive layer while staying inside
+//                        the cyan family per the brand-CI memory.
+//
+// PREFIX/TRAILING/FINAL colors and TAGLINE_FALLBACK/SUBTITLE are exported
+// only for the colocated test suite — not part of the public CLI API.
+export const PREFIX_COLOR: Rgb = [0, 243, 255]; // #00f3ff brand cyan
+export const TRAILING_COLOR: Rgb = [255, 45, 146]; // #ff2d92 brand magenta
+export const FINAL_COLOR: Rgb = [0, 243, 255]; // #00f3ff brand cyan
+const SUBTITLE_COLOR: Rgb = [0, 170, 178]; // brand cyan ~70% — same hue, lower intensity
 
 const SENTENCES: Sentence[] = [
-  { trailing: 'Remembers You', trailingWords: ['Remembers', 'You'], wordTicks: [24, 32] },
-  { trailing: 'Catches Insights', trailingWords: ['Catches', 'Insights'], wordTicks: [27, 26] },
-  { trailing: 'Thinking Partner', trailingWords: ['Thinking', 'Partner'], wordTicks: [26, 31] },
+  { trailing: 'REMEMBERS YOU', trailingWords: ['REMEMBERS', 'YOU'], wordTicks: [24, 32] },
+  { trailing: 'CATCHES INSIGHTS', trailingWords: ['CATCHES', 'INSIGHTS'], wordTicks: [27, 26] },
+  { trailing: 'THINKING PARTNER', trailingWords: ['THINKING', 'PARTNER'], wordTicks: [26, 31] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -68,8 +94,23 @@ const SENTENCES: Sentence[] = [
 // ---------------------------------------------------------------------------
 
 function supportsRgb(): boolean {
+  // FORCE_COLOR=3 is the npm-CLI convention for "force 24-bit color" — honor
+  // it so users on environments that under-report truecolor (Git Bash MinTTY,
+  // some CI runners) can opt into the brand-gradient render.
+  if (process.env['FORCE_COLOR'] === '3') return true;
   const c = process.env['COLORTERM'] ?? '';
   return c === 'truecolor' || c === '24bit';
+}
+
+// Treat stdout as interactive when (a) it is a real TTY, or (b) the user has
+// explicitly opted in via env var. Issue #131: bun-compiled binaries on
+// Windows misdetect Git Bash MinTTY pipes as non-TTY; FORCE_COLOR=3 or
+// ONEBRAIN_FORCE_TTY=1 lets those users still get the animated banner.
+// Exported for the colocated test suite — not part of the public CLI API.
+export function isInteractiveStdout(): boolean {
+  if (process.env['ONEBRAIN_FORCE_TTY'] === '1') return true;
+  if (process.env['FORCE_COLOR'] === '3') return true;
+  return Boolean(process.stdout.isTTY);
 }
 
 function rgb(r: number, g: number, b: number, ch: string): string {
@@ -79,31 +120,82 @@ function rgbStr(c: Rgb, ch: string): string {
   return rgb(c[0], c[1], c[2], ch);
 }
 
-function hsvToRgb(h: number, floor = 80): Rgb {
-  const c = 255;
-  const x = Math.round(c * (1 - Math.abs(((h / 60) % 2) - 1)));
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  if (h < 60) [r, g, b] = [c, x, 0];
-  else if (h < 120) [r, g, b] = [x, c, 0];
-  else if (h < 180) [r, g, b] = [0, c, x];
-  else if (h < 240) [r, g, b] = [0, x, c];
-  else if (h < 300) [r, g, b] = [x, 0, c];
-  else [r, g, b] = [c, 0, x];
-  return [Math.min(255, r + floor), Math.min(255, g + floor), Math.min(255, b + floor)];
+// Brand gradient — 3-stop magenta → mid pink → cyan, mirrors the diagonal
+// gradient on the brain SVG (top-left magenta, bottom-right cyan). Replaces
+// the old full-hue rainbow so every banner frame stays inside the OneBrain
+// brand palette across the whole CLI surface.
+const BRAND_STOPS: Array<{ t: number; rgb: Rgb }> = [
+  { t: 0, rgb: [255, 45, 146] }, // #ff2d92 brand magenta
+  { t: 0.55, rgb: [255, 90, 163] }, // #ff5aa3 mid pink (matches SVG mid-stop)
+  { t: 1, rgb: [0, 243, 255] }, // #00f3ff brand cyan
+];
+
+function brandGradient(t: number): Rgb {
+  const tt = Math.max(0, Math.min(1, t));
+  for (let i = 0; i < BRAND_STOPS.length - 1; i++) {
+    const a = BRAND_STOPS[i]!;
+    const b = BRAND_STOPS[i + 1]!;
+    if (tt <= b.t) {
+      const local = (tt - a.t) / (b.t - a.t);
+      return [
+        Math.round(a.rgb[0] + (b.rgb[0] - a.rgb[0]) * local),
+        Math.round(a.rgb[1] + (b.rgb[1] - a.rgb[1]) * local),
+        Math.round(a.rgb[2] + (b.rgb[2] - a.rgb[2]) * local),
+      ];
+    }
+  }
+  return BRAND_STOPS[BRAND_STOPS.length - 1]!.rgb;
 }
 
-const HUE_PER_CHAR = 10;
-const HUE_PER_ROW = 30;
+// Diagonal `d = col - 3 * row` is the only axis the gradient varies along.
+// `[DIAG_MIN, DIAG_MAX]` is derived once from `ART_LINES` so the color map
+// (this file) and the animation iteration loops in `playBannerIntro` always
+// agree on the banner extent — single source of truth.
+const [DIAG_MIN, DIAG_MAX] = ((): [number, number] => {
+  let min = 0;
+  let max = 0;
+  for (let row = 0; row < ART_LINES.length; row++) {
+    min = Math.min(min, -row * 3);
+    max = Math.max(max, ART_LINES[row]!.length - 1 - row * 3);
+  }
+  return [min, max];
+})();
+const DIAG_RANGE = DIAG_MAX - DIAG_MIN;
 
-function neonLine(line: string, lineIndex = 0, floor = 80): string {
+// Brain icon occupies cols 5..11 in art rows 1..5. The brand SVG paints the
+// brain with the *full* magenta→cyan gradient across its bounding box, so we
+// remap the brain's local diagonal range to t ∈ [0,1] independently of the
+// global banner gradient. Without this, the brain icon — which sits in the
+// magenta half of the global diagonal — would render solid pink, losing the
+// canonical magenta→cyan sweep that defines the brand mark.
+const BRAIN_ROW_MIN = 1;
+const BRAIN_ROW_MAX = 5;
+const BRAIN_COL_MIN = 5;
+const BRAIN_COL_MAX = 11;
+const BRAIN_DIAG_MIN = BRAIN_COL_MIN - 3 * BRAIN_ROW_MAX;
+const BRAIN_DIAG_MAX = BRAIN_COL_MAX - 3 * BRAIN_ROW_MIN;
+const BRAIN_DIAG_RANGE = BRAIN_DIAG_MAX - BRAIN_DIAG_MIN;
+
+function inBrainCell(row: number, col: number): boolean {
+  return (
+    row >= BRAIN_ROW_MIN && row <= BRAIN_ROW_MAX && col >= BRAIN_COL_MIN && col <= BRAIN_COL_MAX
+  );
+}
+
+function gradientForCell(row: number, col: number): Rgb {
+  const d = col - 3 * row;
+  const t = inBrainCell(row, col)
+    ? (d - BRAIN_DIAG_MIN) / BRAIN_DIAG_RANGE
+    : (d - DIAG_MIN) / DIAG_RANGE;
+  return brandGradient(t);
+}
+
+function neonLine(line: string, lineIndex = 0): string {
   return line
     .split('')
-    .map((ch, i) => {
+    .map((ch, col) => {
       if (ch === ' ') return ch;
-      const hue = (((i * HUE_PER_CHAR - lineIndex * HUE_PER_ROW) % 360) + 360) % 360;
-      const [r, g, b] = hsvToRgb(hue, floor);
+      const [r, g, b] = gradientForCell(lineIndex, col);
       return rgb(r, g, b, ch);
     })
     .join('');
@@ -123,10 +215,19 @@ function whiteGlowLine(line: string, alpha: number): string {
     .join('');
 }
 
+function renderSubtitle(): string {
+  // Faint (SGR 2) + custom RGB — secondary descriptive layer, intentionally
+  // less prominent than the bold brand tagline above it.
+  const [r, g, b] = SUBTITLE_COLOR;
+  return `\x1b[2;38;2;${r};${g};${b}m${SUBTITLE}\x1b[0m`;
+}
+
 function dimLine(line: string): string {
+  // Cyan-leaning dim — the unbuilt CRT-scan pre-state stays inside the brand
+  // hue family rather than reading as neutral terminal grey.
   return line
     .split('')
-    .map((ch) => (ch === ' ' ? ch : `\x1b[2;38;2;50;50;70m${ch}\x1b[0m`))
+    .map((ch) => (ch === ' ' ? ch : `\x1b[2;38;2;30;60;70m${ch}\x1b[0m`))
     .join('');
 }
 
@@ -137,7 +238,10 @@ function scanLineCh(line: string): string {
     .join('');
 }
 
-const CURSOR = rgb(140, 255, 255, '▌');
+// Cursor + wipe scanner share a bright cyan accent that stays close to the
+// brand cyan #00f3ff but reads with more presence on dark backgrounds.
+const SCAN_CYAN: Rgb = [140, 255, 255];
+const CURSOR = rgb(SCAN_CYAN[0], SCAN_CYAN[1], SCAN_CYAN[2], '▌');
 const GLYPHS = '▓░▒█│┤┐└┴┬├─┼╪╫╬╧╨╤╥╙╘╒╓┘┌║▌▀▄▐∆ƒΩ§¶±÷×ø¥€';
 const randGlyph = () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)] ?? '?';
 const glitchWhite = (g: string) => `\x1b[1;97m${g}\x1b[0m`;
@@ -188,7 +292,7 @@ const WIPE_PAUSE_MS = 80;
 // Banner intro — 3-phase reveal (sequential)
 // ---------------------------------------------------------------------------
 
-async function playBannerIntro(rainbowArt: string[], whiteArt: string[]): Promise<void> {
+async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<void> {
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
   const up = (n: number) => outb(`\x1b[${n}F`);
 
@@ -217,13 +321,12 @@ async function playBannerIntro(rainbowArt: string[], whiteArt: string[]): Promis
   // Hold pure white (CRT settle) — 600ms
   await delay(600);
 
-  // Phase 1B — rainbow flows diagonally bottom-left → top-right
-  let minD = 0;
-  let maxD = 0;
-  for (let row = 0; row < ART_LINES.length; row++) {
-    minD = Math.min(minD, -row * 3);
-    maxD = Math.max(maxD, ART_LINES[row]!.length - 1 - row * 3);
-  }
+  // Phase 1B — brand gradient (magenta → cyan) flows diagonally bottom-left
+  // → top-right, mirroring the SVG brain logo's gradient direction. As the
+  // gradient front crosses brain cells, flash white for a few diagonal
+  // positions to read as a "neural firing" pulse — small distinctive brand
+  // signature.
+  const PULSE_TRAIL = 3;
 
   function flowFrame(frontD: number): string[] {
     return ART_LINES.map((line, row) =>
@@ -233,8 +336,11 @@ async function playBannerIntro(rainbowArt: string[], whiteArt: string[]): Promis
           if (ch === ' ') return ch;
           const d = col - 3 * row;
           if (d <= frontD) {
-            const hue = (((col * HUE_PER_CHAR - row * HUE_PER_ROW) % 360) + 360) % 360;
-            const [r, g, b] = hsvToRgb(hue);
+            const ageBehindFront = frontD - d;
+            if (inBrainCell(row, col) && ageBehindFront <= PULSE_TRAIL) {
+              return `\x1b[1;97m${ch}\x1b[0m`;
+            }
+            const [r, g, b] = gradientForCell(row, col);
             return rgb(r, g, b, ch);
           }
           return `\x1b[1;97m${ch}\x1b[0m`;
@@ -243,16 +349,17 @@ async function playBannerIntro(rainbowArt: string[], whiteArt: string[]): Promis
     );
   }
 
-  for (let d = minD; d <= maxD; d++) {
+  for (let d = DIAG_MIN; d <= DIAG_MAX; d++) {
     await delay(9);
     up(BANNER_LINE_COUNT);
     printFrame(flowFrame(d), blankTagline());
   }
   up(BANNER_LINE_COUNT);
-  printFrame(rainbowArt, blankTagline());
+  printFrame(brandArt, blankTagline());
   await delay(180);
 
-  // Phase 1C — white shimmer sweeps the same diagonal direction over rainbow
+  // Phase 1C — white shimmer sweeps the same diagonal direction over the
+  // brand-gradient art, settling each cell back to brand colors behind it.
   function shimmerArtFrame(highlight: number): string[] {
     return ART_LINES.map((line, row) =>
       line
@@ -261,20 +368,19 @@ async function playBannerIntro(rainbowArt: string[], whiteArt: string[]): Promis
           if (ch === ' ') return ch;
           const d = col - 3 * row;
           if (Math.abs(d - highlight) <= 1) return `\x1b[1;97m${ch}\x1b[0m`;
-          const hue = (((col * HUE_PER_CHAR - row * HUE_PER_ROW) % 360) + 360) % 360;
-          const [r, g, b] = hsvToRgb(hue);
+          const [r, g, b] = gradientForCell(row, col);
           return rgb(r, g, b, ch);
         })
         .join(''),
     );
   }
-  for (let d = minD; d <= maxD; d++) {
+  for (let d = DIAG_MIN; d <= DIAG_MAX; d++) {
     await delay(9);
     up(BANNER_LINE_COUNT);
     printFrame(shimmerArtFrame(d), blankTagline());
   }
   up(BANNER_LINE_COUNT);
-  printFrame(rainbowArt, blankTagline());
+  printFrame(brandArt, blankTagline());
   await delay(80);
 }
 
@@ -282,11 +388,11 @@ async function playBannerIntro(rainbowArt: string[], whiteArt: string[]): Promis
 // Tagline phase — 3 rotating sentences via wipe swap, then lock shimmer
 // ---------------------------------------------------------------------------
 
-async function decodeFirstSentence(rainbowArt: string[], s: Sentence): Promise<void> {
+async function decodeFirstSentence(brandArt: string[], s: Sentence): Promise<void> {
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
   const up = (n: number) => outb(`\x1b[${n}F`);
 
-  const prefixWords = ['Your', 'AI'];
+  const prefixWords = ['YOUR', 'AI'];
   for (let wi = 0; wi < prefixWords.length; wi++) {
     const w = prefixWords[wi]!;
     const tickMs = PREFIX_TICK_MS[wi]!;
@@ -312,7 +418,7 @@ async function decodeFirstSentence(rainbowArt: string[], s: Sentence): Promise<v
         }
       }
       const trailingBlank = ' '.repeat(s.trailing.length);
-      printFrame(rainbowArt, `${prefixPart}${trailingBlank}\x1b[K`);
+      printFrame(brandArt, `${prefixPart}${trailingBlank}\x1b[K`);
     }
     if (wi < prefixWords.length - 1) {
       await delay(INTER_WORD_PAUSE_MS);
@@ -320,11 +426,11 @@ async function decodeFirstSentence(rainbowArt: string[], s: Sentence): Promise<v
   }
 
   await delay(INTER_WORD_PAUSE_MS);
-  await decodeTrailing(rainbowArt, s, PREFIX.length);
+  await decodeTrailing(brandArt, s, PREFIX.length);
 }
 
 async function decodeTrailing(
-  rainbowArt: string[],
+  brandArt: string[],
   s: Sentence,
   lockedPrefixChars: number,
 ): Promise<void> {
@@ -378,7 +484,7 @@ async function decodeTrailing(
           else trailing += ' ';
         }
       }
-      printFrame(rainbowArt, buildTaglineLine(lockedPrefixChars, trailing));
+      printFrame(brandArt, buildTaglineLine(lockedPrefixChars, trailing));
     }
     if (wi < words.length - 1) {
       await delay(INTER_WORD_PAUSE_MS);
@@ -386,11 +492,7 @@ async function decodeTrailing(
   }
 }
 
-async function wipeSwapTransition(
-  rainbowArt: string[],
-  from: Sentence,
-  to: Sentence,
-): Promise<void> {
+async function wipeSwapTransition(brandArt: string[], from: Sentence, to: Sentence): Promise<void> {
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
   const up = (n: number) => outb(`\x1b[${n}F`);
 
@@ -414,24 +516,26 @@ async function wipeSwapTransition(
         trailing += rgbStr(TRAILING_COLOR, ch);
       }
     }
-    printFrame(rainbowArt, buildTaglineLine(PREFIX.length, trailing));
+    printFrame(brandArt, buildTaglineLine(PREFIX.length, trailing));
   }
   await delay(WIPE_PAUSE_MS);
 
   // Phase B: type+glitch decode of the new trailing
-  await decodeTrailing(rainbowArt, to, PREFIX.length);
+  await decodeTrailing(brandArt, to, PREFIX.length);
 }
 
-async function lockShimmer(rainbowArt: string[], s: Sentence): Promise<void> {
+async function lockShimmer(brandArt: string[], s: Sentence): Promise<void> {
   const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
   const up = (n: number) => outb(`\x1b[${n}F`);
 
   const SHIMMER_TICK_MS = 22;
   const TRAIL = 3;
+  // Brand-aligned shimmer trail: white head → pale cyan → brand cyan tail
+  // (matches FINAL_COLOR), so the wave settles cleanly into the brand palette.
   const STOPS: Rgb[] = [
-    [255, 255, 255], // head — pure white
-    [200, 245, 255], // mid — ice
-    [150, 235, 255], // tail — bright cyan
+    [255, 255, 255], // head — pure white flash
+    [180, 220, 255], // mid — pale cyan
+    [0, 243, 255], // tail — brand cyan #00f3ff
   ];
   const fullText = PREFIX + s.trailing;
   const N = fullText.length;
@@ -459,10 +563,16 @@ async function lockShimmer(rainbowArt: string[], s: Sentence): Promise<void> {
       }
     }
     line += '\x1b[K';
-    printFrame(rainbowArt, line);
+    printFrame(brandArt, line);
   }
 
-  // Final settle — entire tagline neon cyan
+  // Final settle — entire tagline neon cyan + subtitle layer. Replaces the
+  // final printFrame so we can append the subtitle line. This block writes
+  // `BANNER_LINE_COUNT + 1` lines (one extra for the subtitle); the on-screen
+  // banner footprint after `printBanner()` returns is therefore one line
+  // taller than `BANNER_LINE_COUNT` reports. Callers must NOT use
+  // BANNER_LINE_COUNT to rewind past `printBanner()`'s output — it describes
+  // a single animation frame, not the final on-screen height.
   up(BANNER_LINE_COUNT);
   let finalLine = TAGLINE_LEAD;
   for (let j = 0; j < N; j++) {
@@ -470,7 +580,13 @@ async function lockShimmer(rainbowArt: string[], s: Sentence): Promise<void> {
     finalLine += ch === ' ' ? ' ' : rgbStr(FINAL_COLOR, ch);
   }
   finalLine += '\x1b[K';
-  printFrame(rainbowArt, finalLine);
+  const subtitleLine = `${TAGLINE_LEAD}${renderSubtitle()}\x1b[K`;
+  outb('\n');
+  for (const l of brandArt) outb(`${l}\n`);
+  outb('\n');
+  outb(`${finalLine}\n`);
+  outb(`${subtitleLine}\n`);
+  outb('\n');
   await delay(150);
 }
 
@@ -478,39 +594,61 @@ async function lockShimmer(rainbowArt: string[], s: Sentence): Promise<void> {
 // Public entry point
 // ---------------------------------------------------------------------------
 
-export async function printBanner(): Promise<void> {
-  if (!process.stdout.isTTY) return;
-
-  if (!supportsRgb()) {
-    // No true color — static fallback. Use the final sentence (signature
-    // tagline) so non-truecolor terminals still see the brand line.
-    outb('\n');
+// Render a static, non-animated banner — used when stdout is not an
+// interactive TTY (piped, redirected, CI logs) OR when the terminal does not
+// support 24-bit color. With truecolor we paint each cell using the same
+// brand gradient as the animated path; without truecolor we fall back to
+// `pc.cyan` so 16-color terminals still see a brand-aligned monochrome line.
+function printStaticBanner(): void {
+  const truecolor = supportsRgb();
+  outb('\n');
+  if (truecolor) {
+    for (let i = 0; i < ART_LINES.length; i++) outb(`${neonLine(ART_LINES[i]!, i)}\n`);
+  } else {
     for (const l of ART_LINES) outb(`${pc.bold(pc.cyan(l))}\n`);
-    outb('\n');
+  }
+  outb('\n');
+  if (truecolor) {
+    // Tagline is a single solid block (one ANSI wrap around the whole string)
+    // since all chars share FINAL_COLOR. Per-char wrapping is reserved for the
+    // animated path where each cell can have a different color.
+    outb(`${TAGLINE_LEAD}${rgbStr(FINAL_COLOR, TAGLINE_FALLBACK)}\n`);
+    outb(`${TAGLINE_LEAD}${renderSubtitle()}\n`);
+  } else {
     outb(`${TAGLINE_LEAD}${pc.bold(pc.cyan(TAGLINE_FALLBACK))}\n`);
-    outb('\n');
+    outb(`${TAGLINE_LEAD}${pc.dim(pc.cyan(SUBTITLE))}\n`);
+  }
+  outb('\n');
+}
+
+export async function printBanner(): Promise<void> {
+  // Animation requires both an interactive TTY (cursor positioning works) and
+  // 24-bit color (for the brand gradient). Anything else gets the static
+  // banner — still brand-colored when truecolor is available.
+  if (!isInteractiveStdout() || !supportsRgb()) {
+    printStaticBanner();
     return;
   }
 
-  const rainbowArt = ART_LINES.map((l, i) => neonLine(l, i));
+  const brandArt = ART_LINES.map((l, i) => neonLine(l, i));
   const whiteArt = ART_LINES.map((l) => whiteLine(l));
 
   try {
     // Hide system cursor inside the try block so the finally always restores it.
     outb('\x1b[?25l');
-    await playBannerIntro(rainbowArt, whiteArt);
+    await playBannerIntro(brandArt, whiteArt);
 
     // Tagline rotation
-    await decodeFirstSentence(rainbowArt, SENTENCES[0]!);
+    await decodeFirstSentence(brandArt, SENTENCES[0]!);
     await new Promise<void>((r) => setTimeout(r, SENTENCE_HOLD_MS));
 
-    await wipeSwapTransition(rainbowArt, SENTENCES[0]!, SENTENCES[1]!);
+    await wipeSwapTransition(brandArt, SENTENCES[0]!, SENTENCES[1]!);
     await new Promise<void>((r) => setTimeout(r, SENTENCE_HOLD_MS));
 
-    await wipeSwapTransition(rainbowArt, SENTENCES[1]!, SENTENCES[2]!);
+    await wipeSwapTransition(brandArt, SENTENCES[1]!, SENTENCES[2]!);
     await new Promise<void>((r) => setTimeout(r, SENTENCE_HOLD_MS));
 
-    await lockShimmer(rainbowArt, SENTENCES[2]!);
+    await lockShimmer(brandArt, SENTENCES[2]!);
   } finally {
     outb('\x1b[?25h');
   }

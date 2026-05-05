@@ -1,6 +1,6 @@
 ---
-latest_version: 2.1.8
-released: 2026-04-30
+latest_version: 2.1.9
+released: 2026-05-05
 ---
 
 # CLI Changelog
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.9 — feat: brand-aligned CLI banner (neural-mesh brain + slant wordmark + brand gradient)
+
+- feat(cli-banner): redesign banner — ASCII neural-network brain icon (5×7 dots-and-lines side profile) on the left, figlet "slant" italic OneBrain wordmark on the right, mirrors the canonical horizontal brand mark used on GitHub / website
+- feat(cli-banner): canonical uppercase tagline "YOUR AI THINKING PARTNER" + secondary subtitle "A unified intelligence in your Obsidian vault" rendered as a faint cyan layered tagline below the primary line
+- feat(cli-banner): replace full-hue rainbow with a 3-stop magenta → mid-pink → cyan brand gradient (matches the SVG brain logo's gradient stops); brain icon uses a local gradient remap so it traverses the full magenta→cyan range like the SVG, while the wordmark gets the global diagonal sweep — plus a "neural firing" white pulse flashes brain cells as the gradient front passes
+- feat(cli-banner): non-interactive output (piped, redirected, CI logs) now prints a static brand-colored banner instead of nothing — truecolor host paints brand RGB, 16-color falls back to `pc.cyan`; animation only runs when stdout is an interactive TTY with truecolor
+- fix(cli-banner): brand colors now align with website CI — `PREFIX_COLOR` `[0,243,255]` (#00f3ff), `TRAILING_COLOR` `[255,45,146]` (#ff2d92); shimmer trail settles on brand cyan, subtitle uses brand cyan dimmed along its own hue axis, dim-state stays inside the cyan family
+- fix(cli-banner): honor `FORCE_COLOR=3` / `ONEBRAIN_FORCE_TTY=1` overrides for stdout-isTTY detection — partial fix for #131 (Git Bash MinTTY on Windows); animation now reachable for users whose terminals under-report TTY-ness
+- test(cli-banner): new `cli-banner.test.ts` covers non-TTY static path (asserts brand RGB, no animation, no cursor toggling), TTY-without-truecolor 16-color fallback (asserts uppercase tagline + subtitle ordering), and brand-color exports
 
 ## v2.1.8 — chore: point npm `homepage` to onebrain.run
 
