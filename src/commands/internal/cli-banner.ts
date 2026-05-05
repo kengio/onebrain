@@ -25,10 +25,17 @@ export function resolveBinaryVersion(): string {
 // Brain icon (5 rows, 7 cols, all 1-col Unicode) — abstract neural-mesh form,
 // echoes the gradient brain in the website / GitHub brand mark. Sits to the
 // left of the wordmark to mirror the canonical horizontal brand arrangement.
+// The brain is the only animated region; gradient flow + shimmer + neural
+// pulse all paint inside its bounding box only.
 //
 // Wordmark — figlet "slant" font for "OneBrain", chosen for its italic slant
 // to evoke the Chakra-Petch-italic feel of the visual brand wordmark while
-// staying terminal-renderable.
+// staying terminal-renderable. Rendered solid white throughout (matches the
+// website logo's white-on-dark wordmark) — never animated, never gradient.
+//
+// Borders (top/bottom `◆──◆` lines) are static brand cyan — a quiet accent
+// that frames the white wordmark + animated brain without competing for
+// attention.
 //
 // Tagline lead is fixed at 14 spaces — left-anchors the prefix "YOUR AI"
 // directly under the wordmark's first column across all rotating sentences.
@@ -190,13 +197,38 @@ function gradientForCell(row: number, col: number): Rgb {
   return brandGradient(t);
 }
 
+// Per-cell role: only the brain icon animates and carries the brand gradient.
+// The wordmark stays solid white to match the website logo (white wordmark on
+// dark theme); the top/bottom border lines render as a static brand-cyan
+// accent. This split keeps the visual focus on the brain — the moving part —
+// and prevents the slant wordmark from competing for attention.
+function isBorderRow(row: number): boolean {
+  return row === 0 || row === ART_LINES.length - 1;
+}
+
+const WHITE_SGR = '\x1b[1;97m';
+const SGR_RESET = '\x1b[0m';
+
+function whiteCell(ch: string): string {
+  return `${WHITE_SGR}${ch}${SGR_RESET}`;
+}
+
+// Color a non-brain cell — borders go brand cyan, wordmark stays solid white.
+function staticCellColor(row: number, ch: string): string {
+  if (isBorderRow(row)) return rgbStr(PREFIX_COLOR, ch);
+  return whiteCell(ch);
+}
+
 function neonLine(line: string, lineIndex = 0): string {
   return line
     .split('')
     .map((ch, col) => {
       if (ch === ' ') return ch;
-      const [r, g, b] = gradientForCell(lineIndex, col);
-      return rgb(r, g, b, ch);
+      if (inBrainCell(lineIndex, col)) {
+        const [r, g, b] = gradientForCell(lineIndex, col);
+        return rgb(r, g, b, ch);
+      }
+      return staticCellColor(lineIndex, ch);
     })
     .join('');
 }
@@ -321,11 +353,13 @@ async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<
   // Hold pure white (CRT settle) — 600ms
   await delay(600);
 
-  // Phase 1B — brand gradient (magenta → cyan) flows diagonally bottom-left
-  // → top-right, mirroring the SVG brain logo's gradient direction. As the
-  // gradient front crosses brain cells, flash white for a few diagonal
-  // positions to read as a "neural firing" pulse — small distinctive brand
-  // signature.
+  // Phase 1B — brand gradient (magenta → cyan) flows diagonally across the
+  // brain icon, mirroring the SVG brain logo's gradient direction. The
+  // wordmark stays solid white and the borders settle to brand cyan during
+  // this phase — only the brain animates so the moving piece reads cleanly
+  // against a static brand-themed frame. As the gradient front crosses
+  // brain cells, flash white for a few diagonal positions to read as a
+  // "neural firing" pulse — small distinctive brand signature.
   const PULSE_TRAIL = 3;
 
   function flowFrame(frontD: number): string[] {
@@ -334,16 +368,15 @@ async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<
         .split('')
         .map((ch, col) => {
           if (ch === ' ') return ch;
+          if (!inBrainCell(row, col)) return staticCellColor(row, ch);
           const d = col - 3 * row;
           if (d <= frontD) {
             const ageBehindFront = frontD - d;
-            if (inBrainCell(row, col) && ageBehindFront <= PULSE_TRAIL) {
-              return `\x1b[1;97m${ch}\x1b[0m`;
-            }
+            if (ageBehindFront <= PULSE_TRAIL) return whiteCell(ch);
             const [r, g, b] = gradientForCell(row, col);
             return rgb(r, g, b, ch);
           }
-          return `\x1b[1;97m${ch}\x1b[0m`;
+          return whiteCell(ch);
         })
         .join(''),
     );
@@ -359,15 +392,16 @@ async function playBannerIntro(brandArt: string[], whiteArt: string[]): Promise<
   await delay(180);
 
   // Phase 1C — white shimmer sweeps the same diagonal direction over the
-  // brand-gradient art, settling each cell back to brand colors behind it.
+  // brain only; wordmark + border cells stay in their static colors.
   function shimmerArtFrame(highlight: number): string[] {
     return ART_LINES.map((line, row) =>
       line
         .split('')
         .map((ch, col) => {
           if (ch === ' ') return ch;
+          if (!inBrainCell(row, col)) return staticCellColor(row, ch);
           const d = col - 3 * row;
-          if (Math.abs(d - highlight) <= 1) return `\x1b[1;97m${ch}\x1b[0m`;
+          if (Math.abs(d - highlight) <= 1) return whiteCell(ch);
           const [r, g, b] = gradientForCell(row, col);
           return rgb(r, g, b, ch);
         })

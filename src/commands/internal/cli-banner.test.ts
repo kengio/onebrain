@@ -99,6 +99,15 @@ describe('printBanner — non-TTY (piped/CI) static path', () => {
     // Should NOT use the generic 16-color cyan SGR ESC[36m (picocolors' pc.cyan).
     expect(all).not.toContain('\x1b[36m');
   });
+
+  it('renders wordmark cells in solid white (animation scoped to brain only)', async () => {
+    await printBanner();
+    const all = spy.chunks.join('');
+    // Wordmark is wrapped in the bold-white SGR ESC[1;97m for every non-space
+    // character — the slant figlet "OneBrain" has many of these. Locks in
+    // "wordmark white, brain animated" split per the website logo treatment.
+    expect(all).toContain('\x1b[1;97m');
+  });
 });
 
 describe('printBanner — TTY without truecolor (16-color static fallback)', () => {
