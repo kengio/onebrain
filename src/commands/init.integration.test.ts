@@ -9,12 +9,56 @@
  * error cases where the exit would abort the test process.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { type InitOptions, runInit } from './init.js';
+
+// ---------------------------------------------------------------------------
+// Suite-level guard: real ~/.claude/plugins/installed_plugins.json must NOT
+// be touched by any test in this file (#146 regression hardening).
+// ---------------------------------------------------------------------------
+
+const REAL_REGISTRY_PATH = join(homedir(), '.claude', 'plugins', 'installed_plugins.json');
+let realRegistrySnapshot: { mtimeMs: number; bytes: string } | null = null;
+let realRegistryWasMissing = false;
+
+beforeAll(async () => {
+  try {
+    const s = await stat(REAL_REGISTRY_PATH);
+    const bytes = await readFile(REAL_REGISTRY_PATH, 'utf8');
+    realRegistrySnapshot = { mtimeMs: s.mtimeMs, bytes };
+  } catch {
+    realRegistryWasMissing = true;
+  }
+});
+
+afterAll(async () => {
+  if (realRegistryWasMissing) {
+    let exists = false;
+    try {
+      await stat(REAL_REGISTRY_PATH);
+      exists = true;
+    } catch {
+      exists = false;
+    }
+    if (exists) {
+      throw new Error(
+        `Test suite created ${REAL_REGISTRY_PATH} which did not exist before tests ran (#146 regression).`,
+      );
+    }
+    return;
+  }
+  if (!realRegistrySnapshot) return;
+  const after = await readFile(REAL_REGISTRY_PATH, 'utf8');
+  if (after !== realRegistrySnapshot.bytes) {
+    throw new Error(
+      `Test suite mutated ${REAL_REGISTRY_PATH} (#146 regression). Some test omitted installedPluginsPath injection. Bytes differ: before=${realRegistrySnapshot.bytes.length}, after=${after.length}.`,
+    );
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -59,9 +103,13 @@ const STANDARD_FOLDERS = [
 ];
 
 let tempDir: string;
+// Per-test isolated installed_plugins.json. Tests must NEVER fall back to
+// the real ~/.claude/plugins/installed_plugins.json (#146).
+let isolatedInstalledPath: string;
 
 beforeEach(async () => {
   tempDir = await makeTempVault();
+  isolatedInstalledPath = join(tempDir, '.isolated-installed_plugins.json');
 });
 
 afterEach(async () => {
@@ -79,6 +127,7 @@ describe('init integration: fresh vault (non-TTY)', () => {
       isTTY: false,
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
+      installedPluginsPath: isolatedInstalledPath,
     };
 
     const result = await runInit(opts);
@@ -98,6 +147,7 @@ describe('init integration: fresh vault (non-TTY)', () => {
       isTTY: false,
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
+      installedPluginsPath: isolatedInstalledPath,
     };
 
     const result = await runInit(opts);
@@ -122,6 +172,7 @@ describe('init integration: fresh vault (non-TTY)', () => {
       isTTY: false,
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
+      installedPluginsPath: isolatedInstalledPath,
     };
 
     // Should not throw
@@ -142,6 +193,7 @@ describe('init integration: existing vault.yml, no --force (non-TTY)', () => {
       isTTY: false,
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
+      installedPluginsPath: isolatedInstalledPath,
     };
 
     const result = await runInit(opts);
@@ -162,6 +214,7 @@ describe('init integration: existing vault.yml, no --force (non-TTY)', () => {
       isTTY: false,
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
+      installedPluginsPath: isolatedInstalledPath,
     };
 
     await runInit(opts);
@@ -201,6 +254,7 @@ describe('init integration: plugin files present (skip vault-sync)', () => {
       force: true,
       vaultSyncFn: trackingVaultSync,
       registerHooksFn: noopRegisterHooks,
+      installedPluginsPath: isolatedInstalledPath,
     };
 
     const result = await runInit(opts);
@@ -225,6 +279,7 @@ describe('init integration: plugin files present (skip vault-sync)', () => {
       force: true,
       vaultSyncFn: noopVaultSync,
       registerHooksFn: noopRegisterHooks,
+      installedPluginsPath: isolatedInstalledPath,
     };
 
     const result = await runInit(opts);
