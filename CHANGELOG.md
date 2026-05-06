@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.12
+latest_version: 2.1.13
 released: 2026-05-06
 ---
 
@@ -12,6 +12,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.13 — fix(session-init): walk process tree to find claude PID
+
+- fix(session-init): walk parent chain to resolve the claude ancestor PID, matching what the bash hook's `$PPID` already sees
+- fix(session-init): eliminate token collisions across Claude sessions on terminals that set no session env vars (notably Obsidian terminal plugin on macOS) — every session now gets a distinct token instead of sharing the day-scoped cache
+- refactor(session-init): inject a `ProcLookup` into `resolveSessionToken` / `runSessionInit` for deterministic walk-up tests
+- test(session-init): add unit coverage for `findClaudeAncestorPid` (chain walk, basename + `.exe` strip, depth bound, cycles) and walk-up integration in `resolveSessionToken`
 
 ## v2.1.12 — fix(vault-sync): registry matching by projectPath + test isolation
 

@@ -64,6 +64,134 @@ export function formatDatetime(date: Date): string {
 }
 
 // ---------------------------------------------------------------------------
+// findClaudeAncestorPid
+// ---------------------------------------------------------------------------
+
+/**
+ * Result of looking up a process: parent PID + command basename
+ * (path-stripped and `.exe`-trimmed; ready for direct equality comparison).
+ */
+export type ProcInfo = { readonly ppid: number; readonly commBasename: string };
+
+/**
+ * A function that returns ProcInfo for a given PID, or null if lookup fails.
+ * Injectable so tests can simulate process trees without touching real PIDs.
+ */
+export type ProcLookup = (pid: number) => ProcInfo | null;
+
+/**
+ * Compute the basename of a `comm` value as `ps -o comm=` returns it
+ * (which may be a full path on Linux/macOS and may end in `.exe` on Windows).
+ * Exported for testing the basename normalization contract.
+ */
+export function commBasenameOf(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^.*[/\\]/, '')
+    .replace(/\.exe$/i, '');
+}
+
+/**
+ * Default ProcLookup implementation backed by `ps -o ppid=,comm= -p <pid>`.
+ *
+ * Returns null silently on Windows (no `ps`) — the only *expected* "no lookup"
+ * case. On Unix, when `ps` is reachable but returns an unexpected exit code,
+ * empty output, or unparseable output, we still return null but emit a one-line
+ * warning to stderr first. Without that warning, an unparseable-output regression
+ * (e.g. a busybox `ps` variant emitting a header) silently falls back to the
+ * day-scoped cache — which is exactly the cross-session collision bug this
+ * walk-up was added to prevent.
+ */
+const defaultProcLookup: ProcLookup = (pid: number): ProcInfo | null => {
+  if (process.platform === 'win32') return null;
+  let result: ReturnType<typeof Bun.spawnSync>;
+  try {
+    result = Bun.spawnSync(['ps', '-o', 'ppid=,comm=', '-p', String(pid)], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException | undefined)?.code;
+    // ENOENT on Unix would be very unusual (ps almost always exists); other
+    // codes (EACCES from sandboxing, EMFILE/ENOMEM at spawn) are signals the
+    // user should see, not silent fallbacks.
+    process.stderr.write(`onebrain: ps spawn failed for pid ${pid} (${code ?? 'unknown'})\n`);
+    return null;
+  }
+  if (!result.success) {
+    process.stderr.write(`onebrain: ps -p ${pid} exited ${result.exitCode}\n`);
+    return null;
+  }
+  const out = new TextDecoder().decode(result.stdout).trim();
+  if (!out) {
+    process.stderr.write(`onebrain: ps -p ${pid} returned empty output\n`);
+    return null;
+  }
+  // Expected single-line format: "<ppid> <comm-or-path>".
+  // We want exactly one data line; if multiple lines arrived (header leak
+  // from a non-standard ps), bail loudly.
+  if (out.includes('\n')) {
+    process.stderr.write(
+      `onebrain: ps -p ${pid} returned multi-line output: ${out.replace(/\n/g, ' | ').slice(0, 120)}\n`,
+    );
+    return null;
+  }
+  const match = out.match(/^\s*(\d+)\s+(.+)$/);
+  if (!match) {
+    process.stderr.write(`onebrain: ps -p ${pid} unparseable: ${out.slice(0, 120)}\n`);
+    return null;
+  }
+  const ppid = Number(match[1]);
+  if (Number.isNaN(ppid)) return null;
+  return { ppid, commBasename: commBasenameOf(match[2] ?? '') };
+};
+
+/**
+ * Walk up the process tree from `startPid` looking for a process whose
+ * `commBasename` is `claude`. Returns its PID, or null if not found.
+ *
+ * Capped at 12 hops — empirically deeper than any shell→multiplexer→claude
+ * chain seen in practice, shallow enough that a corrupted process table
+ * terminates in milliseconds.
+ *
+ * Why: `process.ppid` here is the ephemeral `bash -c` wrapper Claude Code
+ * spawns to run the CLI, not the long-lived `claude` process. The wrapper PID
+ * changes between every CLI invocation in the same Claude session, so using
+ * it as a token would produce a different identity per call. Walking up to
+ * the nearest `claude` ancestor yields one stable PID for the lifetime of the
+ * Claude session — the identity we actually want for namespacing checkpoint
+ * files across session-init, stop-hook, and orphan-scan calls (all of which
+ * share this resolver via `resolveSessionToken`).
+ */
+export function findClaudeAncestorPid(
+  startPid: number,
+  lookup: ProcLookup = defaultProcLookup,
+  maxDepth = 12,
+): number | null {
+  let current = startPid;
+  for (let i = 0; i < maxDepth; i++) {
+    if (current <= 1) return null;
+    const info = lookup(current);
+    if (!info) return null;
+    if (info.commBasename === 'claude') return current;
+    if (info.ppid <= 1) {
+      // Walked cleanly to init without finding claude — distinct from a
+      // lookup failure (which already wrote its own warning). Surfacing this
+      // makes the day-cache fallback below visible instead of silent.
+      process.stderr.write(
+        `onebrain: walk-up reached init from pid ${startPid} without finding claude (last comm=${info.commBasename})\n`,
+      );
+      return null;
+    }
+    current = info.ppid;
+  }
+  process.stderr.write(
+    `onebrain: walk-up exhausted ${maxDepth} hops from pid ${startPid} without finding claude\n`,
+  );
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // resolveSessionToken
 // ---------------------------------------------------------------------------
 
@@ -72,18 +200,32 @@ export function formatDatetime(date: Date): string {
  * 1. WT_SESSION env var (Windows Terminal — strip non-alphanumeric, first 8 chars)
  * 2. TMUX_PANE env var (tmux — stable per-pane, e.g. "%3" → "3")
  * 3. TERM_SESSION_ID env var (macOS Terminal.app — stable per-tab UUID)
- * 4. Day-scoped cache file: $tmpDir/onebrain-day-YYYYMMDD.token (if valid cached token exists)
- * 5. process.ppid if > 1 — resolve, write to cache, return
- * 6. PowerShell parent PID (Windows fallback) — resolve, write to cache, return
- * 7. Random fallback — generate, write to cache, return
+ * 4. Walk up the process tree to find a `claude` ancestor PID (Unix) — stable
+ *    per Claude session, returned without touching the cache
+ * 5. Day-scoped cache file: $tmpDir/onebrain-day-YYYYMMDD.token (if a valid
+ *    cached token exists) — legacy stabilizer with cross-session collision risk
+ * 6. process.ppid if > 1 — write to cache, return
+ * 7. PowerShell parent PID (Windows fallback) — write to cache, return
+ * 8. Random 5-digit fallback — write to cache, return
  *
- * Env-var sources (1–3) are preferred over ppid because both session-init and
- * the stop hook run as children of separate bash processes (different ppid values),
+ * Env-var sources (1–3) are preferred because both session-init and the stop
+ * hook run as children of separate bash wrappers (different ppid values),
  * while env vars are inherited from the shared terminal session ancestor.
- * Cache (step 4) is checked before ppid so that re-runs within the same day always
- * return the same token even if ppid varies between invocations.
+ *
+ * Walk-up (4) covers terminals that set none of those env vars (e.g. Obsidian's
+ * terminal plugin on macOS). Without it, every Claude session on the same
+ * machine and day shared one cached token because the cache key only encoded
+ * the date — that's the bug this resolver path was added to fix.
+ *
+ * Steps 6–8 are last-resort fallbacks when both the env vars and walk-up fail.
+ * Step 6 reuses the unstable wrapper ppid because *some* identity (with the
+ * cache stabilizing repeated calls) is better than none; users in this branch
+ * accept the day-cache collision risk by virtue of having no better signal.
  */
-export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<string> {
+export async function resolveSessionToken(
+  tmpDir: string = osTmpdir(),
+  procLookup: ProcLookup = defaultProcLookup,
+): Promise<string> {
   // 1. WT_SESSION (Windows Terminal)
   const wtSession = process.env['WT_SESSION'];
   if (wtSession) {
@@ -105,7 +247,21 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     if (stripped.length > 0) return stripped;
   }
 
-  // 4. Day-scoped cache — check before ppid so re-runs return the same token
+  // 4. Walk up the process tree to find a `claude` ancestor PID.
+  //    On success, return without touching the cache: walk-up is deterministic
+  //    per Claude session, so caching adds collision risk without benefit.
+  const startPpid = process.ppid;
+  if (startPpid !== undefined && startPpid > 1) {
+    const claudePid = findClaudeAncestorPid(startPpid, procLookup);
+    if (claudePid !== null && claudePid > 1) {
+      return String(claudePid);
+    }
+  }
+
+  // 5. Day-scoped cache — used only when steps 1–4 above all fail. This is
+  //    the legacy stabilizer for environments where neither env vars nor the
+  //    walk-up can identify a session ancestor; it carries a known collision
+  //    risk (one cached token per day, shared across all callers in $TMPDIR).
   const today = new Date();
   const yyyymmdd = [
     today.getFullYear(),
@@ -121,7 +277,7 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     if (!Number.isNaN(n) && n > 1) return cached;
   }
 
-  // 5. PPID — resolve, write to cache, return
+  // 6. PPID — resolve, write to cache, return
   const ppid = process.ppid;
   if (ppid !== undefined && ppid > 1) {
     const token = String(ppid);
@@ -129,7 +285,7 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     return token;
   }
 
-  // 6. PowerShell fallback (Windows only) — resolve, write to cache, return
+  // 7. PowerShell fallback (Windows only) — resolve, write to cache, return
   try {
     const ps = Bun.spawn(
       [
@@ -166,7 +322,7 @@ export async function resolveSessionToken(tmpDir: string = osTmpdir()): Promise<
     // Not on Windows or powershell.exe not available — fall through
   }
 
-  // 7. Generate and cache a random 5-digit token (10000–99999)
+  // 8. Generate and cache a random 5-digit token (10000–99999)
   const token = String(Math.floor(Math.random() * 90000) + 10000);
   await Bun.write(cacheFile, token);
   return token;
@@ -194,12 +350,27 @@ async function cleanStaleStateFile(token: string, tmpDir: string): Promise<void>
     if (mtimeMs < processStartMs) {
       try {
         await unlink(stateFile);
-      } catch {
-        // Already deleted or never existed — non-fatal
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException | undefined)?.code;
+        // ENOENT = lost a delete race with a concurrent caller; silent.
+        // EACCES/EPERM = $TMPDIR permissions broken (e.g. file owned by root
+        // after a prior `sudo onebrain`) — surface so the user can chmod or
+        // remove the file before checkpoint writes start failing too.
+        if (code !== 'ENOENT') {
+          process.stderr.write(
+            `onebrain: cannot remove stale state file ${stateFile} (${code ?? 'unknown'})\n`,
+          );
+        }
       }
     }
-  } catch {
-    // Non-fatal — stale cleanup is best-effort
+  } catch (err) {
+    // stat()/exists() races on the file we just observed are non-fatal, but
+    // anything other than ENOENT is worth seeing — it would mask the same
+    // permissions class as the unlink branch above.
+    const code = (err as NodeJS.ErrnoException | undefined)?.code;
+    if (code && code !== 'ENOENT') {
+      process.stderr.write(`onebrain: cleanStaleStateFile failed (${code})\n`);
+    }
   }
 }
 
@@ -259,6 +430,7 @@ async function queryQmdUnembedded(): Promise<number> {
 export async function runSessionInit(
   vaultRoot: string,
   tmpDir: string = osTmpdir(),
+  procLookup: ProcLookup = defaultProcLookup,
 ): Promise<SessionInitResult> {
   // Validate vault.yml — block if missing or malformed
   try {
@@ -268,7 +440,7 @@ export async function runSessionInit(
   }
 
   // Resolve session token and clean up stale state
-  const sessionToken = await resolveSessionToken(tmpDir);
+  const sessionToken = await resolveSessionToken(tmpDir, procLookup);
   await cleanStaleStateFile(sessionToken, tmpDir);
 
   // Format datetime
