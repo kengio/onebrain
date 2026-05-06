@@ -371,7 +371,12 @@ export async function checkPluginFiles(vaultRoot: string): Promise<DoctorResult>
 // checkVaultYmlKeys
 // ---------------------------------------------------------------------------
 
-const REQUIRED_VAULT_YML_KEYS = ['update_channel', 'folders'] as const;
+const REQUIRED_VAULT_YML_KEYS = ['folders'] as const;
+// Keys whose absence is a recoverable warning (auto-fix supplies a default)
+// rather than a blocking error. update_channel was previously required+error;
+// downgraded to warning + auto-fix in v2.1.11 to match the migration step that
+// now backfills `update_channel: stable`.
+const SOFT_REQUIRED_VAULT_YML_KEYS = ['update_channel'] as const;
 const REQUIRED_FOLDER_KEYS = [
   'inbox',
   'projects',
@@ -419,9 +424,14 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Required top-level keys
+  // Required top-level keys (hard — error)
   for (const key of REQUIRED_VAULT_YML_KEYS) {
     if (raw[key] === undefined) errors.push(`missing key: ${key}`);
+  }
+
+  // Soft-required top-level keys (warn — auto-fix supplies a default)
+  for (const key of SOFT_REQUIRED_VAULT_YML_KEYS) {
+    if (raw[key] === undefined) warnings.push(`missing key: ${key}`);
   }
 
   // Required folder sub-keys
@@ -430,7 +440,7 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
     if (folders[key] === undefined) errors.push(`missing folders.${key}`);
   }
 
-  // update_channel value validation
+  // update_channel value validation (only when present — absence handled above)
   const updateChannel = raw['update_channel'];
   if (updateChannel !== undefined && updateChannel !== 'stable' && updateChannel !== 'next') {
     errors.push(`invalid update_channel: ${String(updateChannel)} (must be stable or next)`);
@@ -475,14 +485,19 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
   }
 
   if (warnings.length > 0) {
-    const fixableWarnings = warnings.filter(
+    const hasDeprecated = warnings.some(
       (w) =>
         w.includes('onebrain_version') || w.includes('method') || w.includes('runtime.harness'),
     );
-    const hint =
-      fixableWarnings.length > 0
-        ? 'Run onebrain doctor --fix to remove deprecated keys'
-        : undefined;
+    const hasMissingSoftKey = warnings.some((w) => w.startsWith('missing key:'));
+    let hint: string | undefined;
+    if (hasMissingSoftKey && hasDeprecated) {
+      hint = 'Run onebrain doctor --fix to repair vault.yml';
+    } else if (hasMissingSoftKey) {
+      hint = 'Run onebrain doctor --fix to backfill defaults';
+    } else if (hasDeprecated) {
+      hint = 'Run onebrain doctor --fix to remove deprecated keys';
+    }
     return {
       check: 'vault.yml-keys',
       status: 'warn',
@@ -497,6 +512,59 @@ export async function checkVaultYmlKeys(vaultRoot: string): Promise<DoctorResult
     status: 'ok',
     message: 'schema ok',
   };
+}
+
+// ---------------------------------------------------------------------------
+// checkClaudeSettings — vault-level [vault]/.claude/settings.json drift
+// ---------------------------------------------------------------------------
+
+const STALE_MARKETPLACE_REPO = 'kengio/onebrain';
+const CANONICAL_MARKETPLACE_REPO = 'onebrain-ai/onebrain';
+
+/**
+ * Check vault-level `[vault]/.claude/settings.json` for stale OneBrain
+ * marketplace config. The repo was renamed `kengio/onebrain` →
+ * `onebrain-ai/onebrain`; GitHub auto-redirects, but the literal in settings
+ * is stale and worth a one-time rewrite. Skips silently when the file or key
+ * is missing.
+ */
+export async function checkClaudeSettings(vaultRoot: string): Promise<DoctorResult> {
+  const settingsPath = join(vaultRoot, '.claude', 'settings.json');
+  const file = Bun.file(settingsPath);
+
+  if (!(await file.exists())) {
+    return { check: 'claude-settings', status: 'ok', message: 'no vault settings.json' };
+  }
+
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(await file.text()) as Record<string, unknown>;
+  } catch {
+    return {
+      check: 'claude-settings',
+      status: 'warn',
+      message: 'settings.json contains invalid JSON',
+    };
+  }
+
+  const marketplaces = raw['extraKnownMarketplaces'] as Record<string, unknown> | undefined;
+  const onebrain = marketplaces?.['onebrain'] as Record<string, unknown> | undefined;
+  const source = onebrain?.['source'] as Record<string, unknown> | undefined;
+  const repo = source?.['repo'];
+
+  if (repo === STALE_MARKETPLACE_REPO) {
+    return {
+      check: 'claude-settings',
+      status: 'warn',
+      message: 'stale marketplace repo',
+      hint: 'Run onebrain doctor --fix to rewrite to onebrain-ai/onebrain',
+      details: [
+        `stale extraKnownMarketplaces.onebrain.source.repo: ${STALE_MARKETPLACE_REPO} → ${CANONICAL_MARKETPLACE_REPO}`,
+      ],
+    };
+  }
+
+  return { check: 'claude-settings', status: 'ok', message: 'ok' };
 }
 
 // ---------------------------------------------------------------------------

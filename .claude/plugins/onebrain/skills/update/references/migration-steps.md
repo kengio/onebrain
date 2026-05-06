@@ -120,8 +120,17 @@ Runs every /update — idempotent. Ensures all hooks point to the correct script
 - Expected: 0 orphans, 0 dead links, 0 non-compliant names, MEMORY-INDEX.md present
 - If any check fails: surface to user with suggestion to run /doctor --fix
 
-**Step 8: Initialize vault.yml stats + recap block**
-- **Skip if:** vault.yml already has both `stats:` and `recap:` blocks
+**Step 8: Initialize vault.yml stats + recap block + update_channel backfill**
+- **Skip if:** vault.yml already has both `stats:` and `recap:` blocks AND `update_channel:` is present
 - Add stats: block: set last_doctor_run to today; leave last_memory_review and last_recap absent (written on first use)
 - Add recap: block: min_sessions: 6, min_frequency: 2
+- If `update_channel:` is missing, set it to `"stable"` (backfill for vaults migrated before update_channel became required)
 - Skip if vault.yml doesn't exist or user opted out via --skip-stats
+
+**Step 9: Backfill `[vault]/.claude/settings.json` marketplace repo**
+- **Skip if:** `[vault]/.claude/settings.json` does not exist
+- Read `[vault]/.claude/settings.json` as JSON, preserving 2-space indentation and trailing newline
+- If `extraKnownMarketplaces.onebrain.source.repo` exactly equals `"kengio/onebrain"`, rewrite to `"onebrain-ai/onebrain"` (the canonical repo path; auto-redirects already work but the literal is stale)
+- Use exact-literal match — do NOT match patterns broader than `"kengio/onebrain"` (zero false-positive risk)
+- Atomic write: write to `[vault]/.claude/settings.json.tmp` then rename
+- No-op if file missing, key missing, or value already canonical (idempotent — safe to run twice)

@@ -1,6 +1,6 @@
 ---
-latest_version: 2.1.10
-released: 2026-05-05
+latest_version: 2.1.11
+released: 2026-05-06
 ---
 
 # CLI Changelog
@@ -12,6 +12,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.11 — feat(doctor + vault-sync): backfill vault-side config drift
+
+- feat(validator): downgrade missing `update_channel` from error → warning (#133)
+- feat(validator): warn on stale `extraKnownMarketplaces.onebrain.source.repo: kengio/onebrain` in vault `.claude/settings.json`
+- feat(doctor --fix): auto-add `update_channel: stable` to vault.yml (#133)
+- feat(doctor --fix): auto-rewrite stale `extraKnownMarketplaces.onebrain.source.repo` → `onebrain-ai/onebrain` in vault `.claude/settings.json`
+- feat(vault-sync): write `lastUpdated` to `installed_plugins.json` entry after pin (#132)
+- feat(vault-sync): dedup orphan `onebrain@onebrain` entries whose `projectPath` is missing (#132)
+- test(doctor): cover new validator severity + auto-fix behavior
+- test(vault-sync): cover lastUpdated write + orphan dedup
 
 ## v2.1.10 — fix: whitelist `-session-` infix in orphan-scan + migrate filters
 

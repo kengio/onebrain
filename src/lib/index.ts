@@ -19,4 +19,7 @@ export {
   checkPluginFiles,
   checkVaultYmlKeys,
   checkSettingsHooks,
+  checkClaudeSettings,
 } from './validator.js';
+
+export { atomicWrite } from './fs-atomic.js';

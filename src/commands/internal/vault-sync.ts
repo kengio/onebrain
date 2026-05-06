@@ -17,22 +17,13 @@
  * Non-TTY: plain text prefixed with "vault-sync:"
  */
 
-import {
-  mkdir,
-  mkdtemp,
-  readFile,
-  readdir,
-  rename,
-  rm,
-  stat,
-  unlink,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { intro, outro, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+import { atomicWrite } from '../../lib/index.js';
 import { makeStepFn } from './cli-ui.js';
 import { detectHarness } from './harness.js';
 
@@ -57,6 +48,8 @@ export interface VaultSyncOptions {
   includeObsidian?: boolean;
   /** When true, suppress clack intro/outro and use cli-ui bar format (called as sub-operation from init). */
   embedded?: boolean;
+  /** Injectable now (for tests — defaults to () => new Date()). */
+  now?: () => Date;
 }
 
 export interface VaultSyncResult {
@@ -335,10 +328,7 @@ async function updateVaultYml(vaultRoot: string, updateChannel: string): Promise
   const raw = (parseYaml(text) ?? {}) as Record<string, unknown>;
   raw['update_channel'] = updateChannel;
 
-  const updated = stringifyYaml(raw, { lineWidth: 0 });
-  const tmpPath = `${vaultYmlPath}.tmp`;
-  await writeFile(tmpPath, updated, 'utf8');
-  await rename(tmpPath, vaultYmlPath);
+  await atomicWrite(vaultYmlPath, stringifyYaml(raw, { lineWidth: 0 }), 'vault.yml');
 }
 
 // ---------------------------------------------------------------------------
@@ -346,9 +336,12 @@ async function updateVaultYml(vaultRoot: string, updateChannel: string): Promise
 // ---------------------------------------------------------------------------
 
 /**
- * Read plugin.json version from the synced plugin dir.
+ * Read plugin.json `version` and `lastUpdated` from the synced plugin dir.
+ * `lastUpdated` is optional in plugin.json — callers fall back to `new Date().toISOString()`.
  */
-async function readPluginVersion(vaultRoot: string): Promise<string> {
+async function readPluginMetadata(
+  vaultRoot: string,
+): Promise<{ version: string; lastUpdated: string | undefined }> {
   // plugin.json lives in .claude/plugins/onebrain/.claude-plugin/plugin.json
   const pluginJsonPath = join(
     vaultRoot,
@@ -361,9 +354,12 @@ async function readPluginVersion(vaultRoot: string): Promise<string> {
   try {
     const text = await readFile(pluginJsonPath, 'utf8');
     const parsed = JSON.parse(text) as Record<string, unknown>;
-    return typeof parsed['version'] === 'string' ? parsed['version'] : 'unknown';
+    const version = typeof parsed['version'] === 'string' ? parsed['version'] : 'unknown';
+    const lastUpdated =
+      typeof parsed['lastUpdated'] === 'string' ? parsed['lastUpdated'] : undefined;
+    return { version, lastUpdated };
   } catch {
-    return 'unknown';
+    return { version: 'unknown', lastUpdated: undefined };
   }
 }
 
@@ -375,6 +371,7 @@ async function pinToVault(
   vaultRoot: string,
   installedPluginsPath: string,
   installedPluginsCacheDir: string | undefined,
+  now: () => Date = () => new Date(),
 ): Promise<PinResult> {
   // Read installed_plugins.json
   let text: string;
@@ -403,7 +400,9 @@ async function pinToVault(
   }
 
   const vaultPluginDir = join(vaultRoot, '.claude', 'plugins', 'onebrain');
-  const pluginVersion = await readPluginVersion(vaultRoot);
+  const { version: pluginVersion, lastUpdated: pluginLastUpdated } =
+    await readPluginMetadata(vaultRoot);
+  const updatedAt = pluginLastUpdated ?? now().toISOString();
 
   // Determine cache dir: installed_plugins.json parent → plugins/ → cache/
   const cacheDir = installedPluginsCacheDir ?? join(dirname(installedPluginsPath), 'cache');
@@ -418,6 +417,40 @@ async function pinToVault(
   }
 
   let changed = false;
+
+  // Dedup orphan `onebrain@onebrain` entries whose `projectPath` no longer exists.
+  // Only ENOENT counts as orphan — any other stat error (EACCES on an unmounted
+  // external drive, EIO, etc.) preserves the entry so we don't silently delete
+  // user data. Limited to `onebrain@onebrain` plugin key (per-vault project pins).
+  const ONEBRAIN_KEY = 'onebrain@onebrain';
+  if (Array.isArray(plugins[ONEBRAIN_KEY])) {
+    const before = plugins[ONEBRAIN_KEY] as Array<Record<string, unknown>>;
+    const keep: Array<Record<string, unknown>> = [];
+    for (const entry of before) {
+      const projectPath = entry['projectPath'];
+      if (typeof projectPath !== 'string') {
+        keep.push(entry);
+        continue;
+      }
+      try {
+        await stat(projectPath);
+        keep.push(entry);
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException)?.code;
+        if (code === 'ENOENT') continue; // genuine orphan — drop
+        // Any other code (EACCES, EIO, ENOTDIR, …): preserve + warn.
+        process.stderr.write(
+          `vault-sync: pin warning: stat ${projectPath}: ${code ?? 'unknown'}\n`,
+        );
+        keep.push(entry);
+      }
+    }
+    if (keep.length !== before.length) {
+      plugins[ONEBRAIN_KEY] = keep;
+      changed = true;
+    }
+  }
+
   for (const key of onebrainKeys) {
     const entries = plugins[key] as Array<Record<string, unknown>>;
     for (const entry of entries) {
@@ -426,22 +459,34 @@ async function pinToVault(
         continue;
       }
 
-      // Only rewrite if installPath is inside the cache dir
+      // Scope refresh to the vault being synced (entries whose installPath is
+      // already this vault's plugin dir, OR that still point at the cache and
+      // will be rewritten to it). Other vaults pinned to different installPaths
+      // are left alone — syncing vault A must not stomp vault B's pinned version.
       let inCache = false;
       try {
-        // resolves any symlinks before comparison (normalize)
         inCache = installPath.startsWith(`${cacheDir}/`) || installPath === cacheDir;
       } catch {
         inCache = false;
       }
+      const isThisVault = installPath === vaultPluginDir;
 
-      if (!inCache) {
+      if (inCache) {
+        entry['installPath'] = vaultPluginDir;
+        changed = true;
+      } else if (!isThisVault) {
+        // Different vault — skip; do not touch its version/lastUpdated.
         continue;
       }
 
-      entry['installPath'] = vaultPluginDir;
-      entry['version'] = pluginVersion;
-      changed = true;
+      // Refresh version on this vault's entry; only bump lastUpdated when
+      // version actually changes so back-to-back syncs of the same version
+      // produce a byte-identical installed_plugins.json.
+      if (entry['version'] !== pluginVersion) {
+        entry['version'] = pluginVersion;
+        entry['lastUpdated'] = updatedAt;
+        changed = true;
+      }
     }
   }
 
@@ -449,11 +494,7 @@ async function pinToVault(
     return { skipped: false }; // Already pinned — no change needed
   }
 
-  // Atomic write via temp file + rename
-  const tmpPath = `${installedPluginsPath}.tmp`;
-  await writeFile(tmpPath, JSON.stringify(data, null, 4), 'utf8');
-  // rename is atomic on POSIX
-  await rename(tmpPath, installedPluginsPath);
+  await atomicWrite(installedPluginsPath, JSON.stringify(data, null, 4), 'installed_plugins.json');
 
   return { skipped: false };
 }
@@ -727,6 +768,7 @@ export async function runVaultSync(
           vaultRoot,
           installedPluginsPath,
           installedPluginsCacheDir,
+          opts.now,
         );
         result.pinSkipped = pinResult.skipped;
         if (pinResult.skipped) {

@@ -2,6 +2,8 @@ import pc from 'picocolors';
 import {
   type DoctorResult,
   type VaultConfig,
+  atomicWrite,
+  checkClaudeSettings,
   checkFolders,
   checkOrphanCheckpoints,
   checkPluginFiles,
@@ -42,6 +44,7 @@ export interface DoctorOptions {
   checkPluginFilesFn?: (vaultDir: string) => Promise<DoctorResult>;
   checkVaultYmlKeysFn?: (vaultDir: string) => Promise<DoctorResult>;
   checkSettingsHooksFn?: (vaultDir: string, config: VaultConfig) => Promise<DoctorResult>;
+  checkClaudeSettingsFn?: (vaultDir: string) => Promise<DoctorResult>;
   registerHooksFn?: (vaultDir: string) => Promise<void>;
   /** Injectable delay (for tests — pass `async () => {}` to skip animation delays). */
   delayFn?: (ms: number) => Promise<void>;
@@ -52,6 +55,8 @@ export interface DoctorCommandResult {
   exitCode: number;
   errorCount: number;
   warningCount: number;
+  /** Number of fixes that threw during `--fix`. 0 when --fix wasn't requested. */
+  fixFailedCount: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +75,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   const checkPluginFilesFn = opts.checkPluginFilesFn ?? checkPluginFiles;
   const checkVaultYmlKeysFn = opts.checkVaultYmlKeysFn ?? checkVaultYmlKeys;
   const checkSettingsHooksFn = opts.checkSettingsHooksFn ?? checkSettingsHooks;
+  const checkClaudeSettingsFn = opts.checkClaudeSettingsFn ?? checkClaudeSettings;
 
   if (isTTY) {
     await printBanner();
@@ -112,8 +118,16 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   if (vaultYmlResult.status === 'ok') {
     try {
       config = await loadVaultConfigFn(vaultDir);
-    } catch {
-      // use default config
+    } catch (err) {
+      // ENOENT → first-run path: defaults are correct, stay silent.
+      // Any other code (YAML parse, EACCES, EIO) needs to surface so the user
+      // doesn't silently see "vault.yml ok" while the rest of doctor falls back
+      // to defaults that don't match their actual layout.
+      const code = (err as NodeJS.ErrnoException)?.code;
+      if (code !== 'ENOENT') {
+        const msg = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`doctor: vault.yml load warning: ${msg}\n`);
+      }
     }
   }
   await randDelay();
@@ -129,6 +143,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
   let pluginFilesResult: DoctorResult;
   let vaultYmlKeysResult: DoctorResult;
   let settingsHooksResult: DoctorResult;
+  let claudeSettingsResult: DoctorResult;
 
   if (isTTY) {
     const sp2 = createStep('⚙️', 'Config schema');
@@ -160,6 +175,11 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     qmdResult = await checkQmdEmbeddingsFn(config);
     await randDelay();
     sp7!.stop(fmtResult(qmdResult), qmdResult.details);
+
+    const sp8 = createStep('🛒', 'Marketplace config');
+    claudeSettingsResult = await checkClaudeSettingsFn(vaultDir);
+    await randDelay();
+    sp8!.stop(fmtResult(claudeSettingsResult), claudeSettingsResult.details);
   } else {
     [
       foldersResult,
@@ -168,6 +188,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       pluginFilesResult,
       vaultYmlKeysResult,
       settingsHooksResult,
+      claudeSettingsResult,
     ] = await Promise.all([
       checkFoldersFn(vaultDir, config),
       checkQmdEmbeddingsFn(config),
@@ -175,6 +196,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       checkPluginFilesFn(vaultDir),
       checkVaultYmlKeysFn(vaultDir),
       checkSettingsHooksFn(vaultDir, config),
+      checkClaudeSettingsFn(vaultDir),
     ]);
   }
 
@@ -186,6 +208,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     settingsHooksResult,
     orphanResult,
     qmdResult,
+    claudeSettingsResult,
   ];
 
   const totalChecks = results.length;
@@ -226,15 +249,18 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
     }
   }
 
+  let fixFailedCount = 0;
   if (opts.fix) {
-    await applyFixes(vaultDir, results, isTTY, opts.registerHooksFn);
+    fixFailedCount = await applyFixes(vaultDir, results, isTTY, opts.registerHooksFn);
   }
 
+  const ok = errorCount === 0 && fixFailedCount === 0;
   return {
-    ok: errorCount === 0,
-    exitCode: errorCount > 0 ? 1 : 0,
+    ok,
+    exitCode: ok ? 0 : 1,
     errorCount,
     warningCount,
+    fixFailedCount,
   };
 }
 
@@ -324,24 +350,30 @@ function getFix(r: DoctorResult): Fix | null {
     };
   }
 
-  // vault.yml-keys: deprecated keys → remove them
+  // vault.yml-keys: deprecated keys → remove them; missing soft-required keys → backfill
   const hasDeprecatedKeys = r.details?.some(
     (d) =>
       d.includes('deprecated key: onebrain_version') ||
       d.includes('deprecated key: method') ||
       d.includes('deprecated key: runtime.harness'),
   );
-  if (r.check === 'vault.yml-keys' && r.status === 'warn' && hasDeprecatedKeys) {
+  const hasMissingUpdateChannel = r.details?.some((d) => d === 'missing key: update_channel');
+  if (
+    r.check === 'vault.yml-keys' &&
+    r.status === 'warn' &&
+    (hasDeprecatedKeys || hasMissingUpdateChannel)
+  ) {
     const deprecated = (r.details ?? [])
       .filter((d) => d.startsWith('deprecated key:'))
       .map((d) => d.slice('deprecated key: '.length).split(' ')[0] ?? d);
+    const fixParts: string[] = [];
+    if (hasMissingUpdateChannel) fixParts.push('add update_channel: stable');
+    if (deprecated.length > 0) fixParts.push(`remove deprecated: ${deprecated.join(', ')}`);
     const description =
-      deprecated.length > 0
-        ? `Remove deprecated keys from vault.yml: ${deprecated.join(', ')}`
-        : 'Remove deprecated keys from vault.yml';
+      fixParts.length > 0 ? `Fix vault.yml: ${fixParts.join('; ')}` : 'Fix vault.yml';
     return {
       fn: async (vaultDir) => {
-        const { readFile, writeFile, rename } = await import('node:fs/promises');
+        const { readFile } = await import('node:fs/promises');
         const { join } = await import('node:path');
         const { parse, stringify } = await import('yaml');
         const vaultYmlPath = join(vaultDir, 'vault.yml');
@@ -360,10 +392,10 @@ function getFix(r: DoctorResult): Fix | null {
             }
           }
         }
-        const updated = stringify(raw, { lineWidth: 0 });
-        const tmpPath = `${vaultYmlPath}.tmp`;
-        await writeFile(tmpPath, updated, 'utf8');
-        await rename(tmpPath, vaultYmlPath);
+        if (details.some((d) => d === 'missing key: update_channel')) {
+          raw['update_channel'] = 'stable';
+        }
+        await atomicWrite(vaultYmlPath, stringify(raw, { lineWidth: 0 }), 'vault.yml');
       },
       description,
     };
@@ -410,6 +442,33 @@ function getFix(r: DoctorResult): Fix | null {
     };
   }
 
+  // claude-settings: stale extraKnownMarketplaces.onebrain.source.repo → rewrite
+  if (
+    r.check === 'claude-settings' &&
+    r.status === 'warn' &&
+    r.details?.some((d) => d.startsWith('stale extraKnownMarketplaces.onebrain.source.repo:'))
+  ) {
+    return {
+      fn: async (vaultDir) => {
+        const { readFile } = await import('node:fs/promises');
+        const { join } = await import('node:path');
+        const settingsPath = join(vaultDir, '.claude', 'settings.json');
+        const text = await readFile(settingsPath, 'utf8');
+        const raw = JSON.parse(text) as Record<string, unknown>;
+        const marketplaces = raw['extraKnownMarketplaces'] as Record<string, unknown> | undefined;
+        const onebrain = marketplaces?.['onebrain'] as Record<string, unknown> | undefined;
+        const source = onebrain?.['source'] as Record<string, unknown> | undefined;
+        if (!source || source['repo'] !== 'kengio/onebrain') return; // idempotent — already canonical or absent
+        source['repo'] = 'onebrain-ai/onebrain';
+        // Preserve 2-space indentation (matches Claude Code's own formatter) + trailing newline
+        const trailingNewline = text.endsWith('\n') ? '\n' : '';
+        const updated = `${JSON.stringify(raw, null, 2)}${trailingNewline}`;
+        await atomicWrite(settingsPath, updated, '.claude/settings.json');
+      },
+      description: 'Rewrite stale marketplace repo: kengio/onebrain → onebrain-ai/onebrain',
+    };
+  }
+
   // folders missing → mkdir -p
   if (r.check === 'folders' && r.status === 'error' && r.hint) {
     const missingStr = r.hint.replace('Missing: ', '');
@@ -437,7 +496,7 @@ async function applyFixes(
   results: DoctorResult[],
   isTTY: boolean,
   registerHooksFn: ((vaultDir: string) => Promise<void>) | undefined,
-): Promise<void> {
+): Promise<number> {
   const fixable = results.filter((r) => r.status !== 'ok' && getFix(r) !== null);
 
   if (fixable.length === 0) {
@@ -445,7 +504,7 @@ async function applyFixes(
     // "Nothing to fix" as a plain line (no `│` prefix) to match that closure.
     if (isTTY) writeLine(`${pc.green('◆')}  Nothing to fix`);
     else writeLine('nothing to fix');
-    return;
+    return 0;
   }
 
   if (isTTY) {
@@ -465,13 +524,14 @@ async function applyFixes(
       barLine(pc.dim('No'));
       barBlank();
       close(`No changes made — run ${pc.cyan('onebrain doctor --fix')} to apply`);
-      return;
+      return 0;
     }
     barLine('Yes');
     barBlank();
   }
 
   let fixed = 0;
+  let fixFailed = 0;
   const unfixable: DoctorResult[] = [];
 
   for (const r of results) {
@@ -486,6 +546,7 @@ async function applyFixes(
       fixed++;
       if (isTTY) barLine(`${pc.green('◆')}  ${fix.description}`);
     } catch (err) {
+      fixFailed++;
       const errMsg = err instanceof Error ? err.message : String(err);
       if (isTTY) {
         barLine(`${pc.yellow('▲')}  Could not fix ${r.check}: ${errMsg}`);
@@ -498,6 +559,9 @@ async function applyFixes(
   if (isTTY) {
     barBlank();
     if (fixed > 0) barLine(`${pc.green('◆')}  Fixed ${fixed} issue(s)`);
+    if (fixFailed > 0) {
+      barLine(`${pc.yellow('▲')}  ${fixFailed} fix(es) failed — see warnings above`);
+    }
     if (unfixable.length > 0) {
       barLine(`${pc.yellow('▲')}  ${unfixable.length} issue(s) require manual action:`);
       for (const r of unfixable) {
@@ -508,8 +572,11 @@ async function applyFixes(
     close('Done');
   } else {
     process.stdout.write(`fixed: ${fixed}\n`);
+    if (fixFailed > 0) process.stdout.write(`fix-failed: ${fixFailed}\n`);
     if (unfixable.length > 0) {
       process.stdout.write(`manual: ${unfixable.map((r) => r.check).join(', ')}\n`);
     }
   }
+
+  return fixFailed;
 }

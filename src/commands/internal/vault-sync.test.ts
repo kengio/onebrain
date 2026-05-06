@@ -383,6 +383,101 @@ describe('runVaultSync', () => {
     expect(result.error).toContain('403');
   });
 
+  // ── Test 14: pin writes lastUpdated (#132) ─────────────────────────────
+
+  it('pin writes lastUpdated to onebrain@onebrain entry — falls back to now() when plugin.json has none', async () => {
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    const entryPath = join(cacheDir, 'onebrain', 'onebrain', '1.10.0');
+    await mkdir(entryPath, { recursive: true });
+
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            id: 'onebrain',
+            source: 'project',
+            installPath: entryPath,
+            version: '1.10.0',
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    // Tarball plugin.json carries no `lastUpdated` → vault-sync falls back to now()
+    const fixedNow = new Date('2026-05-06T12:00:00.000Z');
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: installedPath,
+      installedPluginsCacheDir: cacheDir,
+      now: () => fixedNow,
+    });
+
+    expect(result.ok).toBe(true);
+    const after = JSON.parse(await readFile(installedPath, 'utf8'));
+    const entry = after.plugins['onebrain@onebrain'][0];
+    expect(entry.lastUpdated).toBe(fixedNow.toISOString());
+    expect(entry.version).toBe('1.11.0'); // matches tarball plugin.json
+  });
+
+  // ── Test 15: pin dedups orphan onebrain@onebrain entries (#132) ────────
+
+  it('pin removes orphan onebrain@onebrain entries whose projectPath is missing; preserves others', async () => {
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    const validProject = await mkdtemp(join(tmpdir(), 'onebrain-valid-vault-'));
+
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            id: 'onebrain',
+            source: 'project',
+            installPath: join(vaultDir, '.claude/plugins/onebrain'),
+            projectPath: validProject,
+            version: '1.10.0',
+          },
+          {
+            id: 'onebrain',
+            source: 'project',
+            installPath: join(vaultDir, '.claude/plugins/onebrain'),
+            projectPath: `/tmp/nonexistent-vault-${Date.now()}`,
+            version: '1.10.0',
+          },
+        ],
+        // Different plugin — must be preserved entirely (even orphans)
+        'other-plugin@somewhere': [
+          {
+            id: 'other-plugin',
+            source: 'project',
+            projectPath: `/tmp/another-nonexistent-${Date.now()}`,
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await mkdir(pluginsDir, { recursive: true });
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: installedPath,
+      installedPluginsCacheDir: cacheDir,
+    });
+
+    expect(result.ok).toBe(true);
+    const after = JSON.parse(await readFile(installedPath, 'utf8'));
+    // Orphan removed; valid kept
+    expect(after.plugins['onebrain@onebrain'].length).toBe(1);
+    expect(after.plugins['onebrain@onebrain'][0].projectPath).toBe(validProject);
+    // Other plugin entry untouched even though its projectPath also doesn't exist
+    expect(after.plugins['other-plugin@somewhere'].length).toBe(1);
+
+    await rm(validProject, { recursive: true });
+  });
+
   // ── Test 13: filesRemoved counts actual deletions only ─────────────────
 
   it('filesRemoved counts actual deletions: unlinkFn throws for one of 2 stale files → filesRemoved === 1', async () => {
@@ -412,5 +507,162 @@ describe('runVaultSync', () => {
     expect(result.ok).toBe(true);
     // Only 1 of the 2 stale files was actually deleted
     expect(result.filesRemoved).toBe(1);
+  });
+
+  // ── Test 16: cross-vault isolation — syncing vault A leaves vault B alone ──
+
+  it('pin only refreshes the entry whose installPath matches THIS vault', async () => {
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    await mkdir(pluginsDir, { recursive: true });
+
+    const otherVaultPluginDir = '/path/to/other/vault/.claude/plugins/onebrain';
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            // This vault — should be refreshed
+            id: 'onebrain',
+            source: 'project',
+            installPath: join(vaultDir, '.claude/plugins/onebrain'),
+            version: '1.10.0',
+            lastUpdated: '2026-01-01T00:00:00.000Z',
+          },
+          {
+            // Different vault — must stay byte-identical
+            id: 'onebrain',
+            source: 'project',
+            installPath: otherVaultPluginDir,
+            version: '2.0.0',
+            lastUpdated: '2025-12-31T23:59:59.000Z',
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: installedPath,
+      installedPluginsCacheDir: cacheDir,
+    });
+
+    expect(result.ok).toBe(true);
+    const after = JSON.parse(await readFile(installedPath, 'utf8'));
+    const entries = after.plugins['onebrain@onebrain'];
+
+    // This vault's entry: refreshed to tarball version
+    const thisVaultEntry = entries.find(
+      (e: { installPath: string }) => e.installPath === join(vaultDir, '.claude/plugins/onebrain'),
+    );
+    expect(thisVaultEntry.version).toBe('1.11.0');
+
+    // Other vault's entry: untouched
+    const otherVaultEntry = entries.find(
+      (e: { installPath: string }) => e.installPath === otherVaultPluginDir,
+    );
+    expect(otherVaultEntry.version).toBe('2.0.0');
+    expect(otherVaultEntry.lastUpdated).toBe('2025-12-31T23:59:59.000Z');
+  });
+
+  // ── Test 17: idempotency — back-to-back syncs at same version are byte-identical ──
+
+  it('pin is idempotent: second sync at same version produces byte-identical installed_plugins.json', async () => {
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    await mkdir(pluginsDir, { recursive: true });
+
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            id: 'onebrain',
+            source: 'project',
+            installPath: join(vaultDir, '.claude/plugins/onebrain'),
+            version: '1.11.0', // matches tarball
+            lastUpdated: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    // First sync
+    await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: installedPath,
+      installedPluginsCacheDir: cacheDir,
+    });
+    const firstBytes = await readFile(installedPath, 'utf8');
+
+    // Second sync with a different `now` — version unchanged → lastUpdated must NOT churn
+    await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: installedPath,
+      installedPluginsCacheDir: cacheDir,
+      now: () => new Date('2027-06-15T12:00:00.000Z'),
+    });
+    const secondBytes = await readFile(installedPath, 'utf8');
+
+    expect(secondBytes).toBe(firstBytes);
+  });
+
+  // ── Test 18: orphan dedup preserves entry when stat fails with EACCES (#3) ──
+
+  it('orphan dedup preserves entry when projectPath stat throws non-ENOENT (e.g. EACCES on unmounted drive)', async () => {
+    // Unix-only: chmod 0o000 doesn't yield EACCES on Windows the same way.
+    if (process.platform === 'win32') return;
+
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    await mkdir(pluginsDir, { recursive: true });
+
+    // Simulate unmounted external drive: a path under macOS's /Volumes/<missing>
+    // would yield ENOENT not EACCES, so we use a path that would EACCES on a
+    // real install — e.g. a random component under /private/var/db/* which
+    // restricts access. Easier + portable: write into a directory we then
+    // chmod 000 so stat() on a nested file returns EACCES.
+    const lockedParent = join(vaultDir, 'locked-parent');
+    await mkdir(lockedParent, { recursive: true });
+    const inaccessiblePath = join(lockedParent, 'subdir');
+    await mkdir(inaccessiblePath, { recursive: true });
+    // chmod 000 on the parent → stat on inaccessiblePath throws EACCES
+    const { chmod } = await import('node:fs/promises');
+    await chmod(lockedParent, 0o000);
+
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            id: 'onebrain',
+            source: 'project',
+            installPath: join(vaultDir, '.claude/plugins/onebrain'),
+            projectPath: inaccessiblePath,
+            version: '1.10.0',
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    try {
+      const result = await runVaultSync(vaultDir, {
+        fetchFn: mockFetchWithTarball(tarball),
+        installedPluginsPath: installedPath,
+        installedPluginsCacheDir: cacheDir,
+      });
+
+      expect(result.ok).toBe(true);
+      const after = JSON.parse(await readFile(installedPath, 'utf8'));
+      // Entry preserved despite EACCES
+      expect(after.plugins['onebrain@onebrain'].length).toBe(1);
+      expect(after.plugins['onebrain@onebrain'][0].projectPath).toBe(inaccessiblePath);
+    } finally {
+      // Restore perms so afterEach rm -rf can clean up
+      await chmod(lockedParent, 0o755);
+    }
   });
 });
