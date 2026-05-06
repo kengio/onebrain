@@ -43,7 +43,7 @@ describe('runRegisterHooks', () => {
 
     expect(result.ok).toBe(true);
 
-    // Only Stop is registered today; any other event is non-allowed.
+    // Only Stop should be added (PostCompact removed in v2.1.6)
     expect(result.hooks['Stop']).toBe('added');
 
     // Full permission set added
@@ -75,16 +75,6 @@ describe('runRegisterHooks', () => {
 
     const perms = (settings['permissions'] as { allow: string[] }).allow;
     expect(perms).toHaveLength(14);
-
-    // Negative-harness assertion — Claude path must not touch .gemini/.
-    // Guards against a future bug where registerGeminiHooks is mistakenly
-    // wired into the Claude code path.
-    let geminiExists = false;
-    try {
-      await readFile(join(tempDir, '.gemini', 'settings.json'), 'utf8');
-      geminiExists = true;
-    } catch {}
-    expect(geminiExists).toBe(false);
   });
 
   test('arbitrary non-allowed hook with onebrain command is treated as stale and removed (e.g. UserPromptSubmit)', async () => {
@@ -153,6 +143,39 @@ describe('runRegisterHooks', () => {
     const ups = hooks['UserPromptSubmit']?.[0]?.hooks ?? [];
     expect(ups).toHaveLength(1);
     expect(ups[0]?.command).toBe('my-custom-script.sh');
+  });
+
+  test('stale PreCompact and PostCompact hooks are removed when present in existing settings.json', async () => {
+    const settingsPath = join(tempDir, '.claude', 'settings.json');
+    await mkdir(join(tempDir, '.claude'), { recursive: true });
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          PreCompact: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint precompact' }],
+            },
+          ],
+          PostCompact: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint postcompact' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir: tempDir });
+
+    const settings = await readSettingsFile(tempDir);
+    const hooks = settings['hooks'] as Record<string, unknown>;
+    expect(hooks['PreCompact']).toBeUndefined();
+    expect(hooks['PostCompact']).toBeUndefined(); // removed as stale (v2.1.6)
+    expect(hooks['Stop']).toBeDefined();
   });
 
   test('hook entries include type:command and matcher fields', async () => {
@@ -696,31 +719,6 @@ describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
 describe('registerGeminiHooks', () => {
   let vaultDir: string;
 
-  // Helpers — read the resulting settings.json + collect every command string
-  // across all events for shape assertions.
-  async function readGeminiSettings(): Promise<Record<string, unknown>> {
-    const text = await readFile(join(vaultDir, '.gemini', 'settings.json'), 'utf8');
-    return JSON.parse(text) as Record<string, unknown>;
-  }
-  function flattenHookCommands(
-    hooks: Record<string, Array<{ matcher?: string; hooks: Array<{ command: string }> }>>,
-  ): string[] {
-    return Object.values(hooks).flatMap((groups) =>
-      groups.flatMap((g) => g.hooks.map((h) => h.command)),
-    );
-  }
-  // Stage bundled TOML files in the vault's plugin path so the
-  // copy-on-detect step has something to read. Mirrors what `vault-sync`
-  // would deploy in production.
-  async function stageBundledCommands(skills: string[]): Promise<void> {
-    const bundledDir = join(vaultDir, '.claude', 'plugins', 'onebrain', 'gemini', 'commands');
-    await mkdir(bundledDir, { recursive: true });
-    for (const skill of skills) {
-      const content = `description = "Activate OneBrain ${skill} skill"\nprompt = "Please activate the '${skill}' skill and follow its procedural workflow."\n`;
-      await writeFile(join(bundledDir, `${skill}.toml`), content, 'utf8');
-    }
-  }
-
   beforeEach(async () => {
     vaultDir = join(
       tmpdir(),
@@ -737,144 +735,35 @@ describe('registerGeminiHooks', () => {
     delete process.env['ONEBRAIN_HARNESS'];
   });
 
-  test('no .gemini/settings.json → file is created with AfterAgent (Claude Stop equivalent)', async () => {
+  test('no .gemini/settings.json (ENOENT) → result.ok === true, no file created', async () => {
+    const result = await runRegisterHooks({ vaultDir });
+    expect(result.ok).toBe(true);
+    // File should not exist
+    const geminiSettings = join(vaultDir, '.gemini', 'settings.json');
+    let exists = false;
+    try {
+      await readFile(geminiSettings, 'utf8');
+      exists = true;
+    } catch {
+      exists = false;
+    }
+    expect(exists).toBe(false);
+  });
+
+  test('.gemini/settings.json exists → Stop written', async () => {
+    const geminiDir = join(vaultDir, '.gemini');
+    await mkdir(geminiDir, { recursive: true });
+    const geminiSettings = join(geminiDir, 'settings.json');
+    await writeFile(geminiSettings, JSON.stringify({}), 'utf8');
+
     const result = await runRegisterHooks({ vaultDir });
     expect(result.ok).toBe(true);
 
-    const settings = await readGeminiSettings();
-    const hooks = settings['hooks'] as Record<string, unknown>;
-    // Mirror Claude's hook set exactly: only Stop is registered there, so
-    // only its Gemini equivalent (AfterAgent) is registered here.
-    expect(hooks['AfterAgent']).toBeDefined();
-    expect(hooks['PreCompress']).toBeUndefined();
-    expect(hooks['SessionStart']).toBeUndefined();
-    expect(hooks['SessionEnd']).toBeUndefined();
-  });
-
-  test('all hook commands are JSON-protocol-wrapped (correct order, full shape)', async () => {
-    await runRegisterHooks({ vaultDir });
-    const settings = await readGeminiSettings();
-    const hooks = settings['hooks'] as Record<
-      string,
-      Array<{ matcher?: string; hooks: Array<{ command: string }> }>
-    >;
-    // Single regex enforces shape AND order: cmd FIRST, then redirect, then
-    // semicolon, then JSON echo. Two `toContain` calls would let a transposed
-    // shape (`echo '{}'; cmd > /dev/null`) pass — Gemini reads stdout, so
-    // order is functionally critical.
-    const wrapShape = /^onebrain .+ > \/dev\/null 2>&1; echo '\{\}'$/;
-    const all = flattenHookCommands(hooks);
-    expect(all.length).toBeGreaterThan(0);
-    for (const cmd of all) {
-      expect(cmd).toMatch(wrapShape);
-    }
-  });
-
-  test('AfterAgent matcher is `*` (matches all triggers)', async () => {
-    await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<
-      string,
-      Array<{ matcher?: string }>
-    >;
-    expect(hooks['AfterAgent']?.[0]?.matcher).toBe('*');
-  });
-
-  test('qmd_collection set → AfterTool hook with qmd-reindex added (and JSON-wrapped)', async () => {
-    await writeFile(
-      join(vaultDir, 'vault.yml'),
-      'update_channel: stable\nqmd_collection: ob-test\n',
-      'utf8',
-    );
-    await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<
-      string,
-      Array<{ matcher?: string; hooks: Array<{ command: string }> }>
-    >;
-    // Gemini event for "after tool execution" is `AfterTool`, not `PostToolUse`.
-    const qmdEntries = hooks['AfterTool'] ?? [];
-    expect(qmdEntries.length).toBeGreaterThan(0);
-    expect(qmdEntries[0]?.matcher).toBe('Write|Edit');
-    // qmd command must follow the same JSON-wrap protocol as lifecycle hooks
-    // — Gemini drops any hook that doesn't emit `{}` on stdout.
-    expect(qmdEntries[0]?.hooks[0]?.command).toMatch(
-      /^onebrain qmd-reindex > \/dev\/null 2>&1; echo '\{\}'$/,
-    );
-  });
-
-  test('bare unwrapped command in existing settings is migrated to wrapped form (no duplicate)', async () => {
-    const geminiDir = join(vaultDir, '.gemini');
-    await mkdir(geminiDir, { recursive: true });
-    // Older config wrote the raw command without the JSON wrap. The migration
-    // path must rewrite it in place rather than appending a wrapped duplicate.
-    await writeFile(
-      join(geminiDir, 'settings.json'),
-      JSON.stringify({
-        hooks: {
-          AfterAgent: [
-            { matcher: '*', hooks: [{ type: 'command', command: 'onebrain checkpoint stop' }] },
-          ],
-        },
-      }),
-      'utf8',
-    );
-    await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<
-      string,
-      Array<{ hooks: Array<{ command: string }> }>
-    >;
-    const cmds = (hooks['AfterAgent'] ?? []).flatMap((g) => g.hooks.map((h) => h.command));
-    expect(cmds).toHaveLength(1);
-    expect(cmds[0]).toMatch(/^onebrain checkpoint stop > \/dev\/null 2>&1; echo '\{\}'$/);
-  });
-
-  test('qmd_collection unset → user hook with qmd-reindex substring is preserved', async () => {
-    const geminiDir = join(vaultDir, '.gemini');
-    await mkdir(geminiDir, { recursive: true });
-    // User-authored hook that mentions qmd-reindex but is NOT an onebrain
-    // command — the strip pass must leave it alone.
-    await writeFile(
-      join(geminiDir, 'settings.json'),
-      JSON.stringify({
-        hooks: {
-          AfterTool: [
-            {
-              matcher: 'Write|Edit',
-              hooks: [{ type: 'command', command: 'my-qmd-reindex-wrapper.sh' }],
-            },
-          ],
-        },
-      }),
-      'utf8',
-    );
-    await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<
-      string,
-      Array<{ hooks: Array<{ command: string }> }>
-    >;
-    const cmds = (hooks['AfterTool'] ?? []).flatMap((g) => g.hooks.map((h) => h.command));
-    expect(cmds).toContain('my-qmd-reindex-wrapper.sh');
-  });
-
-  test('qmd_collection unset → existing AfterTool qmd entry is stripped', async () => {
-    const geminiDir = join(vaultDir, '.gemini');
-    await mkdir(geminiDir, { recursive: true });
-    await writeFile(
-      join(geminiDir, 'settings.json'),
-      JSON.stringify({
-        hooks: {
-          AfterTool: [
-            {
-              matcher: 'Write|Edit',
-              hooks: [{ type: 'command', command: "onebrain qmd-reindex; echo '{}'" }],
-            },
-          ],
-        },
-      }),
-      'utf8',
-    );
-    await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<string, unknown>;
-    expect(hooks['AfterTool']).toBeUndefined();
+    const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
+    const hooks = settings['hooks'] as Record<string, unknown[]>;
+    expect(hooks['Stop']).toBeDefined();
+    expect(Array.isArray(hooks['Stop'])).toBe(true);
+    expect((hooks['Stop'] as unknown[]).length).toBeGreaterThan(0);
   });
 
   test('corrupt JSON in .gemini/settings.json → result.ok === true (swallowed silently)', async () => {
@@ -887,134 +776,25 @@ describe('registerGeminiHooks', () => {
   });
 
   test('idempotency: run twice → no duplicate hook commands per event', async () => {
-    await runRegisterHooks({ vaultDir });
-    await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<
-      string,
-      Array<{ hooks: Array<{ command: string }> }>
-    >;
-    const groups = hooks['AfterAgent'] ?? [];
-    const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
-    const unique = new Set(allCommands);
-    expect(unique.size).toBe(allCommands.length);
-    // Single registered hook → a fresh idempotent run yields exactly one entry.
-    expect(allCommands).toHaveLength(1);
-  });
-
-  test('stale onebrain entry under non-allowed event is pruned', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
-    await writeFile(
-      join(geminiDir, 'settings.json'),
-      JSON.stringify({
-        hooks: {
-          BeforeTool: [
-            { matcher: '*', hooks: [{ type: 'command', command: 'onebrain checkpoint stop' }] },
-          ],
-        },
-      }),
-      'utf8',
-    );
-    await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<string, unknown>;
-    expect(hooks['BeforeTool']).toBeUndefined();
-  });
+    await writeFile(join(geminiDir, 'settings.json'), JSON.stringify({}), 'utf8');
 
-  test('non-onebrain user hook under any event is preserved', async () => {
-    const geminiDir = join(vaultDir, '.gemini');
-    await mkdir(geminiDir, { recursive: true });
-    await writeFile(
-      join(geminiDir, 'settings.json'),
-      JSON.stringify({
-        hooks: {
-          BeforeTool: [
-            { matcher: '*', hooks: [{ type: 'command', command: 'echo my-custom-hook' }] },
-          ],
-        },
-      }),
-      'utf8',
-    );
     await runRegisterHooks({ vaultDir });
-    const hooks = (await readGeminiSettings())['hooks'] as Record<
+    await runRegisterHooks({ vaultDir });
+
+    const settings = JSON.parse(await readFile(join(geminiDir, 'settings.json'), 'utf8')) as Record<
       string,
-      Array<{ hooks: Array<{ command: string }> }>
+      unknown
     >;
-    expect(hooks['BeforeTool']).toBeDefined();
-    expect(hooks['BeforeTool']?.[0]?.hooks[0]?.command).toBe('echo my-custom-hook');
-  });
+    const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
 
-  test('bundle copy: missing source dir → no error, no .gemini/commands created', async () => {
-    await runRegisterHooks({ vaultDir });
-    let exists = false;
-    try {
-      await readFile(join(vaultDir, '.gemini', 'commands', 'placeholder.toml'));
-      exists = true;
-    } catch {
-      // expected — directory may exist but should be empty / not touched
+    for (const event of ['Stop', 'PostCompact']) {
+      const groups = hooks[event] ?? [];
+      const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
+      const unique = new Set(allCommands);
+      expect(unique.size).toBe(allCommands.length);
     }
-    expect(exists).toBe(false);
-  });
-
-  test('bundle copy: copies all .toml files from plugin to .gemini/commands/', async () => {
-    await stageBundledCommands(['braindump', 'capture', 'doctor']);
-    await runRegisterHooks({ vaultDir });
-
-    const targetDir = join(vaultDir, '.gemini', 'commands');
-    const braindump = await readFile(join(targetDir, 'braindump.toml'), 'utf8');
-    const capture = await readFile(join(targetDir, 'capture.toml'), 'utf8');
-    const doctor = await readFile(join(targetDir, 'doctor.toml'), 'utf8');
-    expect(braindump).toContain('Activate OneBrain braindump skill');
-    expect(capture).toContain("the 'capture' skill");
-    expect(doctor).toContain("the 'doctor' skill");
-  });
-
-  test('bundle copy: ignores non-toml files in source', async () => {
-    const bundledDir = join(vaultDir, '.claude', 'plugins', 'onebrain', 'gemini', 'commands');
-    await mkdir(bundledDir, { recursive: true });
-    await writeFile(join(bundledDir, 'README.md'), '# notes', 'utf8');
-    await writeFile(
-      join(bundledDir, 'capture.toml'),
-      `description = "Activate OneBrain capture skill"\nprompt = "test"\n`,
-      'utf8',
-    );
-
-    await runRegisterHooks({ vaultDir });
-
-    const targetDir = join(vaultDir, '.gemini', 'commands');
-    const captured = await readFile(join(targetDir, 'capture.toml'), 'utf8');
-    expect(captured).toContain('test');
-    let readmeExists = false;
-    try {
-      await readFile(join(targetDir, 'README.md'));
-      readmeExists = true;
-    } catch {}
-    expect(readmeExists).toBe(false);
-  });
-
-  test('bundle copy: idempotent — second run leaves files byte-identical', async () => {
-    await stageBundledCommands(['capture']);
-    await runRegisterHooks({ vaultDir });
-    const first = await readFile(join(vaultDir, '.gemini', 'commands', 'capture.toml'), 'utf8');
-    await runRegisterHooks({ vaultDir });
-    const second = await readFile(join(vaultDir, '.gemini', 'commands', 'capture.toml'), 'utf8');
-    expect(second).toBe(first);
-  });
-
-  test('bundle copy: stale target content is overwritten with bundled version', async () => {
-    await stageBundledCommands(['capture']);
-    const targetDir = join(vaultDir, '.gemini', 'commands');
-    await mkdir(targetDir, { recursive: true });
-    await writeFile(
-      join(targetDir, 'capture.toml'),
-      'description = "STALE"\nprompt = "old"\n',
-      'utf8',
-    );
-
-    await runRegisterHooks({ vaultDir });
-
-    const after = await readFile(join(targetDir, 'capture.toml'), 'utf8');
-    expect(after).toContain("the 'capture' skill");
-    expect(after).not.toContain('STALE');
   });
 });
 

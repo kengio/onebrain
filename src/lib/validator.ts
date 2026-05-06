@@ -576,7 +576,8 @@ const REQUIRED_HOOKS: Array<{ event: string; cmdSubstring: string }> = [
 ];
 
 // Hook events OneBrain is allowed to register. Any onebrain-* command found
-// under any other hook event is stale and must be removed.
+// under any other hook event (PreCompact, PostCompact, UserPromptSubmit,
+// SessionStart, etc.) is stale and must be removed.
 const ALLOWED_HOOK_EVENTS = new Set(['Stop', 'PostToolUse']);
 
 const QMD_HOOK_SUBSTRING = 'onebrain qmd-reindex';
@@ -645,7 +646,8 @@ export async function checkSettingsHooks(
   }
 
   // Stale hooks: any onebrain-* command registered under an event NOT in the
-  // allowed set (Stop, PostToolUse). Catches anything legacy or experimental.
+  // allowed set (Stop, PostToolUse). Catches PreCompact, PostCompact,
+  // UserPromptSubmit, SessionStart, and anything else legacy or experimental.
   // Also catches stale bash-script references (checkpoint-hook.sh, session-init.sh).
   for (const event of Object.keys(settings.hooks ?? {})) {
     const groups = settings.hooks?.[event] ?? [];

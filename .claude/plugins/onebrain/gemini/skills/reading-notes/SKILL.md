@@ -1,0 +1,155 @@
+---
+name: reading-notes
+description: "Process a book or article into structured progressive summary notes saved to the resources folder. Use when the user has finished reading something and wants to capture structured notes — 'I just finished reading X', 'take notes on this book'. Do NOT use for: fetching and summarizing a URL now (use summarize), capturing a raw thought (use capture), or web research (use research)."
+---
+
+# Reading Notes
+
+Turn a book or article into structured, permanent notes using the progressive summarization method, saved to your resources folder.
+
+Usage: `/reading-notes [title]` or `/reading-notes` then follow prompts.
+
+---
+
+
+## Step 1: Get the Book/Article Info
+
+Ask:
+> What are you taking notes on?
+> - Title:
+> - Author:
+> - Type: book / article / paper / other
+
+Then ask:
+> Are you:
+> a) Sharing notes/highlights you've already taken : I'll organize them
+> b) Describing the book from memory : I'll structure what you share
+> c) Pasting raw text or quotes : I'll extract and synthesize
+
+---
+
+## Step 2: Gather Content
+
+Based on their answer:
+- **a)**: Ask them to paste their notes/highlights
+- **b)**: Ask open questions: "What were the main ideas? What did you take away? Any memorable quotes?"
+- **c)**: Ask them to paste the text
+
+Take what they give, however messy.
+
+---
+
+## Step 3: Synthesize
+
+From the raw input, extract:
+
+- **Core thesis**: What is this book/article fundamentally about?
+- **Key ideas**: The 3-7 most important concepts
+- **Supporting evidence or examples**: What supports each idea?
+- **Memorable quotes**: Exact words worth keeping
+- **Surprises or challenges**: What contradicted or changed your thinking?
+- **Actionable takeaways**: What can you do differently because of this?
+- **Questions it raised**: What do you want to explore further?
+
+---
+
+## Step 4: Choose Subfolder
+
+1. Glob existing subfolders in `[resources_folder]/*/`
+2. Suggest a kebab-case subfolder based on the book/article's topic (max 2 levels, e.g. `books/productivity` or `science/neuroscience`)
+3. Present to user: "I'd file this under `[resources_folder]/[suggested-path]/`. OK?"
+4. Use confirmed path for file creation.
+
+---
+
+## Step 5: Create the Note
+
+File: `[resources_folder]/[subfolder]/[Book Title] - Notes.md` (subfolder confirmed in Step 4)
+
+```markdown
+---
+tags: [reference, topic-tag]
+created: YYYY-MM-DD
+source: /reading-notes
+author: [Author]
+type: [book/article/paper]
+status: [reading/finished]
+rating: [1-5 if they want to rate it]
+---
+
+# [Book Title]
+*by [Author]*
+
+## Core Thesis
+
+[One paragraph : what is this fundamentally about?]
+
+## Key Ideas
+
+### [Idea 1 Title]
+[Explanation in your own words]
+
+> "[Supporting quote]"
+
+### [Idea 2 Title]
+[Explanation]
+
+### [Idea 3 Title]
+[Explanation]
+
+## Memorable Quotes
+
+> "[Quote 1]"
+> : [Author], p. [page if known]
+
+> "[Quote 2]"
+
+## My Takeaways
+
+- [What this means for my work/life]
+- [What I want to try or apply]
+
+## Questions & Further Exploration
+
+- [Question raised by this book]
+- [Related topic to research: [[Related Note]]]
+
+## Raw Highlights
+
+<!-- Paste original highlights here for reference -->
+[Raw content if provided]
+
+## Related
+
+[[Related Note 1]]
+[[Related Note 2]]
+```
+
+Populate `## Related` by searching for vault notes related to the book's topic (use qmd if available, otherwise Glob `[resources_folder]/**/*.md`, `[knowledge_folder]/**/*.md`).
+
+---
+
+## Step 6: Suggest Tags (background)
+
+After writing, dispatch the **Tag Suggester** agent (`agents/tag-suggester.md`) as a background sub-agent (`run_in_background: true`, `mode: "bypassPermissions"`), passing `new_note_path`, `new_note_content`, `vault_root`, `knowledge_folder`, `resources_folder`, `areas_folder`, and `projects_folder`. Proceed to Follow Up immediately.
+
+---
+
+## Step 7: Follow Up
+
+──────────────────────────────────────────────────────────────
+📚 Reading Notes — {Title}
+──────────────────────────────────────────────────────────────
+Author: {Author}
+Saved to `[resources_folder]/[subfolder]/[Title] - Notes.md`
+
+→ Add to a reading list in a project note?
+→ Run /connect to find related vault notes.
+→ Set a revisit reminder? (I'll add a task)
+
+---
+
+## Known Gotchas
+
+- **Input option (b) — describing from memory — is the hardest path.** Users often conflate the author's ideas with their own take. Ask separate questions: "What was the book's main argument?" and "What did YOU conclude or take away?" to separate source material from personal synthesis.
+

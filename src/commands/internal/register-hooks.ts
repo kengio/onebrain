@@ -9,7 +9,7 @@
  * Non-TTY: plain text prefixed with "register-hooks:"
  */
 
-import { readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { spinner } from '@clack/prompts';
@@ -121,8 +121,8 @@ function checkHookPresence(
 
 // Hook events OneBrain is allowed to register (PostToolUse handled separately
 // for qmd). Any onebrain-* command found under any other event is stale and
-// must be removed — this catches anything previously registered, including
-// historical events that have since been retired.
+// must be removed — this catches PreCompact, PostCompact, UserPromptSubmit,
+// SessionStart, and any future hook that might have been registered before.
 const ALLOWED_HOOK_EVENTS = new Set(['Stop', 'PostToolUse']);
 
 function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
@@ -318,255 +318,21 @@ function applyPermissions(settings: SettingsJson): string[] {
 // Step 4: Gemini harness (non-fatal)
 // ---------------------------------------------------------------------------
 
-// Gemini CLI hooks live in [vault]/.gemini/settings.json. OneBrain mirrors
-// the Claude registration set exactly — currently `Stop` + `PostToolUse` (qmd
-// only) — translated into Gemini's event vocabulary (Before/After style):
-//   Claude `Stop`        → Gemini `AfterAgent` (matcher `*`)
-//   Claude `PostToolUse` → Gemini `AfterTool`  (matcher `Write|Edit`, qmd only)
-//
-// We do NOT register Gemini's `PreCompress`, `SessionStart`, `SessionEnd`, or
-// any other event — Claude doesn't register their equivalents either, so the
-// harnesses stay symmetric. Adding events here means adding them to the
-// Claude side first.
-//
-// Every hook command must emit `{}` on stdout — Gemini ignores hooks that
-// don't satisfy the JSON protocol — so we redirect the inner command's
-// output to /dev/null and append `echo '{}'`.
-interface GeminiHookSpec {
-  command: string;
-  matcher: string;
-}
-
-const GEMINI_HOOK_SPECS: Record<string, GeminiHookSpec> = {
-  AfterAgent: { command: 'onebrain checkpoint stop', matcher: '*' },
-};
-
-const GEMINI_QMD_EVENT = 'AfterTool';
-
-// Reuses Claude's `Write|Edit` matcher value verbatim because the live Gemini
-// CLI accepts the same pipe-delimited tool-name union for the `AfterTool`
-// event. If a future Gemini release diverges (e.g. requires array form or
-// glob syntax), introduce a separate `GEMINI_QMD_MATCHER` constant — the
-// reuse below is a known coupling.
-const GEMINI_QMD_MATCHER = QMD_MATCHER;
-
-function wrapGeminiCommand(cmd: string): string {
-  return `${cmd} > /dev/null 2>&1; echo '{}'`;
-}
-
-/**
- * Apply Gemini-shaped hooks to a settings object. Distinct from `applyHooks`
- * because Gemini uses a different event vocabulary and requires JSON-wrapped
- * commands. Stale `onebrain*` entries under non-allowed events are pruned;
- * idempotent for already-registered hooks.
- */
-function applyGeminiHooks(
-  settings: SettingsJson,
-  qmdCollection: string | undefined,
-): Record<string, HookStatus> {
-  if (!settings.hooks) settings.hooks = {};
-  const hooks = settings.hooks;
-  const result: Record<string, HookStatus> = {};
-
-  const allowedEvents = new Set<string>([...Object.keys(GEMINI_HOOK_SPECS), GEMINI_QMD_EVENT]);
-  for (const event of Object.keys(hooks)) {
-    if (allowedEvents.has(event)) continue;
-    const groups = hooks[event] ?? [];
-    const filtered = groups
-      .map((group) => ({
-        ...group,
-        hooks: (group.hooks ?? []).filter((entry) => !(entry.command ?? '').includes('onebrain')),
-      }))
-      .filter((group) => (group.hooks?.length ?? 0) > 0);
-    if (filtered.length === 0) {
-      delete hooks[event];
-    } else {
-      hooks[event] = filtered;
-    }
-  }
-
-  for (const [event, spec] of Object.entries(GEMINI_HOOK_SPECS)) {
-    const wrapped = wrapGeminiCommand(spec.command);
-    if (!hooks[event]) hooks[event] = [];
-    const groups = hooks[event];
-
-    // Migrate any bare (unwrapped) onebrain commands in this group to the
-    // wrapped form before checking presence — older configs / hand edits may
-    // have written the raw command without `> /dev/null 2>&1; echo '{}'`,
-    // and Gemini ignores hooks that don't emit JSON on stdout. Without
-    // migration, the presence check would miss the bare entry and we'd
-    // append a duplicate wrapped one, leaving the hook firing twice.
-    let migrated = false;
-    for (const group of groups) {
-      for (const entry of group.hooks ?? []) {
-        if (entry.command === spec.command) {
-          entry.command = wrapped;
-          if (!entry.type) entry.type = 'command';
-          migrated = true;
-        }
-      }
-    }
-
-    const already = groups.some((g) => g.hooks?.some((h) => h.command === wrapped));
-    if (already) {
-      result[event] = migrated ? 'migrated' : 'ok';
-    } else {
-      groups.push({ matcher: spec.matcher, hooks: [{ type: 'command', command: wrapped }] });
-      result[event] = 'added';
-    }
-  }
-
-  if (qmdCollection) {
-    const wrapped = wrapGeminiCommand(QMD_CMD);
-    if (!hooks[GEMINI_QMD_EVENT]) hooks[GEMINI_QMD_EVENT] = [];
-    const groups = hooks[GEMINI_QMD_EVENT];
-
-    // Same bare-command migration for qmd-reindex.
-    let migrated = false;
-    for (const group of groups) {
-      for (const entry of group.hooks ?? []) {
-        if (entry.command === QMD_CMD) {
-          entry.command = wrapped;
-          if (!entry.type) entry.type = 'command';
-          migrated = true;
-        }
-      }
-    }
-
-    const already = groups.some((g) => g.hooks?.some((h) => h.command === wrapped));
-    if (already) {
-      result[GEMINI_QMD_EVENT] = migrated ? 'migrated' : 'ok';
-    } else {
-      groups.push({
-        matcher: GEMINI_QMD_MATCHER,
-        hooks: [{ type: 'command', command: wrapped }],
-      });
-      result[GEMINI_QMD_EVENT] = 'added';
-    }
-  } else {
-    // qmd disabled in vault.yml — strip OneBrain-owned qmd entries only.
-    // The previous filter `!cmd.includes('qmd-reindex')` would also drop
-    // user-authored hooks that happened to mention `qmd-reindex` (e.g. a
-    // wrapper script). Scoping to entries that contain BOTH `onebrain` and
-    // `qmd-reindex` matches the OneBrain-owned identification used elsewhere
-    // in this file.
-    const groups = hooks[GEMINI_QMD_EVENT] ?? [];
-    const filtered = groups
-      .map((group) => ({
-        ...group,
-        hooks: (group.hooks ?? []).filter((entry) => {
-          const cmd = entry.command ?? '';
-          return !(cmd.includes('onebrain') && cmd.includes('qmd-reindex'));
-        }),
-      }))
-      .filter((group) => (group.hooks?.length ?? 0) > 0);
-    if (filtered.length === 0 && groups.length > 0) {
-      delete hooks[GEMINI_QMD_EVENT];
-    } else if (filtered.length !== groups.length) {
-      hooks[GEMINI_QMD_EVENT] = filtered;
-    }
-  }
-
-  return result;
-}
-
-// ---------------------------------------------------------------------------
-// Gemini slash-command bundle copy
-// ---------------------------------------------------------------------------
-
-// Slash command TOMLs are bundled in the plugin at .claude/plugins/onebrain/
-// gemini/commands/ — version-controlled, hand-customizable, and synced to the
-// vault by `onebrain vault-sync`. On register, copy each .toml file from that
-// bundled source to the vault's .gemini/commands/ directory where Gemini CLI
-// looks them up.
-//
-// Bundle policy: TOMLs are HAND-CURATED, not runtime-generated. To add a new
-// skill's TOML, write the file directly under that path and commit it. To
-// customize a skill's Gemini prompt, edit its individual `.toml` directly.
-// Do NOT add a runtime generator that iterates `skills/` — it would create
-// drift between the bundle and the live skill set, and break customizations.
-//
-// The same pattern applies to future harness bundles (e.g. .claude/plugins/
-// onebrain/codex/) — see [[Multi-Harness Config Reference]] in the vault.
-
-interface BundleCopyResult {
-  copied: string[];
-  unchanged: string[];
-}
-
-async function copyBundledGeminiCommands(vaultRoot: string): Promise<BundleCopyResult> {
-  const bundledDir = join(vaultRoot, '.claude', 'plugins', 'onebrain', 'gemini', 'commands');
-  const targetDir = join(vaultRoot, '.gemini', 'commands');
-  const result: BundleCopyResult = { copied: [], unchanged: [] };
-
-  let entries: string[];
-  try {
-    entries = await readdir(bundledDir);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return result;
-    throw err;
-  }
-
-  await mkdirIdempotent(targetDir);
-
-  for (const entry of entries) {
-    if (!entry.endsWith('.toml')) continue;
-    const src = join(bundledDir, entry);
-    const dst = join(targetDir, entry);
-
-    let isFile = false;
-    try {
-      isFile = (await stat(src)).isFile();
-    } catch {
-      continue;
-    }
-    if (!isFile) continue;
-
-    const desired = await readFile(src, 'utf8');
-    let existing: string | null = null;
-    try {
-      existing = await readFile(dst, 'utf8');
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
-    }
-    if (existing === desired) {
-      result.unchanged.push(entry);
-      continue;
-    }
-    await writeFile(dst, desired, 'utf8');
-    result.copied.push(entry);
-  }
-
-  return result;
-}
-
-async function registerGeminiHooks(
-  vaultRoot: string,
-  qmdCollection: string | undefined,
-): Promise<{ hooks: Record<string, HookStatus>; bundle: BundleCopyResult }> {
+async function registerGeminiHooks(vaultRoot: string): Promise<void> {
   const geminiSettingsPath = join(vaultRoot, '.gemini', 'settings.json');
-  let hooksResult: Record<string, HookStatus> = {};
-  let bundleResult: BundleCopyResult = { copied: [], unchanged: [] };
-
   try {
-    let settings: SettingsJson = {};
-    try {
-      const text = await readFile(geminiSettingsPath, 'utf8');
-      settings = JSON.parse(text) as SettingsJson;
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
-      // Missing settings.json — start fresh; writeSettings creates parents
-    }
-    hooksResult = applyGeminiHooks(settings, qmdCollection);
+    // Only modify if the file already exists — skip non-fatally otherwise
+    const text = await readFile(geminiSettingsPath, 'utf8');
+    const settings = JSON.parse(text) as SettingsJson;
+    applyHooks(settings);
     await writeSettings(geminiSettingsPath, settings);
-    bundleResult = await copyBundledGeminiCommands(vaultRoot);
   } catch (err) {
-    process.stderr.write(
-      `register-hooks: gemini warning: ${err instanceof Error ? err.message : String(err)}\n`,
-    );
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      process.stderr.write(
+        `register-hooks: gemini warning: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+    }
   }
-
-  return { hooks: hooksResult, bundle: bundleResult };
 }
 
 // ---------------------------------------------------------------------------
@@ -721,20 +487,7 @@ export async function runRegisterHooks(
 
     // ── Step 4: Gemini harness (non-fatal) ────────────────────────────────
     if (harness === 'gemini') {
-      const geminiSpinner = isTTY ? spinner() : null;
-      geminiSpinner?.start('Registering Gemini hooks + commands...');
-
-      const gemini = await registerGeminiHooks(vaultRoot, qmdCollection);
-      result.hooks = gemini.hooks;
-
-      const hookEvents = Object.keys(gemini.hooks).length;
-      const bundleCount = gemini.bundle.copied.length + gemini.bundle.unchanged.length;
-      const summary = `${hookEvents} hooks, ${bundleCount} commands`;
-      if (isTTY) {
-        geminiSpinner?.stop(`Gemini  ${pc.green(summary)}`);
-      } else {
-        note(`gemini ${summary}`);
-      }
+      await registerGeminiHooks(vaultRoot);
     }
 
     // ── Step 5: Direct harness ────────────────────────────────────────────

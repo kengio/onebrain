@@ -3,9 +3,11 @@
  *
  * Implements stop/reset modes. The Stop hook is the only checkpoint signal
  * source; session logs are produced only by /wrapup (manual) or AUTO-SUMMARY
- * (end-of-session signal). Trust the Stop hook's count / time threshold to
- * drive checkpoint emission; compact events don't get special handling and
- * the count carries across them naturally.
+ * (end-of-session signal). PostCompact is intentionally NOT registered —
+ * Claude Code's PostCompact hook is observational-only (its stdout cannot
+ * reach the agent), so any signal we emitted from it would be silently
+ * ignored. Trust the Stop hook's count / time threshold to drive checkpoint
+ * emission; compact events don't get special handling.
  *
  * State file: $TMPDIR/onebrain-{session_token}.state
  * Format:     count:last_ts:last_stop_nn

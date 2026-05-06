@@ -13,14 +13,6 @@ shared instructions load.
 
 @.claude/plugins/onebrain/references/gemini-tools.md
 
-## Hooks & Slash Commands
-
-`onebrain register-hooks` writes `.gemini/settings.json` with the `AfterAgent` lifecycle hook (Gemini equivalent of Claude's `Stop` — calls `onebrain checkpoint stop`). When `qmd_collection` is set in `vault.yml`, it also adds an `AfterTool` hook with matcher `Write|Edit` for `onebrain qmd-reindex`. Both hooks are wrapped to emit the JSON `{}` Gemini expects on stdout.
-
-The same command copies pre-built slash command TOMLs from `.claude/plugins/onebrain/gemini/commands/` into `.gemini/commands/`. After running it, `/braindump`, `/capture`, `/research`, etc. are discoverable via Gemini's `/` menu.
-
-To repair a broken setup (missing slash commands, stale hooks): re-run `onebrain register-hooks` from the vault root — it is idempotent.
-
 ## Agent Instructions
 
 @.claude/plugins/onebrain/INSTRUCTIONS.md

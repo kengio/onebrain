@@ -13,15 +13,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.3.0 — feat(gemini): bundled slash command TOMLs + Universal framing
+## v2.3.0 — feat(gemini): bundle OneBrain as a native Gemini CLI extension
 
-Companion to CLI v2.2.0 (Gemini hook + bundle copy implementation). Plugin side ships the bundled artifacts that CLI deploys.
+The plugin now ships **two parallel systems** in a single source tree: the existing Claude plugin at `.claude/plugins/onebrain/` and a fully self-contained Gemini extension at `.claude/plugins/onebrain/gemini/`. Users install the Gemini side with one command — no CLI logic required.
 
-- feat(gemini/commands): 25 pre-built `.toml` files at `.claude/plugins/onebrain/gemini/commands/`, one per user-facing skill (excludes `startup/`). Each TOML follows Gemini's `description` + `prompt` schema and activates the matching skill via `Please activate the '{skill}' skill ...`
-- feat(GEMINI.md): document the `AfterAgent` hook + optional `AfterTool` qmd hook + slash command discovery; point users at `onebrain register-hooks` for repair/install
-- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing in the header so the same instructions load cleanly on either harness; tightened the hook-registration paragraph to drop forward-looking mentions of historical compact-related hooks
-- chore(docs): `/doctor` and `/update` SKILL.md + migration-steps.md describe the stale-hook sweep in event-agnostic terms ("any non-allowed event") rather than naming retired event names
-- note: TOMLs are checked-in static artifacts — re-running `register-hooks` is a copy from this directory, not runtime generation. Same pattern will apply when we add Codex / other harness bundles.
+- feat(gemini): new self-contained extension at `.claude/plugins/onebrain/gemini/` with `gemini-extension.json` manifest, `commands/*.toml` (25 user-facing skills), declarative `hooks/hooks.json` (AfterAgent for `Stop` parity + AfterTool with matcher `Write|Edit` for qmd-reindex parity, both wrapped for Gemini's JSON-on-stdout protocol), plus copies of `skills/`, `agents/`, `INSTRUCTIONS.md`, and `references/gemini-tools.md` so the extension works without reaching into the Claude plugin tree
+- feat(scripts): new `scripts/sync-gemini-extension.ts` mirrors `skills/`, `agents/`, `INSTRUCTIONS.md`, and `references/gemini-tools.md` from the Claude plugin into the Gemini extension on demand — keeps duplication consistent without a runtime generator
+- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing line points users at `gemini extensions link [vault]/.claude/plugins/onebrain/gemini` for one-command Gemini install
+- chore(docs): `/doctor` and `/update` SKILL.md + migration-steps.md + CONTRIBUTING.md + INSTRUCTIONS.md describe the stale-hook sweep in event-agnostic terms ("any non-allowed event") rather than naming retired event names
+- note: install flow — users still get Claude side via vault-sync; Gemini side is opt-in via `gemini extensions link` (per-user globally) for vaults that want it. The CLI does not write `.gemini/settings.json` or copy TOMLs at runtime — Gemini reads everything from the linked extension natively.
 
 ## v2.2.5 — fix: Windows skill + script compat (PowerShell / cmd / native Python)
 

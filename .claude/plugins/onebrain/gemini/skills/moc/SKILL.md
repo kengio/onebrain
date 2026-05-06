@@ -1,0 +1,203 @@
+---
+name: moc
+description: "Create or update the vault portal (MOC.md) at the vault root : a Map of Content with live Dataview queries, AI summary, and user Pinned section. Use when the user wants to regenerate or view the vault overview map. Do NOT use for: the task dashboard (use tasks), adding individual notes (use capture), or vault health checks (use doctor)."
+---
+
+# Vault Portal
+
+Creates or updates `MOC.md` at the vault root : a hybrid Map of Content with:
+- **AI zone:** agent-written summary callout (note counts, focus note)
+- **Dataview zone:** live queries for Tasks, Recently Modified, Projects, Areas, Knowledge, Resources, Bookmarks
+- **Static zone:** user-maintained Pinned section (never overwritten by the agent)
+
+Usage:
+- `/moc` : create or refresh MOC.md and open it in Obsidian
+
+---
+
+## Step 1: Read vault configuration
+
+Read `vault.yml` from the current working directory. If it cannot be read or parsed, stop immediately and tell the user:
+> "vault.yml exists but could not be parsed : aborting. Check vault.yml for syntax errors and try again. Error: [error]."
+
+Store `moc_path = {vault_root}/MOC.md`.
+
+---
+
+## Step 2: Scan vault for summary data
+
+Collect the following using Glob to count `.md` files:
+
+- **projects_count** : `.md` files under `[projects_folder]/` (recursive)
+- **areas_count** : `.md` files under `[areas_folder]/` (recursive)
+- **knowledge_count** : `.md` files under `[knowledge_folder]/` (recursive)
+- **resources_count** : `.md` files under `[resources_folder]/` (recursive)
+- **inbox_count** : `.md` files directly in `[inbox_folder]/` (non-recursive, direct children only)
+- **focus_note** : the single most recently modified `.md` file across projects, areas, knowledge, and resources folders. Store its display name (filename without `.md` extension) and its vault-relative path for use as a wikilink.
+
+If a folder does not exist on disk, use count 0 for that folder : this is expected for new vaults.
+
+If the Glob tool returns an error or cannot enumerate a folder that appears to exist, stop immediately and tell the user:
+> "Could not scan [folder] : MOC.md was not written. Error: [error]. Resolve the issue and try again."
+
+Do not write MOC.md with potentially incorrect counts.
+
+---
+
+## Step 3: Preserve existing Pinned section
+
+**If `MOC.md` exists:**
+- Read the file. If the read fails, stop immediately and tell the user:
+  > "Could not read existing MOC.md at [moc_path] : aborting to protect your Pinned section. Error: [error]. Resolve the file access issue and try again."
+- Extract `created:` from the frontmatter : store as `created_date` (fall back to today if absent)
+- Set `is_new_file = false`
+- Find the line that starts with `## 📌 Pinned`
+- Store everything from that line to the end of file as `pinned_content`
+- If `## 📌 Pinned` is not found in the existing file, warn the user before continuing:
+  > "Warning: Pinned section (`## 📌 Pinned`) not found in existing MOC.md : the default placeholder will be used instead. Any content you added below the last recognized section header may not be preserved."
+  Then use the default pinned block.
+
+**If `MOC.md` does not exist:**
+- Set `created_date` to today
+- Set `is_new_file = true`
+- Use the default pinned block
+
+---
+
+## Step 4: Write MOC.md
+
+Write the complete file. Replace every placeholder in the template with actual values before writing.
+
+**Placeholder reference:**
+
+| Placeholder | Value |
+|------------|-------|
+| `CREATED_DATE` | preserved `created:` date or today |
+| `TODAY` | today's date (YYYY-MM-DD) |
+| `PROJECTS_FOLDER` | `[projects_folder]` |
+| `AREAS_FOLDER` | `[areas_folder]` |
+| `KNOWLEDGE_FOLDER` | `[knowledge_folder]` |
+| `RESOURCES_FOLDER` | `[resources_folder]` |
+| `AGENT_FOLDER` | `[agent_folder]` |
+| `LOGS_FOLDER` | `[logs_folder]` |
+| `ARCHIVE_FOLDER` | `[archive_folder]` |
+| `PROJECTS_COUNT` | projects_count |
+| `AREAS_COUNT` | areas_count |
+| `KNOWLEDGE_COUNT` | knowledge_count |
+| `RESOURCES_COUNT` | resources_count |
+| `INBOX_COUNT` | inbox_count |
+| `FOCUS_LINK` | `[[vault-relative-path\|display-name]]` of focus_note : e.g. `[[01-projects/alpha/Project Alpha\|Project Alpha]]`. Use `:` if no notes found. |
+| `FIRST_RUN_LINE` | If `is_new_file` is true: `> 💡 Install the [Dataview plugin](https://github.com/blacksmithgu/obsidian-dataview) to activate live query sections.` : otherwise remove this line entirely from the output; do not insert a blank line where it was. |
+| `PINNED_CONTENT` | preserved pinned section (or default below) |
+
+**Template:**
+
+`````markdown
+---
+tags: [dashboard, moc]
+created: CREATED_DATE
+updated: TODAY
+---
+
+# 🧠 Vault Portal
+
+> [!info] Agent Summary : updated TODAY
+> **PROJECTS_COUNT** projects : **AREAS_COUNT** areas : **KNOWLEDGE_COUNT** knowledge notes : **RESOURCES_COUNT** resources : **INBOX_COUNT** inbox items
+> 🔺 Focus: FOCUS_LINK
+FIRST_RUN_LINE
+
+## ⚡ Tasks
+
+```tasks
+not done
+path does not include LOGS_FOLDER
+path does not include ARCHIVE_FOLDER
+due before in 8 days
+sort by priority
+sort by due
+```
+
+## 🕐 Recently Modified
+
+```dataview
+TABLE file.mtime AS "Modified"
+FROM ""
+WHERE !startswith(file.folder, "LOGS_FOLDER") AND !startswith(file.folder, "AGENT_FOLDER") AND !startswith(file.folder, "ARCHIVE_FOLDER") AND file.name != "MOC" AND file.name != "TASKS"
+SORT file.mtime DESC
+LIMIT 10
+```
+
+## 🚀 Projects
+
+```dataview
+LIST
+FROM "PROJECTS_FOLDER"
+SORT file.mtime DESC
+```
+
+## 🗂 Areas
+
+```dataview
+LIST
+FROM "AREAS_FOLDER"
+SORT file.name ASC
+```
+
+## 🧠 Knowledge
+
+```dataview
+TABLE length(rows) AS "Notes"
+FROM "KNOWLEDGE_FOLDER"
+GROUP BY file.folder
+SORT key ASC
+```
+
+## 📚 Resources
+
+```dataview
+LIST
+FROM "RESOURCES_FOLDER"
+SORT file.mtime DESC
+```
+
+## 🔖 Bookmarks
+
+[[Bookmarks]] : saved URLs and references.
+
+PINNED_CONTENT
+`````
+
+**Default `PINNED_CONTENT`** (used when no existing Pinned section is found):
+
+```markdown
+## 📌 Pinned
+
+<!-- Add your own permanent links and notes here. The agent will never overwrite this section. -->
+```
+
+**If the write fails**, stop immediately and tell the user:
+> "Could not write MOC.md at [moc_path]. Error: [error]. Vault root used: [vault_root]"
+
+---
+
+## Step 5: Open in Obsidian and confirm
+
+The shipped helper detects platform and emits the right URI (cygpath, percent-encoding, etc.). On macOS/Linux/MSYS just run it via Bash:
+
+```bash
+bash ".claude/plugins/onebrain/startup/scripts/open-in-obsidian.sh" "MOC.md"
+```
+
+In a PowerShell-only environment where `bash` is not on PATH, the helper still runs because Git for Windows / WSL ships `bash.exe` on PATH alongside Obsidian on Windows; if it genuinely is not present, skip the open step (the file is already saved) rather than constructing a URI by hand — manual URI assembly is exactly the pattern the helper exists to replace.
+
+Then say:
+🗺️ MOC.md updated.
+→ Opening in Obsidian...
+
+---
+
+## Known Gotchas
+
+- **MOC.md is overwritten on every `/moc` run.** The user-editable `## Pinned` section is preserved by reading it first and re-inserting it. If the Pinned section is missing from the existing file, it will not appear in the new version — warn the user if no Pinned section is found during the read.
+
+- **Dataview must be installed** in Obsidian for the query blocks to render. If the user reports that MOC.md shows raw code blocks instead of data, they need to install the Dataview community plugin.
