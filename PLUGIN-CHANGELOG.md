@@ -1,5 +1,5 @@
 ---
-latest_version: 2.2.5
+latest_version: 2.3.0
 released: 2026-05-06
 ---
 
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.0 — feat(gemini): bundled slash command TOMLs + Universal framing
+
+Companion to CLI v2.2.0 (Gemini hook + bundle copy implementation). Plugin side ships the bundled artifacts that CLI deploys.
+
+- feat(gemini/commands): 25 pre-built `.toml` files at `.claude/plugins/onebrain/gemini/commands/`, one per user-facing skill (excludes `startup/`). Each TOML follows Gemini's `description` + `prompt` schema and activates the matching skill via `Please activate the '{skill}' skill ...`
+- feat(GEMINI.md): document hooks + slash command setup; point users at `onebrain register-hooks` for repair/install
+- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing in the header so the same instructions load cleanly on either harness
+- note: TOMLs are checked-in static artifacts — re-running `register-hooks` is a copy from this directory, not runtime generation. Same pattern will apply when we add Codex / other harness bundles.
 
 ## v2.2.5 — fix: Windows skill + script compat (PowerShell / cmd / native Python)
 

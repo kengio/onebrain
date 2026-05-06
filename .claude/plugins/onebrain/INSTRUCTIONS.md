@@ -1,5 +1,7 @@
 # OneBrain : AI Instructions
 
+> **Universal — Claude Code + Gemini CLI.** This file uses Claude Code tool names; Gemini CLI loads `GEMINI.md` first which translates them to Gemini equivalents. `onebrain register-hooks` configures the right harness automatically based on `ONEBRAIN_HARNESS` or detected `.claude/` / `.gemini/` directory.
+
 <!-- ═══════════════════════════════════════════════════════════
      1. IDENTITY & SETUP
      Read first — establishes your operational role and vault configuration variables.
