@@ -111,20 +111,20 @@ The agent reaches outward FROM the vault to every surface where the work actuall
 
 ---
 
-## The Path to Co-Evolution
+## Every Session Sharpens Both
 
-A tightening 3-step loop that sharpens with every cycle.
+OneBrain runs as a tight 3-step loop. Each cycle, both sides sharpen.
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/coevo-loop-dark.svg">
-    <img alt="Co-Evolution loop — three nodes (01 INITIATE at top, 02 CAPTURE_INTENT at bottom-right, 03 MUTUAL_EVOLUTION at bottom-left) connected by curved arrows flowing clockwise" src="assets/diagrams/coevo-loop-light.svg" width="540">
+    <img alt="Co-Evolution loop — three nodes (01 CAPTURE at top, 02 EVOLVE at bottom-right, 03 WRAPUP at bottom-left) connected by curved arrows flowing clockwise" src="assets/diagrams/coevo-loop-light.svg" width="540">
   </picture>
 </p>
 
-1. **Initiate** — Install the CLI, run `/onboarding`. The agent learns your name, vault, and identity. → `npm install -g @onebrain-ai/cli`
-2. **Capture intent** — Talk in natural language. The agent writes, classifies, and links in real time. → `/braindump` · `/capture` · `/bookmark`
-3. **Mutual evolution** — `/research` and `/distill` expand your knowledge. `/learn` deepens the agent. The loop tightens. → `/research` · `/distill` · `/learn`
+1. **Capture** — Talk to the agent in natural language. It writes, classifies, and links your thoughts in real time. → `/braindump` · `/capture` · `/bookmark`
+2. **Evolve** — `/research` and `/distill` expand your knowledge. `/learn` deepens the agent. The loop tightens. → `/research` · `/distill` · `/learn`
+3. **Wrapup** — `/wrapup` consolidates the session log. `/recap` promotes lessons to memory. → `/wrapup` · `/recap`
 
 ### Behind the loop
 
