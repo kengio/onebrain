@@ -1,6 +1,6 @@
 ---
-latest_version: 2.2.3
-released: 2026-05-05
+latest_version: 2.2.4
+released: 2026-05-06
 ---
 
 # Plugin Changelog
@@ -12,6 +12,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.4 — feat(update): backfill vault-side config drift after migration
+
+- feat(/update SKILL): Step 8 now adds `update_channel: stable` to vault.yml when missing
+- feat(/update SKILL): new Step 9 rewrites stale `extraKnownMarketplaces.onebrain.source.repo` (`kengio/onebrain` → `onebrain-ai/onebrain`) in vault `.claude/settings.json`
 
 ## v2.2.3 — fix: session-log glob across /wrapup, /daily, /weekly, /distill, /reorganize, INSTRUCTIONS
 
