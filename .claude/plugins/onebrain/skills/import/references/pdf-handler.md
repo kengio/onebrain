@@ -27,13 +27,17 @@ Note Template: see `note-template.md`.
    - Key Points: bullet list of 3-7 main points from the document
 
 5. If `--attach` flag is set:
-   - Run: `mkdir -p "[vault-root]/[attachments_folder]/pdf/"`
-   - Run: `cp "[filepath]" "[vault-root]/[attachments_folder]/pdf/[filename]"`
-   - If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
+   - Ensure the directory `[vault-root]/[attachments_folder]/pdf/` exists. Prefer Node (portable across Bash/PowerShell/cmd):
+     ```
+     node -e "require('fs').mkdirSync(process.argv[1], { recursive: true })" -- "[vault-root]/[attachments_folder]/pdf/"
+     ```
+     Native shell forms also work if the active shell is known: `mkdir -p <dir>` on Bash, `New-Item -ItemType Directory -Force <dir>` on PowerShell, `mkdir <dir>` on cmd. **Do not** call `mkdir -p` from PowerShell.
+   - Copy `[filepath]` to `[vault-root]/[attachments_folder]/pdf/[filename]` (`cp` on Bash, `Copy-Item` on PowerShell, `copy` on cmd).
+   - If the copy fails: skip embed, report failure, do NOT delete inbox file, stop
    - Add `![[filename]]` embed to the note body (above the Summary section)
 
 6. Cleanup : only if step 4 (note creation) succeeded:
-   - If the file was inside the inbox folder: `rm "[filepath]"`
+   - If the file was inside the inbox folder: remove `[filepath]` (`rm` on Bash, `Remove-Item` on PowerShell, `del` on cmd)
    - If the file was an explicit path outside the inbox: do NOT delete it
    - If delete fails: report as partial success (note created, manual delete needed)
 

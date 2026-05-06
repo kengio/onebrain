@@ -62,8 +62,17 @@ After installation, verify with `which qmd` (macOS/Linux) or `where qmd` (Window
 
 ### Step 4: Generate collection name
 
-1. Get vault root directory name: `basename "$CLAUDE_PROJECT_DIR"`
-2. Generate a 6-character random hex string: try `openssl rand -hex 3` first; if that fails, try `python3 -c "import secrets; print(secrets.token_hex(3))"`. If both fail, tell the user "Could not generate a unique collection name. Please run `/qmd setup` again." and stop.
+`node` is reliably on PATH because the OneBrain CLI requires it — calling `node -e "…"` works without per-platform branching from Bash, PowerShell, and Git Bash. (Native cmd.exe needs care: `%VAR%` is still expanded inside double quotes, so a vault path containing a literal `%` will be substituted away. If the active shell is cmd, run the command through `bash -c` or PowerShell instead.)
+
+1. Get vault root directory name (replaces `basename`, which is not available on Windows):
+   ```
+   node -e "console.log(require('path').basename(process.cwd()))"
+   ```
+2. Generate a 6-character random hex string (replaces `openssl rand -hex 3` and `python3 -c …secrets.token_hex…`, neither of which is on default Windows PATH):
+   ```
+   node -e "console.log(require('crypto').randomBytes(3).toString('hex'))"
+   ```
+   If `node` itself cannot be invoked (rare — would mean the CLI is not actually installed), tell the user "Could not generate a unique collection name. Please run `/qmd setup` again." and stop.
 3. Collection name = `<vault-dirname>-<hex>` (e.g., `onebrain-a3f2c1`)
 
 ### Step 5: Create the qmd collection
@@ -142,7 +151,7 @@ Read vault.yml. If `qmd_collection` key is missing:
 
 Stop.
 
-Check `which qmd`. If not found:
+Check that `qmd` is on PATH (`which qmd` on Bash, `where qmd` on cmd, `Get-Command qmd` on PowerShell). If not found:
 > qmd is not installed. Run `/qmd setup` to install and configure it.
 
 Stop.
@@ -188,7 +197,7 @@ Read vault.yml for `qmd_collection`. If missing:
 
 Stop.
 
-Check `which qmd`. If not found:
+Check that `qmd` is on PATH (`which qmd` on Bash, `where qmd` on cmd, `Get-Command qmd` on PowerShell). If not found:
 🔴 qmd binary not found — run /qmd setup to reinstall.
 
 Stop.
@@ -215,7 +224,7 @@ Read vault.yml for `qmd_collection`. If missing:
 
 Stop.
 
-Check `which qmd`. If not found:
+Check that `qmd` is on PATH (`which qmd` on Bash, `where qmd` on cmd, `Get-Command qmd` on PowerShell). If not found:
 > qmd is not installed. Run `/qmd setup` to install and configure it.
 
 Stop.

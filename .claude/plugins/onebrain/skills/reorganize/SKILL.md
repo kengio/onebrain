@@ -138,8 +138,8 @@ Wait for response. Apply any requested adjustments before proceeding.
 
 For each approved move:
 
-1. Create the subfolder if it doesn't exist (use `mkdir -p [target_folder]/[subfolder]`)
-2. Move the file: `mv "[source_path]" "[target_path]"`
+1. Ensure the target subfolder exists (`[target_folder]/[subfolder]`). Most portable: `node -e "require('fs').mkdirSync(process.argv[1], { recursive: true })" -- "[target_folder]/[subfolder]"`. Native shell forms also work: `mkdir -p` (Bash), `New-Item -ItemType Directory -Force` (PowerShell — **never** `mkdir -p` here), `mkdir` (cmd). Existing-directory errors are non-fatal.
+2. Move the file from `[source_path]` to `[target_path]`. Use `mv` on Bash, `Move-Item` on PowerShell, `move` on cmd.
 3. Confirm each move silently; report errors immediately
 
 Process notes by folder (all knowledge, then resources, then areas, then projects, then logs, then archive).

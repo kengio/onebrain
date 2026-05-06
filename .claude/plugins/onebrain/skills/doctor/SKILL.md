@@ -81,11 +81,12 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Verify `name`, `version`, `description` fields exist and are non-empty
 
 **Plugin install path:**
-- Read `~/.claude/plugins/installed_plugins.json`
+- Read `$HOME/.claude/plugins/installed_plugins.json` (Unix) or `$env:USERPROFILE/.claude/plugins/installed_plugins.json` (Windows PowerShell). Do not pass an unexpanded `~` to file-reading tools — they will not expand it.
 - Find the entry where key starts with `onebrain@` and `scope == "project"` and `projectPath` matches the current vault
 - If not found: 🟡 "onebrain not found in installed_plugins.json — run /onboarding or /plugin to install"
-- If `installPath` is inside `~/.claude/plugins/cache/` (use `Path(installPath).relative_to(Path.home() / '.claude/plugins/cache')` or check if the path string contains `/.claude/plugins/cache/` — do not use simple `startswith` on unexpanded tilde): 🔴 "Plugin loading from user cache — run /doctor --fix to pin to vault"
-- If `installPath` is the vault plugin directory (ends with `.claude/plugins/onebrain`): ✅ "Plugin: vault-level"
+- Before any path comparison, normalize `installPath` separators with `installPath.replaceAll('\\', '/')` — Windows paths can mix backslashes and forward slashes, and substring matches against `'/.claude/plugins/cache/'` will silently fail otherwise.
+- If the normalized `installPath` contains `/.claude/plugins/cache/`: 🔴 "Plugin loading from user cache — run /doctor --fix to pin to vault"
+- If the normalized `installPath` ends with `.claude/plugins/onebrain`: ✅ "Plugin: vault-level"
 
 **INSTRUCTIONS.md:**
 - Check file exists at `.claude/plugins/onebrain/INSTRUCTIONS.md`
@@ -195,4 +196,4 @@ If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
 
 - **`--fix` is not transactional.** If Pass C is interrupted (user says "stop", or a file write fails), previously edited files are already changed but later files are not. Report each fixed file immediately as it completes so the user has a clear record of what was and was not changed if something interrupts.
 
-- **vault.yml with Windows line endings (CRLF).** If edited on Windows, YAML values may have a trailing `\r`. If a folder path existence check fails unexpectedly, strip trailing whitespace from vault.yml values before using them in file path operations.
+- **vault.yml with Windows line endings (CRLF).** If edited on Windows, YAML values may have a trailing `\r`. **Always** strip trailing whitespace from any vault.yml-derived path string (e.g. `value.replace(/\s+$/, '')` or equivalent) before passing it to file-existence checks, Glob, or Read — otherwise a folder named `00-inbox\r` will silently fail to match the on-disk `00-inbox/`. Apply this in Step 2 (folder existence) and any other step that reads a path out of vault.yml.

@@ -1,5 +1,5 @@
 ---
-latest_version: 2.2.4
+latest_version: 2.2.5
 released: 2026-05-06
 ---
 
@@ -12,6 +12,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.5 — fix: Windows skill + script compat (PowerShell / cmd / native Python)
+
+Audit pass over every skill snippet that assumed Bash / Unix-only tooling. Closes #128, #129, #130.
+
+- fix(open-in-obsidian.sh): use `cygpath -m` on MINGW/CYGWIN/MSYS to emit `C:/...` paths Obsidian accepts; percent-encode the URI so spaces and `#`/`&`/`?` in vault paths or filenames no longer truncate the launch (#130)
+- fix(reading-notes): default filename template uses ` - ` instead of ` : ` so notes save on NTFS without truncation; gotcha note removed (#130)
+- fix(import/markitdown-setup): drop the WSL-only gate on Windows; detect `python3` / `python` / `py -3` (and matching `pip` / `py -3 -m pip`) so native Windows installs can install markitdown (#128)
+- fix(qmd setup): replace `openssl rand -hex 3` / `python3 -c …` with `node -e "…randomBytes(3)…"`; `basename` swapped for a Node one-liner — Node is portable and already required by the CLI (#128)
+- fix(skills): cross-platform shell guidance — `which X || where X` for package detection; describe outcome (mkdir / mv / cp / rm / ls) so the model picks the shell-native form on PowerShell/cmd; drop `"$PWD"` from `onebrain vault-sync` (CLI defaults to cwd) (#129)
+- fix(INSTRUCTIONS startup): replace `LC_ALL=en_US.UTF-8 grep -r …` with the Grep tool — UTF-8 handling is platform-correct and PowerShell can dispatch it (#129)
+- fix(doctor SKILL): always strip trailing whitespace from vault.yml-derived paths (CRLF on Windows); normalize `installPath` separators before substring checks against the cache dir (#129)
+- fix(skills/help, /onboarding, /learn): use `$HOME` / `$env:USERPROFILE` instead of the literal `~` for Glob/Read calls — the Glob tool does not expand tildes (#129)
 
 ## v2.2.4 — feat(update): backfill vault-side config drift after migration
 

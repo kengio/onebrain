@@ -64,7 +64,7 @@ From the raw input, extract:
 
 ## Step 5: Create the Note
 
-File: `[resources_folder]/[subfolder]/[Book Title] : Notes.md` (subfolder confirmed in Step 4)
+File: `[resources_folder]/[subfolder]/[Book Title] - Notes.md` (subfolder confirmed in Step 4)
 
 ```markdown
 ---
@@ -141,7 +141,7 @@ After writing, dispatch the **Tag Suggester** agent (`agents/tag-suggester.md`) 
 📚 Reading Notes — {Title}
 ──────────────────────────────────────────────────────────────
 Author: {Author}
-Saved to `[resources_folder]/[subfolder]/[Title] : Notes.md`
+Saved to `[resources_folder]/[subfolder]/[Title] - Notes.md`
 
 → Add to a reading list in a project note?
 → Run /connect to find related vault notes.
@@ -153,4 +153,3 @@ Saved to `[resources_folder]/[subfolder]/[Title] : Notes.md`
 
 - **Input option (b) — describing from memory — is the hardest path.** Users often conflate the author's ideas with their own take. Ask separate questions: "What was the book's main argument?" and "What did YOU conclude or take away?" to separate source material from personal synthesis.
 
-- **Filename colon on Windows.** The file template uses `[Book Title] : Notes.md` with a colon, which is invalid on Windows filesystems. If vault is on Windows or synced via a Windows-incompatible path, replace ` : ` with ` - ` in the filename.

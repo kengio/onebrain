@@ -53,7 +53,22 @@ After confirming the vault update (step 7 above), also check if the installed `o
 2. Fetch latest from npm: `npm view @onebrain-ai/cli version 2>/dev/null` → parse version string. If npm unavailable or fetch fails → skip.
 3. If installed = latest → skip (no output needed).
 4. If newer version available:
-   a. Detect available package managers: `which bun 2>/dev/null` and `which npm 2>/dev/null`
+   a. Detect available package managers. Use the form matching the active shell — PowerShell 5.1 (Win10/Server 2019 default) does not parse `||` as a control operator, so do not chain `which || where` in a single command:
+      - **Bash / zsh / Git Bash:**
+        ```bash
+        which bun 2>/dev/null
+        which npm 2>/dev/null
+        ```
+      - **PowerShell:** `Get-Command` always exits 0 — interpret presence by whether the command emitted a `CommandInfo` line (non-empty stdout) rather than by exit code:
+        ```powershell
+        Get-Command bun -ErrorAction SilentlyContinue
+        Get-Command npm -ErrorAction SilentlyContinue
+        ```
+      - **cmd:**
+        ```
+        where bun 2>nul
+        where npm 2>nul
+        ```
    b. AskUserQuestion: "Update onebrain CLI from v{installed} to v{latest}?"
       - Both bun and npm available: options `npm / bun / skip` (npm as default)
       - Only bun: options `bun / skip`
@@ -87,7 +102,7 @@ Steps:
    a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/05-agent/MEMORY-YYYY-MM-DD.md`
       and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
    b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
-      - **Full vault sync:** run `onebrain vault-sync "$PWD" --branch {branch}`. Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md/PLUGIN-CHANGELOG.md to vault root (overwrite), merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only), pins plugin to vault, and clears plugin cache.
+      - **Full vault sync:** run `onebrain vault-sync --branch {branch}` (the CLI defaults the vault root to the current working directory; explicit `"$PWD"` was Bash-only and broke on PowerShell/cmd). Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md/PLUGIN-CHANGELOG.md to vault root (overwrite), merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only), pins plugin to vault, and clears plugin cache.
       - **Settings merge:** WebFetch `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys (skip any `onebrain@*` key whose marketplace points to a `directory` source — repo-dev-only, not valid in vault context); `extraKnownMarketplaces` → skip (repo-dev-only config, not valid in vault context); `hooks` → skip (handled by migration Step 6).
    c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 8 migration steps
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)

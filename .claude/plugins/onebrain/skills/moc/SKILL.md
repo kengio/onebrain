@@ -182,9 +182,13 @@ PINNED_CONTENT
 
 ## Step 5: Open in Obsidian and confirm
 
+The shipped helper detects platform and emits the right URI (cygpath, percent-encoding, etc.). On macOS/Linux/MSYS just run it via Bash:
+
 ```bash
 bash ".claude/plugins/onebrain/startup/scripts/open-in-obsidian.sh" "MOC.md"
 ```
+
+In a PowerShell-only environment where `bash` is not on PATH, the helper still runs because Git for Windows / WSL ships `bash.exe` on PATH alongside Obsidian on Windows; if it genuinely is not present, skip the open step (the file is already saved) rather than constructing a URI by hand — manual URI assembly is exactly the pattern the helper exists to replace.
 
 Then say:
 🗺️ MOC.md updated.

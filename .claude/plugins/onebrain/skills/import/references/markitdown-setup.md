@@ -9,45 +9,44 @@ command -v markitdown
 ```
 
 Exit 0 → markitdown is installed. Proceed with the handler.
-Non-zero or command not found → run OS detection below before attempting install.
+Non-zero or command not found → proceed to Python check (no OS gate; markitdown installs and runs on macOS, Linux, WSL, and native Windows).
 
-## 2. OS Detection
+## 2. Python Check
 
-Run `uname`:
-- `Darwin` → proceed to Python check
-- `Linux` AND `uname -r` contains `microsoft` or `WSL` (WSL) → treat as Linux, proceed to Python check
-- `Linux` AND `uname -r` does NOT contain `microsoft` or `WSL` (native Linux) → proceed to Python check
-- Windows non-WSL: `$OS` equals `Windows_NT` AND uname fails or returns `MINGW`/`CYGWIN` →
-  create stub note:
-  > ⚠ Windows detected (non-WSL). /import requires WSL. Run this in a WSL terminal and retry.
-  Stop. Do NOT delete the inbox file.
-- `uname` not found: proceed to Python check (assume POSIX-compatible environment).
-
-## 3. Python Check
+Try in order — first one that succeeds wins:
 
 ```bash
-python3 --version
+python3 --version    # macOS / Linux / WSL
+python --version     # Windows default Python launcher (also works on Linux when symlinked)
+py -3 --version      # Windows Python launcher (always available since Python 3.6)
 ```
 
-Not found → create stub note:
+All three fail → create stub note:
 > ⚠ Python 3 is not installed. Install Python first:
 > - macOS: `brew install python3`
 > - Linux/WSL: `sudo apt install python3`
+> - Windows: install from https://www.python.org/downloads/ or the Microsoft Store
 >
 > Then run: `pipx install markitdown` and re-import this file.
 
 Stop. Do NOT delete the inbox file.
 
-## 4. Install
+Remember which command succeeded — use the matching `pipx`/`pip` form below.
 
-Try in order:
+## 3. Install
+
+Try `pipx` first (preferred — isolated environment):
+
 ```bash
-pipx install markitdown   # preferred (isolated environment)
+pipx install markitdown
 ```
-If `pipx` is not found:
+
+If `pipx` is not on PATH, fall back to `pip` matched to whichever Python detector succeeded above:
+
 ```bash
-pip3 install markitdown   # macOS/Linux/WSL
-pip install markitdown    # fallback if pip3 not in PATH
+pip3 install markitdown         # if `python3` succeeded
+pip install markitdown          # if `python` succeeded
+py -3 -m pip install markitdown # if `py -3` succeeded (Windows)
 ```
 
 Install succeeded → retry the handler from the beginning (markitdown is now available).

@@ -31,13 +31,17 @@ Note Template: see `note-template.md`.
 
 ## --attach behavior (all image types including SVG)
 
-- Run: `mkdir -p "[vault-root]/[attachments_folder]/images/"`
-- Run: `cp "[filepath]" "[vault-root]/[attachments_folder]/images/[filename]"`
-- If `cp` fails: skip embed, report failure, do NOT delete inbox file, stop
+- Ensure the directory `[vault-root]/[attachments_folder]/images/` exists. Most reliable across shells is Node (already on PATH because the CLI requires it):
+  ```
+  node -e "require('fs').mkdirSync(process.argv[1], { recursive: true })" -- "[vault-root]/[attachments_folder]/images/"
+  ```
+  Native shell forms also work if the active shell is known: `mkdir -p <dir>` on Bash, `New-Item -ItemType Directory -Force <dir>` on PowerShell, `mkdir <dir>` on cmd. **Do not** call `mkdir -p` from PowerShell — its `mkdir` function alias treats `-p` as a positional child name and creates a directory literally named `-p`.
+- Copy `[filepath]` to `[vault-root]/[attachments_folder]/images/[filename]`. Use `cp` on Bash, `Copy-Item` on PowerShell, `copy` on cmd.
+- If the copy fails: skip embed, report failure, do NOT delete inbox file, stop
 - Add `![[filename]]` embed above the Summary section in the note
 
 ## Cleanup
 
-Only after note creation succeeded AND (if `--attach` was set) `cp` succeeded. If `cp` failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: `rm "[filepath]"`. If delete fails, report as partial success.
+Only after note creation succeeded AND (if `--attach` was set) the copy succeeded. If the copy failed, the handler already stopped; do not reach this step. If the file was inside the inbox folder: remove `[filepath]` (`rm` on Bash, `Remove-Item` on PowerShell, `del` on cmd). If delete fails, report as partial success.
 
 **Return:** Note path, or error with reason.
