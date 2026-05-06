@@ -303,7 +303,7 @@ Determine action from the reason:
 - `Stop hook blocking error` with reason matching `NN since <context>` (zero-padded NN + ` since start` or ` since checkpoint-NN`) → spawn background agent (mode: bypassPermissions) to write the checkpoint; if session_token is not in context, re-run `onebrain session-init` first — if that fails, abort silently; agent receives session_token, NN and since-context from the reason, today's date, and `[logs_folder]`; main session continues immediately after dispatching
 - Ambiguous or unknown → default to stop checkpoint
 
-OneBrain registers only the Stop hook (plus a PostToolUse hook for qmd indexing if `qmd_collection` is set in vault.yml). PreCompact and PostCompact are not registered: PreCompact's `decision:"block"` aborts the compact entirely (bad UX), and Claude Code's PostCompact is observational-only — its stdout cannot reach the agent. Compact events (auto or manual) are observed indirectly via the Stop hook's accumulated message count, which carries across compacts and drives the next checkpoint emission via the normal threshold logic.
+OneBrain registers only the `Stop` hook (plus a `PostToolUse` hook for qmd indexing if `qmd_collection` is set in vault.yml). Compact events (auto or manual) are observed indirectly via the Stop hook's accumulated message count, which carries across compacts and drives the next checkpoint emission via the normal threshold logic. Any other onebrain entry found under another hook event is treated as stale and pruned by `register-hooks` / `/doctor`.
 
 **Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 

@@ -121,8 +121,8 @@ function checkHookPresence(
 
 // Hook events OneBrain is allowed to register (PostToolUse handled separately
 // for qmd). Any onebrain-* command found under any other event is stale and
-// must be removed — this catches PreCompact, PostCompact, UserPromptSubmit,
-// SessionStart, and any future hook that might have been registered before.
+// must be removed — this catches anything previously registered, including
+// historical events that have since been retired.
 const ALLOWED_HOOK_EVENTS = new Set(['Stop', 'PostToolUse']);
 
 function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
@@ -318,12 +318,20 @@ function applyPermissions(settings: SettingsJson): string[] {
 // Step 4: Gemini harness (non-fatal)
 // ---------------------------------------------------------------------------
 
-// Gemini CLI hooks live in [vault]/.gemini/settings.json with a per-event
-// matcher and a JSON-protocol response on stdout. Each event maps to one
-// OneBrain command; matchers come from Gemini's lifecycle vocabulary
-// (`*` = all triggers, `startup`/`exit` = explicit phases). The runtime
-// expects every hook to emit `{}` on stdout — we redirect the wrapped
-// command's output to /dev/null and append `echo '{}'` to satisfy that.
+// Gemini CLI hooks live in [vault]/.gemini/settings.json. OneBrain mirrors
+// the Claude registration set exactly — currently `Stop` + `PostToolUse` (qmd
+// only) — translated into Gemini's event vocabulary (Before/After style):
+//   Claude `Stop`        → Gemini `AfterAgent` (matcher `*`)
+//   Claude `PostToolUse` → Gemini `AfterTool`  (matcher `Write|Edit`, qmd only)
+//
+// We do NOT register Gemini's `PreCompress`, `SessionStart`, `SessionEnd`, or
+// any other event — Claude doesn't register their equivalents either, so the
+// harnesses stay symmetric. Adding events here means adding them to the
+// Claude side first.
+//
+// Every hook command must emit `{}` on stdout — Gemini ignores hooks that
+// don't satisfy the JSON protocol — so we redirect the inner command's
+// output to /dev/null and append `echo '{}'`.
 interface GeminiHookSpec {
   command: string;
   matcher: string;
@@ -331,12 +339,16 @@ interface GeminiHookSpec {
 
 const GEMINI_HOOK_SPECS: Record<string, GeminiHookSpec> = {
   AfterAgent: { command: 'onebrain checkpoint stop', matcher: '*' },
-  PreCompress: { command: 'onebrain checkpoint precompact', matcher: '*' },
-  SessionStart: { command: 'onebrain session-init', matcher: 'startup' },
-  SessionEnd: { command: 'onebrain checkpoint stop', matcher: 'exit' },
 };
 
-const GEMINI_QMD_EVENT = 'PostToolUse';
+const GEMINI_QMD_EVENT = 'AfterTool';
+
+// Reuses Claude's `Write|Edit` matcher value verbatim because the live Gemini
+// CLI accepts the same pipe-delimited tool-name union for the `AfterTool`
+// event. If a future Gemini release diverges (e.g. requires array form or
+// glob syntax), introduce a separate `GEMINI_QMD_MATCHER` constant — the
+// reuse below is a known coupling.
+const GEMINI_QMD_MATCHER = QMD_MATCHER;
 
 function wrapGeminiCommand(cmd: string): string {
   return `${cmd} > /dev/null 2>&1; echo '{}'`;
@@ -426,7 +438,7 @@ function applyGeminiHooks(
       result[GEMINI_QMD_EVENT] = migrated ? 'migrated' : 'ok';
     } else {
       groups.push({
-        matcher: QMD_MATCHER,
+        matcher: GEMINI_QMD_MATCHER,
         hooks: [{ type: 'command', command: wrapped }],
       });
       result[GEMINI_QMD_EVENT] = 'added';

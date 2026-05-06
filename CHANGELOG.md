@@ -15,16 +15,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.2.0 — feat(register-hooks): full Gemini CLI support
 
-Companion to plugin v2.3.0 (bundled TOML commands). Closes the parity gap between Claude Code and Gemini CLI for OneBrain hooks + slash commands.
+Companion to plugin v2.3.0 (bundled TOML commands). Closes the parity gap between Claude Code and Gemini CLI for OneBrain hooks + slash commands. Gemini's hook surface mirrors the Claude registration set exactly — `Stop` + `PostToolUse` (qmd) only — translated into Gemini's Before/After event vocabulary.
 
-- feat(register-hooks): `registerGeminiHooks()` writes 4 lifecycle hooks to `.gemini/settings.json` — `AfterAgent` (`*`) → `onebrain checkpoint stop`, `PreCompress` (`*`) → `onebrain checkpoint precompact`, `SessionStart` (`startup`) → `onebrain session-init`, `SessionEnd` (`exit`) → `onebrain checkpoint stop`
-- feat(register-hooks): adds `PostToolUse` (`Write|Edit`) → `onebrain qmd-reindex` hook when `qmd_collection` is set in vault.yml; strips it cleanly when unset
-- feat(register-hooks): all Gemini hook commands wrapped as `{cmd} > /dev/null 2>&1; echo '{}'` to satisfy Gemini's JSON-on-stdout protocol
+- feat(register-hooks): `registerGeminiHooks()` writes the `AfterAgent` lifecycle hook (Gemini equivalent of Claude `Stop`) to `.gemini/settings.json` — matcher `*`, command `onebrain checkpoint stop`
+- feat(register-hooks): adds `AfterTool` (matcher `Write|Edit`) → `onebrain qmd-reindex` hook (Gemini equivalent of Claude `PostToolUse`) when `qmd_collection` is set in vault.yml; strips it cleanly when unset, scoped to OneBrain-owned entries (requires both `onebrain` and `qmd-reindex` in command) so user wrappers are preserved
+- feat(register-hooks): all Gemini hook commands wrapped as `{cmd} > /dev/null 2>&1; echo '{}'` to satisfy Gemini's JSON-on-stdout protocol; bare unwrapped commands in existing `.gemini/settings.json` are migrated in place rather than appended as duplicates
 - feat(register-hooks): `copyBundledGeminiCommands()` deploys pre-built `.toml` slash command files from `.claude/plugins/onebrain/gemini/commands/` into `[vault]/.gemini/commands/`; skips files with byte-identical content; ignores non-`.toml` siblings
-- feat(register-hooks): Gemini step now creates `.gemini/settings.json` if missing (was: silent skip on ENOENT) — register-hooks is a one-stop setup for Gemini vaults
-- fix(register-hooks): stale `onebrain` entries under non-allowed Gemini events (e.g. `BeforeTool`) are pruned; user-added non-onebrain entries are preserved; qmd-strip path scoped to OneBrain-owned entries (requires both `onebrain` and `qmd-reindex` in command) so user wrappers like `my-qmd-reindex.sh` are not silently deleted
-- fix(register-hooks): bare unwrapped `onebrain` commands in existing `.gemini/settings.json` (older configs / hand edits) are migrated in place to the JSON-wrapped form rather than appended as duplicates
-- test(register-hooks): 16 new Gemini cases — 4-hook write, JSON-wrap regex shape, per-event matchers, qmd add (wrapped) / strip / user-preserve, bare-command migration, idempotency, stale-prune vs user-preserve, bundle copy (missing source, copy-all, ignore non-toml, idempotent, overwrite-stale), Claude harness no-touch on `.gemini/`
+- feat(register-hooks): Gemini step now creates `.gemini/settings.json` if missing (was: silent skip on ENOENT) — register-hooks is a one-stop setup for Gemini vaults; stale `onebrain` entries under non-allowed Gemini events (anything outside `AfterAgent` / `AfterTool`) are pruned while user-added non-onebrain entries are preserved
+- chore(docs): drop forward-looking mentions of historical compact-related hooks from CONTRIBUTING.md, INSTRUCTIONS.md, `/doctor` SKILL.md, `/update` SKILL.md + migration-steps.md, and TS source comments — the sweep logic still removes any onebrain entry under a non-allowed event for backward compat
+- test(register-hooks): 16 new Gemini cases — single-hook write, JSON-wrap regex shape, matcher correctness, qmd add (wrapped) / strip / user-preserve, bare-command migration, idempotency, stale-prune vs user-preserve, corrupt-JSON resilience, bundle copy (missing source, copy-all, ignore non-toml, idempotent, overwrite-stale); plus a `.gemini/` no-touch assertion appended to the existing Claude fresh-run test
 
 ## v2.1.16 — test(cli-banner): smoke tests for static-banner exit paths
 

@@ -43,7 +43,7 @@ describe('runRegisterHooks', () => {
 
     expect(result.ok).toBe(true);
 
-    // Only Stop should be added (PostCompact removed in v2.1.6)
+    // Only Stop is registered today; any other event is non-allowed.
     expect(result.hooks['Stop']).toBe('added');
 
     // Full permission set added
@@ -153,39 +153,6 @@ describe('runRegisterHooks', () => {
     const ups = hooks['UserPromptSubmit']?.[0]?.hooks ?? [];
     expect(ups).toHaveLength(1);
     expect(ups[0]?.command).toBe('my-custom-script.sh');
-  });
-
-  test('stale PreCompact and PostCompact hooks are removed when present in existing settings.json', async () => {
-    const settingsPath = join(tempDir, '.claude', 'settings.json');
-    await mkdir(join(tempDir, '.claude'), { recursive: true });
-    await writeFile(
-      settingsPath,
-      JSON.stringify({
-        hooks: {
-          PreCompact: [
-            {
-              matcher: '',
-              hooks: [{ type: 'command', command: 'onebrain checkpoint precompact' }],
-            },
-          ],
-          PostCompact: [
-            {
-              matcher: '',
-              hooks: [{ type: 'command', command: 'onebrain checkpoint postcompact' }],
-            },
-          ],
-        },
-      }),
-      'utf8',
-    );
-
-    await runRegisterHooks({ vaultDir: tempDir });
-
-    const settings = await readSettingsFile(tempDir);
-    const hooks = settings['hooks'] as Record<string, unknown>;
-    expect(hooks['PreCompact']).toBeUndefined();
-    expect(hooks['PostCompact']).toBeUndefined(); // removed as stale (v2.1.6)
-    expect(hooks['Stop']).toBeDefined();
   });
 
   test('hook entries include type:command and matcher fields', async () => {
@@ -770,16 +737,18 @@ describe('registerGeminiHooks', () => {
     delete process.env['ONEBRAIN_HARNESS'];
   });
 
-  test('no .gemini/settings.json → file is created with all 4 lifecycle hooks', async () => {
+  test('no .gemini/settings.json → file is created with AfterAgent (Claude Stop equivalent)', async () => {
     const result = await runRegisterHooks({ vaultDir });
     expect(result.ok).toBe(true);
 
     const settings = await readGeminiSettings();
     const hooks = settings['hooks'] as Record<string, unknown>;
+    // Mirror Claude's hook set exactly: only Stop is registered there, so
+    // only its Gemini equivalent (AfterAgent) is registered here.
     expect(hooks['AfterAgent']).toBeDefined();
-    expect(hooks['PreCompress']).toBeDefined();
-    expect(hooks['SessionStart']).toBeDefined();
-    expect(hooks['SessionEnd']).toBeDefined();
+    expect(hooks['PreCompress']).toBeUndefined();
+    expect(hooks['SessionStart']).toBeUndefined();
+    expect(hooks['SessionEnd']).toBeUndefined();
   });
 
   test('all hook commands are JSON-protocol-wrapped (correct order, full shape)', async () => {
@@ -801,19 +770,16 @@ describe('registerGeminiHooks', () => {
     }
   });
 
-  test('matchers are event-specific (* for tool/agent, startup/exit for session)', async () => {
+  test('AfterAgent matcher is `*` (matches all triggers)', async () => {
     await runRegisterHooks({ vaultDir });
     const hooks = (await readGeminiSettings())['hooks'] as Record<
       string,
       Array<{ matcher?: string }>
     >;
     expect(hooks['AfterAgent']?.[0]?.matcher).toBe('*');
-    expect(hooks['PreCompress']?.[0]?.matcher).toBe('*');
-    expect(hooks['SessionStart']?.[0]?.matcher).toBe('startup');
-    expect(hooks['SessionEnd']?.[0]?.matcher).toBe('exit');
   });
 
-  test('qmd_collection set → PostToolUse hook with qmd-reindex added (and JSON-wrapped)', async () => {
+  test('qmd_collection set → AfterTool hook with qmd-reindex added (and JSON-wrapped)', async () => {
     await writeFile(
       join(vaultDir, 'vault.yml'),
       'update_channel: stable\nqmd_collection: ob-test\n',
@@ -824,7 +790,8 @@ describe('registerGeminiHooks', () => {
       string,
       Array<{ matcher?: string; hooks: Array<{ command: string }> }>
     >;
-    const qmdEntries = hooks['PostToolUse'] ?? [];
+    // Gemini event for "after tool execution" is `AfterTool`, not `PostToolUse`.
+    const qmdEntries = hooks['AfterTool'] ?? [];
     expect(qmdEntries.length).toBeGreaterThan(0);
     expect(qmdEntries[0]?.matcher).toBe('Write|Edit');
     // qmd command must follow the same JSON-wrap protocol as lifecycle hooks
@@ -869,7 +836,7 @@ describe('registerGeminiHooks', () => {
       join(geminiDir, 'settings.json'),
       JSON.stringify({
         hooks: {
-          PostToolUse: [
+          AfterTool: [
             {
               matcher: 'Write|Edit',
               hooks: [{ type: 'command', command: 'my-qmd-reindex-wrapper.sh' }],
@@ -884,18 +851,18 @@ describe('registerGeminiHooks', () => {
       string,
       Array<{ hooks: Array<{ command: string }> }>
     >;
-    const cmds = (hooks['PostToolUse'] ?? []).flatMap((g) => g.hooks.map((h) => h.command));
+    const cmds = (hooks['AfterTool'] ?? []).flatMap((g) => g.hooks.map((h) => h.command));
     expect(cmds).toContain('my-qmd-reindex-wrapper.sh');
   });
 
-  test('qmd_collection unset → existing PostToolUse qmd entry is stripped', async () => {
+  test('qmd_collection unset → existing AfterTool qmd entry is stripped', async () => {
     const geminiDir = join(vaultDir, '.gemini');
     await mkdir(geminiDir, { recursive: true });
     await writeFile(
       join(geminiDir, 'settings.json'),
       JSON.stringify({
         hooks: {
-          PostToolUse: [
+          AfterTool: [
             {
               matcher: 'Write|Edit',
               hooks: [{ type: 'command', command: "onebrain qmd-reindex; echo '{}'" }],
@@ -907,7 +874,7 @@ describe('registerGeminiHooks', () => {
     );
     await runRegisterHooks({ vaultDir });
     const hooks = (await readGeminiSettings())['hooks'] as Record<string, unknown>;
-    expect(hooks['PostToolUse']).toBeUndefined();
+    expect(hooks['AfterTool']).toBeUndefined();
   });
 
   test('corrupt JSON in .gemini/settings.json → result.ok === true (swallowed silently)', async () => {
@@ -926,12 +893,12 @@ describe('registerGeminiHooks', () => {
       string,
       Array<{ hooks: Array<{ command: string }> }>
     >;
-    for (const event of ['AfterAgent', 'PreCompress', 'SessionStart', 'SessionEnd']) {
-      const groups = hooks[event] ?? [];
-      const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
-      const unique = new Set(allCommands);
-      expect(unique.size).toBe(allCommands.length);
-    }
+    const groups = hooks['AfterAgent'] ?? [];
+    const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
+    const unique = new Set(allCommands);
+    expect(unique.size).toBe(allCommands.length);
+    // Single registered hook → a fresh idempotent run yields exactly one entry.
+    expect(allCommands).toHaveLength(1);
   });
 
   test('stale onebrain entry under non-allowed event is pruned', async () => {

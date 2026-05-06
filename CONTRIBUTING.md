@@ -154,8 +154,6 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 | `InstructionsLoaded` | When CLAUDE.md or `.claude/rules/*.md` files are loaded | No |
 | `SubagentStart` | When a subagent is spawned | No |
 | `SubagentStop` | When a subagent finishes | Yes |
-| `PreCompact` | Before context compaction | No |
-| `PostCompact` | After context compaction completes | No |
 | `Notification` | When Claude Code sends a notification | No |
 | `ConfigChange` | When a configuration file changes during a session | Yes |
 | `WorktreeCreate` | When a worktree is being created | Yes |
@@ -167,7 +165,7 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 
 Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
 
-**Example — checkpoint system:** OneBrain's checkpoint system uses the `Stop`, `PreCompact`, and `PostCompact` hooks to auto-save session snapshots. Each hook calls `onebrain checkpoint <mode>` (the CLI binary). The binary tracks message count + elapsed time against configurable thresholds and emits a `decision:block` JSON payload when a checkpoint is due. State is kept in `$TMPDIR/onebrain-{session_token}.state` (format: `count:last_ts:last_stop_nn`) so counts accumulate across responses.
+**Example — checkpoint system:** OneBrain's checkpoint system uses the `Stop` hook to auto-save session snapshots. The hook calls `onebrain checkpoint stop` (the CLI binary). The binary tracks message count + elapsed time against configurable thresholds and emits a `decision:block` JSON payload when a checkpoint is due. State is kept in `$TMPDIR/onebrain-{session_token}.state` (format: `count:last_ts:last_stop_nn`) so counts accumulate across responses, including across compact events.
 
 **To add a hook:**
 
@@ -177,9 +175,9 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 3. Make scripts defensive — they run on every matching event, so they should exit silently if there's nothing to do.
 
-4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection. PreCompact hooks do not support `decision:block` and cannot inject prompts.
+4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection.
 
-5. Use `/update` (or `onebrain register-hooks`) to register or repair Stop and PostCompact hooks automatically.
+5. Use `/update` (or `onebrain register-hooks`) to register or repair the `Stop` hook (and the optional `PostToolUse` qmd-reindex hook when `qmd_collection` is set in `vault.yml`) automatically.
 
 ## Memory System
 
@@ -236,7 +234,7 @@ MEMORY-INDEX.md must be kept in sync at all times. Every skill that creates, upd
 Vault setup is owned by the `onebrain` CLI binary (`src/`), **not** by shell scripts in this repo. The user flow is:
 
 1. `npm install -g @onebrain-ai/cli` — installs the CLI globally
-2. `onebrain init` — in a new or existing folder, writes `vault.yml`, scaffolds the 8 standard folders, downloads the latest plugin bundle, installs the recommended Obsidian community plugins, and registers Stop / PostCompact hooks. Aborts safely if a `vault.yml` already exists
+2. `onebrain init` — in a new or existing folder, writes `vault.yml`, scaffolds the 8 standard folders, downloads the latest plugin bundle, installs the recommended Obsidian community plugins, and registers the `Stop` hook (plus a `PostToolUse` qmd-reindex hook when `qmd_collection` is set). Aborts safely if a `vault.yml` already exists
 3. `/onboarding` — inside the chosen harness, personalises identity + active projects
 
 There are no `install.sh` or `install.ps1` scripts to maintain — the equivalent logic lives in the CLI's `init` and `update` commands and ships with each release. Bug fixes for vault bootstrap belong in `src/commands/init.ts` and `src/commands/update.ts`.

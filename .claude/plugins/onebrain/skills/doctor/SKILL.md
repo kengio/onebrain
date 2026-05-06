@@ -100,7 +100,7 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Read `[vault]/.claude/settings.json` (vault-level settings — the `.claude/` folder inside the vault, not `~/.claude/settings.json`)
 - Allowed events: only `Stop` and `PostToolUse` (the latter conditional on `qmd_collection`).
 - Check required `Stop` hook: entry exists under `hooks.Stop` and command contains `checkpoint stop` → ✅ / 🔴 missing or wrong
-- Sweep all other hook events (PreCompact, PostCompact, UserPromptSubmit, SessionStart, etc.): any entry whose command contains `onebrain` → 🟡 stale onebrain hook under non-allowed event — suggest running /update to remove it. Non-onebrain entries under those events are user-added and must be preserved (not flagged).
+- Sweep every other hook event (anything outside `Stop` / `PostToolUse`): any entry whose command contains `onebrain` → 🟡 stale onebrain hook under non-allowed event — suggest running /update to remove it. Non-onebrain entries under those events are user-added and must be preserved (not flagged).
 
 **qmd PostToolUse hook (only when `qmd_collection` is set in vault.yml):**
 - If `qmd_collection` is absent in vault.yml: skip this entire check
@@ -134,7 +134,6 @@ Use this format:
   🔴 qmd_collection: missing — qmd search will not work
   🟡 vault.yml: `timezone` key found — no longer used, safe to remove
   🔴 OneBrain hooks: Stop missing or wrong — run /update to register
-  🟡 OneBrain hooks: stale PostCompact onebrain entry — run /update to remove it
   🟡 OneBrain hooks: stale UserPromptSubmit onebrain entry — run /update to remove it
   🟢 OneBrain hooks: Stop registered correctly
   🔴 qmd: binary not installed — run /qmd setup

@@ -18,8 +18,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Companion to CLI v2.2.0 (Gemini hook + bundle copy implementation). Plugin side ships the bundled artifacts that CLI deploys.
 
 - feat(gemini/commands): 25 pre-built `.toml` files at `.claude/plugins/onebrain/gemini/commands/`, one per user-facing skill (excludes `startup/`). Each TOML follows Gemini's `description` + `prompt` schema and activates the matching skill via `Please activate the '{skill}' skill ...`
-- feat(GEMINI.md): document hooks + slash command setup; point users at `onebrain register-hooks` for repair/install
-- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing in the header so the same instructions load cleanly on either harness
+- feat(GEMINI.md): document the `AfterAgent` hook + optional `AfterTool` qmd hook + slash command discovery; point users at `onebrain register-hooks` for repair/install
+- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing in the header so the same instructions load cleanly on either harness; tightened the hook-registration paragraph to drop forward-looking mentions of historical compact-related hooks
+- chore(docs): `/doctor` and `/update` SKILL.md + migration-steps.md describe the stale-hook sweep in event-agnostic terms ("any non-allowed event") rather than naming retired event names
 - note: TOMLs are checked-in static artifacts — re-running `register-hooks` is a copy from this directory, not runtime generation. Same pattern will apply when we add Codex / other harness bundles.
 
 ## v2.2.5 — fix: Windows skill + script compat (PowerShell / cmd / native Python)
