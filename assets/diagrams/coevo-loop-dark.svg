@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-225 -200 450 395" width="450" height="395" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
   <title id="title">The Path to Co-Evolution — three-step loop</title>
-  <desc id="desc">Three nodes arranged in a triangle: 01 INITIATE at top, 02 CAPTURE_INTENT at bottom-right, 03 MUTUAL_EVOLUTION at bottom-left. Curved arrows flow clockwise between them, visualizing the recurring co-evolution loop.</desc>
+  <desc id="desc">Three nodes arranged in a triangle: 01 CAPTURE at top, 02 EVOLVE at bottom-right, 03 WRAPUP at bottom-left. Curved arrows flow clockwise between them, visualizing the recurring co-evolution loop.</desc>
 
   <style>
     .text-strong { fill: #ffffff; }
@@ -48,27 +48,35 @@
     <path d="M -85.6 18.2 Q -82.2 -47.5 -27 -83.2" fill="none" stroke="#00f3ff" stroke-width="1.6" marker-end="url(#ah-3)"/>
   </g>
 
+  <!-- Node 01 — CAPTURE (top): single-line name + short cmd inside the
+       circle. The 01→02 arrow exits the bottom of this circle, so an
+       outside-bottom cmd label would collide with the arrow path —
+       hence cmd stays inside, abbreviated to one command. The README
+       prose carries the full triple. -->
   <g transform="translate(0,-130)">
     <circle cx="0" cy="0" r="54" fill="rgba(2,2,4,0.92)" stroke="#ff2d92" stroke-width="1.5"/>
     <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#ff2d92" letter-spacing="0.18em">01</text>
-    <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" class="text-strong">INITIATE</text>
-    <text x="0" y="22" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.30em" fill="#ff2d92">/onboarding</text>
+    <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" class="text-strong">CAPTURE</text>
+    <text x="0" y="22" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#ff2d92">/braindump</text>
   </g>
 
+  <!-- Node 02 — EVOLVE (bottom-right): cmd outside below the circle.
+       The 02→03 arrow's apex sits at y=110 (well above the cmd at
+       abs y=141), so no overlap. -->
   <g transform="translate(112.6,65)">
     <circle cx="0" cy="0" r="54" fill="rgba(2,2,4,0.92)" stroke="#bc13fe" stroke-width="1.5"/>
     <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#bc13fe" letter-spacing="0.18em">02</text>
-    <text x="0" y="3" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">CAPTURE</text>
-    <text x="0" y="17" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">INTENT</text>
-    <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#bc13fe">/braindump · /capture</text>
+    <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" class="text-strong">EVOLVE</text>
+    <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#bc13fe">/distill · /learn</text>
   </g>
 
+  <!-- Node 03 — WRAPUP (bottom-left): cmd outside below the circle.
+       Mirror of node 02 — no arrow path crosses this cmd region. -->
   <g transform="translate(-112.6,65)">
     <circle cx="0" cy="0" r="54" fill="rgba(2,2,4,0.92)" stroke="#00f3ff" stroke-width="1.5"/>
     <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#00f3ff" letter-spacing="0.18em">03</text>
-    <text x="0" y="3" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">MUTUAL</text>
-    <text x="0" y="17" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="13" letter-spacing="0.05em" class="text-strong">EVOLUTION</text>
-    <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#00f3ff">/recap · /distill · /learn</text>
+    <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" class="text-strong">WRAPUP</text>
+    <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="#00f3ff">/wrapup · /recap</text>
   </g>
 
 </svg>
