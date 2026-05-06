@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.15
+latest_version: 2.1.16
 released: 2026-05-06
 ---
 
@@ -12,6 +12,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.16 — test(cli-banner): smoke tests for static-banner exit paths
+
+- test(cli-banner): assert `printBanner()` resolves under 250ms in both non-TTY and TTY-without-truecolor modes — guards both early-return branches against regressions where animation accidentally runs in CI/piped/16-color contexts
 
 ## v2.1.15 — fix(vault-sync, register-hooks): Windows + iCloud reliability
 

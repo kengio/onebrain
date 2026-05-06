@@ -109,6 +109,19 @@ describe('printBanner — non-TTY (piped/CI) static path', () => {
     const unique = new Set(matches);
     expect(unique.size).toBeGreaterThan(5);
   });
+
+  it('exit path resolves promptly without hanging on animation timers', async () => {
+    // Animated path runs ≥3 × SENTENCE_HOLD_MS plus intro and lock-shimmer
+    // delays — easily >1s. Static exit path has no awaits and must return
+    // well under that. A regression where isInteractiveStdout() wrongly
+    // reports true (or the early return is removed) would make this hang.
+    // 250ms threshold leaves ~4× headroom over the regression signal while
+    // tolerating cold-CI variance.
+    const start = performance.now();
+    await expect(printBanner()).resolves.toBeUndefined();
+    const elapsed = performance.now() - start;
+    expect(elapsed).toBeLessThan(250);
+  });
 });
 
 describe('printBanner — TTY without truecolor (16-color static fallback)', () => {
@@ -149,6 +162,16 @@ describe('printBanner — TTY without truecolor (16-color static fallback)', () 
     const all = spy.chunks.join('');
     expect(all).not.toContain('\x1b[?25l');
     expect(all).not.toContain('\x1b[?25h');
+  });
+
+  it('exit path resolves promptly without hanging on animation timers', async () => {
+    // Symmetric to the non-TTY suite's exit-path guard. Both `!isInteractiveStdout()`
+    // and `!supportsRgb()` independently route to the static path; this asserts the
+    // !supportsRgb() branch (isTTY=true, no COLORTERM) also bails out fast.
+    const start = performance.now();
+    await expect(printBanner()).resolves.toBeUndefined();
+    const elapsed = performance.now() - start;
+    expect(elapsed).toBeLessThan(250);
   });
 });
 
