@@ -124,11 +124,11 @@ Run minimum 3 independent review rounds before merging any PR.
 **How to apply:** After implementation is complete, dispatch 3 review sub-agents before running `gh pr create`.
 ```
 
-**Input:** "remember that the OneBrain source repo is at ~/projects/onebrain"
+**Input:** "remember that the OneBrain source repo is at $HOME/projects/onebrain"
 
 **Good output (context memory file — minimal one-liner body):**
 ```
-OneBrain source repo is at ~/projects/onebrain.
+OneBrain source repo is at $HOME/projects/onebrain (use `$env:USERPROFILE` on Windows PowerShell).
 ```
 
 (Simple factual memories do not need **Why:** / **How to apply:** structure — use it only when the rule needs reasoning to be applied correctly in edge cases.)

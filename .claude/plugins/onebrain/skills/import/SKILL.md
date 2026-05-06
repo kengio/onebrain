@@ -197,10 +197,14 @@ When a stub note is created (extraction tool unavailable, extraction failed, emp
 If the Read tool, markitdown, or any extraction step returns an error or empty output: do NOT create a note. Return an error. Do NOT delete the inbox file.
 
 **4. File validation before processing.**
-Check file size with `ls -la "[filepath]"`. If 0 bytes: create a stub note ("File is empty : no content to extract."), do NOT delete inbox file, return.
+Check file size in bytes via Node (already required by the OneBrain CLI, so reliably on PATH). Pass the path via `process.argv` so Windows backslashes are not interpreted as escape sequences inside a string literal. The `catch` arm logs the errno code to stderr (visible in tool output) so EACCES / ENOTDIR / EISDIR / ENOENT are not collapsed into a single misleading "empty file" stub:
+```
+node -e "try { console.log(require('fs').statSync(process.argv[1]).size) } catch (e) { console.error(e.code || e.message); console.log(-1) }" -- "[filepath]"
+```
+If the output is `0`, create a stub note ("File is empty : no content to extract."), do NOT delete inbox file, return. If the output is `-1` (stat threw — read the stderr line for the errno code), the file is unreadable; create a stub note that names the actual error, and do not delete.
 
 **5. `--attach` directory creation.**
-Before every `cp`, run `mkdir -p` for the target directory. If `cp` fails: skip the embed, report the failure, do NOT delete inbox file, stop.
+Before every copy, ensure the target directory exists. Prefer Node (`node -e "require('fs').mkdirSync(process.argv[1], { recursive: true })" -- "<dir>"`) — it is portable across Bash/PowerShell/cmd. Native shell forms also work when the active shell is known (`mkdir -p` Bash, `New-Item -ItemType Directory -Force` PowerShell, `mkdir` cmd); **do not** call `mkdir -p` from PowerShell — its `mkdir` alias would create a literal directory named `-p`. If the subsequent copy fails: skip the embed, report the failure, do NOT delete inbox file, stop.
 
 **6. Filename collision.**
 Before writing a note, check if the target path already exists. If it does: append ` (Imported YYYY-MM-DD)` to the filename and note the rename in the summary.

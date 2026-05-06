@@ -275,9 +275,9 @@ Before any user interaction, copy plugin files from the global cache into the va
 
 **1. Locate the cache directory:**
 
-Check both paths : both may exist depending on when the plugin was installed:
-- `~/.claude/plugins/cache/onebrain/onebrain/` : installs after marketplace rename
-- `~/.claude/plugins/cache/onebrain-local/onebrain/` : legacy installs before rename
+Check both paths : both may exist depending on when the plugin was installed. The Glob tool does not expand `~`, so resolve the user's home with `$HOME` (Unix / Bash / MSYS) or `$env:USERPROFILE` (Windows PowerShell) before globbing:
+- `$HOME/.claude/plugins/cache/onebrain/onebrain/` : installs after marketplace rename
+- `$HOME/.claude/plugins/cache/onebrain-local/onebrain/` : legacy installs before rename
 
 Collect all version subdirectories from both paths into a single combined list. If neither path exists or neither contains any version subdirectories, tell the user:
 > OneBrain plugin cache not found. Run `/plugin install onebrain@onebrain` to install it, then try `/onboarding` again.
@@ -324,10 +324,10 @@ From this point, the project-level copy takes priority over the global cache.
 
 **Pin to vault (run after Step 0 file copy):**
 
-Run from vault root:
+Run from vault root (the CLI defaults the vault path to the current working directory; explicit `"$PWD"` is Bash-only and breaks on PowerShell/cmd):
 
-```bash
-onebrain vault-sync "$PWD"
+```
+onebrain vault-sync
 ```
 
 This pins the plugin to the vault directory and clears the plugin cache in one step. Tell the user: "Start a new Claude Code session — the plugin will now load from the vault directory."

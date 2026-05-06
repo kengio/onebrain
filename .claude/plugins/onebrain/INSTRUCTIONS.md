@@ -227,7 +227,7 @@ On weekends: lighter, less task-focused tone. **No-repeat rule:** don't ask abou
 - Read `[agent_folder]/MEMORY-INDEX.md` → load memory file index for lazy-loading
 - Load `memory/` files matching active project keywords from MEMORY-INDEX.md Topics column (`status: active` or `needs-review` only). Also match user's first message once it arrives.
 - Glob `[inbox_folder]/*.md` → count files as `inbox_count`
-- Run via Bash: `LC_ALL=en_US.UTF-8 grep -r "- \[ \] .*📅 [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}" "[projects_folder]/" "[inbox_folder]/"` → keep only tasks where date ≤ today; group overdue first, then due today
+- Run the Grep tool **twice** — once with `path: "[projects_folder]"` and once with `path: "[inbox_folder]"`, both with the pattern `- \[ \] .*📅 [0-9]{4}-[0-9]{2}-[0-9]{2}` and `output_mode: "content"`. Combine the two result sets. (Grep handles UTF-8 correctly on every platform; the previous Bash shell-out relied on `LC_ALL=en_US.UTF-8` and GNU grep BRE semantics, both Bash-only.) Keep only tasks where date ≤ today; group overdue first, then due today
 - Run `onebrain orphan-scan "[logs_folder]" "[session_token]"` (from vault root) → parse JSON output; read `orphan_count` field. JSON shape: `{"orphan_count":N}`. If the command fails or is unavailable, fall back to: Glob `[logs_folder]/**/*-checkpoint-*.md`, discard files whose date has a non-auto-saved session log, then count distinct session tokens among remaining files.
 
 **Step 4 — Send startup status (after Step 3 completes):**

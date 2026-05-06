@@ -11,10 +11,10 @@ When this skill is invoked, present all available OneBrain commands to the user.
 
 1. Determine install location: use Glob to check if `.claude/plugins/onebrain/.claude-plugin/plugin.json` exists relative to the vault root
    - If it exists → this is a **project plugin**
-   - If it does not exist → this is a **global plugin** (installed at `~/.claude/plugins/`)
+   - If it does not exist → this is a **global plugin** (installed at `$HOME/.claude/plugins/` on Unix or `$env:USERPROFILE/.claude/plugins/` on Windows PowerShell)
 2. Read the version from the correct path:
    - If project plugin: read from `.claude/plugins/onebrain/.claude-plugin/plugin.json`
-   - If global plugin: use Glob on `~/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` to find all cached versions. If multiple matches are returned, use the one with the highest version number (compare the version directory name as semver). If no matches are found, skip the version display.
+   - If global plugin: use Glob on `$HOME/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` (Unix) or `$env:USERPROFILE/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` (Windows PowerShell) to find all cached versions. The Glob tool does not expand `~`, so use the env var that resolves to the user's home directory. If multiple matches are returned, use the one with the highest version number (compare the version directory name as semver). If no matches are found, skip the version display.
 3. Display as the first line of your response:
    - If project plugin: OneBrain v{version} (project plugin)
    - If global plugin: OneBrain v{version} (global plugin)
