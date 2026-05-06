@@ -13,7 +13,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { runVaultSync } from './vault-sync.js';
+import { buildTarSpawnOverrides, runVaultSync } from './vault-sync.js';
 
 // ---------------------------------------------------------------------------
 // Suite-level guard: real ~/.claude/plugins/installed_plugins.json must NOT
@@ -896,5 +896,35 @@ describe('runVaultSync', () => {
     // Sibling refreshed to tarball version.
     expect(entries[1].installPath).toBe(join(vaultDir, '.claude/plugins/onebrain'));
     expect(entries[1].version).toBe('1.11.0');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildTarSpawnOverrides — Windows MSYS tar drive-letter workaround (#126)
+// ---------------------------------------------------------------------------
+
+describe('buildTarSpawnOverrides', () => {
+  it('returns {} on macOS so spread leaves Bun.spawn options unchanged', () => {
+    expect(buildTarSpawnOverrides('darwin', { PATH: '/usr/bin' })).toEqual({});
+  });
+
+  it('returns {} on Linux', () => {
+    expect(buildTarSpawnOverrides('linux', { PATH: '/usr/bin' })).toEqual({});
+  });
+
+  it('on win32, sets env.TAR_OPTIONS=--force-local while preserving the parent env', () => {
+    const parent = { PATH: 'C:\\Windows', FOO: 'bar' };
+    const overrides = buildTarSpawnOverrides('win32', parent);
+    expect(overrides.env?.['TAR_OPTIONS']).toBe('--force-local');
+    expect(overrides.env?.['PATH']).toBe('C:\\Windows');
+    expect(overrides.env?.['FOO']).toBe('bar');
+  });
+
+  it('on win32, overrides any pre-existing TAR_OPTIONS so user-set flags do not break extraction', () => {
+    // We intentionally override TAR_OPTIONS rather than appending — the user
+    // path may have flags incompatible with the inner-loop tar invocation
+    // (e.g. `--verbose` would change exit semantics). Document via test.
+    const overrides = buildTarSpawnOverrides('win32', { TAR_OPTIONS: '--verbose' });
+    expect(overrides.env?.['TAR_OPTIONS']).toBe('--force-local');
   });
 });

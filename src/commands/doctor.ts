@@ -474,14 +474,14 @@ function getFix(r: DoctorResult): Fix | null {
     const missingStr = r.hint.replace('Missing: ', '');
     return {
       fn: async (vaultDir) => {
-        const { mkdir } = await import('node:fs/promises');
+        const { mkdirIdempotent } = await import('../lib/index.js');
         const { join } = await import('node:path');
         const missing = missingStr
           .split(', ')
           .map((f) => f.trim())
           .filter(Boolean);
         for (const folder of missing) {
-          await mkdir(join(vaultDir, folder), { recursive: true });
+          await mkdirIdempotent(join(vaultDir, folder));
         }
       },
       description: `Create missing folders: ${missingStr}`,

@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.14
+latest_version: 2.1.15
 released: 2026-05-06
 ---
 
@@ -12,6 +12,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.15 — fix(vault-sync, register-hooks): Windows + iCloud reliability
+
+- fix(vault-sync): set `TAR_OPTIONS=--force-local` on win32 so MSYS/Git Bash GNU tar stops parsing `C:\…` vault paths as `host:path` and the extraction completes (#126)
+- fix(vault-sync, register-hooks, init): swallow EEXIST from `mkdir({ recursive: true })` when the path is already a directory — covers the iCloud-Drive-on-Windows quirk where `mkdir` throws despite the recursive flag; non-EEXIST errors and EEXIST-on-a-file still propagate (#126)
+- new(lib): `mkdirIdempotent` helper in `@onebrain/core` — single shared EEXIST-tolerant `mkdir` used by all CLI write paths, replacing four ad-hoc `mkdir({ recursive: true })` call sites
+- test: 4 new cases for `mkdirIdempotent` (fresh dir, idempotent, EEXIST-on-file rethrow, EACCES rethrow) and 4 for `buildTarSpawnEnv` (darwin/linux passthrough, win32 sets `--force-local`, win32 overrides user-set `TAR_OPTIONS`)
 
 ## v2.1.14 — fix(register-hooks): migrate legacy `qmd update -c …` PostToolUse entries
 

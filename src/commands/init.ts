@@ -16,11 +16,12 @@
  * Exit code: 0 on success, 1 on failure.
  */
 
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
+import { readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
+import { mkdirIdempotent } from '../lib/index.js';
 import { printBanner, resolveBinaryVersion } from './internal/cli-banner.js';
 import {
   askYesNo,
@@ -126,7 +127,7 @@ async function createFolders(vaultDir: string): Promise<number> {
   for (const rel of allPaths) {
     const full = join(vaultDir, rel);
     if (!(await pathExists(full))) {
-      await mkdir(full, { recursive: true });
+      await mkdirIdempotent(full);
       created++;
     }
   }
@@ -295,7 +296,7 @@ async function registerPlugin(
   // Write atomically
   const tmpPath = `${installedPluginsPath}.tmp`;
   try {
-    await mkdir(dirname(installedPluginsPath), { recursive: true });
+    await mkdirIdempotent(dirname(installedPluginsPath));
     await writeFile(tmpPath, JSON.stringify(data, null, 4), 'utf8');
     await rename(tmpPath, installedPluginsPath);
   } catch (err) {
@@ -414,7 +415,7 @@ async function installObsidianPlugins(
     }
 
     // Download assets
-    await mkdir(pluginDir, { recursive: true });
+    await mkdirIdempotent(pluginDir);
     let pluginFailed = false;
 
     for (const assetName of ['main.js', 'manifest.json', 'styles.css'] as const) {
