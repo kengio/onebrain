@@ -17,13 +17,13 @@
  * Non-TTY: plain text prefixed with "vault-sync:"
  */
 
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, unlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, sep as pathSep, relative, resolve as resolvePath } from 'node:path';
 import { intro, outro, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { atomicWrite } from '../../lib/index.js';
+import { atomicWrite, mkdirIdempotent } from '../../lib/index.js';
 import { makeStepFn } from './cli-ui.js';
 import { detectHarness } from './harness.js';
 
@@ -113,22 +113,50 @@ async function downloadTarball(
 }
 
 /**
- * Extract a .tar.gz buffer to destDir using the `tar` CLI.
- * Returns the path of the top-level extracted directory.
+ * Build the spawn-option overrides for the `tar` extraction subprocess.
+ *
+ * On Windows MSYS/Git Bash, GNU tar parses any path containing a colon as
+ * `host:path` and tries to ssh to host `C` (or whichever drive letter), which
+ * blows up `vault-sync` for any vault under a Windows drive root. Setting
+ * `TAR_OPTIONS=--force-local` tells GNU tar to treat colons as part of the
+ * local path. BSD tar on macOS ignores the env var entirely, so we only set
+ * it on win32 to avoid surprises on platforms where the workaround is a no-op.
+ *
+ * Returns `{}` outside win32 (caller spreads → spawn inherits parent env), or
+ * `{ env: { ... } }` on win32 with `TAR_OPTIONS=--force-local` overlaid on the
+ * parent env. The shape lets callers use `Bun.spawn(args, { ...other, ...buildTarSpawnOverrides() })`
+ * without needing a conditional spread. Exported for testing.
+ */
+export function buildTarSpawnOverrides(
+  platform: NodeJS.Platform = process.platform,
+  parentEnv: NodeJS.ProcessEnv = process.env,
+): { env?: NodeJS.ProcessEnv } {
+  if (platform !== 'win32') return {};
+  return { env: { ...parentEnv, TAR_OPTIONS: '--force-local' } };
+}
+
+/**
+ * Extract a .tar.gz buffer to destDir using the `tar` CLI. Returns the path of
+ * the top-level extracted directory. See `buildTarSpawnOverrides` for the win32 quirk.
  */
 async function extractTarball(tarball: ArrayBuffer, destDir: string): Promise<string> {
   const tarPath = join(destDir, 'bundle.tar.gz');
   await writeFile(tarPath, Buffer.from(tarball));
 
-  // Spawn tar to extract
+  // Spawn tar to extract — only override env on win32 (see buildTarSpawnOverrides).
+  const tarOverrides = buildTarSpawnOverrides();
   const proc = Bun.spawn(['tar', '-xzf', tarPath, '-C', destDir], {
     stdout: 'pipe',
     stderr: 'pipe',
+    ...tarOverrides,
   });
   const exitCode = await proc.exited;
   if (exitCode !== 0) {
     const errText = await new Response(proc.stderr).text();
-    throw new Error(`tar extraction failed (exit ${exitCode}): ${errText.trim()}`);
+    // Surface the win32 env override in the error so a tar failure on Windows
+    // is self-documenting in user-submitted logs (see #126).
+    const envHint = tarOverrides.env ? ', TAR_OPTIONS=--force-local' : '';
+    throw new Error(`tar extraction failed (exit ${exitCode}${envHint}): ${errText.trim()}`);
   }
 
   // Delete the tarball file now we've extracted
@@ -187,7 +215,7 @@ async function syncPluginFiles(
   const sourcePlugin = join(extractedDir, '.claude', 'plugins', 'onebrain');
   const destPlugin = join(vaultRoot, '.claude', 'plugins', 'onebrain');
 
-  await mkdir(destPlugin, { recursive: true });
+  await mkdirIdempotent(destPlugin);
 
   // Collect source files (relative to sourcePlugin)
   const sourceFiles = await listFilesRecursive(sourcePlugin);
@@ -210,7 +238,7 @@ async function syncPluginFiles(
   for (const srcPath of sourceFiles) {
     const rel = relative(sourcePlugin, srcPath);
     const destPath = join(destPlugin, rel);
-    await mkdir(dirname(destPath), { recursive: true });
+    await mkdirIdempotent(dirname(destPath));
     const content = await readFile(srcPath);
     await writeFile(destPath, content);
     filesAdded++;
@@ -759,7 +787,7 @@ export async function runVaultSync(
         for (const srcPath of obsidianFiles) {
           const rel = relative(sourceObsidian, srcPath);
           const destPath = join(destObsidian, rel);
-          await mkdir(dirname(destPath), { recursive: true });
+          await mkdirIdempotent(dirname(destPath));
           const content = await readFile(srcPath);
           await writeFile(destPath, content);
         }

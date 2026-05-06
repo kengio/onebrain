@@ -23,3 +23,5 @@ export {
 } from './validator.js';
 
 export { atomicWrite } from './fs-atomic.js';
+
+export { mkdirIdempotent } from './fs-mkdir-safe.js';

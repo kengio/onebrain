@@ -9,12 +9,12 @@
  * Non-TTY: plain text prefixed with "register-hooks:"
  */
 
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
-import { loadVaultConfig } from '../../lib/index.js';
+import { loadVaultConfig, mkdirIdempotent } from '../../lib/index.js';
 import { detectHarness } from './harness.js';
 
 // ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ async function readSettings(settingsPath: string): Promise<SettingsJson> {
 }
 
 async function writeSettings(settingsPath: string, settings: SettingsJson): Promise<void> {
-  await mkdir(dirname(settingsPath), { recursive: true });
+  await mkdirIdempotent(dirname(settingsPath));
   const tmpPath = `${settingsPath}.tmp`;
   await writeFile(tmpPath, JSON.stringify(settings, null, 4), 'utf8');
   await rename(tmpPath, settingsPath);
