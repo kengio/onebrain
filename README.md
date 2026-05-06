@@ -111,9 +111,9 @@ The agent reaches outward FROM the vault to every surface where the work actuall
 
 ---
 
-## The Path to Co-Evolution
+## Every Session Sharpens Both
 
-A tightening 3-step loop that sharpens with every cycle.
+OneBrain runs as a tight 3-step loop. Each cycle, both sides sharpen.
 
 <p align="center">
   <picture>
@@ -122,7 +122,7 @@ A tightening 3-step loop that sharpens with every cycle.
   </picture>
 </p>
 
-1. **Capture** — Talk in natural language. The agent writes, classifies, and links your thoughts in real time. → `/braindump` · `/capture` · `/bookmark`
+1. **Capture** — Talk to the agent in natural language. It writes, classifies, and links your thoughts in real time. → `/braindump` · `/capture` · `/bookmark`
 2. **Evolve** — `/research` and `/distill` expand your knowledge. `/learn` deepens the agent. The loop tightens. → `/research` · `/distill` · `/learn`
 3. **Wrapup** — `/wrapup` consolidates the session log. `/recap` promotes lessons to memory. → `/wrapup` · `/recap`
 
