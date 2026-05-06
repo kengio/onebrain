@@ -69,6 +69,8 @@ interface TarballOpts {
   prefix?: string;
   pluginVersion?: string;
   extraPluginFiles?: Record<string, string>;
+  /** Files to add under .gemini/ at the tarball root (e.g. `commands/foo.toml`). */
+  geminiFiles?: Record<string, string>;
   claudeMdContent?: string;
   geminiMdContent?: string;
   agentsMdContent?: string;
@@ -107,6 +109,9 @@ function buildMockTarball(opts: TarballOpts = {}): Buffer {
         `${prefix}/.claude/plugins/onebrain/${k}`,
         v,
       ]),
+    ),
+    ...Object.fromEntries(
+      Object.entries(opts.geminiFiles ?? {}).map(([k, v]) => [`${prefix}/.gemini/${k}`, v]),
     ),
   };
 
@@ -896,6 +901,88 @@ describe('runVaultSync', () => {
     // Sibling refreshed to tarball version.
     expect(entries[1].installPath).toBe(join(vaultDir, '.claude/plugins/onebrain'));
     expect(entries[1].version).toBe('1.11.0');
+  });
+
+  it('deploys .gemini/ project config from tarball to vault root (alongside the Claude plugin)', async () => {
+    // Companion to the .claude/plugins/onebrain/ deploy: .gemini/ at the
+    // tarball root is the project-level Gemini config (settings.json hooks
+    // + slash command TOMLs). vault-sync must mirror it into the vault so
+    // `gemini` running in the vault reads the OneBrain hooks/commands.
+    tarball = buildMockTarball({
+      geminiFiles: {
+        'settings.json': JSON.stringify({ hooks: { AfterAgent: [] } }),
+        'commands/braindump.toml': 'description = "x"\nprompt = "y"\n',
+        'commands/capture.toml': 'description = "z"\nprompt = "q"\n',
+      },
+    });
+
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: isolatedInstalledPath,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(await readFile(join(vaultDir, '.gemini', 'settings.json'), 'utf8')).toContain(
+      'AfterAgent',
+    );
+    expect(
+      await readFile(join(vaultDir, '.gemini', 'commands', 'braindump.toml'), 'utf8'),
+    ).toContain('prompt = "y"');
+    expect(await readFile(join(vaultDir, '.gemini', 'commands', 'capture.toml'), 'utf8')).toContain(
+      'prompt = "q"',
+    );
+  });
+
+  it('removes stale .gemini/ files (in vault but not in tarball) on resync', async () => {
+    // Same staleness sweep behavior as the plugin sync: anything in the vault's
+    // .gemini/ that is not in the source release is removed, so renamed or
+    // dropped commands don't linger.
+    await mkdir(join(vaultDir, '.gemini', 'commands'), { recursive: true });
+    await writeFile(
+      join(vaultDir, '.gemini', 'commands', 'old-name.toml'),
+      'description = "stale"\nprompt = "x"\n',
+      'utf8',
+    );
+
+    tarball = buildMockTarball({
+      geminiFiles: {
+        'commands/braindump.toml': 'description = "x"\nprompt = "y"\n',
+      },
+    });
+
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: isolatedInstalledPath,
+    });
+
+    expect(result.ok).toBe(true);
+    let staleExists = false;
+    try {
+      await readFile(join(vaultDir, '.gemini', 'commands', 'old-name.toml'));
+      staleExists = true;
+    } catch {}
+    expect(staleExists).toBe(false);
+    expect(
+      await readFile(join(vaultDir, '.gemini', 'commands', 'braindump.toml'), 'utf8'),
+    ).toContain('prompt = "y"');
+  });
+
+  it('skips silently when the tarball has no .gemini/ subtree (older releases)', async () => {
+    // Release artifacts predating .gemini/ shipping must not cause vault-sync
+    // to fail — the gemini step is best-effort.
+    tarball = buildMockTarball({}); // no geminiFiles
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: isolatedInstalledPath,
+    });
+    expect(result.ok).toBe(true);
+
+    let geminiExists = false;
+    try {
+      await stat(join(vaultDir, '.gemini'));
+      geminiExists = true;
+    } catch {}
+    expect(geminiExists).toBe(false);
   });
 });
 

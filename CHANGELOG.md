@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.16
+latest_version: 2.2.0
 released: 2026-05-06
 ---
 
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.0 — feat(vault-sync): deploy `.gemini/` project config alongside the plugin
+
+Companion to plugin v2.3.0. `.gemini/` (Gemini's project-level settings + slash commands) now lives at the same level as `.claude/` and ships through the same release artifact, so a single `onebrain init` or `/update` sets up both Claude and Gemini in the user's vault — no harness picker, no manual extension link.
+
+- feat(vault-sync): new `syncGeminiConfig` step copies `.gemini/` from the extracted release tarball into the vault root, mirroring the plugin-folder semantics (full mirror, stale entries swept). Best-effort: silently skipped when the tarball predates the `.gemini/` shipping cutoff.
+- chore(register-hooks): remove the legacy `registerGeminiHooks` helper that wrote a Claude-shaped `Stop` hook into any pre-existing `.gemini/settings.json`. Gemini hooks now come from the bundled `.gemini/settings.json` declaratively — the CLI does not mutate user-owned settings. Existing leftover `Stop` entries from earlier versions become harmless dead config (Gemini ignores `Stop`; it fires `AfterAgent` instead).
+- test(vault-sync): 3 new cases — `.gemini/` deploy from tarball, stale-file sweep on resync, missing-source-tree silent no-op.
+- test(register-hooks): replace the gemini Stop-write tests with two no-op assertions — register-hooks does not touch user-owned `.gemini/settings.json` and does not create one when absent.
 
 ## v2.1.16 — test(cli-banner): smoke tests for static-banner exit paths
 
