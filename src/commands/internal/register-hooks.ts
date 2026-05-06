@@ -190,12 +190,105 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
 const QMD_CMD = 'onebrain qmd-reindex';
 const QMD_MATCHER = 'Write|Edit';
 
+/**
+ * Match legacy templates that registered `qmd update <args>` as the PostToolUse
+ * command instead of the `onebrain qmd-reindex` wrapper. `/doctor`'s substring
+ * check looks for `qmd-reindex`, so these working hooks get flagged as missing
+ * until we rewrite them. See issue #127.
+ *
+ * Word-bounded match (`\bqmd\s+update\b`) so the rewrite still applies even if
+ * the entry is wrapped by a shell launcher (`powershell.exe -Command qmd update …`,
+ * `bash -lc 'qmd update …'`, `cmd.exe /c qmd update …`).
+ */
+function isLegacyQmdCmd(cmd: string): boolean {
+  return /\bqmd\s+update\b/.test(cmd);
+}
+
+/**
+ * Migrate or remove any legacy `qmd update …` PostToolUse entries.
+ *
+ * - When `keepCanonical` is true (the normal `--qmd` path), legacy entries are
+ *   rewritten in place to `onebrain qmd-reindex` and the parent group's matcher
+ *   is normalized to `QMD_MATCHER` so a fresh install and a migrated install
+ *   converge to the same shape.
+ * - When `keepCanonical` is false (no `qmd_collection` in vault.yml — the user
+ *   no longer uses qmd), legacy entries are dropped from their groups, and any
+ *   group that becomes empty is removed. Without this, deleting `qmd_collection`
+ *   from vault.yml would leave the legacy hook firing forever against a
+ *   collection that no longer exists.
+ *
+ * After in-place rewriting, duplicate canonical entries are deduped to one,
+ * so a vault that already had a canonical entry plus a legacy entry doesn't
+ * end up calling the hook twice on each Write.
+ */
+function migrateLegacyQmdEntries(groups: HookGroup[], keepCanonical: boolean): boolean {
+  // Three sequential passes over `groups`:
+  //   1. Rewrite-or-strip any `qmd update …` entries (rewrite keeps canonical,
+  //      strip removes them entirely).
+  //   2. Dedupe `onebrain qmd-reindex` entries — runs on every keepCanonical=true
+  //      call so a settings.json that already had two canonical entries (Pass 1
+  //      saw nothing to do) still ends up with one.
+  //   3. Splice out groups whose hooks array became empty (reverse iteration —
+  //      forward indices stay valid as we splice from the tail).
+  let touched = false;
+
+  for (const group of groups) {
+    if (!group.hooks) continue;
+    if (keepCanonical) {
+      let groupTouched = false;
+      for (const entry of group.hooks) {
+        if (isLegacyQmdCmd(entry.command ?? '')) {
+          entry.command = QMD_CMD;
+          if (!entry.type) entry.type = 'command';
+          groupTouched = true;
+        }
+      }
+      if (groupTouched) {
+        group.matcher = QMD_MATCHER;
+        touched = true;
+      }
+    } else {
+      const before = group.hooks.length;
+      group.hooks = group.hooks.filter((h) => !isLegacyQmdCmd(h.command ?? ''));
+      if (group.hooks.length !== before) touched = true;
+    }
+  }
+
+  if (keepCanonical) {
+    let seenCanonical = false;
+    for (const group of groups) {
+      if (!group.hooks) continue;
+      const before = group.hooks.length;
+      group.hooks = group.hooks.filter((h) => {
+        if (h.command !== QMD_CMD) return true;
+        if (seenCanonical) return false;
+        seenCanonical = true;
+        return true;
+      });
+      if (group.hooks.length !== before) touched = true;
+    }
+  }
+
+  for (let i = groups.length - 1; i >= 0; i--) {
+    const g = groups[i];
+    if (g && (g.hooks?.length ?? 0) === 0) groups.splice(i, 1);
+  }
+
+  return touched;
+}
+
 function applyQmdHook(settings: SettingsJson): HookStatus {
   if (!settings.hooks) settings.hooks = {};
   if (!settings.hooks['PostToolUse']) settings.hooks['PostToolUse'] = [];
   const groups = settings.hooks['PostToolUse'];
+
+  // Migrate before the canonical-presence check so a settings.json containing
+  // only legacy entries reports `migrated` and produces a single canonical
+  // entry — never `added` plus a stale duplicate.
+  const migrated = migrateLegacyQmdEntries(groups, true);
+
   const already = groups.some((g) => g.hooks?.some((h) => h.command === QMD_CMD));
-  if (already) return 'ok';
+  if (already) return migrated ? 'migrated' : 'ok';
   groups.push({ matcher: QMD_MATCHER, hooks: [{ type: 'command', command: QMD_CMD }] });
   return 'added';
 }
@@ -340,7 +433,22 @@ export async function runRegisterHooks(
 
       // ── Step 1b: qmd PostToolUse hook (applied before stop so it appears in hook line) ──
       let qmdStatus: HookStatus | undefined;
-      if (qmdCollection) qmdStatus = applyQmdHook(settings);
+      if (qmdCollection) {
+        qmdStatus = applyQmdHook(settings);
+      } else {
+        // qmd disabled (no qmd_collection in vault.yml): strip any legacy
+        // `qmd update …` PostToolUse entries so they don't keep firing against
+        // a collection the user no longer maintains. Issue #127.
+        const groups = settings.hooks?.['PostToolUse'] ?? [];
+        const stripped = migrateLegacyQmdEntries(groups, false);
+        if (stripped && groups.length === 0 && settings.hooks) {
+          // Removing the key (rather than setting it to undefined) keeps the
+          // serialized JSON clean — `JSON.stringify` would emit `"PostToolUse":null`
+          // for the assignment form, which surprises downstream consumers.
+          // biome-ignore lint/performance/noDelete: see comment above
+          delete settings.hooks['PostToolUse'];
+        }
+      }
 
       if (isTTY) {
         const parts = HOOK_EVENTS.map((e) => {
@@ -348,8 +456,10 @@ export async function runRegisterHooks(
           const icon = pc.green(status === 'ok' ? '✓' : status === 'migrated' ? '↑' : '+');
           return `${pc.dim(e)} ${icon}`;
         });
-        if (qmdStatus)
-          parts.push(`${pc.dim('PostToolUse')} ${pc.green(qmdStatus === 'ok' ? '✓' : '+')}`);
+        if (qmdStatus) {
+          const qmdIcon = qmdStatus === 'ok' ? '✓' : qmdStatus === 'migrated' ? '↑' : '+';
+          parts.push(`${pc.dim('PostToolUse')} ${pc.green(qmdIcon)}`);
+        }
         hooksSpinner?.stop(`Hooks  ${parts.join('  ')}`);
       } else {
         const hookLine = HOOK_EVENTS.map((e) => {
@@ -361,7 +471,7 @@ export async function runRegisterHooks(
           return `${e} ${label}`;
         }).join('  ');
         note(hookLine);
-        if (qmdStatus) note(`PostToolUse ${qmdStatus === 'added' ? 'added' : 'ok'}`);
+        if (qmdStatus) note(`PostToolUse ${qmdStatus}`);
       }
 
       // ── Step 2: Permissions ───────────────────────────────────────────────
