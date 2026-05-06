@@ -315,25 +315,15 @@ function applyPermissions(settings: SettingsJson): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Step 4: Gemini harness (non-fatal)
+// Step 4: (Gemini harness — no CLI work)
 // ---------------------------------------------------------------------------
-
-async function registerGeminiHooks(vaultRoot: string): Promise<void> {
-  const geminiSettingsPath = join(vaultRoot, '.gemini', 'settings.json');
-  try {
-    // Only modify if the file already exists — skip non-fatally otherwise
-    const text = await readFile(geminiSettingsPath, 'utf8');
-    const settings = JSON.parse(text) as SettingsJson;
-    applyHooks(settings);
-    await writeSettings(geminiSettingsPath, settings);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-      process.stderr.write(
-        `register-hooks: gemini warning: ${err instanceof Error ? err.message : String(err)}\n`,
-      );
-    }
-  }
-}
+//
+// OneBrain ships a self-contained Gemini extension at
+// .claude/plugins/onebrain/gemini/ which users install via
+// `gemini extensions link <vault>/.claude/plugins/onebrain/gemini`.
+// Hooks (hooks/hooks.json), commands (commands/*.toml), skills, and agents
+// are all served by Gemini natively from the linked extension — there is
+// no register-hooks step for the gemini harness.
 
 // ---------------------------------------------------------------------------
 // Step 5: Direct harness — shell profile PATH export (idempotent via marker)
@@ -485,10 +475,7 @@ export async function runRegisterHooks(
       if (!isTTY) note('permissions ok');
     } // end claude harness block
 
-    // ── Step 4: Gemini harness (non-fatal) ────────────────────────────────
-    if (harness === 'gemini') {
-      await registerGeminiHooks(vaultRoot);
-    }
+    // ── Step 4: Gemini harness — no-op (handled by extension link, see header) ──
 
     // ── Step 5: Direct harness ────────────────────────────────────────────
     if (harness === 'direct') {

@@ -13,15 +13,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.3.0 — feat(gemini): bundle OneBrain as a native Gemini CLI extension
+## v2.3.0 — feat(gemini): project-level `.gemini/` config alongside `.claude/`
 
-The plugin now ships **two parallel systems** in a single source tree: the existing Claude plugin at `.claude/plugins/onebrain/` and a fully self-contained Gemini extension at `.claude/plugins/onebrain/gemini/`. Users install the Gemini side with one command — no CLI logic required.
+Two parallel systems in a single source tree: Claude reads `.claude/plugins/onebrain/`, Gemini reads `.gemini/` at the same root level. Skills, agents, INSTRUCTIONS, and tool-mapping references stay single-source-of-truth in the plugin tree — both harnesses reference them on demand, no duplication.
 
-- feat(gemini): new self-contained extension at `.claude/plugins/onebrain/gemini/` with `gemini-extension.json` manifest, `commands/*.toml` (25 user-facing skills), declarative `hooks/hooks.json` (AfterAgent for `Stop` parity + AfterTool with matcher `Write|Edit` for qmd-reindex parity, both wrapped for Gemini's JSON-on-stdout protocol), plus copies of `skills/`, `agents/`, `INSTRUCTIONS.md`, and `references/gemini-tools.md` so the extension works without reaching into the Claude plugin tree
-- feat(scripts): new `scripts/sync-gemini-extension.ts` mirrors `skills/`, `agents/`, `INSTRUCTIONS.md`, and `references/gemini-tools.md` from the Claude plugin into the Gemini extension on demand — keeps duplication consistent without a runtime generator
-- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing line points users at `gemini extensions link [vault]/.claude/plugins/onebrain/gemini` for one-command Gemini install
-- chore(docs): `/doctor` and `/update` SKILL.md + migration-steps.md + CONTRIBUTING.md + INSTRUCTIONS.md describe the stale-hook sweep in event-agnostic terms ("any non-allowed event") rather than naming retired event names
-- note: install flow — users still get Claude side via vault-sync; Gemini side is opt-in via `gemini extensions link` (per-user globally) for vaults that want it. The CLI does not write `.gemini/settings.json` or copy TOMLs at runtime — Gemini reads everything from the linked extension natively.
+- feat(.gemini/settings.json): declarative hook config — `AfterAgent` (matcher `*`) → `onebrain checkpoint stop`, `AfterTool` (matcher `write_file|replace`, regex against Gemini's actual tool names) → `onebrain qmd-reindex`. Both wrapped as `{cmd} > /dev/null 2>&1; echo '{}'` to satisfy Gemini's JSON-on-stdout protocol. `qmd-reindex` no-ops when `qmd_collection` is unset
+- feat(.gemini/commands): 25 hand-curated `.toml` slash commands, one per user-facing OneBrain skill (excludes the internal `startup/` skill). Each TOML's `prompt` activates the matching skill from the plugin tree at runtime
+- feat(GEMINI.md): document the project-level Gemini config layout and link to the same `INSTRUCTIONS.md` and `references/gemini-tools.md` Claude already uses
+- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing line clarifies that the two harness configs sit side by side at the project root and share the plugin's skills/agents/INSTRUCTIONS
+- chore(docs): `/doctor` and `/update` SKILL.md + migration-steps.md + CONTRIBUTING.md describe the stale-hook sweep in event-agnostic terms ("any non-allowed event") rather than naming retired event names
 
 ## v2.2.5 — fix: Windows skill + script compat (PowerShell / cmd / native Python)
 

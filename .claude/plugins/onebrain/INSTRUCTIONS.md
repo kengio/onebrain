@@ -1,6 +1,6 @@
 # OneBrain : AI Instructions
 
-> **Universal — Claude Code + Gemini CLI.** This file uses Claude Code tool names; Gemini CLI loads `GEMINI.md` first which translates them to Gemini equivalents. The Claude plugin lives at `.claude/plugins/onebrain/`; the Gemini extension is bundled alongside at `.claude/plugins/onebrain/gemini/` and is installed via `gemini extensions link [vault]/.claude/plugins/onebrain/gemini`.
+> **Universal — Claude Code + Gemini CLI.** This file uses Claude Code tool names; Gemini CLI loads `GEMINI.md` first which translates them to Gemini equivalents. Claude reads its plugin from `.claude/plugins/onebrain/`; Gemini reads project-level config (hooks + slash commands) from `.gemini/` at the same root. Skills, agents, INSTRUCTIONS, and tool-mapping references stay single-source-of-truth in the plugin tree — both harnesses reference them.
 
 <!-- ═══════════════════════════════════════════════════════════
      1. IDENTITY & SETUP
