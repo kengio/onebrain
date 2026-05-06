@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.13
+latest_version: 2.1.14
 released: 2026-05-06
 ---
 
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.14 — fix(register-hooks): migrate legacy `qmd update -c …` PostToolUse entries
+
+- fix(register-hooks): rewrite legacy `qmd update <args>` PostToolUse hooks to canonical `onebrain qmd-reindex` so `/doctor`'s substring check no longer flags working hooks as missing (#127)
+- fix(register-hooks): match wrapped legacy forms too (`powershell.exe ... qmd update -c …`, `bash -lc 'qmd update …'`) so older Windows installs migrate cleanly
+- fix(register-hooks): dedupe canonical entries after migration and normalize the parent group's matcher to `Write|Edit`, so a settings.json with both legacy and canonical hooks doesn't end up firing the reindex twice
+- fix(register-hooks): strip legacy `qmd update …` entries when `qmd_collection` is unset in vault.yml (instead of leaving them firing against a collection the user no longer maintains)
+- fix(register-hooks): status line reports `PostToolUse migrated` (with `↑` icon in TTY) instead of conflating into `added`/`ok`
+- test(register-hooks): 12 new cases — migration, idempotence, dedup (with and without legacy entries present), narrow-matcher normalization, PowerShell-wrapped legacy form, qmd-disabled cleanup with mixed legacy + canonical
 
 ## v2.1.13 — fix(session-init): walk process tree to find claude PID
 

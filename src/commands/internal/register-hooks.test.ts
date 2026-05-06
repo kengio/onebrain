@@ -311,6 +311,405 @@ describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
     const hooks = settings['hooks'] as Record<string, unknown> | undefined;
     expect(hooks?.['PostToolUse']).toBeUndefined();
   });
+
+  // ---- legacy `qmd update -c <collection>` migration (issue #127) ----------
+
+  /**
+   * Read the PostToolUse hook commands from the vault's settings.json.
+   * Helper keeps the migration assertions readable.
+   */
+  async function readPostToolUseCommands(vault: string): Promise<string[]> {
+    const text = await readFile(join(vault, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const hooks = settings['hooks'] as Record<string, unknown[]> | undefined;
+    const groups = (hooks?.['PostToolUse'] ?? []) as Array<{
+      hooks?: Array<{ command?: string }>;
+    }>;
+    return groups.flatMap((g) => (g.hooks ?? []).map((h) => h.command ?? ''));
+  }
+
+  test('legacy `qmd update -c …` PostToolUse entry → migrated to `onebrain qmd-reindex`', async () => {
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    // Pre-existing settings.json with the legacy command form.
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify(
+        {
+          hooks: {
+            PostToolUse: [
+              {
+                matcher: 'Write|Edit',
+                hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+              },
+            ],
+          },
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds).toContain('onebrain qmd-reindex');
+    expect(cmds.some((c) => /^qmd\s+update/.test(c))).toBe(false);
+  });
+
+  test('legacy `qmd update -c …` migration is idempotent on repeated runs', async () => {
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    // Migration replaces the existing entry — no duplicate canonical entry created.
+    expect(cmds.filter((c) => c === 'onebrain qmd-reindex').length).toBe(1);
+  });
+
+  test('canonical entry already present → leaves settings unchanged (no duplicate)', async () => {
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'onebrain qmd-reindex' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds.filter((c) => c === 'onebrain qmd-reindex').length).toBe(1);
+  });
+
+  test('migration leaves unrelated PostToolUse hooks intact', async () => {
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [
+                { type: 'command', command: 'qmd update -c ob-1-test' },
+                { type: 'command', command: 'echo user-custom-hook' },
+              ],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds).toContain('onebrain qmd-reindex');
+    expect(cmds).toContain('echo user-custom-hook');
+    expect(cmds.some((c) => /^qmd\s+update/.test(c))).toBe(false);
+  });
+
+  test('powershell-wrapped legacy command is also migrated', async () => {
+    // Older Windows templates serialized qmd-reindex.ts's spawn args as the
+    // hook command verbatim, e.g. `powershell.exe -NoProfile -Command qmd update -c '<col>'`.
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [
+                {
+                  type: 'command',
+                  command: "powershell.exe -NoProfile -Command qmd update -c 'ob-1-test'",
+                },
+              ],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds).toEqual(['onebrain qmd-reindex']);
+  });
+
+  test('legacy + canonical co-existing → deduped to a single canonical entry', async () => {
+    // Pathological state: prior partial migration or hand-edit. Migration must
+    // dedupe so the hook doesn't fire twice on every Write/Edit.
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+            },
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'onebrain qmd-reindex' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds.filter((c) => c === 'onebrain qmd-reindex').length).toBe(1);
+  });
+
+  test('legacy entry under narrow matcher → matcher normalized to Write|Edit', async () => {
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write',
+              hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const text = await readFile(join(vaultDir, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const groups = (settings['hooks'] as Record<string, unknown[]>)['PostToolUse'] as Array<{
+      matcher: string;
+      hooks: Array<{ command: string }>;
+    }>;
+    const canonical = groups.find((g) => g.hooks.some((h) => h.command === 'onebrain qmd-reindex'));
+    expect(canonical?.matcher).toBe('Write|Edit');
+  });
+
+  test('qmd disabled (no qmd_collection) → legacy entry is stripped, not left dangling', async () => {
+    // No qmd_collection in vault.yml. A pre-existing legacy `qmd update …`
+    // entry must not survive — it would fire forever against a collection
+    // the user has stopped maintaining.
+    await writeFile(join(vaultDir, 'vault.yml'), 'method: onebrain\n', 'utf8');
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const text = await readFile(join(vaultDir, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const hooks = settings['hooks'] as Record<string, unknown> | undefined;
+    expect(hooks?.['PostToolUse']).toBeUndefined();
+  });
+
+  test('qmd disabled with mixed legacy + user hooks → strips legacy, keeps user entry', async () => {
+    await writeFile(join(vaultDir, 'vault.yml'), 'method: onebrain\n', 'utf8');
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [
+                { type: 'command', command: 'qmd update -c ob-1-test' },
+                { type: 'command', command: 'echo user-custom-hook' },
+              ],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds).toEqual(['echo user-custom-hook']);
+  });
+
+  test('two pre-existing canonical entries (no legacy) → dedupes to one', async () => {
+    // Pathological state from a hand-edit or partial prior run. Even when
+    // there's nothing legacy to migrate, the dedup pass must keep a single
+    // canonical hook so it doesn't fire twice on every Write/Edit.
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'onebrain qmd-reindex' }],
+            },
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'onebrain qmd-reindex' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds.filter((c) => c === 'onebrain qmd-reindex').length).toBe(1);
+  });
+
+  test('qmd disabled with mixed legacy + canonical → strips legacy, keeps canonical', async () => {
+    // The user disabled qmd in vault.yml but had previously registered the
+    // canonical hook by hand. We must strip only the broken legacy entry —
+    // never silently delete the user's manually-kept canonical one.
+    await writeFile(join(vaultDir, 'vault.yml'), 'method: onebrain\n', 'utf8');
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [
+                { type: 'command', command: 'qmd update -c ob-1-test' },
+                { type: 'command', command: 'onebrain qmd-reindex' },
+              ],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds).toEqual(['onebrain qmd-reindex']);
+  });
+
+  test('idempotence: re-introducing a legacy entry after migration → migrates again on next run', async () => {
+    // The first test in this group covers the simple "run twice" case. This
+    // one pins the state machine: the migration branch must remain reachable,
+    // not dead code, after the canonical entry has been written once.
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    // Run 1: migrate the legacy entry.
+    await runRegisterHooks({ vaultDir });
+    let cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds).toEqual(['onebrain qmd-reindex']);
+
+    // Re-introduce a legacy entry alongside the canonical one (e.g. the user
+    // re-ran an older `/update` template).
+    const text = await readFile(join(vaultDir, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as { hooks: { PostToolUse: unknown[] } };
+    settings.hooks.PostToolUse.push({
+      matcher: 'Write|Edit',
+      hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+    });
+    await writeFile(join(vaultDir, '.claude', 'settings.json'), JSON.stringify(settings), 'utf8');
+
+    // Run 2: legacy entry must be migrated and deduped.
+    await runRegisterHooks({ vaultDir });
+    cmds = await readPostToolUseCommands(vaultDir);
+    expect(cmds).toEqual(['onebrain qmd-reindex']);
+  });
 });
 
 // ---------------------------------------------------------------------------
