@@ -19,7 +19,7 @@
 
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, sep as pathSep, relative, resolve as resolvePath } from 'node:path';
 import { intro, outro, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
@@ -62,6 +62,21 @@ export interface VaultSyncResult {
   pinSkipped: boolean;
   cacheRemoved: number;
   error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Path normalization
+// ---------------------------------------------------------------------------
+
+// Strict `===` between paths is fragile: trailing-slash drift, mixed
+// relative/absolute, repeated separators. `path.resolve` collapses those
+// without I/O. We deliberately do NOT realpath — that would touch fs per
+// entry on every sync.
+function normalizePath(p: string): string {
+  const resolved = resolvePath(p);
+  return resolved.endsWith(pathSep) && resolved.length > pathSep.length
+    ? resolved.slice(0, -pathSep.length)
+    : resolved;
 }
 
 // ---------------------------------------------------------------------------
@@ -400,12 +415,15 @@ async function pinToVault(
   }
 
   const vaultPluginDir = join(vaultRoot, '.claude', 'plugins', 'onebrain');
+  const normalizedVaultRoot = normalizePath(vaultRoot);
+  const normalizedVaultPluginDir = normalizePath(vaultPluginDir);
   const { version: pluginVersion, lastUpdated: pluginLastUpdated } =
     await readPluginMetadata(vaultRoot);
   const updatedAt = pluginLastUpdated ?? now().toISOString();
 
   // Determine cache dir: installed_plugins.json parent → plugins/ → cache/
   const cacheDir = installedPluginsCacheDir ?? join(dirname(installedPluginsPath), 'cache');
+  const normalizedCacheDir = normalizePath(cacheDir);
 
   // If ANY onebrain entry has source: marketplace, Claude Code owns it — skip entirely.
   const hasMarketplace = onebrainKeys.some((k) => {
@@ -454,29 +472,52 @@ async function pinToVault(
   for (const key of onebrainKeys) {
     const entries = plugins[key] as Array<Record<string, unknown>>;
     for (const entry of entries) {
-      const installPath = entry['installPath'];
-      if (typeof installPath !== 'string') {
+      const installPathRaw = entry['installPath'];
+      const projectPathRaw = entry['projectPath'];
+
+      // Surface malformed entries: a non-string path field is broken data,
+      // not a "different vault" signal. Silent skip → same class of bug
+      // as #147. Continue (don't throw — registry is user data).
+      const installPathBad = installPathRaw !== undefined && typeof installPathRaw !== 'string';
+      const projectPathBad = projectPathRaw !== undefined && typeof projectPathRaw !== 'string';
+      if (installPathBad || projectPathBad) {
+        process.stderr.write(
+          `vault-sync: pin warning: malformed entry — non-string installPath/projectPath in installed_plugins.json[${key}]\n`,
+        );
         continue;
       }
 
-      // Scope refresh to the vault being synced (entries whose installPath is
-      // already this vault's plugin dir, OR that still point at the cache and
-      // will be rewritten to it). Other vaults pinned to different installPaths
-      // are left alone — syncing vault A must not stomp vault B's pinned version.
-      let inCache = false;
-      try {
-        inCache = installPath.startsWith(`${cacheDir}/`) || installPath === cacheDir;
-      } catch {
-        inCache = false;
-      }
-      const isThisVault = installPath === vaultPluginDir;
+      const installPath = typeof installPathRaw === 'string' ? installPathRaw : undefined;
+      const projectPath = typeof projectPathRaw === 'string' ? projectPathRaw : undefined;
+      const normalizedInstallPath =
+        installPath !== undefined ? normalizePath(installPath) : undefined;
+      const normalizedProjectPath =
+        projectPath !== undefined ? normalizePath(projectPath) : undefined;
 
-      if (inCache) {
+      // Scope refresh to the vault being synced. An entry belongs to this
+      // vault if any of:
+      //   1. installPath === this vault's plugin dir (canonical, post-pin)
+      //   2. installPath is under the plugins cache dir (will be rewritten)
+      //   3. projectPath === this vault root (installPath may be stale —
+      //      e.g. old install location that no longer exists; #147)
+      // Other vaults pinned to different paths are left alone — syncing
+      // vault A must not stomp vault B's pinned version.
+      const inCache =
+        normalizedInstallPath !== undefined &&
+        (normalizedInstallPath === normalizedCacheDir ||
+          normalizedInstallPath.startsWith(`${normalizedCacheDir}${pathSep}`));
+      const isThisVault = normalizedInstallPath === normalizedVaultPluginDir;
+      const isThisProject = normalizedProjectPath === normalizedVaultRoot;
+
+      if (!isThisVault && !inCache && !isThisProject) {
+        continue;
+      }
+
+      // Canonicalize installPath when it's stale (cache dir, or projectPath
+      // matched but installPath drifted from vaultPluginDir).
+      if (normalizedInstallPath !== normalizedVaultPluginDir) {
         entry['installPath'] = vaultPluginDir;
         changed = true;
-      } else if (!isThisVault) {
-        // Different vault — skip; do not touch its version/lastUpdated.
-        continue;
       }
 
       // Refresh version on this vault's entry; only bump lastUpdated when

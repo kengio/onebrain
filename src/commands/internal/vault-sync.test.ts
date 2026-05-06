@@ -5,14 +5,61 @@
  * Verifies all 7 steps with a temp vault dir.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { runVaultSync } from './vault-sync.js';
+
+// ---------------------------------------------------------------------------
+// Suite-level guard: real ~/.claude/plugins/installed_plugins.json must NOT
+// be touched by any test in this file (#146 regression hardening). Snapshot
+// at suite start, assert byte-identical at suite end. ANY test that omits
+// `installedPluginsPath` injection will fail the whole suite.
+// ---------------------------------------------------------------------------
+
+const REAL_REGISTRY_PATH = join(homedir(), '.claude', 'plugins', 'installed_plugins.json');
+let realRegistrySnapshot: { mtimeMs: number; bytes: string } | null = null;
+let realRegistryWasMissing = false;
+
+beforeAll(async () => {
+  try {
+    const s = await stat(REAL_REGISTRY_PATH);
+    const bytes = await readFile(REAL_REGISTRY_PATH, 'utf8');
+    realRegistrySnapshot = { mtimeMs: s.mtimeMs, bytes };
+  } catch {
+    realRegistryWasMissing = true;
+  }
+});
+
+afterAll(async () => {
+  if (realRegistryWasMissing) {
+    let exists = false;
+    try {
+      await stat(REAL_REGISTRY_PATH);
+      exists = true;
+    } catch {
+      exists = false;
+    }
+    if (exists) {
+      throw new Error(
+        `Test suite created ${REAL_REGISTRY_PATH} which did not exist before tests ran (#146 regression).`,
+      );
+    }
+    return;
+  }
+  if (!realRegistrySnapshot) return;
+  const after = await readFile(REAL_REGISTRY_PATH, 'utf8');
+  if (after !== realRegistrySnapshot.bytes) {
+    throw new Error(
+      `Test suite mutated ${REAL_REGISTRY_PATH} (#146 regression). Some test omitted installedPluginsPath injection. Bytes differ: before=${realRegistrySnapshot.bytes.length}, after=${after.length}.`,
+    );
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Tarball builder helpers (uses tar CLI — available on macOS/Linux)
@@ -114,12 +161,17 @@ const VALID_VAULT_YML = 'update_channel: stable\nfolders:\n  inbox: 00-inbox\n  
 describe('runVaultSync', () => {
   let vaultDir: string;
   let tarball: Buffer;
+  // Per-test isolated installed_plugins.json path. Tests that don't override
+  // this default still get a temp path — production fallback to ~/.claude/...
+  // must NEVER fire from tests (#146).
+  let isolatedInstalledPath: string;
 
   beforeEach(async () => {
     vaultDir = await makeVaultDir();
     await mkdir(join(vaultDir, '.claude'), { recursive: true });
     await writeFile(join(vaultDir, 'vault.yml'), VALID_VAULT_YML, 'utf8');
     tarball = buildMockTarball({});
+    isolatedInstalledPath = join(vaultDir, '.isolated-installed_plugins.json');
   });
 
   afterEach(async () => {
@@ -131,6 +183,7 @@ describe('runVaultSync', () => {
   it('fresh sync: syncs all plugin files and root docs', async () => {
     const result = await runVaultSync(vaultDir, {
       fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(true);
@@ -157,6 +210,7 @@ describe('runVaultSync', () => {
 
     const result = await runVaultSync(vaultDir, {
       fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(true);
@@ -223,6 +277,7 @@ describe('runVaultSync', () => {
 
     const result = await runVaultSync(vaultDir, {
       fetchFn: mockFetchWithTarball(tarballWithNewImport),
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(true);
@@ -256,6 +311,7 @@ describe('runVaultSync', () => {
 
     const result = await runVaultSync(vaultDir, {
       fetchFn: mockFetchWithTarball(tarballSameImport),
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(true);
@@ -272,6 +328,7 @@ describe('runVaultSync', () => {
   it('preserves update_channel in vault.yml', async () => {
     const result = await runVaultSync(vaultDir, {
       fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(true);
@@ -349,6 +406,7 @@ describe('runVaultSync', () => {
 
     const result = await runVaultSync(vaultDir2, {
       fetchFn: (async () => new Response('Not Found', { status: 404 })) as unknown as typeof fetch,
+      installedPluginsPath: join(vaultDir2, '.isolated-installed_plugins.json'),
     });
 
     expect(result.ok).toBe(false);
@@ -365,6 +423,7 @@ describe('runVaultSync', () => {
           status: 200,
           headers: { 'content-type': 'application/x-gzip' },
         })) as unknown as typeof fetch,
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(false);
@@ -376,6 +435,7 @@ describe('runVaultSync', () => {
   it('HTTP 403 response → result.ok is false, error contains 403', async () => {
     const result = await runVaultSync(vaultDir, {
       fetchFn: (async () => new Response('Forbidden', { status: 403 })) as unknown as typeof fetch,
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(false);
@@ -502,6 +562,7 @@ describe('runVaultSync', () => {
     const result = await runVaultSync(vaultDir, {
       fetchFn: mockFetchWithTarball(tarball),
       unlinkFn: partialUnlink,
+      installedPluginsPath: isolatedInstalledPath,
     });
 
     expect(result.ok).toBe(true);
@@ -664,5 +725,176 @@ describe('runVaultSync', () => {
       // Restore perms so afterEach rm -rf can clean up
       await chmod(lockedParent, 0o755);
     }
+  });
+
+  // ── Test 19: stale installPath, matching projectPath → refresh + canonicalize (#147) ──
+
+  it('pin matches by projectPath when installPath is stale; rewrites installPath to vaultPluginDir', async () => {
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    await mkdir(pluginsDir, { recursive: true });
+
+    // A different vault that should NOT be touched (sibling entry).
+    const otherProject = await mkdtemp(join(tmpdir(), 'onebrain-other-vault-'));
+    const otherInstall = join(otherProject, '.claude', 'plugins', 'onebrain');
+
+    const stalePath = `/tmp/gone-${randomUUID()}`; // does not exist
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            id: 'onebrain',
+            source: 'project',
+            installPath: stalePath, // stale — directory has been deleted
+            projectPath: vaultDir, // identifies THIS vault
+            version: '1.10.0',
+            lastUpdated: '2025-01-01T00:00:00.000Z',
+          },
+          {
+            // Sibling entry — DIFFERENT projectPath, must stay byte-identical
+            id: 'onebrain',
+            source: 'project',
+            installPath: otherInstall,
+            projectPath: otherProject,
+            version: '2.0.0',
+            lastUpdated: '2025-12-31T23:59:59.000Z',
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    const fixedNow = new Date('2026-05-06T12:00:00.000Z');
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: installedPath,
+      installedPluginsCacheDir: cacheDir,
+      now: () => fixedNow,
+    });
+
+    expect(result.ok).toBe(true);
+    const after = JSON.parse(await readFile(installedPath, 'utf8'));
+    const entries = after.plugins['onebrain@onebrain'];
+
+    // Find this-vault entry by projectPath (installPath was rewritten)
+    const thisEntry = entries.find((e: { projectPath?: string }) => e.projectPath === vaultDir);
+    expect(thisEntry).toBeDefined();
+    expect(thisEntry.installPath).toBe(join(vaultDir, '.claude/plugins/onebrain'));
+    expect(thisEntry.version).toBe('1.11.0'); // refreshed to tarball
+    expect(thisEntry.lastUpdated).toBe(fixedNow.toISOString()); // bumped
+
+    // Sibling entry untouched
+    const sibling = entries.find((e: { projectPath?: string }) => e.projectPath === otherProject);
+    expect(sibling).toBeDefined();
+    expect(sibling.installPath).toBe(otherInstall);
+    expect(sibling.version).toBe('2.0.0');
+    expect(sibling.lastUpdated).toBe('2025-12-31T23:59:59.000Z');
+
+    await rm(otherProject, { recursive: true, force: true });
+  });
+
+  // ── Test 20: trailing-slash on projectPath still matches (#147 path normalization) ──
+
+  it('pin matches projectPath with trailing slash via path normalization', async () => {
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    await mkdir(pluginsDir, { recursive: true });
+
+    const stalePath = `/tmp/gone-${randomUUID()}`;
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            id: 'onebrain',
+            source: 'project',
+            installPath: stalePath,
+            projectPath: `${vaultDir}/`, // trailing slash
+            version: '1.10.0',
+            lastUpdated: '2025-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    const result = await runVaultSync(vaultDir, {
+      fetchFn: mockFetchWithTarball(tarball),
+      installedPluginsPath: installedPath,
+      installedPluginsCacheDir: cacheDir,
+    });
+
+    expect(result.ok).toBe(true);
+    const after = JSON.parse(await readFile(installedPath, 'utf8'));
+    const entry = after.plugins['onebrain@onebrain'][0];
+    expect(entry.installPath).toBe(join(vaultDir, '.claude/plugins/onebrain'));
+    expect(entry.version).toBe('1.11.0');
+  });
+
+  // ── Test 21: malformed entry (non-string installPath) → warn, skip, don't crash ──
+
+  it('pin warns and skips entries with non-string installPath/projectPath; processes siblings normally', async () => {
+    const pluginsDir = join(vaultDir, '.fake-claude-plugins');
+    const cacheDir = join(pluginsDir, 'cache');
+    await mkdir(pluginsDir, { recursive: true });
+
+    const installedJson = {
+      plugins: {
+        'onebrain@onebrain': [
+          {
+            // Malformed — installPath is a number, not a string.
+            id: 'onebrain',
+            source: 'project',
+            installPath: 12345 as unknown as string,
+            version: '0.0.0',
+          },
+          {
+            // Sibling — valid, must process normally.
+            id: 'onebrain',
+            source: 'project',
+            installPath: join(vaultDir, '.claude/plugins/onebrain'),
+            version: '1.10.0',
+            lastUpdated: '2025-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    };
+    const installedPath = join(pluginsDir, 'installed_plugins.json');
+    await writeFile(installedPath, JSON.stringify(installedJson, null, 2), 'utf8');
+
+    // Capture stderr to assert the warning surfaces.
+    const stderrChunks: string[] = [];
+    const originalWrite = process.stderr.write.bind(process.stderr);
+    // biome-ignore lint/suspicious/noExplicitAny: overriding overloaded write for test capture
+    (process.stderr as any).write = (chunk: string | Uint8Array): boolean => {
+      stderrChunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
+      return true;
+    };
+
+    let result: Awaited<ReturnType<typeof runVaultSync>>;
+    try {
+      result = await runVaultSync(vaultDir, {
+        fetchFn: mockFetchWithTarball(tarball),
+        installedPluginsPath: installedPath,
+        installedPluginsCacheDir: cacheDir,
+      });
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+
+    expect(result.ok).toBe(true);
+    const stderr = stderrChunks.join('');
+    expect(stderr).toContain('malformed entry');
+    expect(stderr).toContain('onebrain@onebrain');
+
+    const after = JSON.parse(await readFile(installedPath, 'utf8'));
+    const entries = after.plugins['onebrain@onebrain'];
+    // Malformed entry preserved (we don't delete user data).
+    expect(entries[0].installPath).toBe(12345);
+    expect(entries[0].version).toBe('0.0.0');
+    // Sibling refreshed to tarball version.
+    expect(entries[1].installPath).toBe(join(vaultDir, '.claude/plugins/onebrain'));
+    expect(entries[1].version).toBe('1.11.0');
   });
 });

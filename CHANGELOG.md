@@ -1,5 +1,5 @@
 ---
-latest_version: 2.1.11
+latest_version: 2.1.12
 released: 2026-05-06
 ---
 
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.1.12 — fix(vault-sync): registry matching by projectPath + test isolation
+
+- fix(vault-sync): broaden per-vault registry match — fall back to projectPath when installPath is stale (#147)
+- fix(vault-sync): on projectPath fallback, rewrite stale installPath to canonical vaultPluginDir (#147)
+- fix(vault-sync): inject `installedPluginsPath` option so tests don't pollute real `~/.claude/plugins/installed_plugins.json` (#146)
+- fix(init): same `installedPluginsPath` injection (#146)
+- test(vault-sync): cover stale-installPath + matching-projectPath case
+- test: assert real registry is byte-identical before/after `bun test`
 
 ## v2.1.11 — feat(doctor + vault-sync): backfill vault-side config drift
 
