@@ -233,9 +233,13 @@ jobs:
           npm publish --access public
 
   # ─── Step 6: trigger website rebuild so v{cliVersion} stays in sync ──────
+  # Gated on npm-publish.result=='success' because npm-publish has
+  # continue-on-error: true (so `needs:` alone treats a failed publish as success).
   trigger-website:
     needs: [verify-tag, npm-publish]
+    if: needs.npm-publish.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Trigger Cloudflare deploy hook
         env:
@@ -243,18 +247,40 @@ jobs:
           VERSION: ${{ needs.verify-tag.outputs.version }}
         run: |
           if [ -z "$DEPLOY_HOOK_URL" ]; then
-            echo "::warning::CF_WEBSITE_DEPLOY_HOOK secret not set — skipping website rebuild"
+            if [ "${GITHUB_REPOSITORY}" = "onebrain-ai/onebrain" ]; then
+              echo "::error::CF_WEBSITE_DEPLOY_HOOK secret is required on the canonical repo"
+              exit 1
+            fi
+            echo "::warning::Skipping website rebuild on fork ${GITHUB_REPOSITORY} — secret not set"
             exit 0
           fi
 
           echo "Triggering website rebuild for v${VERSION}..."
-          HTTP_CODE=$(curl -X POST "$DEPLOY_HOOK_URL" -s -o response.txt -w "%{http_code}")
+          CURL_EXIT=0
+          HTTP_CODE=$(curl -X POST "$DEPLOY_HOOK_URL" \
+            -sS \
+            -o response.txt \
+            -w "%{http_code}" \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 3 --retry-delay 5 --retry-all-errors) || CURL_EXIT=$?
 
+          if [ "$CURL_EXIT" -ne 0 ]; then
+            echo "::error::curl failed (exit ${CURL_EXIT}) — network/DNS/TLS issue, not an HTTP error"
+            exit 1
+          fi
+
+          if ! [[ "$HTTP_CODE" =~ ^[0-9]+$ ]]; then
+            echo "::error::Unexpected HTTP code value: '$HTTP_CODE'"
+            exit 1
+          fi
+
+          # Bound body output to avoid huge HTML error pages flooding logs
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             echo "Website rebuild triggered (HTTP $HTTP_CODE) — should be live within 1-2 min"
-            cat response.txt
+            [ -f response.txt ] && head -c 2000 response.txt || echo "(no response body)"
           else
             echo "::error::Deploy hook returned HTTP $HTTP_CODE"
-            cat response.txt
+            [ -f response.txt ] && head -c 2000 response.txt || echo "(no response body)"
             exit 1
           fi
