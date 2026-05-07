@@ -1,5 +1,5 @@
 ---
-latest_version: 2.3.0
+latest_version: 2.2.5
 released: 2026-05-06
 ---
 
@@ -12,16 +12,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
-
-## v2.3.0 — feat(gemini): project-level `.gemini/` config alongside `.claude/`
-
-Two parallel systems in a single source tree: Claude reads `.claude/plugins/onebrain/`, Gemini reads `.gemini/` at the same root level. Skills, agents, INSTRUCTIONS, and tool-mapping references stay single-source-of-truth in the plugin tree — both harnesses reference them on demand, no duplication.
-
-- feat(.gemini/settings.json): declarative hook config — `AfterAgent` (matcher `*`) → `onebrain checkpoint stop`, `AfterTool` (matcher `write_file|replace`, regex against Gemini's actual tool names) → `onebrain qmd-reindex`. Both wrapped as `{cmd} > /dev/null 2>&1; echo '{}'` to satisfy Gemini's JSON-on-stdout protocol. `qmd-reindex` no-ops when `qmd_collection` is unset
-- feat(.gemini/commands): 25 hand-curated `.toml` slash commands, one per user-facing OneBrain skill (excludes the internal `startup/` skill). Each TOML's `prompt` activates the matching skill from the plugin tree at runtime
-- feat(GEMINI.md): document the project-level Gemini config layout and link to the same `INSTRUCTIONS.md` and `references/gemini-tools.md` Claude already uses
-- feat(INSTRUCTIONS.md): Universal Claude + Gemini framing line clarifies that the two harness configs sit side by side at the project root and share the plugin's skills/agents/INSTRUCTIONS
-- chore(docs): `/doctor` and `/update` SKILL.md + migration-steps.md + CONTRIBUTING.md describe the stale-hook sweep in event-agnostic terms ("any non-allowed event") rather than naming retired event names
 
 ## v2.2.5 — fix: Windows skill + script compat (PowerShell / cmd / native Python)
 
