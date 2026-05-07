@@ -103,7 +103,7 @@ Obsidian becomes your dispatch hub for everything you do:
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/vault-hub-dark.svg">
-    <img alt="Obsidian as command center — eight spokes radiate from the vault to CLI/repo, website, cloud infra, social media, office docs, project notes, research, and MCP server" src="assets/diagrams/vault-hub-light.svg" width="512">
+    <img alt="Obsidian as command center — eight spokes radiate from the vault to CLI/repo, website, cloud infra, social media, office docs, project notes, research, and MCP server" src="assets/diagrams/vault-hub-light.svg" width="460">
   </picture>
 </p>
 
