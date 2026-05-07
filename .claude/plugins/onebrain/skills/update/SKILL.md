@@ -47,36 +47,20 @@ Minor/patch bumps (1.10.0 → 1.10.1, 1.10.0 → 1.11.0): proceed without major 
 
 ## CLI Version Check
 
-After confirming the vault update (step 7 above), also check if the installed `onebrain` CLI is up to date.
+After confirming the vault update (step 7 above), also bring the installed `onebrain` CLI up to date by delegating to the CLI's own update path.
 
-1. Run `onebrain --version 2>/dev/null` → parse installed version (e.g. `2.0.4`). If command not found → skip this section entirely.
-2. Fetch latest from npm: `npm view @onebrain-ai/cli version 2>/dev/null` → parse version string. If npm unavailable or fetch fails → skip.
-3. If installed = latest → skip (no output needed).
-4. If newer version available:
-   a. Detect available package managers. Use the form matching the active shell — PowerShell 5.1 (Win10/Server 2019 default) does not parse `||` as a control operator, so do not chain `which || where` in a single command:
-      - **Bash / zsh / Git Bash:**
-        ```bash
-        which bun 2>/dev/null
-        which npm 2>/dev/null
-        ```
-      - **PowerShell:** `Get-Command` always exits 0 — interpret presence by whether the command emitted a `CommandInfo` line (non-empty stdout) rather than by exit code:
-        ```powershell
-        Get-Command bun -ErrorAction SilentlyContinue
-        Get-Command npm -ErrorAction SilentlyContinue
-        ```
-      - **cmd:**
-        ```
-        where bun 2>nul
-        where npm 2>nul
-        ```
-   b. AskUserQuestion: "Update onebrain CLI from v{installed} to v{latest}?"
-      - Both bun and npm available: options `npm / bun / skip` (npm as default)
-      - Only bun: options `bun / skip`
-      - Only npm: options `npm / skip`
-      - Neither available: output `⚠️ CLI v{installed} is outdated (latest: v{latest}) — install npm or bun to update.` and skip
-   c. If `npm` selected: run `npm install -g @onebrain-ai/cli`
-   d. If `bun` selected: run `bun install -g @onebrain-ai/cli`
-   e. Verify: run `onebrain --version` → confirm output matches `{latest}`
+1. **Probe whether `onebrain` is on PATH.** Use the form matching the active shell. `Get-Command` always exits 0, so on PowerShell interpret presence by stdout content (a non-empty `CommandInfo` line = present), not by exit code:
+   - **Bash / zsh / Git Bash:** `onebrain --version 2>/dev/null` — non-zero exit = not installed.
+   - **PowerShell:** `Get-Command onebrain -ErrorAction SilentlyContinue` — empty stdout = not installed.
+   - **cmd:** `where onebrain 2>nul` — non-zero exit = not installed.
+
+   If not installed, skip this section entirely — the CLI cannot self-update if it isn't installed; first-time CLI install lives in the README, not here.
+
+2. Run `onebrain update`. The CLI handles everything: version comparison against the GitHub releases API, package-manager choice (`bun` on macOS/Linux, `npm` via PowerShell on Windows), install, and post-install binary validation. If already current it prints `Already up to date — @onebrain-ai/cli vX.Y.Z` and exits 0; no further action.
+
+3. If `onebrain update` exits non-zero, surface its captured output (both stdout and stderr) verbatim to the user — `runUpdate` writes the human-readable step lines to stdout and the final error tag to stderr, so showing only stderr would hide the diagnostic context. Then continue with the rest of `/update` — CLI failure does not block the vault sync that already completed (and re-running `/update` retries the CLI bump idempotently).
+
+> **Why one command instead of a prompt.** `onebrain update` is the canonical CLI-update path. Duplicating its logic here (raw `npm view` + AskUserQuestion + `npm install -g`) would drift from the CLI's own version check and validation gates. The user already confirmed `/update` at step 6; the CLI bump rides on that confirmation.
 
 ## Self-Update Bootstrap (Read-New, Execute-In-Place)
 
@@ -186,3 +170,5 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 - **Root files live at the repo root, not the plugin folder.** `onebrain vault-sync` handles all seven root-level files: README.md, CONTRIBUTING.md, CHANGELOG.md, PLUGIN-CHANGELOG.md (simple overwrite) and CLAUDE.md, GEMINI.md, AGENTS.md (merge — preserves user `@` imports). Never copy any of these into the plugin folder.
 
 - **Failure recovery path:** If interrupted before step 3d (plugin.json bump), re-running /update will retry from step 1. The early bootstrap (download SKILL.md) is idempotent — safe to repeat.
+
+- **CLI update delegates to `onebrain update`.** Do not call `npm install -g @onebrain-ai/cli` or `bun install -g @onebrain-ai/cli` from this skill — `onebrain update` is the single source of truth for the CLI bump (version check, package-manager choice, validation). Raw npm/bun is reserved for first-time CLI bootstrap, which is a README/install-script concern, not a `/update` concern.
