@@ -136,9 +136,11 @@ Agents are stateless — they receive all context in the prompt payload and do n
 
 ## Adding a New Hook
 
-Hooks run shell commands automatically when Claude performs certain actions. Hook configuration lives in the **vault's** `.claude/settings.json`. Shell scripts (for PostToolUse hooks) go in `.claude/plugins/onebrain/hooks/`.
+Hooks run shell commands automatically when the harness performs certain actions. For Claude Code, hook configuration lives in the vault's `.claude/settings.json`; shell scripts (for PostToolUse hooks) go in `.claude/plugins/onebrain/hooks/`. For Gemini CLI, hooks live declaratively in `.gemini/settings.json` (under the `hooks` key).
 
-**Available hook events:**
+OneBrain currently registers `Stop` + optional `PostToolUse` (qmd) on the Claude side, and the parallel `AfterAgent` + optional `AfterTool` (qmd) on the Gemini side. Reference tables below list every event each harness supports — useful when adding new hooks or porting between harnesses.
+
+**Claude Code hook events:**
 
 | Event | Fires when | Can block? |
 |-------|-----------|------------|
@@ -154,6 +156,8 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 | `InstructionsLoaded` | When CLAUDE.md or `.claude/rules/*.md` files are loaded | No |
 | `SubagentStart` | When a subagent is spawned | No |
 | `SubagentStop` | When a subagent finishes | Yes |
+| `PreCompact` | Before context compaction | No |
+| `PostCompact` | After context compaction completes | No |
 | `Notification` | When Claude Code sends a notification | No |
 | `ConfigChange` | When a configuration file changes during a session | Yes |
 | `WorktreeCreate` | When a worktree is being created | Yes |
@@ -163,7 +167,25 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 | `Elicitation` | When an MCP server requests user input during a tool call | Yes |
 | `ElicitationResult` | After user responds to MCP elicitation | Yes |
 
-Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
+Most Claude hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
+
+**Gemini CLI hook events:**
+
+| Event | Fires when | Closest Claude analog |
+|-------|-----------|----------------------|
+| `BeforeTool` | Before a tool call executes | `PreToolUse` |
+| `AfterTool` | After a tool call completes | `PostToolUse` |
+| `BeforeToolSelection` | Before the model picks a tool | (none) |
+| `BeforeAgent` | Before the agent loop starts | (none) |
+| `AfterAgent` | After the agent loop completes | `Stop` |
+| `BeforeModel` | Before each LLM request | (none) |
+| `AfterModel` | After each LLM response | (none) |
+| `SessionStart` | When a session starts (matcher: `startup`) | `SessionStart` |
+| `SessionEnd` | When a session ends (matcher: `exit`) | (none) |
+| `PreCompress` | Before chat history compression | `PreCompact` |
+| `Notification` | On notification events | `Notification` |
+
+Tool-name matchers in Gemini accept regex (e.g. `write_file|replace`) — they match Gemini's actual tool names (`read_file`, `write_file`, `replace`, `run_shell_command`, ...), NOT Claude's names (`Read`, `Write`, `Edit`, `Bash`, ...). Hook commands must emit `{}` on stdout to satisfy Gemini's JSON protocol; OneBrain wraps them as `{cmd} > /dev/null 2>&1; echo '{}'`.
 
 **Example — checkpoint system:** OneBrain's checkpoint system uses the `Stop` hook to auto-save session snapshots. The hook calls `onebrain checkpoint stop` (the CLI binary). The binary tracks message count + elapsed time against configurable thresholds and emits a `decision:block` JSON payload when a checkpoint is due. State is kept in `$TMPDIR/onebrain-{session_token}.state` (format: `count:last_ts:last_stop_nn`) so counts accumulate across responses, including across compact events.
 
