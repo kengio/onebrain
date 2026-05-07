@@ -402,7 +402,8 @@ onebrain/
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions
 ├── vault.yml          Your vault configuration (created during onboarding)
-└── .claude/plugins/   AI skills and hooks
+├── .claude/plugins/   AI skills, hooks, and shared INSTRUCTIONS (read by Claude Code)
+└── .gemini/           Gemini CLI project config — hooks + namespaced slash commands
 ```
 
 The core workflow: capture everything to inbox → process with `/consolidate` → synthesize into knowledge or save as reference → archive what's done.

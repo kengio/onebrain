@@ -15,10 +15,12 @@ Good contributions include:
 
 ## Project Structure
 
+The plugin track ships TWO sibling trees — one per harness — both versioned together by `plugin.json`:
+
 ```text
-.claude/plugins/onebrain/                Main plugin directory
+.claude/plugins/onebrain/                Claude plugin (read by Claude Code)
 ├── .claude-plugin/
-│   └── plugin.json                      Plugin manifest (name, version, description)
+│   └── plugin.json                      Plugin manifest (name, version, description) — single source of truth for the plugin track
 ├── INSTRUCTIONS.md                      Shared agent instructions — harness-neutral core
 ├── references/                          Harness-specific context loaded by GEMINI.md / AGENTS.md
 │   ├── gemini-tools.md                  Tool name mapping for Gemini CLI
@@ -37,9 +39,17 @@ Good contributions include:
     ├── tag-suggester.md                 Auto-add tags from vault vocabulary (used by /capture, /reading-notes)
     ├── inbox-classifier.md              Pre-classify inbox notes for /consolidate
     └── task-extractor.md                Extract action items from braindumps (used by /braindump)
+
+.gemini/                                 Gemini CLI project config (read by Gemini CLI)
+├── settings.json                        Declarative hooks (AfterAgent, AfterTool) + model.disableLoopDetection
+└── commands/
+    └── onebrain/                        Slash commands namespaced as /onebrain:<skill>
+        └── *.toml                       One TOML per user-facing skill (25 commands; description + prompt)
 ```
 
-Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md)
+Both trees are deployed to the user's vault by `vault-sync` in a single sync step. Skills, agents, and INSTRUCTIONS live single-source-of-truth in `.claude/plugins/onebrain/`; the Gemini side references them on demand via the slash command prompts.
+
+Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [.gemini/settings.json](.gemini/settings.json)
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
