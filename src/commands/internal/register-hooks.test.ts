@@ -713,10 +713,10 @@ describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
 });
 
 // ---------------------------------------------------------------------------
-// registerGeminiHooks (via runRegisterHooks with runtime.harness: gemini)
+// Gemini harness — register-hooks no-op
 // ---------------------------------------------------------------------------
 
-describe('registerGeminiHooks', () => {
+describe('runRegisterHooks under harness=gemini', () => {
   let vaultDir: string;
 
   beforeEach(async () => {
@@ -735,66 +735,35 @@ describe('registerGeminiHooks', () => {
     delete process.env['ONEBRAIN_HARNESS'];
   });
 
-  test('no .gemini/settings.json (ENOENT) → result.ok === true, no file created', async () => {
+  test('does NOT touch .gemini/settings.json — Gemini reads hooks from extension', async () => {
+    // Gemini support ships as a self-contained extension at
+    // .claude/plugins/onebrain/gemini/ which the user installs via
+    // `gemini extensions link`. register-hooks must not mutate
+    // .gemini/settings.json — that file is the user's, not OneBrain's.
+    const geminiSettings = join(vaultDir, '.gemini', 'settings.json');
+    await mkdir(join(vaultDir, '.gemini'), { recursive: true });
+    const userSettings = { theme: 'my-theme', model: 'gemini-2.5-pro' };
+    await writeFile(geminiSettings, JSON.stringify(userSettings), 'utf8');
+
     const result = await runRegisterHooks({ vaultDir });
     expect(result.ok).toBe(true);
-    // File should not exist
-    const geminiSettings = join(vaultDir, '.gemini', 'settings.json');
+
+    const after = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
+    expect(after).toEqual(userSettings);
+  });
+
+  test('does NOT create .gemini/settings.json when missing', async () => {
+    const result = await runRegisterHooks({ vaultDir });
+    expect(result.ok).toBe(true);
+
     let exists = false;
     try {
-      await readFile(geminiSettings, 'utf8');
+      await readFile(join(vaultDir, '.gemini', 'settings.json'), 'utf8');
       exists = true;
     } catch {
-      exists = false;
+      // expected
     }
     expect(exists).toBe(false);
-  });
-
-  test('.gemini/settings.json exists → Stop written', async () => {
-    const geminiDir = join(vaultDir, '.gemini');
-    await mkdir(geminiDir, { recursive: true });
-    const geminiSettings = join(geminiDir, 'settings.json');
-    await writeFile(geminiSettings, JSON.stringify({}), 'utf8');
-
-    const result = await runRegisterHooks({ vaultDir });
-    expect(result.ok).toBe(true);
-
-    const settings = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
-    const hooks = settings['hooks'] as Record<string, unknown[]>;
-    expect(hooks['Stop']).toBeDefined();
-    expect(Array.isArray(hooks['Stop'])).toBe(true);
-    expect((hooks['Stop'] as unknown[]).length).toBeGreaterThan(0);
-  });
-
-  test('corrupt JSON in .gemini/settings.json → result.ok === true (swallowed silently)', async () => {
-    const geminiDir = join(vaultDir, '.gemini');
-    await mkdir(geminiDir, { recursive: true });
-    await writeFile(join(geminiDir, 'settings.json'), '{ invalid json !!!', 'utf8');
-
-    const result = await runRegisterHooks({ vaultDir });
-    expect(result.ok).toBe(true);
-  });
-
-  test('idempotency: run twice → no duplicate hook commands per event', async () => {
-    const geminiDir = join(vaultDir, '.gemini');
-    await mkdir(geminiDir, { recursive: true });
-    await writeFile(join(geminiDir, 'settings.json'), JSON.stringify({}), 'utf8');
-
-    await runRegisterHooks({ vaultDir });
-    await runRegisterHooks({ vaultDir });
-
-    const settings = JSON.parse(await readFile(join(geminiDir, 'settings.json'), 'utf8')) as Record<
-      string,
-      unknown
-    >;
-    const hooks = settings['hooks'] as Record<string, Array<{ hooks: Array<{ command: string }> }>>;
-
-    for (const event of ['Stop', 'PostCompact']) {
-      const groups = hooks[event] ?? [];
-      const allCommands = groups.flatMap((g) => g.hooks.map((h) => h.command));
-      const unique = new Set(allCommands);
-      expect(unique.size).toBe(allCommands.length);
-    }
   });
 });
 

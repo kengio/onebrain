@@ -198,7 +198,7 @@ OneBrain has automatic behaviors that run without you doing anything:
 
 **The practical result:** Just say "bye" and everything is saved. If the session ends unexpectedly, you lose at most 15 messages — the last checkpoint recovers the rest.
 
-> Auto Checkpoint requires Claude Code (uses the Claude Code stop hook) and the `onebrain` CLI binary. Install with `npm install -g @onebrain-ai/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
+> Auto Checkpoint runs on Claude Code (`Stop` hook) and Gemini CLI (`AfterAgent` hook), and uses the `onebrain` CLI binary. Install with `npm install -g @onebrain-ai/cli`. Auto Session Summary works with any agent that follows INSTRUCTIONS.md.
 
 ---
 
@@ -214,7 +214,7 @@ OneBrain doesn't just store markdown. Every feature exists to make you and the a
 | 📂 | **Vault-native Markdown** | Plain Markdown, no lock-in. Your data stays yours forever |
 | 🔀 | **Multi-Harness OS** | Switch between Claude Code, Gemini CLI, Codex, Qwen, or BYO LLM — context never breaks. [See architecture ↑](#the-harness-os-architecture) |
 | 🔌 | **Zero Config** | Clone, open in Obsidian, run `/onboarding`. Ready in under 2 minutes |
-| 📓 | **Session Logs & Checkpoints** | Every conversation saved with summaries and action items. Auto-checkpoints fire every 15 messages or 30 min so nothing is lost mid-session *(auto-checkpoint requires Claude Code)* |
+| 📓 | **Session Logs & Checkpoints** | Every conversation saved with summaries and action items. Auto-checkpoints fire every 15 messages or 30 min so nothing is lost mid-session *(supported on Claude Code and Gemini CLI)* |
 | 💾 | **Auto Session Summary** | When you say "bye", the agent silently saves a complete session log — no `/wrapup` needed |
 | 🔗 | **Knowledge Synthesis** | `/consolidate` turns inbox captures into permanent connected knowledge |
 | 🔬 | **Confidence-scored Memory** | Every insight carries `[conf:high/medium/low]` + `[verified:YYYY-MM-DD]` — knowledge that grows more reliable with use |
@@ -276,7 +276,7 @@ Each harness reads OneBrain's instruction file automatically. Install it, run it
 | **OpenAI Codex** | `npm install -g @openai/codex` | `codex` | `AGENTS.md` |
 | **Qwen Code** | `npm install -g @qwen-code/qwen-code` | `qwen` | `AGENTS.md` |
 
-> Auto-checkpoint and the Stop hook are wired up for Claude Code today. The other harnesses get the rest of the skill surface (24+ commands) immediately, and gain hook coverage as upstream support lands.
+> Auto-checkpoint and stop-hook coverage ship for Claude Code (`Stop` + optional `PostToolUse` qmd) and Gemini CLI (`AfterAgent` + optional `AfterTool` qmd) out of the box. Slash commands are namespaced on Gemini (`/onebrain:braindump`) to avoid collisions with built-ins; on Claude they invoke directly (`/braindump`). Other harnesses gain hook coverage as upstream support lands.
 
 ### 1. Install the OneBrain CLI
 
@@ -342,7 +342,7 @@ Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
 
 ## 📋 24+ Commands
 
-The full skill surface, alphabetized by workflow.
+The full skill surface, alphabetized by workflow. **Gemini CLI users:** prepend the `onebrain:` namespace, e.g. `/onebrain:braindump` instead of `/braindump` (avoids collisions with Gemini built-in commands like `/help` and `/tasks`).
 
 | Command | What it does |
 |---------|-------------|
@@ -402,7 +402,8 @@ onebrain/
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions
 ├── vault.yml          Your vault configuration (created during onboarding)
-└── .claude/plugins/   AI skills and hooks
+├── .claude/plugins/   AI skills, hooks, and shared INSTRUCTIONS (read by Claude Code)
+└── .gemini/           Gemini CLI project config — hooks + namespaced slash commands
 ```
 
 The core workflow: capture everything to inbox → process with `/consolidate` → synthesize into knowledge or save as reference → archive what's done.

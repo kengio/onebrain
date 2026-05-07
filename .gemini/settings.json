@@ -1,0 +1,29 @@
+{
+  "model": {
+    "disableLoopDetection": true
+  },
+  "hooks": {
+    "AfterAgent": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "onebrain checkpoint stop > /dev/null 2>&1; echo '{}'"
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "write_file|replace",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "onebrain qmd-reindex > /dev/null 2>&1; echo '{}'"
+          }
+        ]
+      }
+    ]
+  }
+}

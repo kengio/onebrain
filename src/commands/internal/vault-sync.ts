@@ -259,6 +259,68 @@ async function syncPluginFiles(
   return { filesAdded, filesRemoved };
 }
 
+/**
+ * Sync the project-level Gemini config tree at .gemini/ from the extracted
+ * release into the vault. Mirror the same shape as syncPluginFiles: copy
+ * everything from source, remove anything in dest that isn't in source.
+ *
+ * The user-owned .gemini/settings.json hooks-block is NOT special-cased here
+ * — it is overwritten with the bundled version every sync, the same way
+ * skills/agents/commands are. If users hand-edit settings.json they must
+ * accept that /update will reset it. (Mirrors plugin-folder behavior.)
+ */
+async function syncGeminiConfig(
+  extractedDir: string,
+  vaultRoot: string,
+  unlinkFn: typeof unlink = unlink,
+): Promise<{ filesAdded: number; filesRemoved: number }> {
+  const sourceGemini = join(extractedDir, '.gemini');
+  const destGemini = join(vaultRoot, '.gemini');
+
+  // Source absent → no-op (release artifact may pre-date .gemini/ shipping)
+  try {
+    await stat(sourceGemini);
+  } catch {
+    return { filesAdded: 0, filesRemoved: 0 };
+  }
+
+  await mkdirIdempotent(destGemini);
+
+  const sourceFiles = await listFilesRecursive(sourceGemini);
+  const sourceRelSet = new Set(sourceFiles.map((f) => relative(sourceGemini, f)));
+
+  const destFiles = await listFilesRecursive(destGemini);
+  const destRelSet = new Set(destFiles.map((f) => relative(destGemini, f)));
+
+  const staleRels: string[] = [];
+  for (const rel of destRelSet) {
+    if (!sourceRelSet.has(rel)) staleRels.push(rel);
+  }
+
+  let filesAdded = 0;
+  for (const srcPath of sourceFiles) {
+    const rel = relative(sourceGemini, srcPath);
+    const destPath = join(destGemini, rel);
+    await mkdirIdempotent(dirname(destPath));
+    const content = await readFile(srcPath);
+    await writeFile(destPath, content);
+    filesAdded++;
+  }
+
+  let filesRemoved = 0;
+  for (const rel of staleRels) {
+    const destPath = join(destGemini, rel);
+    try {
+      await unlinkFn(destPath);
+      filesRemoved++;
+    } catch {
+      // best-effort
+    }
+  }
+
+  return { filesAdded, filesRemoved };
+}
+
 // ---------------------------------------------------------------------------
 // Step 3: Copy root docs
 // ---------------------------------------------------------------------------
@@ -761,12 +823,13 @@ export async function runVaultSync(
 
     stopSpinner(`onebrain-ai/onebrain@${branch} (v${result.version})`);
 
-    // ── Step 2: Sync plugin files ─────────────────────────────────────────
+    // ── Step 2: Sync plugin files + .gemini/ project config ──────────────
     startSpinner('📂', 'Syncing files');
     try {
-      const { filesAdded, filesRemoved } = await syncPluginFiles(extractedDir, vaultRoot, unlinkFn);
-      result.filesAdded = filesAdded;
-      result.filesRemoved = filesRemoved;
+      const pluginResult = await syncPluginFiles(extractedDir, vaultRoot, unlinkFn);
+      const geminiResult = await syncGeminiConfig(extractedDir, vaultRoot, unlinkFn);
+      result.filesAdded = pluginResult.filesAdded + geminiResult.filesAdded;
+      result.filesRemoved = pluginResult.filesRemoved + geminiResult.filesRemoved;
     } catch (err) {
       stopSpinner('plugin sync failed');
       const msg = err instanceof Error ? err.message : String(err);

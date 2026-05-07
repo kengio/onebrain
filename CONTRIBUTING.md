@@ -15,10 +15,12 @@ Good contributions include:
 
 ## Project Structure
 
+The plugin track ships TWO sibling trees — one per harness — both versioned together by `plugin.json`:
+
 ```text
-.claude/plugins/onebrain/                Main plugin directory
+.claude/plugins/onebrain/                Claude plugin (read by Claude Code)
 ├── .claude-plugin/
-│   └── plugin.json                      Plugin manifest (name, version, description)
+│   └── plugin.json                      Plugin manifest (name, version, description) — single source of truth for the plugin track
 ├── INSTRUCTIONS.md                      Shared agent instructions — harness-neutral core
 ├── references/                          Harness-specific context loaded by GEMINI.md / AGENTS.md
 │   ├── gemini-tools.md                  Tool name mapping for Gemini CLI
@@ -37,9 +39,17 @@ Good contributions include:
     ├── tag-suggester.md                 Auto-add tags from vault vocabulary (used by /capture, /reading-notes)
     ├── inbox-classifier.md              Pre-classify inbox notes for /consolidate
     └── task-extractor.md                Extract action items from braindumps (used by /braindump)
+
+.gemini/                                 Gemini CLI project config (read by Gemini CLI)
+├── settings.json                        Declarative hooks (AfterAgent, AfterTool) + model.disableLoopDetection
+└── commands/
+    └── onebrain/                        Slash commands namespaced as /onebrain:<skill>
+        └── *.toml                       One TOML per user-facing skill (25 commands; description + prompt)
 ```
 
-Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md)
+Both trees are deployed to the user's vault by `vault-sync` in a single sync step. Skills, agents, and INSTRUCTIONS live single-source-of-truth in `.claude/plugins/onebrain/`; the Gemini side references them on demand via the slash command prompts.
+
+Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [.gemini/settings.json](.gemini/settings.json)
 
 Skills are plain Markdown files. The AI reads them at runtime — no compilation or build step.
 
@@ -136,9 +146,11 @@ Agents are stateless — they receive all context in the prompt payload and do n
 
 ## Adding a New Hook
 
-Hooks run shell commands automatically when Claude performs certain actions. Hook configuration lives in the **vault's** `.claude/settings.json`. Shell scripts (for PostToolUse hooks) go in `.claude/plugins/onebrain/hooks/`.
+Hooks run shell commands automatically when the harness performs certain actions. For Claude Code, hook configuration lives in the vault's `.claude/settings.json`; shell scripts (for PostToolUse hooks) go in `.claude/plugins/onebrain/hooks/`. For Gemini CLI, hooks live declaratively in `.gemini/settings.json` (under the `hooks` key).
 
-**Available hook events:**
+OneBrain currently registers `Stop` + optional `PostToolUse` (qmd) on the Claude side, and the parallel `AfterAgent` + optional `AfterTool` (qmd) on the Gemini side. Reference tables below list every event each harness supports — useful when adding new hooks or porting between harnesses.
+
+**Claude Code hook events:**
 
 | Event | Fires when | Can block? |
 |-------|-----------|------------|
@@ -165,9 +177,27 @@ Hooks run shell commands automatically when Claude performs certain actions. Hoo
 | `Elicitation` | When an MCP server requests user input during a tool call | Yes |
 | `ElicitationResult` | After user responds to MCP elicitation | Yes |
 
-Most hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
+Most Claude hooks support a `matcher` field to filter by tool name or event subtype. `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, and `WorktreeRemove` fire on every occurrence and do not support matchers.
 
-**Example — checkpoint system:** OneBrain's checkpoint system uses the `Stop`, `PreCompact`, and `PostCompact` hooks to auto-save session snapshots. Each hook calls `onebrain checkpoint <mode>` (the CLI binary). The binary tracks message count + elapsed time against configurable thresholds and emits a `decision:block` JSON payload when a checkpoint is due. State is kept in `$TMPDIR/onebrain-{session_token}.state` (format: `count:last_ts:last_stop_nn`) so counts accumulate across responses.
+**Gemini CLI hook events:**
+
+| Event | Fires when | Closest Claude analog |
+|-------|-----------|----------------------|
+| `BeforeTool` | Before a tool call executes | `PreToolUse` |
+| `AfterTool` | After a tool call completes | `PostToolUse` |
+| `BeforeToolSelection` | Before the model picks a tool | (none) |
+| `BeforeAgent` | Before the agent loop starts | (none) |
+| `AfterAgent` | After the agent loop completes | `Stop` |
+| `BeforeModel` | Before each LLM request | (none) |
+| `AfterModel` | After each LLM response | (none) |
+| `SessionStart` | When a session starts (matcher: `startup`) | `SessionStart` |
+| `SessionEnd` | When a session ends (matcher: `exit`) | (none) |
+| `PreCompress` | Before chat history compression | `PreCompact` |
+| `Notification` | On notification events | `Notification` |
+
+Tool-name matchers in Gemini accept regex (e.g. `write_file|replace`) — they match Gemini's actual tool names (`read_file`, `write_file`, `replace`, `run_shell_command`, ...), NOT Claude's names (`Read`, `Write`, `Edit`, `Bash`, ...). Hook commands must emit `{}` on stdout to satisfy Gemini's JSON protocol; OneBrain wraps them as `{cmd} > /dev/null 2>&1; echo '{}'`.
+
+**Example — checkpoint system:** OneBrain's checkpoint system uses the `Stop` hook to auto-save session snapshots. The hook calls `onebrain checkpoint stop` (the CLI binary). The binary tracks message count + elapsed time against configurable thresholds and emits a `decision:block` JSON payload when a checkpoint is due. State is kept in `$TMPDIR/onebrain-{session_token}.state` (format: `count:last_ts:last_stop_nn`) so counts accumulate across responses, including across compact events.
 
 **To add a hook:**
 
@@ -177,9 +207,9 @@ Most hooks support a `matcher` field to filter by tool name or event subtype. `U
 
 3. Make scripts defensive — they run on every matching event, so they should exit silently if there's nothing to do.
 
-4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection. PreCompact hooks do not support `decision:block` and cannot inject prompts.
+4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection.
 
-5. Use `/update` (or `onebrain register-hooks`) to register or repair Stop and PostCompact hooks automatically.
+5. Use `/update` (or `onebrain register-hooks`) to register or repair the `Stop` hook (and the optional `PostToolUse` qmd-reindex hook when `qmd_collection` is set in `vault.yml`) automatically.
 
 ## Memory System
 
@@ -236,7 +266,7 @@ MEMORY-INDEX.md must be kept in sync at all times. Every skill that creates, upd
 Vault setup is owned by the `onebrain` CLI binary (`src/`), **not** by shell scripts in this repo. The user flow is:
 
 1. `npm install -g @onebrain-ai/cli` — installs the CLI globally
-2. `onebrain init` — in a new or existing folder, writes `vault.yml`, scaffolds the 8 standard folders, downloads the latest plugin bundle, installs the recommended Obsidian community plugins, and registers Stop / PostCompact hooks. Aborts safely if a `vault.yml` already exists
+2. `onebrain init` — in a new or existing folder, writes `vault.yml`, scaffolds the 8 standard folders, downloads the latest plugin bundle, installs the recommended Obsidian community plugins, and registers the `Stop` hook (plus a `PostToolUse` qmd-reindex hook when `qmd_collection` is set). Aborts safely if a `vault.yml` already exists
 3. `/onboarding` — inside the chosen harness, personalises identity + active projects
 
 There are no `install.sh` or `install.ps1` scripts to maintain — the equivalent logic lives in the CLI's `init` and `update` commands and ships with each release. Bug fixes for vault bootstrap belong in `src/commands/init.ts` and `src/commands/update.ts`.
@@ -256,13 +286,16 @@ Two independent version tracks — bump only the track that changed:
 
 | Track | Files | Bump when |
 |---|---|---|
-| **Plugin** | `plugin.json` · `PLUGIN-CHANGELOG.md` | Skills, INSTRUCTIONS.md, hooks, vault structure |
-| **CLI** | `package.json` · `CHANGELOG.md` | TypeScript source changes only |
+| **Plugin** | `plugin.json` · `PLUGIN-CHANGELOG.md` | ANY vault-deployed content changes — `.claude/plugins/onebrain/` (Claude plugin), `.gemini/` (Gemini config), or any future harness config. "Plugin" here means OneBrain content shipped to the vault, regardless of which harness reads it. |
+| **CLI** | `package.json` · `CHANGELOG.md` | TypeScript source changes (`src/`) only — the `@onebrain-ai/cli` binary. |
 
-**Plugin bump:** patch for fixes/docs, minor for new skills/agents/hooks
-**CLI bump:** patch for bug fixes, minor for new commands, major for breaking changes
+**Bump rules**
+
+- **Plugin:** patch for fixes/docs, minor for new content (skills, commands, hooks, harness configs), major for breaking schema changes.
+- **CLI:** patch for bug fixes, minor for new commands, major for breaking changes.
 
 After merging a CLI change → push tag `v{cli-version}` to trigger release workflow (builds binaries + publishes npm).
+The Plugin track has its own changelog (`PLUGIN-CHANGELOG.md`) but no separate git tag — `plugin.json` is the source of truth and `vault-sync` reads it on every `/update` to detect drift.
 
 ## Reporting Issues
 
