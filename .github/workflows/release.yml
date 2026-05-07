@@ -231,3 +231,30 @@ jobs:
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
           npm publish --access public
+
+  # ─── Step 6: trigger website rebuild so v{cliVersion} stays in sync ──────
+  trigger-website:
+    needs: [verify-tag, npm-publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cloudflare deploy hook
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.CF_WEBSITE_DEPLOY_HOOK }}
+          VERSION: ${{ needs.verify-tag.outputs.version }}
+        run: |
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "::warning::CF_WEBSITE_DEPLOY_HOOK secret not set — skipping website rebuild"
+            exit 0
+          fi
+
+          echo "Triggering website rebuild for v${VERSION}..."
+          HTTP_CODE=$(curl -X POST "$DEPLOY_HOOK_URL" -s -o response.txt -w "%{http_code}")
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Website rebuild triggered (HTTP $HTTP_CODE) — should be live within 1-2 min"
+            cat response.txt
+          else
+            echo "::error::Deploy hook returned HTTP $HTTP_CODE"
+            cat response.txt
+            exit 1
+          fi
