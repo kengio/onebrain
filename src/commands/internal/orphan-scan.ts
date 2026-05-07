@@ -4,11 +4,18 @@
  * Scans the logs folder for unmerged checkpoint files (orphans).
  * An orphan is a checkpoint whose session was never wrapped up via /wrapup.
  *
+ * Active-Session Guard: groups whose newest checkpoint is < 60 minutes old
+ * are NOT counted as orphans — they belong to a still-active session in
+ * another harness (Claude + Gemini in the same vault see each other's
+ * tokens as "non-current"). Symmetric with the guard in /wrapup Step 1b
+ * (PR #156) so the startup banner doesn't false-positive when /wrapup
+ * correctly skips the same files.
+ *
  * Output: JSON { orphan_count: N }
  * Exit code always 0.
  */
 
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 
@@ -19,6 +26,18 @@ import { parse } from 'yaml';
 export type OrphanScanResult = {
   orphan_count: number;
 };
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Active-Session Guard threshold in milliseconds. Mirrors the 60-min window
+ * in /wrapup SKILL.md Step 1b: two full auto-checkpoint windows (the Stop
+ * hook fires every 15 messages or 30 minutes — a group that has missed two
+ * windows is a strong "session dead" signal). Keep these in lock-step.
+ */
+const ACTIVE_SESSION_GUARD_MS = 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Frontmatter helpers
@@ -80,6 +99,64 @@ async function listMdFiles(dir: string): Promise<string[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Active-Session Guard helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Get a single file's mtime in epoch milliseconds, or null on any error
+ * (vanished, EACCES, NFS hiccup, unparseable mtime). Caller treats null
+ * as "ambiguous" — fail-safe: skip rather than count.
+ */
+async function getMtimeMs(path: string): Promise<number | null> {
+  try {
+    const s = await stat(path);
+    if (typeof s.mtimeMs !== 'number' || !Number.isFinite(s.mtimeMs)) return null;
+    return s.mtimeMs;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get the newest mtime across a list of files. Returns null if the list is
+ * empty OR any single stat failed (fail-safe propagation — one ambiguous
+ * file forces the whole group to be treated as ambiguous, never partially
+ * counted).
+ */
+async function getNewestMtimeMs(filePaths: string[]): Promise<number | null> {
+  if (filePaths.length === 0) return null;
+  let newest = Number.NEGATIVE_INFINITY;
+  for (const p of filePaths) {
+    const m = await getMtimeMs(p);
+    if (m === null) return null;
+    if (m > newest) newest = m;
+  }
+  return Number.isFinite(newest) ? newest : null;
+}
+
+/**
+ * Decide whether a group of checkpoint files belongs to a still-active
+ * session in another harness (or is otherwise ambiguous and unsafe to
+ * count). Returns true → caller MUST NOT count this group as an orphan.
+ *
+ * Fail-safe: any stat failure, negative age (future mtime / clock skew),
+ * or empty group forces a skip. The destructive default (count as orphan
+ * under uncertainty) is forbidden — the symmetric /wrapup recovery uses
+ * the same rule, so a banner that surfaces an "orphan" the wrapup will
+ * refuse to recover would be a confusing UX loop.
+ */
+async function isGroupActiveOrAmbiguous(
+  filePaths: string[],
+  nowMs: number,
+): Promise<boolean> {
+  const newest = await getNewestMtimeMs(filePaths);
+  if (newest === null) return true;
+  const ageMs = nowMs - newest;
+  if (ageMs < 0) return true;
+  return ageMs < ACTIVE_SESSION_GUARD_MS;
+}
+
+// ---------------------------------------------------------------------------
 // Core scan logic
 // ---------------------------------------------------------------------------
 
@@ -116,51 +193,70 @@ async function hasManualSessionLog(monthDir: string, date: string): Promise<bool
 }
 
 /**
- * Scan one month directory for orphan checkpoints.
- * Returns a set of orphan session tokens (one per distinct session).
+ * Collect candidate orphan groups from a single month directory.
+ * Returns a Map of `token → absolute file paths`. A "candidate" is any
+ * checkpoint file whose token != current session, whose date != today,
+ * and whose date has no manual session log (the `merged: true`
+ * frontmatter check from earlier versions was removed in v2.2.0 — the
+ * filename surviving on disk is now the orphan signal).
+ *
+ * Active-Session mtime filtering is intentionally NOT applied here — the
+ * guard runs once at the merged-across-months level, so a token whose
+ * checkpoints span both months is evaluated against its globally-newest
+ * mtime (not per-month).
  */
-async function scanMonthDir(
+async function collectCandidateGroupsForMonth(
   monthDir: string,
   currentToken: string,
   today: string,
-  seenTokens: Set<string>,
-): Promise<number> {
+): Promise<Map<string, string[]>> {
+  const groups = new Map<string, string[]>();
   const files = await listMdFiles(monthDir);
   const checkpoints = files.filter((f) => f.includes('-checkpoint-') && f.endsWith('.md'));
 
-  let count = 0;
+  // Cache per-date "manual session log exists?" lookups: many checkpoints
+  // typically share the same date, and hasManualSessionLog re-reads every
+  // session log's frontmatter on every call.
+  const manualLogCache = new Map<string, boolean>();
+  async function dateHasManualLog(date: string): Promise<boolean> {
+    const cached = manualLogCache.get(date);
+    if (cached !== undefined) return cached;
+    const result = await hasManualSessionLog(monthDir, date);
+    manualLogCache.set(date, result);
+    return result;
+  }
 
   for (const fname of checkpoints) {
-    // Filename format: YYYY-MM-DD-{token}-checkpoint-{NN}.md
+    // Filename format: YYYY-MM-DD-{session_token}-checkpoint-NN.md
     const dateMatch = fname.match(/^(\d{4}-\d{2}-\d{2})-/);
     if (!dateMatch) continue;
     const fdate = dateMatch[1] ?? '';
 
     // Extract token: everything between date- prefix and -checkpoint-
-    const afterDate = fname.slice(fdate.length + 1); // strip "YYYY-MM-DD-"
+    const afterDate = fname.slice(fdate.length + 1);
     const cpIdx = afterDate.indexOf('-checkpoint-');
     if (cpIdx === -1) continue;
     const ftoken = afterDate.slice(0, cpIdx);
     if (!ftoken) continue;
 
-    // Skip today's checkpoints — not orphans yet
+    // Skip today's checkpoints — not orphans yet (still being written).
+    // The mtime guard below catches cross-day active sessions whose
+    // filename date is yesterday but mtime is fresh.
     if (fdate === today) continue;
 
     // Skip current session's own checkpoints
     if (ftoken === currentToken) continue;
 
-    // Skip tokens already counted (dedup across multiple checkpoint files per session)
-    if (seenTokens.has(ftoken)) continue;
-
     // Skip if a manual session log covers this date
-    if (await hasManualSessionLog(monthDir, fdate)) continue;
+    if (await dateHasManualLog(fdate)) continue;
 
-    // Orphan confirmed
-    seenTokens.add(ftoken);
-    count++;
+    const fpath = join(monthDir, fname);
+    const existing = groups.get(ftoken);
+    if (existing) existing.push(fpath);
+    else groups.set(ftoken, [fpath]);
   }
 
-  return count;
+  return groups;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,9 +267,10 @@ async function scanMonthDir(
  * Core logic for orphan-scan.
  * @param logsFolder - absolute path to logs folder
  * @param sessionToken - current session token to exclude
- * @param now - reference time used for the today-skip and prev-month math.
- *   Required (no default) so tests can't silently leak the wall clock by
- *   forgetting to pass it; production callers pass `new Date()` explicitly.
+ * @param now - reference time used for the today-skip, prev-month math, and
+ *   Active-Session Guard age comparison. Required (no default) so tests
+ *   can't silently leak the wall clock by forgetting to pass it; production
+ *   callers pass `new Date()` explicitly.
  * @returns OrphanScanResult
  */
 export async function runOrphanScan(
@@ -189,13 +286,26 @@ export async function runOrphanScan(
     { year: prevYear, month: prevMonth },
   ];
 
-  // Dedup tokens across both month dirs
-  const seenTokens = new Set<string>();
-  let totalOrphans = 0;
-
+  // Merge candidate groups across months keyed by token. A session that
+  // crosses a month boundary will surface here as one entry whose file
+  // list spans both directories, so the mtime guard sees its globally
+  // newest checkpoint and the group is correctly classified.
+  const allGroups = new Map<string, string[]>();
   for (const { year, month } of monthDirs) {
     const monthDir = join(logsFolder, year, month);
-    totalOrphans += await scanMonthDir(monthDir, sessionToken, today, seenTokens);
+    const monthGroups = await collectCandidateGroupsForMonth(monthDir, sessionToken, today);
+    for (const [token, files] of monthGroups) {
+      const existing = allGroups.get(token);
+      if (existing) existing.push(...files);
+      else allGroups.set(token, [...files]);
+    }
+  }
+
+  const nowMs = now.getTime();
+  let totalOrphans = 0;
+  for (const [, files] of allGroups) {
+    if (await isGroupActiveOrAmbiguous(files, nowMs)) continue;
+    totalOrphans++;
   }
 
   return { orphan_count: totalOrphans };

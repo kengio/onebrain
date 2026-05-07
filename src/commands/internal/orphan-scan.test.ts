@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -284,6 +284,107 @@ describe('runOrphanScan', () => {
 
     const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
     expect(result).toEqual({ orphan_count: 2 });
+  });
+
+  // -------------------------------------------------------------------------
+  // Active-Session Guard (60-min mtime window) — symmetric with /wrapup PR #156
+  // -------------------------------------------------------------------------
+
+  // Helper: pin a file's mtime to a specific moment relative to PINNED_NOW so
+  // the guard's `now - mtime` math is deterministic. Uses utimes() with Date
+  // objects (the seconds-as-number form depends on platform stat resolution).
+  async function setMtime(path: string, mtime: Date): Promise<void> {
+    await utimes(path, mtime, mtime);
+  }
+
+  // 60 min before PINNED_NOW (boundary: counted as orphan — guard is `< 60`).
+  const SIXTY_MIN_AGO = new Date(PINNED_NOW.getTime() - 60 * 60 * 1000);
+  // 30 min before PINNED_NOW (active session in another harness — skipped).
+  const THIRTY_MIN_AGO = new Date(PINNED_NOW.getTime() - 30 * 60 * 1000);
+  // 90 min before PINNED_NOW (clearly stale — counted).
+  const NINETY_MIN_AGO = new Date(PINNED_NOW.getTime() - 90 * 60 * 1000);
+  // 5 min into the future from PINNED_NOW (clock skew — fail-safe skip).
+  const FIVE_MIN_FUTURE = new Date(PINNED_NOW.getTime() + 5 * 60 * 1000);
+
+  it('skips group whose newest checkpoint mtime is < 60 min old (active in another harness)', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fname = checkpointName(PAST_DATE, 'activeTok', 1);
+    const fpath = join(monthDir, fname);
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, THIRTY_MIN_AGO);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('counts group whose newest checkpoint mtime is exactly 60 min old (boundary)', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fname = checkpointName(PAST_DATE, 'boundaryTok', 1);
+    const fpath = join(monthDir, fname);
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, SIXTY_MIN_AGO);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 1 });
+  });
+
+  it('counts group whose newest checkpoint mtime is > 60 min old (truly stale)', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fname = checkpointName(PAST_DATE, 'staleTok', 1);
+    const fpath = join(monthDir, fname);
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, NINETY_MIN_AGO);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 1 });
+  });
+
+  it('newest mtime wins: group with one stale + one fresh checkpoint is skipped', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const oldFname = checkpointName(PAST_DATE, 'mixTok', 1);
+    const newFname = checkpointName(PAST_DATE, 'mixTok', 2);
+    const oldPath = join(monthDir, oldFname);
+    const newPath = join(monthDir, newFname);
+    await writeFile(oldPath, checkpointFrontmatter(false), 'utf8');
+    await writeFile(newPath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(oldPath, NINETY_MIN_AGO);
+    await setMtime(newPath, THIRTY_MIN_AGO);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('fail-safe: future mtime (clock skew, negative age) is skipped, not counted', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fname = checkpointName(PAST_DATE, 'skewTok', 1);
+    const fpath = join(monthDir, fname);
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, FIVE_MIN_FUTURE);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('cross-month group: token spanning both months is evaluated against globally-newest mtime', async () => {
+    // Same token has files in both months: prev-month file is stale,
+    // current-month file is fresh. Newest wins → group is active → skip.
+    const thisMonth = await makeThisMonthDir(logsDir);
+    const prevMonth = await makeMonthDir(logsDir, PREV_YEAR, PREV_MONTH);
+    const thisPath = join(thisMonth, checkpointName(PAST_DATE, 'crossTok', 2));
+    const prevPath = join(prevMonth, checkpointName(PREV_DATE, 'crossTok', 1));
+    await writeFile(thisPath, checkpointFrontmatter(false), 'utf8');
+    await writeFile(prevPath, checkpointFrontmatter(false, PREV_DATE), 'utf8');
+    await setMtime(thisPath, THIRTY_MIN_AGO);
+    await setMtime(prevPath, NINETY_MIN_AGO);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('mixed groups: one stale (counted) + one active (skipped) → orphan_count: 1', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const stalePath = join(monthDir, checkpointName(PAST_DATE, 'staleMixTok', 1));
+    const activePath = join(monthDir, checkpointName(PAST_DATE, 'activeMixTok', 1));
+    await writeFile(stalePath, checkpointFrontmatter(false), 'utf8');
+    await writeFile(activePath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(stalePath, NINETY_MIN_AGO);
+    await setMtime(activePath, THIRTY_MIN_AGO);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    expect(result).toEqual({ orphan_count: 1 });
   });
 
   // Regression guard: proves the suite is wall-clock-independent.

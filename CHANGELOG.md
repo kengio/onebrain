@@ -1,6 +1,6 @@
 ---
-latest_version: 2.2.0
-released: 2026-05-06
+latest_version: 2.3.0
+released: 2026-05-07
 ---
 
 # CLI Changelog
@@ -12,6 +12,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.0 — fix(orphan-scan): symmetric 60-min Active-Session Guard
+
+Companion to plugin v2.3.1's /wrapup Step 1b mtime guard (PR #156). The startup banner's `onebrain orphan-scan` previously surfaced cross-harness in-flight checkpoints as orphans even though /wrapup correctly refused to recover them — confusing UX loop where the banner advertised orphans the recovery skill would skip. CLI now applies the identical 60-min mtime window so banner and recovery agree.
+
+- fix(orphan-scan): groups whose newest checkpoint mtime is < 60 min old are NOT counted — they belong to a still-active session in another harness. Cross-month token groups are merged before the guard runs, so globally-newest mtime wins (not per-month).
+- fix(orphan-scan): fail-safe on stat error / clock skew / negative age — group is treated as ambiguous and skipped, never partially counted.
+- test(orphan-scan): 7 new cases — boundary 30/60/90 min, newest-mtime-wins, future-mtime fail-safe, cross-month globally-newest, mixed stale+active groups.
 
 ## v2.2.0 — feat(vault-sync): deploy `.gemini/` project config alongside the plugin
 
