@@ -1,5 +1,5 @@
 ---
-latest_version: 2.3.0
+latest_version: 2.2.1
 released: 2026-05-07
 ---
 
@@ -13,12 +13,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.3.0 — feat(orphan-scan): symmetric configurable Active-Session Guard
+## v2.2.1 — fix(orphan-scan): symmetric Active-Session Guard (PR #156 follow-ups)
 
-Companion to plugin v2.3.2's /wrapup Step 1b mtime guard (PR #156 follow-ups). The startup banner's `onebrain orphan-scan` previously surfaced cross-harness in-flight checkpoints as orphans even though /wrapup correctly refused to recover them — confusing UX loop where the banner advertised orphans the recovery skill would skip. CLI now applies the identical mtime window so banner and recovery agree, and the threshold scales with `vault.yml`'s `checkpoint.minutes`.
+Companion to plugin v2.3.3's /wrapup Step 1b mtime guard (PR #156 follow-ups). The startup banner's `onebrain orphan-scan` previously surfaced cross-harness in-flight checkpoints as orphans even though /wrapup correctly refused to recover them — confusing UX loop where the banner advertised orphans the recovery skill would skip. CLI now applies the identical mtime window so banner and recovery agree, scales with `vault.yml`'s `checkpoint.minutes` so users who raised it don't false-positive on live sessions, and surfaces malformed-config telemetry on stderr.
 
-- feat(orphan-scan): groups whose newest checkpoint mtime is younger than `max(60, 2 * checkpoint.minutes)` minutes are NOT counted — they belong to a still-active session in another harness. Cross-month token groups are merged before the guard runs, so globally-newest mtime wins (not per-month).
-- feat(orphan-scan): threshold derives from vault.yml — users who raised `checkpoint.minutes` to 60 or 90 get a proportionally larger guard instead of the 60-min baseline firing on legitimate live sessions. The `max(60, ...)` floor preserves PR #156 behavior for users who lowered `checkpoint.minutes` below 30.
+- fix(orphan-scan): groups whose newest checkpoint mtime is younger than `max(60, 2 * checkpoint.minutes)` minutes are NOT counted — they belong to a still-active session in another harness. Cross-month token groups are merged before the guard runs, so globally-newest mtime wins (not per-month). The `max(60, ...)` floor preserves PR #156's baseline so users who lowered `checkpoint.minutes` below 30 don't accidentally tighten the guard.
 - fix(orphan-scan): fail-safe on stat error / clock skew / negative age / missing-or-malformed vault.yml — group / threshold is treated as ambiguous and falls back safely, never partially counted or block-on-config-error.
 - fix(orphan-scan): malformed vault.yml now writes a one-line warning to stderr (parse errors, non-mapping root, EACCES) so the user can discover their config is being silently ignored. The classifier matches `parser.ts`'s exported `VAULT_YML_NOT_FOUND_PREFIX` constant so changing the prefix in one place propagates to the classifier — no two-file string drift. The stderr write is wrapped in try/catch so EPIPE/ENOSPC under closed-stderr conditions can't crash the stdout JSON contract.
 - fix(orphan-scan): `runOrphanScan` rejects empty `vaultRoot` with a clear error — empty string would resolve `vault.yml` against `process.cwd()` and silently consume an unrelated vault config. Programming-bug guard for future programmatic callers.
