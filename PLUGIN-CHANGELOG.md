@@ -1,5 +1,5 @@
 ---
-latest_version: 2.3.1
+latest_version: 2.3.2
 released: 2026-05-07
 ---
 
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.2 — refactor(update): delegate CLI bump to `onebrain update`
+
+`/update`'s "CLI Version Check" section was duplicating logic that the `onebrain update` CLI already owns: GitHub release lookup, package-manager detection, install, and binary validation. The skill now defers to the CLI as the single source of truth for the CLI bump.
+
+- refactor(update/SKILL.md): replace 30-line "CLI Version Check" block (raw `npm view` + AskUserQuestion + per-shell bun/npm detection + `npm install -g` / `bun install -g`) with a 3-step delegation: probe `onebrain --version`, run `onebrain update`, surface non-zero exits.
+- refactor(update/SKILL.md): drop the npm/bun selection prompt — `onebrain update` already picks `bun` on macOS/Linux and `npm` on Windows; user already consented to `/update` upstream, so a second AskUserQuestion is noise.
+- docs(update/SKILL.md): add Known Gotcha — raw `npm install -g` / `bun install -g` calls are reserved for first-time CLI bootstrap (README/install scripts), never `/update`.
+- note: pure SKILL.md change, no CLI/binary change. CLI version unchanged at 2.2.0.
 
 ## v2.3.1 — fix(wrapup): active-session guard prevents cross-harness checkpoint loss
 
