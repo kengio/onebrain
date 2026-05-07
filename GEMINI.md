@@ -14,7 +14,7 @@ shared instructions load.
 Hooks and slash commands are defined at the project root in `.gemini/`:
 
 - `.gemini/settings.json` — declarative hooks (`AfterAgent` → `onebrain checkpoint stop`, `AfterTool` for `write_file|replace` → `onebrain qmd-reindex`); both wrapped to satisfy Gemini's JSON-on-stdout protocol
-- `.gemini/commands/*.toml` — 25 user-facing slash commands (`/braindump`, `/capture`, `/research`, ...) that activate the matching skill
+- `.gemini/commands/onebrain/*.toml` — 25 user-facing slash commands under the `onebrain:` namespace (`/onebrain:braindump`, `/onebrain:capture`, `/onebrain:research`, ...) that activate the matching skill. Namespacing avoids collisions with Gemini built-ins (`/help`, `/tasks`) and mirrors the Claude plugin path (`.claude/plugins/onebrain/`)
 
 Skills, agents, INSTRUCTIONS, and tool-mapping references all live inside the Claude plugin tree at `.claude/plugins/onebrain/...`. The agent reads them on demand via the paths referenced from each TOML's prompt — no duplication needed.
 
