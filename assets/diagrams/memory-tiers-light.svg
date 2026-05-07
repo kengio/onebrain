@@ -57,11 +57,11 @@
     <rect width="780" height="130" fill="url(#g-t1-fill)"/>
     <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true">📥</text>
     <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_01</text>
-    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">WORKING</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="24" fill="#ffffff" letter-spacing="0.04em">WORKING</text>
     <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">00-inbox · current session</text>
-    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Raw captures, unprocessed thoughts.</text>
-    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/braindump · /capture · /bookmark</text>
-    <g transform="translate(668, 53)">
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Raw captures, unprocessed thoughts.</text>
+    <text x="320" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/braindump · /capture · /bookmark</text>
+    <g transform="translate(668, 14)">
       <rect width="100" height="24" fill="#ffffff"/>
       <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#c91075" font-weight="700" letter-spacing="0.14em" text-anchor="middle">EPHEMERAL</text>
     </g>
@@ -78,11 +78,11 @@
     <rect width="780" height="130" fill="url(#g-t2-fill)"/>
     <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true" style="animation-delay: 0.65s;">📜</text>
     <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_02</text>
-    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">EPISODIC</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="24" fill="#ffffff" letter-spacing="0.04em">EPISODIC</text>
     <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">07-logs · session + checkpoint</text>
-    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">What happened — sessions, decisions, narrative.</text>
-    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/wrapup · auto-checkpoints</text>
-    <g transform="translate(668, 53)">
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">What happened — sessions, decisions, narrative.</text>
+    <text x="320" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/wrapup · auto-checkpoints</text>
+    <g transform="translate(668, 14)">
       <rect width="100" height="24" fill="#ffffff"/>
       <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#7c1ade" font-weight="700" letter-spacing="0.14em" text-anchor="middle">PER_SESSION</text>
     </g>
@@ -99,11 +99,11 @@
     <rect width="780" height="130" fill="url(#g-t3-fill)"/>
     <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true" style="animation-delay: 1.3s;">🧬</text>
     <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_03</text>
-    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">SEMANTIC</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="24" fill="#ffffff" letter-spacing="0.04em">SEMANTIC</text>
     <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">05-agent · MEMORY.md + memory/</text>
-    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Identity, preferences, recurring patterns.</text>
-    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/learn · /recap · /memory-review</text>
-    <g transform="translate(668, 53)">
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Identity, preferences, recurring patterns.</text>
+    <text x="320" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/learn · /recap · /memory-review</text>
+    <g transform="translate(668, 14)">
       <rect width="100" height="24" fill="#ffffff"/>
       <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4d6d00" font-weight="700" letter-spacing="0.14em" text-anchor="middle">CROSS_SESSION</text>
     </g>
@@ -120,11 +120,11 @@
     <rect width="780" height="130" fill="url(#g-t4-fill)"/>
     <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true" style="animation-delay: 1.95s;">💎</text>
     <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_04</text>
-    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">KNOWLEDGE</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="24" fill="#ffffff" letter-spacing="0.04em">KNOWLEDGE</text>
     <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">03-knowledge · distilled notes</text>
-    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Crystallized insights — what you know forever.</text>
-    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/distill · /connect · /weekly</text>
-    <g transform="translate(668, 53)">
+    <text x="320" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Crystallized insights — what you know forever.</text>
+    <text x="320" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/distill · /connect · /weekly</text>
+    <g transform="translate(668, 14)">
       <rect width="100" height="24" fill="#ffffff"/>
       <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#00788c" font-weight="700" letter-spacing="0.14em" text-anchor="middle">FOREVER</text>
     </g>
