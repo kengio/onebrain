@@ -81,14 +81,14 @@ describe('runOrphanScan', () => {
   });
 
   it('returns orphan_count: 0 when no checkpoint files exist', async () => {
-    const result = await runOrphanScan(logsDir, 'abc12345', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'abc12345', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
   // Update snapshots: bun test --update-snapshots
   it('output shape matches snapshot { orphan_count: N }', async () => {
     // Zero orphans — verifies the shape is { orphan_count: 0 }
-    const zeroResult = await runOrphanScan(logsDir, 'abc12345', PINNED_NOW);
+    const zeroResult = await runOrphanScan(logsDir, 'abc12345', PINNED_NOW, tmpDir);
     expect(zeroResult).toMatchSnapshot();
 
     // One orphan — verifies the shape is { orphan_count: 1 }
@@ -98,12 +98,12 @@ describe('runOrphanScan', () => {
       '---\ntags: [checkpoint]\nmerged: false\n---\n\nContent.',
       'utf8',
     );
-    const oneResult = await runOrphanScan(logsDir, 'differenttoken', PINNED_NOW);
+    const oneResult = await runOrphanScan(logsDir, 'differenttoken', PINNED_NOW, tmpDir);
     expect(oneResult).toMatchSnapshot();
   });
 
   it('returns orphan_count: 0 when logs folder does not exist', async () => {
-    const result = await runOrphanScan(join(tmpDir, 'nonexistent'), 'abc12345', PINNED_NOW);
+    const result = await runOrphanScan(join(tmpDir, 'nonexistent'), 'abc12345', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -117,7 +117,7 @@ describe('runOrphanScan', () => {
     const monthDir = await makeThisMonthDir(logsDir);
     const fname = checkpointName(PAST_DATE, 'token11', 1);
     await writeFile(join(monthDir, fname), checkpointFrontmatter(true), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -126,7 +126,7 @@ describe('runOrphanScan', () => {
     const fname = checkpointName(PAST_DATE, 'tokenStrTrue', 1);
     const content = `---\ntags: [checkpoint, session-log]\ndate: ${PAST_DATE}\ncheckpoint: 01\ntrigger: stop\nmerged: "true"\n---\n\n## What We Worked On\n\nTest content.`;
     await writeFile(join(monthDir, fname), content, 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -134,7 +134,7 @@ describe('runOrphanScan', () => {
     const monthDir = await makeThisMonthDir(logsDir);
     const fname = checkpointName(PAST_DATE, 'current99', 1);
     await writeFile(join(monthDir, fname), checkpointFrontmatter(false), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -144,7 +144,7 @@ describe('runOrphanScan', () => {
     await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
     const logName = sessionLogName(PAST_DATE, 1);
     await writeFile(join(monthDir, logName), sessionLogFrontmatter(false), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -154,7 +154,7 @@ describe('runOrphanScan', () => {
     await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
     const logName = sessionLogName(PAST_DATE, 1);
     await writeFile(join(monthDir, logName), sessionLogFrontmatter(true), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -174,7 +174,7 @@ describe('runOrphanScan', () => {
       `---\ntags: [update-log]\ndate: ${PAST_DATE}\nfrom_version: 2.1.9\nto_version: 2.1.10\n---\n\n# Update Log\n\n- [x] Step 1\n`,
       'utf8',
     );
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -191,7 +191,7 @@ describe('runOrphanScan', () => {
       `---\ntags: [weekly-review]\ndate: ${PAST_DATE}\n---\n\n# Weekly Review\n`,
       'utf8',
     );
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -209,7 +209,7 @@ describe('runOrphanScan', () => {
     );
     const logName = sessionLogName(PAST_DATE, 1);
     await writeFile(join(monthDir, logName), sessionLogFrontmatter(false), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -219,7 +219,7 @@ describe('runOrphanScan', () => {
       const cpName = checkpointName(PAST_DATE, token, 1);
       await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
     }
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 2 });
   });
 
@@ -227,7 +227,7 @@ describe('runOrphanScan', () => {
     const monthDir = await makeMonthDir(logsDir, PREV_YEAR, PREV_MONTH);
     const cpName = checkpointName(PREV_DATE, 'tokenEE', 1);
     await writeFile(join(monthDir, cpName), checkpointFrontmatter(false, PREV_DATE), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -237,7 +237,7 @@ describe('runOrphanScan', () => {
       const cpName = checkpointName(PAST_DATE, 'tokenFF', i);
       await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
     }
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -245,7 +245,7 @@ describe('runOrphanScan', () => {
     const monthDir = await makeThisMonthDir(logsDir);
     const cpName = checkpointName(PAST_DATE, 'tokenGG', 1);
     await writeFile(join(monthDir, cpName), '# No frontmatter here\n\nContent.', 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -253,7 +253,7 @@ describe('runOrphanScan', () => {
     const monthDir = await makeThisMonthDir(logsDir);
     const fname = checkpointName(TODAY, 'todaytoken', 1);
     await writeFile(join(monthDir, fname), checkpointFrontmatter(false, TODAY), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -263,7 +263,7 @@ describe('runOrphanScan', () => {
     await writeFile(join(monthDir, todayFname), checkpointFrontmatter(false, TODAY), 'utf8');
     const pastFname = checkpointName(PAST_DATE, 'pasttoken', 1);
     await writeFile(join(monthDir, pastFname), checkpointFrontmatter(false), 'utf8');
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -282,7 +282,7 @@ describe('runOrphanScan', () => {
       'utf8',
     );
 
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 2 });
   });
 
@@ -312,7 +312,7 @@ describe('runOrphanScan', () => {
     const fpath = join(monthDir, fname);
     await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
     await setMtime(fpath, THIRTY_MIN_AGO);
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -322,7 +322,7 @@ describe('runOrphanScan', () => {
     const fpath = join(monthDir, fname);
     await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
     await setMtime(fpath, SIXTY_MIN_AGO);
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -332,7 +332,7 @@ describe('runOrphanScan', () => {
     const fpath = join(monthDir, fname);
     await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
     await setMtime(fpath, NINETY_MIN_AGO);
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -346,7 +346,7 @@ describe('runOrphanScan', () => {
     await writeFile(newPath, checkpointFrontmatter(false), 'utf8');
     await setMtime(oldPath, NINETY_MIN_AGO);
     await setMtime(newPath, THIRTY_MIN_AGO);
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -356,7 +356,7 @@ describe('runOrphanScan', () => {
     const fpath = join(monthDir, fname);
     await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
     await setMtime(fpath, FIVE_MIN_FUTURE);
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -371,7 +371,7 @@ describe('runOrphanScan', () => {
     await writeFile(prevPath, checkpointFrontmatter(false, PREV_DATE), 'utf8');
     await setMtime(thisPath, THIRTY_MIN_AGO);
     await setMtime(prevPath, NINETY_MIN_AGO);
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -383,7 +383,7 @@ describe('runOrphanScan', () => {
     await writeFile(activePath, checkpointFrontmatter(false), 'utf8');
     await setMtime(stalePath, NINETY_MIN_AGO);
     await setMtime(activePath, THIRTY_MIN_AGO);
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
@@ -398,7 +398,12 @@ describe('runOrphanScan', () => {
     await writeFile(join(monthDir, fname), checkpointFrontmatter(false, fixtureDate), 'utf8');
 
     // now = May 10 → fixture date == today → skipped
-    const sameDay = await runOrphanScan(logsDir, 'current99', new Date('2026-05-10T12:00:00Z'));
+    const sameDay = await runOrphanScan(
+      logsDir,
+      'current99',
+      new Date('2026-05-10T12:00:00Z'),
+      tmpDir,
+    );
     expect(sameDay).toEqual({ orphan_count: 0 });
 
     // now = May 15 → fixture is a past date → counted
@@ -406,11 +411,122 @@ describe('runOrphanScan', () => {
       logsDir,
       'current99',
       new Date('2026-05-15T12:00:00Z'),
+      tmpDir,
     );
     expect(laterSameMonth).toEqual({ orphan_count: 1 });
 
     // now = June 5 → fixture is in previous month → still counted
-    const nextMonth = await runOrphanScan(logsDir, 'current99', new Date('2026-06-05T12:00:00Z'));
+    const nextMonth = await runOrphanScan(
+      logsDir,
+      'current99',
+      new Date('2026-06-05T12:00:00Z'),
+      tmpDir,
+    );
     expect(nextMonth).toEqual({ orphan_count: 1 });
+  });
+
+  // -------------------------------------------------------------------------
+  // Configurable Active-Session Guard threshold (vault.yml-driven)
+  //
+  // Policy (orphan-scan.ts: getActiveSessionGuardMs): the threshold is
+  // `max(60, 2 * checkpoint.minutes)` minutes, derived from vault.yml in
+  // the supplied vaultRoot. Failure modes (missing/malformed vault.yml,
+  // non-positive checkpoint.minutes) silently fall back to 60 minutes.
+  // -------------------------------------------------------------------------
+
+  // Minimal valid vault.yml: only the keys the parser actually requires
+  // beyond defaults. `loadVaultConfig` synthesises folders + update_channel
+  // when absent, so we pin only the field under test.
+  async function writeVaultYml(vaultRoot: string, body: string): Promise<void> {
+    await writeFile(join(vaultRoot, 'vault.yml'), body, 'utf8');
+  }
+
+  it('uses default 60-min threshold when vault.yml is absent (existing behavior)', async () => {
+    // Without vault.yml, getActiveSessionGuardMs falls back to 60 min.
+    // 50-min-old checkpoint is younger than the threshold → skipped.
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'fallbackTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, new Date(PINNED_NOW.getTime() - 50 * 60 * 1000));
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('checkpoint.minutes=60 raises threshold to 120 — 90-min-old group still skipped', async () => {
+    // checkpoint.minutes=60 → max(60, 2*60)=120 min threshold.
+    // A 90-min-old group is younger than 120 → still active → skipped.
+    // Under the old 60-min hard-coded threshold this would have been
+    // counted as an orphan.
+    await writeVaultYml(tmpDir, 'checkpoint:\n  messages: 15\n  minutes: 60\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'cp60ActiveTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, NINETY_MIN_AGO);
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('checkpoint.minutes=60 with 130-min-old group → counted (past raised threshold)', async () => {
+    // Above-threshold age still counts even with a raised guard, so the
+    // policy doesn't silently swallow truly stale groups.
+    await writeVaultYml(tmpDir, 'checkpoint:\n  messages: 15\n  minutes: 60\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'cp60StaleTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, new Date(PINNED_NOW.getTime() - 130 * 60 * 1000));
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    expect(result).toEqual({ orphan_count: 1 });
+  });
+
+  it('checkpoint.minutes=15 keeps threshold at 60-min floor (max wins, not 30)', async () => {
+    // Policy: max(60, 2*15)=60. A user who lowered checkpoint.minutes
+    // below 30 doesn't accidentally tighten the guard below the PR #156
+    // baseline. 50-min-old → still active.
+    await writeVaultYml(tmpDir, 'checkpoint:\n  messages: 15\n  minutes: 15\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'cp15Tok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, new Date(PINNED_NOW.getTime() - 50 * 60 * 1000));
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('malformed vault.yml falls back to 60-min default (no startup blocking)', async () => {
+    // YAML that loadVaultConfig will throw on (top-level array, not a
+    // mapping). Fail-safe falls back to 60-min default → 50-min-old
+    // group is still active and skipped.
+    await writeVaultYml(tmpDir, '- not\n- a\n- mapping\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'malformedTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, new Date(PINNED_NOW.getTime() - 50 * 60 * 1000));
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('vault.yml without checkpoint key uses parser default (30 min) → threshold 60', async () => {
+    // loadVaultConfig defaults checkpoint.minutes to 30 when the
+    // `checkpoint` key is absent. Threshold = max(60, 2*30) = 60.
+    // 50-min-old group is younger → skipped.
+    await writeVaultYml(tmpDir, 'update_channel: stable\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'noCpKeyTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, new Date(PINNED_NOW.getTime() - 50 * 60 * 1000));
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  it('vault.yml with non-positive checkpoint.minutes falls back to 60-min default', async () => {
+    // checkpoint.minutes <= 0 is malformed config — getActiveSessionGuardMs
+    // skips it rather than producing a zero-or-negative threshold (which
+    // would count every checkpoint as orphan, including in-flight ones).
+    await writeVaultYml(tmpDir, 'checkpoint:\n  messages: 15\n  minutes: 0\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'cpZeroTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, new Date(PINNED_NOW.getTime() - 50 * 60 * 1000));
+    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    expect(result).toEqual({ orphan_count: 0 });
   });
 });

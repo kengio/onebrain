@@ -13,13 +13,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.3.0 — fix(orphan-scan): symmetric 60-min Active-Session Guard
+## v2.3.0 — feat(orphan-scan): symmetric configurable Active-Session Guard
 
-Companion to plugin v2.3.1's /wrapup Step 1b mtime guard (PR #156). The startup banner's `onebrain orphan-scan` previously surfaced cross-harness in-flight checkpoints as orphans even though /wrapup correctly refused to recover them — confusing UX loop where the banner advertised orphans the recovery skill would skip. CLI now applies the identical 60-min mtime window so banner and recovery agree.
+Companion to plugin v2.3.2's /wrapup Step 1b mtime guard (PR #156 follow-ups). The startup banner's `onebrain orphan-scan` previously surfaced cross-harness in-flight checkpoints as orphans even though /wrapup correctly refused to recover them — confusing UX loop where the banner advertised orphans the recovery skill would skip. CLI now applies the identical mtime window so banner and recovery agree, and the threshold scales with `vault.yml`'s `checkpoint.minutes`.
 
-- fix(orphan-scan): groups whose newest checkpoint mtime is < 60 min old are NOT counted — they belong to a still-active session in another harness. Cross-month token groups are merged before the guard runs, so globally-newest mtime wins (not per-month).
-- fix(orphan-scan): fail-safe on stat error / clock skew / negative age — group is treated as ambiguous and skipped, never partially counted.
-- test(orphan-scan): 7 new cases — boundary 30/60/90 min, newest-mtime-wins, future-mtime fail-safe, cross-month globally-newest, mixed stale+active groups.
+- feat(orphan-scan): groups whose newest checkpoint mtime is younger than `max(60, 2 * checkpoint.minutes)` minutes are NOT counted — they belong to a still-active session in another harness. Cross-month token groups are merged before the guard runs, so globally-newest mtime wins (not per-month).
+- feat(orphan-scan): threshold derives from vault.yml — users who raised `checkpoint.minutes` to 60 or 90 get a proportionally larger guard instead of the 60-min baseline firing on legitimate live sessions. The `max(60, ...)` floor preserves PR #156 behavior for users who lowered `checkpoint.minutes` below 30.
+- fix(orphan-scan): fail-safe on stat error / clock skew / negative age / missing-or-malformed vault.yml — group / threshold is treated as ambiguous and falls back safely, never partially counted or block-on-config-error.
+- test(orphan-scan): 14 new cases — boundary 30/60/90 min, newest-mtime-wins, future-mtime fail-safe, cross-month globally-newest, mixed stale+active groups, and threshold scaling for `checkpoint.minutes` ∈ {15, 30, 60} plus malformed/missing vault.yml fallback.
 
 ## v2.2.0 — feat(vault-sync): deploy `.gemini/` project config alongside the plugin
 

@@ -71,24 +71,27 @@ If no orphan groups found: skip to Step 2.
 
 For each orphan group from the *Identify Orphans* step above, decide between **recover** and **skip-active** by file age (the `skipped_active` list was initialized at the top of Step 1b):
 
-1. Compute `now_epoch` once: `now_epoch=$(date +%s)`.
-2. For every checkpoint file in the group, get its mtime as **epoch seconds**:
+1. **Resolve the threshold once** (before scanning groups): read `vault.yml`'s `checkpoint.minutes` (defaults to 30 when the key is absent) and compute `threshold_minutes = max(60, 2 * checkpoint.minutes)`. Examples: default 30 → 60, raised 60 → 120, raised 90 → 180. If `vault.yml` is missing, malformed, or `checkpoint.minutes` is non-positive/non-numeric, fall back to `threshold_minutes = 60` — the recovery flow is critical-path; never block on a config issue.
+2. Compute `now_epoch` once: `now_epoch=$(date +%s)`.
+3. For every checkpoint file in the group, get its mtime as **epoch seconds**:
    - macOS / BSD: `stat -f '%m' <file>`
    - Linux / GNU: `stat -c '%Y' <file>`
    - Take the maximum across all files in the group as `group_newest_mtime`.
-3. Compute `age_minutes = (now_epoch - group_newest_mtime) / 60` (integer division is fine).
-4. **Fail-safe — destructive default is forbidden.** If any of the following is true, mark the group as **skip-active** (do NOT recover):
+4. Compute `age_minutes = (now_epoch - group_newest_mtime) / 60` (integer division is fine).
+5. **Fail-safe — destructive default is forbidden.** If any of the following is true, mark the group as **skip-active** (do NOT recover):
    - any stat call failed (file vanished mid-walk, EACCES, NFS error, etc.)
    - `group_newest_mtime` is empty / unparseable
    - `age_minutes` is negative (clock skew, future mtime)
    When ambiguity is detected, append every file path in the group to `skipped_active` as `{path, age_minutes: -1, reason: "age_unknown"}` and continue with the next group. Never fall through to recover when age cannot be determined.
-5. **If `age_minutes < 60`** — the group is still being written to recently. Treat it as **owned by another live session**:
+6. **If `age_minutes < threshold_minutes`** — the group is still being written to recently. Treat it as **owned by another live session**:
    - For each file in the group, append `{path, age_minutes, reason: "active"}` to `skipped_active`.
    - Take **NO other action on these files anywhere in this skill** — not in Auto-Recover, not in Step 5 (Checkpoint Cleanup), not in any cleanup later.
    - Continue with the next group.
-6. **If `age_minutes >= 60`** — the group looks dead: fall through to **Auto-Recover Each Orphan Group** below for this group only.
+7. **If `age_minutes >= threshold_minutes`** — the group looks dead: fall through to **Auto-Recover Each Orphan Group** below for this group only.
 
-The 60-minute threshold gives the owning session a buffer of two full checkpoint windows (the auto-checkpoint hook fires every 15 messages or 30 minutes). A group whose newest checkpoint is older than that has missed at least two windows — a strong "session dead" signal. False-positives (idle but live sessions > 60 min) are non-destructive: nothing was read, written, or deleted; the owning user's next /wrapup writes its own session log normally and consumes the still-on-disk checkpoints.
+The threshold gives the owning session a buffer of two full checkpoint windows (the auto-checkpoint hook fires every `checkpoint.messages` messages or `checkpoint.minutes` minutes). A group whose newest checkpoint is older than that has missed at least two windows — a strong "session dead" signal. The `max(60, 2 * checkpoint.minutes)` policy preserves the PR #156 baseline (60 min) for default-config users while scaling proportionally for users who raised `checkpoint.minutes`. False-positives (idle but live sessions older than the threshold) are non-destructive: nothing was read, written, or deleted; the owning user's next /wrapup writes its own session log normally and consumes the still-on-disk checkpoints.
+
+> **Symmetry with `onebrain orphan-scan`:** the CLI applies the identical `max(60, 2 * checkpoint.minutes)` rule (see `src/commands/internal/orphan-scan.ts` → `getActiveSessionGuardMs`) so the startup banner and the recovery skill agree on what is and isn't an orphan. If you change this policy in one place, change it in the other.
 
 ### Auto-Recover Each Orphan Group
 

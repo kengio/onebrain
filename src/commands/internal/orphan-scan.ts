@@ -4,12 +4,17 @@
  * Scans the logs folder for unmerged checkpoint files (orphans).
  * An orphan is a checkpoint whose session was never wrapped up via /wrapup.
  *
- * Active-Session Guard: groups whose newest checkpoint is < 60 minutes old
- * are NOT counted as orphans — they belong to a still-active session in
- * another harness (Claude + Gemini in the same vault see each other's
- * tokens as "non-current"). Symmetric with the guard in /wrapup Step 1b
- * (PR #156) so the startup banner doesn't false-positive when /wrapup
- * correctly skips the same files.
+ * Active-Session Guard: groups whose newest checkpoint is younger than the
+ * vault.yml-derived threshold are NOT counted as orphans — they belong to
+ * a still-active session in another harness (Claude + Gemini in the same
+ * vault see each other's tokens as "non-current"). Symmetric with the
+ * guard in /wrapup Step 1b (PR #156) so the startup banner doesn't
+ * false-positive when /wrapup correctly skips the same files.
+ *
+ * Threshold policy: `max(60, 2 * checkpoint.minutes)` minutes. Default
+ * checkpoint.minutes is 30 → 60-min threshold (unchanged from PR #156).
+ * Users who raise checkpoint.minutes (e.g. 60 or 90) get a proportionally
+ * larger guard so legitimate live sessions don't get false-positived.
  *
  * Output: JSON { orphan_count: N }
  * Exit code always 0.
@@ -18,6 +23,7 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
+import { loadVaultConfig } from '../../lib/parser.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,12 +38,14 @@ export type OrphanScanResult = {
 // ---------------------------------------------------------------------------
 
 /**
- * Active-Session Guard threshold in milliseconds. Mirrors the 60-min window
- * in /wrapup SKILL.md Step 1b: two full auto-checkpoint windows (the Stop
- * hook fires every 15 messages or 30 minutes — a group that has missed two
- * windows is a strong "session dead" signal). Keep these in lock-step.
+ * Default Active-Session Guard threshold in milliseconds, used when
+ * vault.yml is missing, malformed, or has no usable `checkpoint.minutes`.
+ * Mirrors the original 60-min hard-coded window in /wrapup SKILL.md
+ * Step 1b — two full default 30-min checkpoint windows. The banner is
+ * best-effort information; a config issue must not block startup, so any
+ * vault.yml read failure falls back here rather than throwing.
  */
-const ACTIVE_SESSION_GUARD_MS = 60 * 60 * 1000;
+const DEFAULT_ACTIVE_SESSION_GUARD_MS = 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Frontmatter helpers
@@ -103,6 +111,34 @@ async function listMdFiles(dir: string): Promise<string[]> {
 // ---------------------------------------------------------------------------
 
 /**
+ * Resolve the Active-Session Guard threshold in milliseconds from
+ * `vault.yml`'s `checkpoint.minutes`. Policy: `max(60, 2 * checkpoint.minutes)`
+ * minutes — gives every harness two full checkpoint windows of "live
+ * session" grace, regardless of how `checkpoint.minutes` was customized.
+ * The `max(60, ...)` floor preserves the PR #156 baseline so users who
+ * lowered `checkpoint.minutes` below 30 don't accidentally tighten the
+ * guard.
+ *
+ * Fail-safe: missing vault.yml, parse error, or a non-finite/non-positive
+ * `checkpoint.minutes` all silently fall back to the 60-minute default.
+ * The banner is best-effort information; a config issue must never block
+ * startup.
+ */
+async function getActiveSessionGuardMs(vaultRoot: string): Promise<number> {
+  try {
+    const config = await loadVaultConfig(vaultRoot);
+    const cpMinutes = config.checkpoint?.minutes;
+    if (typeof cpMinutes !== 'number' || !Number.isFinite(cpMinutes) || cpMinutes <= 0) {
+      return DEFAULT_ACTIVE_SESSION_GUARD_MS;
+    }
+    const minutes = Math.max(60, 2 * cpMinutes);
+    return minutes * 60 * 1000;
+  } catch {
+    return DEFAULT_ACTIVE_SESSION_GUARD_MS;
+  }
+}
+
+/**
  * Get a single file's mtime in epoch milliseconds, or null on any error
  * (vanished, EACCES, NFS hiccup, unparseable mtime). Caller treats null
  * as "ambiguous" — fail-safe: skip rather than count.
@@ -148,12 +184,13 @@ async function getNewestMtimeMs(filePaths: string[]): Promise<number | null> {
 async function isGroupActiveOrAmbiguous(
   filePaths: string[],
   nowMs: number,
+  guardMs: number,
 ): Promise<boolean> {
   const newest = await getNewestMtimeMs(filePaths);
   if (newest === null) return true;
   const ageMs = nowMs - newest;
   if (ageMs < 0) return true;
-  return ageMs < ACTIVE_SESSION_GUARD_MS;
+  return ageMs < guardMs;
 }
 
 // ---------------------------------------------------------------------------
@@ -271,12 +308,20 @@ async function collectCandidateGroupsForMonth(
  *   Active-Session Guard age comparison. Required (no default) so tests
  *   can't silently leak the wall clock by forgetting to pass it; production
  *   callers pass `new Date()` explicitly.
+ * @param vaultRoot - directory containing vault.yml. Used to derive the
+ *   Active-Session Guard threshold from `checkpoint.minutes`. Required (no
+ *   default) for the same reason as `now`: tests must opt in to a specific
+ *   vault config or pass a directory without vault.yml to exercise the
+ *   60-min default. Production callers pass `process.cwd()`, since
+ *   `onebrain orphan-scan` is invoked from vault root by the startup
+ *   procedure.
  * @returns OrphanScanResult
  */
 export async function runOrphanScan(
   logsFolder: string,
   sessionToken: string,
   now: Date,
+  vaultRoot: string,
 ): Promise<OrphanScanResult> {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts(now);
@@ -301,10 +346,13 @@ export async function runOrphanScan(
     }
   }
 
+  // Resolve threshold once per call — cheap (one vault.yml read) and keeps
+  // the per-group guard pure (no I/O ordering concerns inside the loop).
+  const guardMs = await getActiveSessionGuardMs(vaultRoot);
   const nowMs = now.getTime();
   let totalOrphans = 0;
   for (const [, files] of allGroups) {
-    if (await isGroupActiveOrAmbiguous(files, nowMs)) continue;
+    if (await isGroupActiveOrAmbiguous(files, nowMs, guardMs)) continue;
     totalOrphans++;
   }
 
@@ -317,8 +365,13 @@ export async function runOrphanScan(
 
 /**
  * Run orphan-scan as a CLI command: print JSON to stdout, always exit 0.
+ *
+ * `process.cwd()` is the vault root: the startup procedure documented in
+ * `.claude/plugins/onebrain/INSTRUCTIONS.md` invokes `onebrain orphan-scan`
+ * from the vault root, so `cwd` is the canonical source for vault.yml
+ * lookup. If invocation pattern changes, update this call site too.
  */
 export async function orphanScanCommand(logsFolder: string, sessionToken: string): Promise<void> {
-  const result = await runOrphanScan(logsFolder, sessionToken, new Date());
+  const result = await runOrphanScan(logsFolder, sessionToken, new Date(), process.cwd());
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }

@@ -1,5 +1,5 @@
 ---
-latest_version: 2.3.2
+latest_version: 2.3.3
 released: 2026-05-07
 ---
 
@@ -12,6 +12,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.3 — feat(wrapup): configurable Active-Session Guard threshold
+
+Follow-ups to PR #156's hard-coded 60-min mtime guard. Threshold now derives from `vault.yml`'s `checkpoint.minutes` via the `max(60, 2 * checkpoint.minutes)` policy, so users who raised `checkpoint.minutes` (60 or 90) get a proportionally larger guard instead of the original guard firing on legitimate live sessions. CLI and skill stay symmetric — the startup banner and the recovery skill agree on what is and isn't an orphan.
+
+- feat(wrapup/SKILL.md): Step 1b resolves `threshold_minutes = max(60, 2 * checkpoint.minutes)` from vault.yml once before scanning groups, then compares each group's `age_minutes` against that threshold (was: hard-coded 60).
+- feat(wrapup/SKILL.md): explicit fail-safe — missing/malformed vault.yml or non-positive `checkpoint.minutes` falls back to 60-min default. Recovery is critical-path; never block on a config issue.
+- docs(wrapup/SKILL.md): cross-link to `src/commands/internal/orphan-scan.ts` → `getActiveSessionGuardMs` so the symmetric policy is discoverable from the skill side.
 
 ## v2.3.2 — refactor(update): delegate CLI bump to `onebrain update`
 
