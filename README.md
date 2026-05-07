@@ -118,7 +118,7 @@ OneBrain runs as a tight 3-step loop. Each cycle, both sides sharpen.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/diagrams/coevo-loop-dark.svg">
-    <img alt="Co-Evolution loop — three nodes (01 CAPTURE at top, 02 EVOLVE at bottom-right, 03 WRAPUP at bottom-left) connected by curved arrows flowing clockwise" src="assets/diagrams/coevo-loop-light.svg" width="540">
+    <img alt="Co-Evolution loop — three nodes (01 CAPTURE at top, 02 EVOLVE at bottom-right, 03 WRAPUP at bottom-left) connected by curved arrows flowing clockwise" src="assets/diagrams/coevo-loop-light.svg" width="270">
   </picture>
 </p>
 
