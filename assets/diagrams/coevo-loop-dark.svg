@@ -68,7 +68,7 @@
 
   <!-- Node 01 — CAPTURE (top) -->
   <g transform="translate(0,-130)">
-    <circle class="core-1" cx="0" cy="0" r="54" fill="url(#g-capture-fill)"/>
+    <circle class="core-1" cx="0" cy="0" r="48" fill="url(#g-capture-fill)"/>
     <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.18em">01</text>
     <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" fill="#ffffff">CAPTURE</text>
     <text x="0" y="22" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" letter-spacing="0.28em" fill="rgba(255,255,255,0.85)">/braindump</text>
@@ -76,7 +76,7 @@
 
   <!-- Node 02 — EVOLVE (bottom-right) -->
   <g transform="translate(112.6,65)">
-    <circle class="core-2" cx="0" cy="0" r="54" fill="url(#g-evolve-fill)"/>
+    <circle class="core-2" cx="0" cy="0" r="48" fill="url(#g-evolve-fill)"/>
     <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.18em">02</text>
     <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" fill="#ffffff">EVOLVE</text>
     <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" font-weight="600" letter-spacing="0.28em" fill="#9234e8">/distill · /learn</text>
@@ -84,7 +84,7 @@
 
   <!-- Node 03 — WRAPUP (bottom-left) -->
   <g transform="translate(-112.6,65)">
-    <circle class="core-3" cx="0" cy="0" r="54" fill="url(#g-wrapup-fill)"/>
+    <circle class="core-3" cx="0" cy="0" r="48" fill="url(#g-wrapup-fill)"/>
     <text x="0" y="-12" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.18em">03</text>
     <text x="0" y="6" text-anchor="middle" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="14" letter-spacing="0.05em" fill="#ffffff">WRAPUP</text>
     <text x="0" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="8" font-weight="600" letter-spacing="0.28em" fill="#00a3bc">/wrapup · /recap</text>
@@ -102,8 +102,8 @@
       <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.02;0.31;0.333;1" dur="5.4s" repeatCount="indefinite"/>
     </circle>
     <!-- Ring on EVOLVE (purple) — bursts at t=0.333 -->
-    <circle cx="112.6" cy="65" r="54" fill="none" stroke="#9234e8" stroke-width="2" opacity="0">
-      <animate attributeName="r" values="54;54;76;76" keyTimes="0;0.333;0.40;1" dur="5.4s" repeatCount="indefinite"/>
+    <circle cx="112.6" cy="65" r="48" fill="none" stroke="#9234e8" stroke-width="2" opacity="0">
+      <animate attributeName="r" values="48;48;68;68" keyTimes="0;0.333;0.40;1" dur="5.4s" repeatCount="indefinite"/>
       <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.333;0.36;0.40;1" dur="5.4s" repeatCount="indefinite"/>
     </circle>
 
@@ -113,8 +113,8 @@
       <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.02;0.31;0.333;1" dur="5.4s" begin="1.8s" repeatCount="indefinite"/>
     </circle>
     <!-- Ring on WRAPUP (teal) — bursts at t=0.333 of leg-2's cycle -->
-    <circle cx="-112.6" cy="65" r="54" fill="none" stroke="#00a3bc" stroke-width="2" opacity="0">
-      <animate attributeName="r" values="54;54;76;76" keyTimes="0;0.333;0.40;1" dur="5.4s" begin="1.8s" repeatCount="indefinite"/>
+    <circle cx="-112.6" cy="65" r="48" fill="none" stroke="#00a3bc" stroke-width="2" opacity="0">
+      <animate attributeName="r" values="48;48;68;68" keyTimes="0;0.333;0.40;1" dur="5.4s" begin="1.8s" repeatCount="indefinite"/>
       <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.333;0.36;0.40;1" dur="5.4s" begin="1.8s" repeatCount="indefinite"/>
     </circle>
 
@@ -124,8 +124,8 @@
       <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.02;0.31;0.333;1" dur="5.4s" begin="3.6s" repeatCount="indefinite"/>
     </circle>
     <!-- Ring on CAPTURE (pink) — bursts at t=0.333 of leg-3's cycle -->
-    <circle cx="0" cy="-130" r="54" fill="none" stroke="#dc1c89" stroke-width="2" opacity="0">
-      <animate attributeName="r" values="54;54;76;76" keyTimes="0;0.333;0.40;1" dur="5.4s" begin="3.6s" repeatCount="indefinite"/>
+    <circle cx="0" cy="-130" r="48" fill="none" stroke="#dc1c89" stroke-width="2" opacity="0">
+      <animate attributeName="r" values="48;48;68;68" keyTimes="0;0.333;0.40;1" dur="5.4s" begin="3.6s" repeatCount="indefinite"/>
       <animate attributeName="opacity" values="0;0;0.9;0;0" keyTimes="0;0.333;0.36;0.40;1" dur="5.4s" begin="3.6s" repeatCount="indefinite"/>
     </circle>
   </g>
