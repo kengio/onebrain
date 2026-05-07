@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  VAULT_YML_NOT_FOUND_PREFIX,
   checkFolders,
   checkOrphanCheckpoints,
   checkQmdEmbeddings,
@@ -87,14 +88,34 @@ describe('loadVaultConfig', () => {
     expect(config.folders.logs).toBe('07-logs');
     expect(config.qmd_collection).toBe('ob-1-test');
     expect(config.update_channel).toBe('stable');
-    expect(config.checkpoint?.messages).toBe(15);
-    expect(config.checkpoint?.minutes).toBe(30);
+    expect(config.checkpoint.messages).toBe(15);
+    expect(config.checkpoint.minutes).toBe(30);
   });
 
   it('throws a clear error when vault.yml is missing', async () => {
     await expect(loadVaultConfig(dir)).rejects.toThrow(
       `vault.yml not found at ${join(dir, 'vault.yml')}. Run onebrain init to set up this vault.`,
     );
+  });
+
+  // Regression guard: the orphan-scan ENOENT classifier relies on
+  // loadVaultConfig's not-found error message starting with the exported
+  // VAULT_YML_NOT_FOUND_PREFIX constant. If a future refactor inlines the
+  // string back (or changes the prefix in only one of the two files), this
+  // test fails and forces both ends to stay in sync. Without it, the same
+  // round-1 P0 silent-failure shape can return through a different code
+  // path: classifier still uses the constant, producer drops it, and
+  // every test still passes because the literal happens to still match.
+  it('uses the exported VAULT_YML_NOT_FOUND_PREFIX in the not-found error', async () => {
+    let caught: unknown;
+    try {
+      await loadVaultConfig(dir);
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    const msg = (caught as Error).message;
+    expect(msg.startsWith(VAULT_YML_NOT_FOUND_PREFIX)).toBe(true);
   });
 
   it('fills default folder names when folders section is absent', async () => {
@@ -115,8 +136,8 @@ describe('loadVaultConfig', () => {
     await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
-    expect(config.checkpoint?.messages).toBe(15);
-    expect(config.checkpoint?.minutes).toBe(30);
+    expect(config.checkpoint.messages).toBe(15);
+    expect(config.checkpoint.minutes).toBe(30);
   });
 
   it('fills default update_channel when absent', async () => {

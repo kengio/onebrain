@@ -11,7 +11,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
-import { type VaultConfig, checkClaudeSettings, checkVaultYmlKeys } from '../lib/index.js';
+import {
+  DEFAULT_CHECKPOINT,
+  type VaultConfig,
+  checkClaudeSettings,
+  checkVaultYmlKeys,
+} from '../lib/index.js';
 import { type DoctorOptions, runDoctor } from './doctor.js';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +43,7 @@ const DEFAULT_CONFIG: VaultConfig = {
     archive: '06-archive',
     logs: '07-logs',
   },
+  checkpoint: { ...DEFAULT_CHECKPOINT },
 };
 
 function makeAllOkValidators(): Required<

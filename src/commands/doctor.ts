@@ -1,5 +1,6 @@
 import pc from 'picocolors';
 import {
+  DEFAULT_CHECKPOINT,
   type DoctorResult,
   type VaultConfig,
   atomicWrite,
@@ -107,6 +108,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       archive: '06-archive',
       logs: '07-logs',
     },
+    checkpoint: { ...DEFAULT_CHECKPOINT },
   };
 
   // ---------------------------------------------------------------------------

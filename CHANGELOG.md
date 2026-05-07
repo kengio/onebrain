@@ -1,6 +1,6 @@
 ---
-latest_version: 2.2.0
-released: 2026-05-06
+latest_version: 2.2.1
+released: 2026-05-07
 ---
 
 # CLI Changelog
@@ -12,6 +12,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.1 — fix(orphan-scan): symmetric Active-Session Guard (PR #156 follow-ups)
+
+Companion to plugin v2.3.3's /wrapup Step 1b mtime guard (PR #156 follow-ups). The startup banner's `onebrain orphan-scan` previously surfaced cross-harness in-flight checkpoints as orphans even though /wrapup correctly refused to recover them — confusing UX loop where the banner advertised orphans the recovery skill would skip. CLI now applies the identical mtime window so banner and recovery agree, scales with `vault.yml`'s `checkpoint.minutes` so users who raised it don't false-positive on live sessions, and surfaces malformed-config telemetry on stderr.
+
+- fix(orphan-scan): groups whose newest checkpoint mtime is younger than `max(60, 2 * checkpoint.minutes)` minutes are NOT counted — they belong to a still-active session in another harness. Cross-month token groups are merged before the guard runs, so globally-newest mtime wins (not per-month). The `max(60, ...)` floor preserves PR #156's baseline so users who lowered `checkpoint.minutes` below 30 don't accidentally tighten the guard.
+- fix(orphan-scan): fail-safe on stat error / clock skew / negative age / missing-or-malformed vault.yml — group / threshold is treated as ambiguous and falls back safely, never partially counted or block-on-config-error.
+- fix(orphan-scan): malformed vault.yml now writes a one-line warning to stderr (parse errors, non-mapping root, EACCES) so the user can discover their config is being silently ignored. The classifier matches `parser.ts`'s exported `VAULT_YML_NOT_FOUND_PREFIX` constant so changing the prefix in one place propagates to the classifier — no two-file string drift. The stderr write is wrapped in try/catch so EPIPE/ENOSPC under closed-stderr conditions can't crash the stdout JSON contract.
+- fix(orphan-scan): `runOrphanScan` rejects empty `vaultRoot` with a clear error — empty string would resolve `vault.yml` against `process.cwd()` and silently consume an unrelated vault config. Programming-bug guard for future programmatic callers.
+- fix(types): `VaultConfig.checkpoint` is now non-optional. The parser unconditionally constructs it from `DEFAULT_CHECKPOINT` (now exported); the `?` modifier was vestigial and forced consumers to write defensive `?.minutes` chains the runtime never needed. `doctor.ts` + `doctor.test.ts` now spread the exported `DEFAULT_CHECKPOINT` instead of duplicating the literal.
+- test(orphan-scan): 19 new cases — boundary 30/60/90 min, newest-mtime-wins, future-mtime fail-safe, cross-month globally-newest, mixed stale+active groups, threshold scaling for `checkpoint.minutes` ∈ {15, 30, 60}, malformed/missing vault.yml fallback, prefix-not-substring ENOENT classifier (verified against a real parse failure whose message contains-but-doesn't-start-with the prefix), and EPIPE-style stderr-write-throws regression.
 
 ## v2.2.0 — feat(vault-sync): deploy `.gemini/` project config alongside the plugin
 

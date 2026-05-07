@@ -9,7 +9,7 @@ export type {
   DoctorResult,
 } from './types.js';
 
-export { loadVaultConfig } from './parser.js';
+export { loadVaultConfig, DEFAULT_CHECKPOINT, VAULT_YML_NOT_FOUND_PREFIX } from './parser.js';
 
 export {
   checkVaultYml,

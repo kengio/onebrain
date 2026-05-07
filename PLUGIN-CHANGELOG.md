@@ -1,5 +1,5 @@
 ---
-latest_version: 2.3.2
+latest_version: 2.3.3
 released: 2026-05-07
 ---
 
@@ -12,6 +12,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.3 — feat(wrapup): PR #156 follow-ups (configurable threshold + recovered-log marker + fallback row)
+
+Three PR #156 follow-ups bundled. CLI track ships matching changes in v2.3.0 (see [CHANGELOG.md](CHANGELOG.md)).
+
+- feat(wrapup/SKILL.md): Step 1b resolves `threshold_minutes = max(60, 2 * checkpoint.minutes)` from vault.yml once before scanning groups (was: hard-coded 60). Users who raised `checkpoint.minutes` to 60/90 now get a proportionally larger guard. Missing/malformed vault.yml falls back to 60-min default — recovery is critical-path, never block on config issues. Cross-link to the symmetric CLI helper documents the contract.
+- feat(session-formats.md, wrapup/SKILL.md): standardise the `<!-- recovery-of: {token}:{date} -->` body marker for recovered session logs. The `already-recovered` short-circuit (Step 1b → step a) now matches via the marker instead of `case: recovered` frontmatter — version-independent, harness-independent, names the specific token+date pair so multi-group recovery logs short-circuit per group rather than as a whole.
+- fix(wrapup/SKILL.md): the marker match is **anchored to start-of-line**, not bare substring. A session log that quotes the marker as documentation in mid-paragraph cannot trigger a false short-circuit (which would have destructively deleted checkpoints based on a documentation quote). Spec text in session-formats.md tightened in lockstep.
+- fix(wrapup/SKILL.md): step (f) now re-reads the recovered session log and verifies the marker survived the write before falling through to step (g)'s checkpoint delete. If the marker is missing (LLM omission / partial write / encoding glitch), recovery aborts for that group: no delete, recovered-log path lands in `orphaned_recovered_logs`, and `skipped_active` records `marker_write_failed` for each file. This converts a silent destructive duplicate into an investigable skip.
+- feat(wrapup/SKILL.md): new `marker_write_failed` enum value added to `skipped_active.reason` with its own row in the `{reason_summary}` rendering table.
+- feat(wrapup/SKILL.md): `{reason_summary}` rendering table gets a catch-all fallback row for unmapped enum values. The surface signal stays generic so a missing explicit row is visible to the user and prompts contributors to add the proper mapping. Cross-linked to the enum definition at the top of Step 1b so future contributors who add a new `reason` value see both anchors.
 
 ## v2.3.2 — refactor(update): delegate CLI bump to `onebrain update`
 

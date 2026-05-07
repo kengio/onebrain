@@ -34,7 +34,10 @@ export interface VaultRecap {
 export interface VaultConfig {
   folders: VaultFolders;
   qmd_collection?: string;
-  checkpoint?: VaultCheckpoint;
+  // Always populated by loadVaultConfig — defaults are merged into the
+  // returned object even when vault.yml omits the `checkpoint` key, so
+  // consumers do not need to guard against `undefined`.
+  checkpoint: VaultCheckpoint;
   update_channel?: 'stable' | 'next';
   stats?: VaultStats;
   recap?: VaultRecap;

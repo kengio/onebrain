@@ -19,10 +19,19 @@ const DEFAULT_FOLDERS: VaultFolders = {
   logs: '07-logs',
 };
 
-const DEFAULT_CHECKPOINT: VaultCheckpoint = {
+export const DEFAULT_CHECKPOINT: VaultCheckpoint = {
   messages: 15,
   minutes: 30,
 };
+
+/**
+ * Prefix of the error thrown by `loadVaultConfig` when vault.yml is absent.
+ * Exported so consumers (e.g. `getActiveSessionGuardMs` in orphan-scan.ts)
+ * can classify ENOENT-style absence vs real malformations without
+ * duplicating the prefix string. Changing the prefix here propagates
+ * automatically to every classifier — no two-file string drift.
+ */
+export const VAULT_YML_NOT_FOUND_PREFIX = 'vault.yml not found at ';
 
 /**
  * Load and parse vault.yml from vaultRoot, merging defaults for missing fields.
@@ -36,7 +45,7 @@ export async function loadVaultConfig(vaultRoot: string): Promise<VaultConfig> {
   const exists = await file.exists();
   if (!exists) {
     throw new Error(
-      `vault.yml not found at ${vaultYmlPath}. Run onebrain init to set up this vault.`,
+      `${VAULT_YML_NOT_FOUND_PREFIX}${vaultYmlPath}. Run onebrain init to set up this vault.`,
     );
   }
 
