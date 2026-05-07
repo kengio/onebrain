@@ -136,7 +136,7 @@ auto-recovered: true
 <!-- recovery-of: {token}:{YYYY-MM-DD} -->
 ```
 
-Where `{token}` is the recovered group's session token (parsed from the checkpoint filenames) and `{YYYY-MM-DD}` is the recovered session's date (the checkpoint files' date prefix, not today). Emit one marker line per recovered group; if a single recovery pass aggregates multiple groups, write one marker per group on consecutive lines.
+Where `{token}` is the recovered group's session token (parsed from the checkpoint filenames) and `{YYYY-MM-DD}` is the recovered session's date (the checkpoint files' date prefix, not today). Emit one marker line per recovered group; if a single recovery pass aggregates multiple groups, write one marker per group on consecutive lines. **The marker must occupy a full line on its own** — do not embed it inline within prose, do not append text after the closing `-->`. The /wrapup `already-recovered` short-circuit anchors its detection to start-of-line so a session log that quotes the marker as documentation in mid-paragraph cannot trigger a false short-circuit.
 
 **Why a body marker, not just frontmatter:** /wrapup's `already-recovered` short-circuit (Step 1b → Auto-Recover step a) needs a stable, version-independent signal that a given group was already preserved in a prior recovered log. Frontmatter shape has drifted across releases (`auto-recovered: true` here, `case: recovered` in older drafts, `synthesized_from_checkpoints: true` shared with manual wrapups). The body marker is the only signal that:
 1. Names the specific token + date pair recovered (frontmatter doesn't), so multi-group recovery logs short-circuit per group rather than as a whole,

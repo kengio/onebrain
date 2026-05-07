@@ -38,6 +38,18 @@ export type OrphanScanResult = {
 // ---------------------------------------------------------------------------
 
 /**
+ * Minimum acceptable Active-Session Guard threshold, in minutes. Used as
+ * the floor in the `max(MIN_GUARD_MINUTES, 2 * checkpoint.minutes)` policy
+ * so a user who lowered `checkpoint.minutes` below 30 doesn't accidentally
+ * tighten the guard below the PR #156 baseline. Distinct semantics from
+ * `DEFAULT_ACTIVE_SESSION_GUARD_MS` — the floor coincides with the default
+ * fallback today by calibration, not by invariant. Keep them separate so
+ * a future change to `DEFAULT_CHECKPOINT.minutes` doesn't accidentally
+ * shift the user-visible floor.
+ */
+const MIN_GUARD_MINUTES = 60;
+
+/**
  * Default Active-Session Guard threshold in milliseconds, used when
  * vault.yml is missing, malformed, or has no usable `checkpoint.minutes`.
  * Mirrors the original 60-min hard-coded window in /wrapup SKILL.md
@@ -112,28 +124,50 @@ async function listMdFiles(dir: string): Promise<string[]> {
 
 /**
  * Resolve the Active-Session Guard threshold in milliseconds from
- * `vault.yml`'s `checkpoint.minutes`. Policy: `max(60, 2 * checkpoint.minutes)`
- * minutes — gives every harness two full checkpoint windows of "live
- * session" grace, regardless of how `checkpoint.minutes` was customized.
- * The `max(60, ...)` floor preserves the PR #156 baseline so users who
- * lowered `checkpoint.minutes` below 30 don't accidentally tighten the
- * guard.
+ * `vault.yml`'s `checkpoint.minutes`. Policy: `max(MIN_GUARD_MINUTES,
+ * 2 * checkpoint.minutes)` minutes — gives every harness two full
+ * checkpoint windows of "live session" grace, regardless of how
+ * `checkpoint.minutes` was customized. The floor preserves the PR #156
+ * baseline so users who lowered `checkpoint.minutes` below 30 don't
+ * accidentally tighten the guard.
  *
- * Fail-safe: missing vault.yml, parse error, or a non-finite/non-positive
- * `checkpoint.minutes` all silently fall back to the 60-minute default.
- * The banner is best-effort information; a config issue must never block
- * startup.
+ * Fail-safe behavior, with telemetry:
+ * - **Expected absence** (vault.yml not found, ENOENT): silently fall back
+ *   to the default. Some banner consumers run from non-vault directories.
+ * - **Real malformation** (parse error, non-mapping root, EACCES, etc.):
+ *   write a one-line warning to stderr so the user can discover that
+ *   their config is being ignored, then fall back. The startup banner
+ *   parses stdout JSON only, so stderr can carry diagnostic noise without
+ *   corrupting the JSON contract.
+ * - **Non-finite/non-positive `checkpoint.minutes`**: silently fall back.
+ *   The yaml lib already coerced the value; bad user input here surfaces
+ *   via /doctor's checkpoint validator (src/lib/validator.ts), not here.
+ *
+ * Either way, the function returns a positive number — the banner must
+ * not block on a config issue.
  */
 async function getActiveSessionGuardMs(vaultRoot: string): Promise<number> {
   try {
     const config = await loadVaultConfig(vaultRoot);
-    const cpMinutes = config.checkpoint?.minutes;
+    const cpMinutes = config.checkpoint.minutes;
     if (typeof cpMinutes !== 'number' || !Number.isFinite(cpMinutes) || cpMinutes <= 0) {
       return DEFAULT_ACTIVE_SESSION_GUARD_MS;
     }
-    const minutes = Math.max(60, 2 * cpMinutes);
+    const minutes = Math.max(MIN_GUARD_MINUTES, 2 * cpMinutes);
     return minutes * 60 * 1000;
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // ENOENT-style "vault.yml not found at <path>." messages are produced
+    // by loadVaultConfig itself (src/lib/parser.ts) — match the prefix
+    // exactly, not by substring, so a malformed vault.yml whose error
+    // message happens to contain "vault.yml not found" doesn't slip
+    // through silently.
+    const isExpectedAbsence = msg.startsWith('vault.yml not found at ');
+    if (!isExpectedAbsence) {
+      process.stderr.write(
+        `onebrain orphan-scan: vault.yml unreadable, using ${MIN_GUARD_MINUTES}-min Active-Session Guard default (${msg})\n`,
+      );
+    }
     return DEFAULT_ACTIVE_SESSION_GUARD_MS;
   }
 }
@@ -186,6 +220,14 @@ async function isGroupActiveOrAmbiguous(
   nowMs: number,
   guardMs: number,
 ): Promise<boolean> {
+  // Belt-and-suspenders: only `runOrphanScan` calls this, and it derives
+  // `guardMs` from `getActiveSessionGuardMs` which floors at
+  // `MIN_GUARD_MINUTES * 60 * 1000` (positive). A future refactor that
+  // lets a different caller bypass that helper could pass a non-positive
+  // `guardMs` and silently flip every group to "counted as orphan" —
+  // which under /wrapup symmetry would destructively act on live
+  // sessions. Treat invalid input the same as ambiguous (skip).
+  if (!Number.isFinite(guardMs) || guardMs <= 0) return true;
   const newest = await getNewestMtimeMs(filePaths);
   if (newest === null) return true;
   const ageMs = nowMs - newest;
@@ -302,20 +344,34 @@ async function collectCandidateGroupsForMonth(
 
 /**
  * Core logic for orphan-scan.
- * @param logsFolder - absolute path to logs folder
- * @param sessionToken - current session token to exclude
+ *
+ * Performs one I/O-bound `vault.yml` read per call (via
+ * `getActiveSessionGuardMs`). Intended for one-shot invocation per
+ * process — the CLI entry below calls it exactly once at startup. A
+ * future loop-style caller (watcher, doctor sub-step) should refactor to
+ * accept a pre-resolved `guardMs` (or `VaultConfig`) so the read can be
+ * hoisted out of the loop.
+ *
+ * @param logsFolder - absolute or vault-root-relative path to the logs
+ *   folder. Must be non-empty.
+ * @param sessionToken - current session token to exclude from the orphan
+ *   scan. Tokens may be the empty string only if the caller has already
+ *   confirmed there's no current session (rare).
  * @param now - reference time used for the today-skip, prev-month math, and
  *   Active-Session Guard age comparison. Required (no default) so tests
  *   can't silently leak the wall clock by forgetting to pass it; production
  *   callers pass `new Date()` explicitly.
  * @param vaultRoot - directory containing vault.yml. Used to derive the
- *   Active-Session Guard threshold from `checkpoint.minutes`. Required (no
- *   default) for the same reason as `now`: tests must opt in to a specific
- *   vault config or pass a directory without vault.yml to exercise the
- *   60-min default. Production callers pass `process.cwd()`, since
- *   `onebrain orphan-scan` is invoked from vault root by the startup
- *   procedure.
+ *   Active-Session Guard threshold from `checkpoint.minutes`. Required and
+ *   must be non-empty — an empty string would resolve `vault.yml` against
+ *   `process.cwd()` and could silently consume an unrelated vault.yml.
+ *   Tests must opt in to a specific vault config or pass a directory
+ *   without vault.yml to exercise the 60-min default. Production callers
+ *   pass `process.cwd()`, since `onebrain orphan-scan` is invoked from
+ *   vault root by the startup procedure.
  * @returns OrphanScanResult
+ * @throws if `vaultRoot` is empty (programming bug — fail loud rather
+ *   than silently consume a stranger vault.yml).
  */
 export async function runOrphanScan(
   logsFolder: string,
@@ -323,6 +379,11 @@ export async function runOrphanScan(
   now: Date,
   vaultRoot: string,
 ): Promise<OrphanScanResult> {
+  if (!vaultRoot) {
+    throw new Error(
+      'runOrphanScan: vaultRoot is required and must be a non-empty path',
+    );
+  }
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts(now);
 

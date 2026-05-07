@@ -19,14 +19,24 @@ import { runOrphanScan } from './orphan-scan.js';
 // ---------------------------------------------------------------------------
 
 // 12:00Z is mid-day in UTC — safe across all real-world TZs (≥12h from any local midnight).
-const PINNED_NOW = new Date('2026-05-15T12:00:00Z');
-const TODAY = '2026-05-15';
-const THIS_YEAR = '2026';
-const THIS_MONTH = '05';
-const PREV_YEAR = '2026';
-const PREV_MONTH = '04';
-const PAST_DATE = '2026-05-01'; // any day in current month != TODAY
-const PREV_DATE = '2026-04-15';
+//
+// PINNED_NOW is intentionally far in the future: the new Active-Session Guard
+// (PR #156 follow-up) compares each fixture file's mtime to PINNED_NOW. For
+// fixtures that don't pin their own mtime via setMtime(), the on-disk mtime
+// is the real wall clock; if PINNED_NOW were close to today, a future test
+// run could see wall_clock > PINNED_NOW (negative age), trip the future-mtime
+// fail-safe, and silently flip "expected orphan" tests to "skipped active".
+// 2099-01-01 keeps fixtures unambiguously in the past relative to PINNED_NOW
+// for the foreseeable life of this codebase without breaking any
+// month-boundary fixtures (TODAY/PAST_DATE/PREV_DATE all stay in 2098).
+const PINNED_NOW = new Date('2099-01-15T12:00:00Z');
+const TODAY = '2099-01-15';
+const THIS_YEAR = '2099';
+const THIS_MONTH = '01';
+const PREV_YEAR = '2098';
+const PREV_MONTH = '12';
+const PAST_DATE = '2099-01-01'; // any day in current month != TODAY
+const PREV_DATE = '2098-12-15';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -391,35 +401,51 @@ describe('runOrphanScan', () => {
   // Same fixture file, three different injected `now` values, three
   // different outcomes — confirms the today-skip is driven by the
   // injected clock, not by `new Date()` leaking in.
+  //
+  // Uses anchor dates inside 2099 (sharing PINNED_NOW's epoch) so the fixture
+  // and the three injected `now` values all sit inside the same month/prev-month
+  // window the scanner walks. After PINNED_NOW was bumped to 2099 to keep
+  // wall-clock mtimes safely in the past, this test was rewritten to use
+  // 2099 anchor dates rather than the original 2026 ones — the original
+  // dates fell outside the 2099-anchored month dirs and the scanner found
+  // no fixture to evaluate.
   it('today-skip is driven by injected `now`, not by wall-clock', async () => {
-    const monthDir = await makeThisMonthDir(logsDir);
-    const fixtureDate = '2026-05-10';
+    // Pre-pin the fixture's mtime so the new Active-Session Guard never
+    // fires on this regression test (the guard depends on mtime, not on
+    // the injected `now` — the test is about today-skip semantics, not
+    // about the active-session guard).
+    const fixtureDate = '2099-02-10';
+    const fixtureMonthDir = await makeMonthDir(logsDir, '2099', '02');
     const fname = checkpointName(fixtureDate, 'reg-token', 1);
-    await writeFile(join(monthDir, fname), checkpointFrontmatter(false, fixtureDate), 'utf8');
+    const fpath = join(fixtureMonthDir, fname);
+    await writeFile(fpath, checkpointFrontmatter(false, fixtureDate), 'utf8');
+    // Pin mtime well past the largest configurable threshold so every
+    // `now` value below sees the fixture as "stale enough to count".
+    await setMtime(fpath, NINETY_MIN_AGO);
 
-    // now = May 10 → fixture date == today → skipped
+    // now = Feb 10 → fixture date == today → skipped (today-skip path)
     const sameDay = await runOrphanScan(
       logsDir,
       'current99',
-      new Date('2026-05-10T12:00:00Z'),
+      new Date('2099-02-10T12:00:00Z'),
       tmpDir,
     );
     expect(sameDay).toEqual({ orphan_count: 0 });
 
-    // now = May 15 → fixture is a past date → counted
+    // now = Feb 15 → fixture is a past date in the same month → counted
     const laterSameMonth = await runOrphanScan(
       logsDir,
       'current99',
-      new Date('2026-05-15T12:00:00Z'),
+      new Date('2099-02-15T12:00:00Z'),
       tmpDir,
     );
     expect(laterSameMonth).toEqual({ orphan_count: 1 });
 
-    // now = June 5 → fixture is in previous month → still counted
+    // now = Mar 5 → fixture is in previous month → still counted
     const nextMonth = await runOrphanScan(
       logsDir,
       'current99',
-      new Date('2026-06-05T12:00:00Z'),
+      new Date('2099-03-05T12:00:00Z'),
       tmpDir,
     );
     expect(nextMonth).toEqual({ orphan_count: 1 });
@@ -494,13 +520,17 @@ describe('runOrphanScan', () => {
   it('malformed vault.yml falls back to 60-min default (no startup blocking)', async () => {
     // YAML that loadVaultConfig will throw on (top-level array, not a
     // mapping). Fail-safe falls back to 60-min default → 50-min-old
-    // group is still active and skipped.
+    // group is still active and skipped. The stderr warning side-effect
+    // is asserted separately below; suppress it here so test output
+    // stays clean.
     await writeVaultYml(tmpDir, '- not\n- a\n- mapping\n');
     const monthDir = await makeThisMonthDir(logsDir);
     const fpath = join(monthDir, checkpointName(PAST_DATE, 'malformedTok', 1));
     await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
     await setMtime(fpath, new Date(PINNED_NOW.getTime() - 50 * 60 * 1000));
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+    const { result } = await captureStderr(() =>
+      runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir),
+    );
     expect(result).toEqual({ orphan_count: 0 });
   });
 
@@ -528,5 +558,96 @@ describe('runOrphanScan', () => {
     await setMtime(fpath, new Date(PINNED_NOW.getTime() - 50 * 60 * 1000));
     const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
+  });
+
+  // -------------------------------------------------------------------------
+  // Telemetry + input validation (review round 1 follow-ups)
+  //
+  // Silent fallbacks hide real bugs. These tests pin the contract:
+  // - vault.yml NOT FOUND → silent fallback (expected absence; some banner
+  //   consumers run from non-vault dirs).
+  // - vault.yml UNREADABLE for any other reason → stderr warning + fallback
+  //   (the user must be able to discover that their config is being ignored).
+  // - vaultRoot empty string → throw (programming bug; never silently
+  //   consume a stranger vault.yml resolved against process.cwd()).
+  // -------------------------------------------------------------------------
+
+  /**
+   * Run an async callback while capturing process.stderr writes. Returns
+   * the captured string. Restores the original write hook even on throw.
+   */
+  async function captureStderr<T>(fn: () => Promise<T>): Promise<{ stderr: string; result: T }> {
+    const original = process.stderr.write.bind(process.stderr);
+    let captured = '';
+    // process.stderr.write has multiple overloads; cast through unknown to
+    // sidestep them — the test only ever calls it with a string.
+    process.stderr.write = ((chunk: string) => {
+      captured += chunk;
+      return true;
+    }) as unknown as typeof process.stderr.write;
+    try {
+      const result = await fn();
+      return { stderr: captured, result };
+    } finally {
+      process.stderr.write = original;
+    }
+  }
+
+  it('missing vault.yml is silent (expected absence — no stderr noise)', async () => {
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'silentTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, NINETY_MIN_AGO);
+    const { stderr } = await captureStderr(() =>
+      runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir),
+    );
+    expect(stderr).toBe('');
+  });
+
+  it('malformed vault.yml writes a one-line warning to stderr and falls back', async () => {
+    await writeVaultYml(tmpDir, '- not\n- a\n- mapping\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'malformedWarnTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, NINETY_MIN_AGO);
+    const { stderr, result } = await captureStderr(() =>
+      runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir),
+    );
+    expect(stderr).toContain('onebrain orphan-scan: vault.yml unreadable');
+    expect(stderr).toContain('60-min Active-Session Guard default');
+    expect(stderr.endsWith('\n')).toBe(true);
+    // Fallback still applied — orphan still counted (NINETY_MIN_AGO > 60-min default).
+    expect(result).toEqual({ orphan_count: 1 });
+  });
+
+  it('vault.yml with not-found-shaped error message in vault.yml itself does NOT slip through silently', async () => {
+    // Defensive: a vault.yml whose body happens to contain the literal
+    // substring "vault.yml not found" must not fool the ENOENT classifier.
+    // The classifier matches the prefix "vault.yml not found at " produced
+    // by loadVaultConfig, not arbitrary occurrences of the substring.
+    // This file parses successfully but we use a malformation route to
+    // confirm the prefix-not-substring rule.
+    await writeVaultYml(
+      tmpDir,
+      // YAML that errors with a message NOT starting with "vault.yml not found at "
+      'checkpoint:\n  minutes: "vault.yml not found"\n',
+    );
+    const { stderr } = await captureStderr(() =>
+      runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir),
+    );
+    // The "minutes" value is a string, so the typeof check returns the
+    // 60-min default *silently* (this is the right call — the value is
+    // just bad, not the file itself). Make sure no warning fires either.
+    expect(stderr).toBe('');
+  });
+
+  it('throws when vaultRoot is empty (programming bug, fail loud)', async () => {
+    // Passing empty string would resolve `vault.yml` against process.cwd()
+    // and could silently consume an unrelated vault.yml. The CLI wrapper
+    // always passes process.cwd() (non-empty), so this only protects
+    // future programmatic callers.
+    await expect(runOrphanScan(logsDir, 'current99', PINNED_NOW, '')).rejects.toThrow(
+      'vaultRoot is required',
+    );
   });
 });

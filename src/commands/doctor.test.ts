@@ -38,6 +38,7 @@ const DEFAULT_CONFIG: VaultConfig = {
     archive: '06-archive',
     logs: '07-logs',
   },
+  checkpoint: { messages: 15, minutes: 30 },
 };
 
 function makeAllOkValidators(): Required<

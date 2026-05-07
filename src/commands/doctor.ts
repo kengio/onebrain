@@ -107,6 +107,7 @@ export async function runDoctor(opts: DoctorOptions = {}): Promise<DoctorCommand
       archive: '06-archive',
       logs: '07-logs',
     },
+    checkpoint: { messages: 15, minutes: 30 },
   };
 
   // ---------------------------------------------------------------------------

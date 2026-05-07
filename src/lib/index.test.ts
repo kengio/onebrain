@@ -87,8 +87,8 @@ describe('loadVaultConfig', () => {
     expect(config.folders.logs).toBe('07-logs');
     expect(config.qmd_collection).toBe('ob-1-test');
     expect(config.update_channel).toBe('stable');
-    expect(config.checkpoint?.messages).toBe(15);
-    expect(config.checkpoint?.minutes).toBe(30);
+    expect(config.checkpoint.messages).toBe(15);
+    expect(config.checkpoint.minutes).toBe(30);
   });
 
   it('throws a clear error when vault.yml is missing', async () => {
@@ -115,8 +115,8 @@ describe('loadVaultConfig', () => {
     await writeVaultYml(dir, 'update_channel: stable\n');
     const config = await loadVaultConfig(dir);
 
-    expect(config.checkpoint?.messages).toBe(15);
-    expect(config.checkpoint?.minutes).toBe(30);
+    expect(config.checkpoint.messages).toBe(15);
+    expect(config.checkpoint.minutes).toBe(30);
   });
 
   it('fills default update_channel when absent', async () => {
