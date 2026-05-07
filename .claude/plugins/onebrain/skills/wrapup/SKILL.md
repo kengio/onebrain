@@ -44,7 +44,7 @@ After Step 1, scan for unmerged checkpoints belonging to **other** sessions (orp
 
 **Variable scope (used throughout this step):** Initialize two lists at the top of Step 1b and keep them alive until Step 7 reads them at the end of /wrapup:
 - `skipped_active = []` — `{path, age_minutes, reason}` records, where `reason` ∈ `{"active", "age_unknown", "concurrent_during_recovery", "delete_failed", "already_recovered", "marker_write_failed"}`. Both the *Active-Session Guard* and *Auto-Recover Each Orphan Group* append to this list. **When adding a new value to this enum, also add a corresponding row to the `{reason_summary}` rendering table in Step 7** (search this file for `{reason_summary}` rendering); unmapped values render via the catch-all fallback row but the user-facing string is generic, so an explicit row is required for new values.
-- `orphaned_recovered_logs = []` — paths of recovered session logs that could not be cleaned up after concurrency abort. Listed in its own Step 7 block (these are not checkpoint files, so they don't fit the checkpoint-file heading).
+- `orphaned_recovered_logs = []` — paths of recovered session logs left on disk by an aborted recovery. Two abort sources feed this list: (1) **concurrency abort** in step (g) when the owning session writes a new checkpoint mid-recovery and the recovered-log delete itself also fails; (2) **marker re-read failure** in step (f) when the recovery marker is missing from the just-written log (LLM omission, partial write, encoding glitch). Both produce a recovered log without a deleted checkpoint group; the user must manually reconcile. Listed in its own Step 7 block (these are not checkpoint files, so they don't fit the checkpoint-file heading).
 
 ### Scan Scope
 
@@ -302,13 +302,13 @@ Skipped {A} checkpoint file(s) ({reason_summary}):
   - all records have `reason: "concurrent_during_recovery"` → `owning session became active mid-recovery`
   - all records have `reason: "delete_failed"` → `checkpoint delete failed`
   - all records have `reason: "already_recovered"` → `already preserved in a prior recovered log`
-  - all records have `reason: "marker_write_failed"` → `recovered log written but recovery-of marker missing — investigate before next /wrapup`
+  - all records have `reason: "marker_write_failed"` → `recovered log saved but recovery-of marker missing — manually add `<!-- recovery-of: {token}:{date} -->` as the first body line of the recovered log (token+date are in the `orphaned_recovered_logs` block path's filename + the still-present checkpoint filenames), OR delete the recovered log AND its checkpoints together; otherwise the next /wrapup will keep re-recovering them`
   - multiple distinct reasons → `mixed: ` + comma-joined sorted unique reason values (e.g. `mixed: active, delete_failed`)
   - **fallback (catch-all):** all records share a single `reason` value not listed above → `skipped (reason: {reason})` — render the raw enum value verbatim. This row exists to prevent silent rendering drift when a new `reason` value is added to the enum without a matching table entry; the surface signal is generic on purpose so a missing row is visible to the user (and prompts a contributor to add the proper mapping above).
 
 Orphaned recovered log(s) needing manual cleanup ({L}):
   · `YYYY/MM/YYYY-MM-DD-session-NN.md`
-(**Required output — do NOT omit when orphaned_recovered_logs is non-empty.** These are session-log files written during a recovery that was aborted by concurrent activity, and could not be cleaned up because the delete of the recovered log itself failed. The user should inspect and delete manually. `{L}` is `len(orphaned_recovered_logs)`. List one line per path. Omit this block ONLY when `orphaned_recovered_logs` is empty.)
+(**Required output — do NOT omit when orphaned_recovered_logs is non-empty.** These are session-log files written by an aborted recovery — either (a) the owning session became active mid-recovery and the cleanup delete of the recovered log itself also failed (`concurrent_during_recovery`), or (b) the post-write marker re-read found the `<!-- recovery-of: ... -->` marker missing (`marker_write_failed`). In both cases the file persisted but its checkpoint group was NOT deleted. Cross-reference with the `Skipped {A} checkpoint file(s)` block above to identify which group each entry belongs to and the actionable fix per `reason`. `{L}` is `len(orphaned_recovered_logs)`. List one line per path. Omit this block ONLY when `orphaned_recovered_logs` is empty.)
 
 {Recap reminder message from Step 6}
 

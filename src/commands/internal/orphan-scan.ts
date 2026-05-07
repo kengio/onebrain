@@ -23,7 +23,7 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';
-import { loadVaultConfig } from '../../lib/parser.js';
+import { VAULT_YML_NOT_FOUND_PREFIX, loadVaultConfig } from '../../lib/parser.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -158,15 +158,23 @@ async function getActiveSessionGuardMs(vaultRoot: string): Promise<number> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     // ENOENT-style "vault.yml not found at <path>." messages are produced
-    // by loadVaultConfig itself (src/lib/parser.ts) — match the prefix
-    // exactly, not by substring, so a malformed vault.yml whose error
-    // message happens to contain "vault.yml not found" doesn't slip
-    // through silently.
-    const isExpectedAbsence = msg.startsWith('vault.yml not found at ');
+    // by loadVaultConfig itself; match the prefix using the shared
+    // exported constant so changing the message in parser.ts propagates
+    // here automatically (no two-file string drift). A malformed vault.yml
+    // whose error message merely *contains* the substring would not slip
+    // through silently — `startsWith` requires the full prefix.
+    const isExpectedAbsence = msg.startsWith(VAULT_YML_NOT_FOUND_PREFIX);
     if (!isExpectedAbsence) {
-      process.stderr.write(
-        `onebrain orphan-scan: vault.yml unreadable, using ${MIN_GUARD_MINUTES}-min Active-Session Guard default (${msg})\n`,
-      );
+      try {
+        process.stderr.write(
+          `onebrain orphan-scan: vault.yml unreadable, using ${MIN_GUARD_MINUTES}-min Active-Session Guard default (${msg})\n`,
+        );
+      } catch {
+        // stderr is closed/full (EPIPE/ENOSPC) — best-effort warning.
+        // Continue with the default rather than crashing the JSON
+        // contract on stdout. The user loses the warning in this rare
+        // edge case but the banner still surfaces orphan_count correctly.
+      }
     }
     return DEFAULT_ACTIVE_SESSION_GUARD_MS;
   }

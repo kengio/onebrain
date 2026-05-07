@@ -620,25 +620,57 @@ describe('runOrphanScan', () => {
     expect(result).toEqual({ orphan_count: 1 });
   });
 
-  it('vault.yml with not-found-shaped error message in vault.yml itself does NOT slip through silently', async () => {
-    // Defensive: a vault.yml whose body happens to contain the literal
-    // substring "vault.yml not found" must not fool the ENOENT classifier.
-    // The classifier matches the prefix "vault.yml not found at " produced
-    // by loadVaultConfig, not arbitrary occurrences of the substring.
-    // This file parses successfully but we use a malformation route to
-    // confirm the prefix-not-substring rule.
-    await writeVaultYml(
-      tmpDir,
-      // YAML that errors with a message NOT starting with "vault.yml not found at "
-      'checkpoint:\n  minutes: "vault.yml not found"\n',
-    );
-    const { stderr } = await captureStderr(() =>
+  it('prefix-not-substring: parser errors that merely contain "vault.yml not found" still emit the warning', async () => {
+    // Pin the contract that the round-1 P0 fix relies on: a parse error
+    // whose message *contains* the substring "vault.yml not found" but
+    // does NOT start with the canonical prefix `vault.yml not found at `
+    // must NOT be silently classified as an expected absence.
+    //
+    // To force this, we write yaml that parses to a top-level array (the
+    // parser path that throws `vault.yml must be a YAML mapping. Got: array`)
+    // but include the literal substring `vault.yml not found` in the
+    // body. The yaml parser succeeds; the mapping check fails; the
+    // resulting Error.message starts with `vault.yml must be a YAML
+    // mapping`, not the prefix — so the classifier must reject and the
+    // stderr warning must fire.
+    await writeVaultYml(tmpDir, '- "vault.yml not found"\n- "in this array"\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'subTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, NINETY_MIN_AGO);
+    const { stderr, result } = await captureStderr(() =>
       runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir),
     );
-    // The "minutes" value is a string, so the typeof check returns the
-    // 60-min default *silently* (this is the right call — the value is
-    // just bad, not the file itself). Make sure no warning fires either.
-    expect(stderr).toBe('');
+    // The error message contains the substring but doesn't START with
+    // the prefix → classifier returns false → warning fires.
+    expect(stderr).toContain('onebrain orphan-scan: vault.yml unreadable');
+    expect(stderr).toContain('YAML mapping');
+    // Fallback still applied — orphan still counted.
+    expect(result).toEqual({ orphan_count: 1 });
+  });
+
+  it('stderr write that throws does not crash the JSON contract (EPIPE fallback)', async () => {
+    // Simulate stderr being closed (EPIPE-class condition). The warning
+    // is best-effort; under no circumstance should it bubble up and
+    // replace the stdout JSON contract with a thrown stack trace. The
+    // banner consumer would then fall back to its own default and the
+    // user would lose both the warning AND the orphan count.
+    await writeVaultYml(tmpDir, '- not\n- a\n- mapping\n');
+    const monthDir = await makeThisMonthDir(logsDir);
+    const fpath = join(monthDir, checkpointName(PAST_DATE, 'epipeTok', 1));
+    await writeFile(fpath, checkpointFrontmatter(false), 'utf8');
+    await setMtime(fpath, NINETY_MIN_AGO);
+    const original = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (() => {
+      throw new Error('EPIPE: broken pipe');
+    }) as unknown as typeof process.stderr.write;
+    try {
+      // Must not throw; result must still be correct (orphan counted).
+      const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
+      expect(result).toEqual({ orphan_count: 1 });
+    } finally {
+      process.stderr.write = original;
+    }
   });
 
   it('throws when vaultRoot is empty (programming bug, fail loud)', async () => {
