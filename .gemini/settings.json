@@ -1,4 +1,7 @@
 {
+  "_onebrain": {
+    "version": "1.0.0"
+  },
   "model": {
     "disableLoopDetection": true
   },
