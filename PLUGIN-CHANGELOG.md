@@ -1,5 +1,5 @@
 ---
-latest_version: 2.3.0
+latest_version: 2.3.1
 released: 2026-05-07
 ---
 
@@ -12,6 +12,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.1 — fix(wrapup): active-session guard prevents cross-harness checkpoint loss
+
+Wrapup's orphan recovery (Step 1b) auto-recovered any non-current-token checkpoint into a synthesised session log and deleted the originals — including in-flight checkpoints belonging to a *different live harness* in the same vault. Closes the cross-harness contamination path observed when running Claude + Gemini concurrently.
+
+- fix(wrapup/SKILL.md): add Active-Session Guard to Step 1b — for each orphan group, stat the newest checkpoint mtime; if `age_minutes < 60`, skip recovery (do not read, do not write a session log, do not delete) and surface in the Step 7 report as `skipped_active`.
+- fix(wrapup/SKILL.md): explicit fail-safe — any stat error, unparseable mtime, or negative age forces skip-active. Destructive default on ambiguity is forbidden.
+- fix(wrapup/SKILL.md): pre-delete re-stat in step 1b/f aborts the delete (and removes the just-written recovered log) if the owning session wrote a new checkpoint mid-recovery — closes the read→write→delete race.
+- fix(wrapup/SKILL.md): exact `stat -f '%m'` (BSD) / `stat -c '%Y'` (GNU) commands spelled out so the LLM doesn't pick the wrong flag silently across platforms.
+- fix(wrapup/SKILL.md): Step 7 `skipped_active` block is now MUST-emit (not soft-conditional) and renders `{path, age_minutes}` tuples — the user's only signal that a parallel harness owns checkpoints on disk.
+- note: 60-minute threshold gives a buffer of two full auto-checkpoint windows (hook fires every 15 messages or 30 minutes). False-positives (idle but live sessions > 60 min) remain non-destructive — the owning user's next /wrapup consumes its own checkpoints.
+- note: pure SKILL.md change, no CLI/binary change. CLI version unchanged at 2.2.0.
 
 ## v2.3.0 — feat(gemini): project-level `.gemini/` config alongside `.claude/`
 

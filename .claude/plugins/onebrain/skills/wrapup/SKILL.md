@@ -42,6 +42,10 @@ If none found: continue normally.
 
 After Step 1, scan for unmerged checkpoints belonging to **other** sessions (orphans).
 
+**Variable scope (used throughout this step):** Initialize two lists at the top of Step 1b and keep them alive until Step 7 reads them at the end of /wrapup:
+- `skipped_active = []` — `{path, age_minutes, reason}` records, where `reason` ∈ `{"active", "age_unknown", "concurrent_during_recovery", "delete_failed", "already_recovered"}`. Both the *Active-Session Guard* and *Auto-Recover Each Orphan Group* append to this list.
+- `orphaned_recovered_logs = []` — paths of recovered session logs that could not be cleaned up after concurrency abort. Listed in its own Step 7 block (these are not checkpoint files, so they don't fit the checkpoint-file heading).
+
 ### Scan Scope
 
 Glob checkpoint files across current month and the previous month to handle cross-month sessions. Compute the two month paths:
@@ -55,32 +59,67 @@ For each of those two paths, glob `*-checkpoint-*.md`.
 From all found checkpoint files:
 1. Parse session_token from each filename: the alphanumeric segment between the date and the literal word "checkpoint" in pattern `YYYY-MM-DD-{session_token}-checkpoint-NN.md`. If empty, apply Legacy token handling (see below) rather than skipping.
 2. Exclude files where the parsed session_token exactly equals the current session token (those belong to the current session, already handled in Step 1). Do not use substring/contains matching — only exact equality.
-3. Group remaining files by their parsed session_token
+3. Group remaining files by their parsed session_token. **Store the file list of each group as `group_files`** (the baseline used by step (g)'s concurrency re-glob below); never re-derive the group fresh later in this step.
 
 **Legacy token handling:** If the parsed segment is a 6-character random string (pre-v1.10.4 format), still include the file in orphan recovery. Group these files under a synthetic key `legacy-{segment}` and process them the same way as regular groups. This ensures migration from v1.10.3 and earlier does not lose checkpoints. Note each legacy file in the Step 7 report as a warning.
 
 If no orphan groups found: skip to Step 2.
 
+### Active-Session Guard (Time Window)
+
+> **Why this guard exists:** A non-current token does NOT mean the session is dead. When two harnesses (e.g. Claude + Gemini) run in the same vault, each sees the other's in-flight checkpoints as "non-current token". Without this guard, the first /wrapup to run would auto-recover the other harness's *active* checkpoints into a fake session log and delete the originals — silently corrupting the live session. Token != mine ≠ session is dead.
+
+For each orphan group from the *Identify Orphans* step above, decide between **recover** and **skip-active** by file age (the `skipped_active` list was initialized at the top of Step 1b):
+
+1. Compute `now_epoch` once: `now_epoch=$(date +%s)`.
+2. For every checkpoint file in the group, get its mtime as **epoch seconds**:
+   - macOS / BSD: `stat -f '%m' <file>`
+   - Linux / GNU: `stat -c '%Y' <file>`
+   - Take the maximum across all files in the group as `group_newest_mtime`.
+3. Compute `age_minutes = (now_epoch - group_newest_mtime) / 60` (integer division is fine).
+4. **Fail-safe — destructive default is forbidden.** If any of the following is true, mark the group as **skip-active** (do NOT recover):
+   - any stat call failed (file vanished mid-walk, EACCES, NFS error, etc.)
+   - `group_newest_mtime` is empty / unparseable
+   - `age_minutes` is negative (clock skew, future mtime)
+   When ambiguity is detected, append every file path in the group to `skipped_active` as `{path, age_minutes: -1, reason: "age_unknown"}` and continue with the next group. Never fall through to recover when age cannot be determined.
+5. **If `age_minutes < 60`** — the group is still being written to recently. Treat it as **owned by another live session**:
+   - For each file in the group, append `{path, age_minutes, reason: "active"}` to `skipped_active`.
+   - Take **NO other action on these files anywhere in this skill** — not in Auto-Recover, not in Step 5 (Checkpoint Cleanup), not in any cleanup later.
+   - Continue with the next group.
+6. **If `age_minutes >= 60`** — the group looks dead: fall through to **Auto-Recover Each Orphan Group** below for this group only.
+
+The 60-minute threshold gives the owning session a buffer of two full checkpoint windows (the auto-checkpoint hook fires every 15 messages or 30 minutes). A group whose newest checkpoint is older than that has missed at least two windows — a strong "session dead" signal. False-positives (idle but live sessions > 60 min) are non-destructive: nothing was read, written, or deleted; the owning user's next /wrapup writes its own session log normally and consumes the still-on-disk checkpoints.
+
 ### Auto-Recover Each Orphan Group
 
 For each orphan group (process in chronological order by date in filename):
 
-**a. Read all checkpoint files** in the group. Extract content from each.
+**a. Already-recovered short-circuit.** Before reading checkpoint files, glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` for the group's date. For each match, check whether its frontmatter has `case: recovered` AND its body references at least one path from `group_files`. If so, the group's content is already in a prior recovered session log (typically from a previous /wrapup that hit `delete_failed` on these checkpoints): for each file in `group_files`, append `{path, age_minutes: <original group age>, reason: "already_recovered"}` to `skipped_active`, then attempt to delete the checkpoints (since they are now safely persisted in the prior recovered log). Per-file delete failures here record `delete_failed` and continue, identical to step (g)'s rule. Continue with the next group — do not proceed to step (b).
 
-**b. Determine the session date** from the filename (`YYYY-MM-DD` prefix of the checkpoint files). If files in the group have different date prefixes (cross-midnight session), use the earliest date.
+**b. Read all checkpoint files** in the group. Extract content from each.
 
-**c. Determine the session file name** for that date:
+**c. Determine the session date** from the filename (`YYYY-MM-DD` prefix of the checkpoint files). If files in the group have different date prefixes (cross-midnight session), use the earliest date.
+
+**d. Determine the session file name** for that date:
    - List files in `[logs_folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md` (using the orphan date's YYYY/MM)
    - Next session number = count of matches + 1 (zero-padded to 2 digits)
    - Verify the slot is free; increment NN until free
 
-**d. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). Apply the **Preservation rule** from Step 4 below: deduplication only, no summarization. Every unique decision, action item, open question, learning, and topic from every checkpoint must appear in the recovered session log.
+**e. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). Apply the **Preservation rule** from Step 4 below: deduplication only, no summarization. Every unique decision, action item, open question, learning, and topic from every checkpoint must appear in the recovered session log.
 
-**e. Verify the session log** exists and is non-empty before continuing.
+**f. Verify the session log** exists and is non-empty before continuing.
 
-**f. Delete checkpoint files** for this group after confirming step e succeeded. Guard: only delete AFTER step e is confirmed. Never delete before.
+**g. Delete checkpoint files** for this group after confirming step f succeeded.
 
-**g. Track recovered sessions:** append `{date} → session-NN.md ({C} checkpoints)` to a `recovered_sessions` list for the final report, where `{C}` is the number of checkpoint files recovered for this group.
+   - **Pre-delete re-stat (concurrency guard) — runs ONCE before any deletes:** re-stat every file in `group_files` (stored in *Identify Orphans* step 3) AND re-glob the group's filename pattern (`YYYY-MM-DD-{token}-checkpoint-*.md`) under `[logs_folder]/YYYY/MM/`. The owning session became active during recovery if **either** of these holds:
+       - any file's mtime has changed since the Active-Session Guard's stat above, OR
+       - the re-glob result contains a path NOT present in `group_files` (set difference: `re_glob_files \ group_files` is non-empty).
+   - **If concurrent activity is detected:** **abort the delete entirely for this group.** Then attempt to delete the recovered session log written in step (e) so it does not leak duplicate content into the vault. For each file in `group_files`, append `{path, age_minutes, reason: "concurrent_during_recovery"}` to `skipped_active` (use the original `age_minutes` from the Active-Session Guard). If the recovered-log delete itself fails, append the recovered-log path to `orphaned_recovered_logs` (a separate list initialized at the top of Step 1b) so the user sees it under its own Step 7 block — these are session-log files, not checkpoint files, and conflate poorly with the checkpoint-file heading. Continue with the next group.
+   - **If no concurrent activity:** delete each file in `group_files`. **Per-file failure rule:** if an individual `rm` fails (EACCES, NFS hiccup, etc.), do NOT abort the whole group — append `{path, age_minutes, reason: "delete_failed"}` to `skipped_active` (reuse the original `age_minutes` from the Active-Session Guard, never `0`) and continue with the next file. The recovered session log is already written; the next /wrapup's already-recovered short-circuit (step a) will detect that the orphaned checkpoint's content is already persisted and clean it up.
+   - **Stage discipline (do not conflate the two rules above):** the concurrency check runs ONCE at the top of step (g). After it passes, individual `rm` failures are NEVER interpreted as concurrency — they record `delete_failed` per-file and the loop continues. Do not re-run the concurrency check between per-file deletes; do not promote a per-file `delete_failed` to `concurrent_during_recovery`. The only group-level abort path is the pre-delete concurrency check.
+   - Guard: only delete AFTER step f is confirmed AND the re-stat shows no concurrent activity. Never delete before.
+
+**h. Track recovered sessions:** append `{date} → session-NN.md ({C} checkpoints)` to a `recovered_sessions` list for the final report, where `{C}` is the number of checkpoint files recovered for this group.
 
 ---
 
@@ -243,6 +282,22 @@ Skipped routing (no match / tie):
 Auto-recovered {S} orphan session(s):
   {YYYY-MM-DD} → `session-NN.md` ({C} checkpoints)
 (omit this block if none recovered)
+
+Skipped {A} checkpoint file(s) ({reason_summary}):
+  · `YYYY-MM-DD-{token}-checkpoint-NN.md` (age: {age_minutes}m, reason: {reason})
+(**Required output — do NOT omit when skipped_active is non-empty.** This block is the user's only signal that checkpoint files were intentionally left on disk. `{A}` is the file count, equal to `len(skipped_active)`. List one line per `{path, age_minutes, reason}` record. Render `age_minutes` as a non-negative integer; if `-1` (sentinel), render as `age: unknown`. Render `reason` verbatim from the record. If `{A}` > 5, list the first 5 and add a final line `· (+{A-5} more)`. Omit this block ONLY when `skipped_active` is empty.
+
+**`{reason_summary}` rendering — use the table below VERBATIM, do not paraphrase:**
+  - all records have `reason: "active"` → `another harness still running`
+  - all records have `reason: "age_unknown"` → `age could not be determined`
+  - all records have `reason: "concurrent_during_recovery"` → `owning session became active mid-recovery`
+  - all records have `reason: "delete_failed"` → `checkpoint delete failed`
+  - all records have `reason: "already_recovered"` → `already preserved in a prior recovered log`
+  - multiple distinct reasons → `mixed: ` + comma-joined sorted unique reason values (e.g. `mixed: active, delete_failed`))
+
+Orphaned recovered log(s) needing manual cleanup ({L}):
+  · `YYYY/MM/YYYY-MM-DD-session-NN.md`
+(**Required output — do NOT omit when orphaned_recovered_logs is non-empty.** These are session-log files written during a recovery that was aborted by concurrent activity, and could not be cleaned up because the delete of the recovered log itself failed. The user should inspect and delete manually. `{L}` is `len(orphaned_recovered_logs)`. List one line per path. Omit this block ONLY when `orphaned_recovered_logs` is empty.)
 
 {Recap reminder message from Step 6}
 
