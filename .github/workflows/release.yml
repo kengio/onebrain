@@ -256,6 +256,8 @@ jobs:
           fi
 
           echo "Triggering website rebuild for v${VERSION}..."
+          # --retry-connrefused (not --retry-all-errors): retry transient 5xx +
+          # connection-refused; do NOT mask permanent 4xx misconfig errors.
           CURL_EXIT=0
           HTTP_CODE=$(curl -X POST "$DEPLOY_HOOK_URL" \
             -sS \
@@ -263,7 +265,7 @@ jobs:
             -w "%{http_code}" \
             --connect-timeout 10 \
             --max-time 30 \
-            --retry 3 --retry-delay 5 --retry-all-errors) || CURL_EXIT=$?
+            --retry 3 --retry-delay 5 --retry-connrefused) || CURL_EXIT=$?
 
           if [ "$CURL_EXIT" -ne 0 ]; then
             echo "::error::curl failed (exit ${CURL_EXIT}) — network/DNS/TLS issue, not an HTTP error"
@@ -275,12 +277,27 @@ jobs:
             exit 1
           fi
 
-          # Bound body output to avoid huge HTML error pages flooding logs
+          # Bound body output to avoid huge HTML error pages flooding logs.
+          # Use explicit if/elif/else to avoid the `&& ... ||` precedence trap
+          # that prints "(no response body)" when head itself fails.
+          print_response_body() {
+            if [ -s response.txt ]; then
+              echo "--- response body (first 2000 bytes) ---"
+              head -c 2000 response.txt
+              echo
+              echo "--- end response body ---"
+            elif [ -f response.txt ]; then
+              echo "(response body empty)"
+            else
+              echo "(no response body file written)"
+            fi
+          }
+
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
             echo "Website rebuild triggered (HTTP $HTTP_CODE) — should be live within 1-2 min"
-            [ -f response.txt ] && head -c 2000 response.txt || echo "(no response body)"
+            print_response_body
           else
             echo "::error::Deploy hook returned HTTP $HTTP_CODE"
-            [ -f response.txt ] && head -c 2000 response.txt || echo "(no response body)"
+            print_response_body
             exit 1
           fi
