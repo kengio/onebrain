@@ -17,6 +17,8 @@ Thumbs.db
 # ── Internal tooling ──────────────────────────────────────────────────────────
 .superpowers/
 docs/superpowers/
+# Local diagram preview harness (one-off audit tool, not for repo)
+preview.html
 
 # ── Node / Bun ────────────────────────────────────────────────────────────────
 node_modules/

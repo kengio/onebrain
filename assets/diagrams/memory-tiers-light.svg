@@ -1,52 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 100 880 360" width="880" height="360" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 100 880 600" width="880" height="600" role="img" aria-labelledby="title desc" font-family="'Chakra Petch', 'Inter', ui-sans-serif, system-ui, sans-serif">
   <title id="title">Memory tiers — four-stage persistence</title>
   <desc id="desc">Four memory tiers stacked top to bottom. Tier 1 working memory in the inbox and current session, Tier 2 episodic memory in 07-logs, Tier 3 semantic memory in MEMORY.md and the memory folder, Tier 4 distilled knowledge in 03-knowledge. Knowledge sinks downward as it gets validated.</desc>
 
   <style>
-    .text-strong { fill: #0a0a14; }
-    .text-soft   { fill: rgba(10,10,20,0.82); }
-    .text-fade   { fill: rgba(10,10,20,0.65); }
-    .text-mute   { fill: rgba(10,10,20,0.50); }
-    .frame-corner { stroke: rgba(10,10,20,0.40); }
-    .grid-line    { stroke: rgba(10,10,20,0.07); }
-    .divider      { stroke: rgba(10,10,20,0.18); }
-    .arrow-line   { stroke: rgba(10,10,20,0.65); }
-    .arrow-head   { stroke: rgba(10,10,20,0.75); }
+    .flow { stroke: #0a0a14; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 3 5; fill: none; }
+    .flow-down { animation: flow-down 0.9s linear infinite; }
+    .flow-up   { animation: flow-up   0.9s linear infinite; }
+    @keyframes flow-down { to { stroke-dashoffset: -8; } }
+    @keyframes flow-up   { to { stroke-dashoffset:  8; } }
 
-    .promote { animation: promote-pulse 4.5s linear infinite; }
-    .recall  { animation: recall-pulse 4.5s linear infinite; }
-    .delay-1 { animation-delay: 1.5s; }
-    .delay-2 { animation-delay: 3s; }
-    @keyframes promote-pulse {
-      0%, 22%, 100% { opacity: 0.6; }
-      6%            { opacity: 1; }
+    .icon-pulse {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: icon-pulse 2.6s ease-in-out infinite;
     }
-    @keyframes recall-pulse {
-      0%, 50%, 72%, 100% { opacity: 0.6; }
-      56%                { opacity: 1; }
+    @keyframes icon-pulse {
+      0%, 100% { transform: scale(1);    }
+      50%      { transform: scale(1.08); }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .promote, .recall { animation: none; opacity: 0.6; }
+      .icon-pulse, .flow-down, .flow-up { animation: none; transform: none; }
     }
   </style>
 
   <defs>
-    <linearGradient id="g-t1" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#c91075" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#c91075" stop-opacity="0.05"/>
+    <linearGradient id="g-t1-fill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#e62a93" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#c91075" stop-opacity="1"/>
     </linearGradient>
-    <linearGradient id="g-t2" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#7c1ade" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#7c1ade" stop-opacity="0.05"/>
+    <linearGradient id="g-t2-fill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#a855f7" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#7c1ade" stop-opacity="1"/>
     </linearGradient>
-    <linearGradient id="g-t3" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#4d6d00" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#4d6d00" stop-opacity="0.05"/>
+    <linearGradient id="g-t3-fill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#7a9d10" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#4d6d00" stop-opacity="1"/>
     </linearGradient>
-    <linearGradient id="g-t4" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#00788c" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#00788c" stop-opacity="0.05"/>
+    <linearGradient id="g-t4-fill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#00a3bc" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#00788c" stop-opacity="1"/>
     </linearGradient>
 
     <linearGradient id="spine-grad" x1="0" y1="0" x2="0" y2="1">
@@ -55,127 +48,85 @@
       <stop offset="66%"  stop-color="#4d6d00" stop-opacity="0.75"/>
       <stop offset="100%" stop-color="#00788c" stop-opacity="0.75"/>
     </linearGradient>
-
-    <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 0 0 40" fill="none" class="grid-line" stroke-width="0.5"/>
-    </pattern>
-
-    <filter id="soft-glow" x="-20%" y="-50%" width="140%" height="200%">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
 
-  <line x1="48" y1="110" x2="48" y2="450" stroke="url(#spine-grad)" stroke-width="2" stroke-dasharray="2 4" opacity="0.6"/>
+  <line x1="48" y1="110" x2="48" y2="690" stroke="url(#spine-grad)" stroke-width="2" stroke-dasharray="2 4" opacity="0.6"/>
 
   <!-- ════════ TIER 01 — WORKING ════════ -->
   <g transform="translate(60, 110)">
-    <rect width="780" height="70" fill="none" stroke="#c91075" stroke-opacity="0.85" stroke-width="1"/>
-    <rect width="780" height="3" fill="url(#g-t1)" filter="url(#soft-glow)"/>
-    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#c91075" stroke-width="1.5" fill="none"/>
-    <path d="M 766 70 L 780 70 M 780 56 L 780 70" stroke="#c91075" stroke-width="1.5" fill="none"/>
-    <text x="22" y="48" font-size="22" aria-hidden="true">📥</text>
-    <text x="70" y="26" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#c91075" letter-spacing="0.08em">TIER_01</text>
-    <text x="70" y="48" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="18" class="text-strong" letter-spacing="0.04em">WORKING</text>
-    <text x="70" y="62" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c91075" letter-spacing="0.30em">00-inbox · current session</text>
-    <text x="320" y="38" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Raw captures, unprocessed thoughts.</text>
-    <text x="320" y="56" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">/braindump · /capture · /bookmark</text>
-    <g transform="translate(640, 24)">
-      <rect width="124" height="22" fill="rgba(201,16,117,0.18)" stroke="#c91075" stroke-opacity="1.0" stroke-width="1"/>
-      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c91075" letter-spacing="0.18em" text-anchor="middle">EPHEMERAL</text>
+    <rect width="780" height="130" fill="url(#g-t1-fill)"/>
+    <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true">📥</text>
+    <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_01</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">WORKING</text>
+    <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">00-inbox · current session</text>
+    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Raw captures, unprocessed thoughts.</text>
+    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/braindump · /capture · /bookmark</text>
+    <g transform="translate(668, 53)">
+      <rect width="100" height="24" fill="#ffffff"/>
+      <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#c91075" font-weight="700" letter-spacing="0.14em" text-anchor="middle">EPHEMERAL</text>
     </g>
   </g>
 
-  <!-- arrow gap 1 — promote down (↓), recall up (↑) -->
-  <g transform="translate(440, 184)">
-    <g class="promote">
-      <line x1="-9" y1="0" x2="-9" y2="9" class="arrow-line" stroke-width="1.4"/>
-      <path d="M -14 6 L -9 12 L -4 6" fill="none" class="arrow-head" stroke-width="1.4"/>
-    </g>
-    <g class="recall">
-      <line x1="9" y1="3" x2="9" y2="12" class="arrow-line" stroke-width="1.4"/>
-      <path d="M 4 6 L 9 0 L 14 6" fill="none" class="arrow-head" stroke-width="1.4"/>
-    </g>
+  <!-- arrow gap 1 — promote down (left) + recall up (right) -->
+  <g transform="translate(440, 240)">
+    <line class="flow flow-down" x1="-9" y1="0" x2="-9" y2="20"/>
+    <line class="flow flow-up"   x1="9"  y1="0" x2="9"  y2="20"/>
   </g>
 
   <!-- ════════ TIER 02 — EPISODIC ════════ -->
-  <g transform="translate(60, 200)">
-    <rect width="780" height="70" fill="none" stroke="#7c1ade" stroke-opacity="0.85" stroke-width="1"/>
-    <rect width="780" height="3" fill="url(#g-t2)" filter="url(#soft-glow)"/>
-    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#7c1ade" stroke-width="1.5" fill="none"/>
-    <path d="M 766 70 L 780 70 M 780 56 L 780 70" stroke="#7c1ade" stroke-width="1.5" fill="none"/>
-    <text x="22" y="48" font-size="22" aria-hidden="true">📜</text>
-    <text x="70" y="26" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#7c1ade" letter-spacing="0.08em">TIER_02</text>
-    <text x="70" y="48" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="18" class="text-strong" letter-spacing="0.04em">EPISODIC</text>
-    <text x="70" y="62" font-family="'JetBrains Mono', monospace" font-size="9" fill="#7c1ade" letter-spacing="0.30em">07-logs · session + checkpoint</text>
-    <text x="320" y="38" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">What happened — sessions, decisions, narrative.</text>
-    <text x="320" y="56" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">/wrapup · auto-checkpoints</text>
-    <g transform="translate(640, 24)">
-      <rect width="124" height="22" fill="rgba(124,26,222,0.18)" stroke="#7c1ade" stroke-opacity="1.0" stroke-width="1"/>
-      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#7c1ade" letter-spacing="0.18em" text-anchor="middle">PER_SESSION</text>
+  <g transform="translate(60, 260)">
+    <rect width="780" height="130" fill="url(#g-t2-fill)"/>
+    <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true" style="animation-delay: 0.65s;">📜</text>
+    <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_02</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">EPISODIC</text>
+    <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">07-logs · session + checkpoint</text>
+    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">What happened — sessions, decisions, narrative.</text>
+    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/wrapup · auto-checkpoints</text>
+    <g transform="translate(668, 53)">
+      <rect width="100" height="24" fill="#ffffff"/>
+      <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#7c1ade" font-weight="700" letter-spacing="0.14em" text-anchor="middle">PER_SESSION</text>
     </g>
   </g>
 
   <!-- arrow gap 2 -->
-  <g transform="translate(440, 274)">
-    <g class="promote delay-1">
-      <line x1="-9" y1="0" x2="-9" y2="9" class="arrow-line" stroke-width="1.4"/>
-      <path d="M -14 6 L -9 12 L -4 6" fill="none" class="arrow-head" stroke-width="1.4"/>
-    </g>
-    <g class="recall delay-1">
-      <line x1="9" y1="3" x2="9" y2="12" class="arrow-line" stroke-width="1.4"/>
-      <path d="M 4 6 L 9 0 L 14 6" fill="none" class="arrow-head" stroke-width="1.4"/>
-    </g>
+  <g transform="translate(440, 390)">
+    <line class="flow flow-down" x1="-9" y1="0" x2="-9" y2="20" style="animation-delay: 0.3s;"/>
+    <line class="flow flow-up"   x1="9"  y1="0" x2="9"  y2="20" style="animation-delay: 0.3s;"/>
   </g>
 
   <!-- ════════ TIER 03 — SEMANTIC ════════ -->
-  <g transform="translate(60, 290)">
-    <rect width="780" height="70" fill="none" stroke="#4d6d00" stroke-opacity="0.85" stroke-width="1"/>
-    <rect width="780" height="3" fill="url(#g-t3)" filter="url(#soft-glow)"/>
-    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#4d6d00" stroke-width="1.5" fill="none"/>
-    <path d="M 766 70 L 780 70 M 780 56 L 780 70" stroke="#4d6d00" stroke-width="1.5" fill="none"/>
-    <text x="22" y="48" font-size="22" aria-hidden="true">🧬</text>
-    <text x="70" y="26" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#4d6d00" letter-spacing="0.08em">TIER_03</text>
-    <text x="70" y="48" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="18" class="text-strong" letter-spacing="0.04em">SEMANTIC</text>
-    <text x="70" y="62" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4d6d00" letter-spacing="0.30em">05-agent · MEMORY.md + memory/</text>
-    <text x="320" y="38" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Identity, preferences, recurring patterns.</text>
-    <text x="320" y="56" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">/learn · /recap · /memory-review</text>
-    <g transform="translate(640, 24)">
-      <rect width="124" height="22" fill="rgba(77,109,0,0.18)" stroke="#4d6d00" stroke-opacity="1.0" stroke-width="1"/>
-      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#4d6d00" letter-spacing="0.18em" text-anchor="middle">CROSS_SESSION</text>
+  <g transform="translate(60, 410)">
+    <rect width="780" height="130" fill="url(#g-t3-fill)"/>
+    <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true" style="animation-delay: 1.3s;">🧬</text>
+    <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_03</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">SEMANTIC</text>
+    <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">05-agent · MEMORY.md + memory/</text>
+    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Identity, preferences, recurring patterns.</text>
+    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/learn · /recap · /memory-review</text>
+    <g transform="translate(668, 53)">
+      <rect width="100" height="24" fill="#ffffff"/>
+      <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#4d6d00" font-weight="700" letter-spacing="0.14em" text-anchor="middle">CROSS_SESSION</text>
     </g>
   </g>
 
   <!-- arrow gap 3 -->
-  <g transform="translate(440, 364)">
-    <g class="promote delay-2">
-      <line x1="-9" y1="0" x2="-9" y2="9" class="arrow-line" stroke-width="1.4"/>
-      <path d="M -14 6 L -9 12 L -4 6" fill="none" class="arrow-head" stroke-width="1.4"/>
-    </g>
-    <g class="recall delay-2">
-      <line x1="9" y1="3" x2="9" y2="12" class="arrow-line" stroke-width="1.4"/>
-      <path d="M 4 6 L 9 0 L 14 6" fill="none" class="arrow-head" stroke-width="1.4"/>
-    </g>
+  <g transform="translate(440, 540)">
+    <line class="flow flow-down" x1="-9" y1="0" x2="-9" y2="20" style="animation-delay: 0.6s;"/>
+    <line class="flow flow-up"   x1="9"  y1="0" x2="9"  y2="20" style="animation-delay: 0.6s;"/>
   </g>
 
   <!-- ════════ TIER 04 — KNOWLEDGE ════════ -->
-  <g transform="translate(60, 380)">
-    <rect width="780" height="70" fill="none" stroke="#00788c" stroke-opacity="0.85" stroke-width="1"/>
-    <rect width="780" height="3" fill="url(#g-t4)" filter="url(#soft-glow)"/>
-    <path d="M 0 0 L 14 0 M 0 0 L 0 14" stroke="#00788c" stroke-width="1.5" fill="none"/>
-    <path d="M 766 70 L 780 70 M 780 56 L 780 70" stroke="#00788c" stroke-width="1.5" fill="none"/>
-    <text x="22" y="48" font-size="22" aria-hidden="true">💎</text>
-    <text x="70" y="26" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#00788c" letter-spacing="0.08em">TIER_04</text>
-    <text x="70" y="48" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="18" class="text-strong" letter-spacing="0.04em">KNOWLEDGE</text>
-    <text x="70" y="62" font-family="'JetBrains Mono', monospace" font-size="9" fill="#00788c" letter-spacing="0.30em">03-knowledge · distilled notes</text>
-    <text x="320" y="38" font-family="'JetBrains Mono', monospace" font-size="11" class="text-soft">Crystallized insights — what you know forever.</text>
-    <text x="320" y="56" font-family="'JetBrains Mono', monospace" font-size="11" class="text-fade">/distill · /connect · /weekly</text>
-    <g transform="translate(640, 24)">
-      <rect width="124" height="22" fill="rgba(0,120,140,0.18)" stroke="#00788c" stroke-opacity="1.0" stroke-width="1"/>
-      <text x="62" y="15" font-family="'JetBrains Mono', monospace" font-size="9" fill="#00788c" letter-spacing="0.18em" text-anchor="middle">FOREVER</text>
+  <g transform="translate(60, 560)">
+    <rect width="780" height="130" fill="url(#g-t4-fill)"/>
+    <text class="icon-pulse" x="38" y="78" font-size="32" text-anchor="middle" dominant-baseline="central" aria-hidden="true" style="animation-delay: 1.95s;">💎</text>
+    <text x="74" y="42" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="0.08em">TIER_04</text>
+    <text x="74" y="82" font-family="'Chakra Petch', sans-serif" font-style="italic" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="0.04em">KNOWLEDGE</text>
+    <text x="74" y="112" font-family="'JetBrains Mono', monospace" font-size="11" fill="rgba(255,255,255,0.85)" letter-spacing="0.30em">03-knowledge · distilled notes</text>
+    <text x="290" y="68" font-family="'JetBrains Mono', monospace" font-size="13" fill="#ffffff">Crystallized insights — what you know forever.</text>
+    <text x="290" y="98" font-family="'JetBrains Mono', monospace" font-size="13" fill="rgba(255,255,255,0.78)">/distill · /connect · /weekly</text>
+    <g transform="translate(668, 53)">
+      <rect width="100" height="24" fill="#ffffff"/>
+      <text x="50" y="16" font-family="'JetBrains Mono', monospace" font-size="10" fill="#00788c" font-weight="700" letter-spacing="0.14em" text-anchor="middle">FOREVER</text>
     </g>
   </g>
 
