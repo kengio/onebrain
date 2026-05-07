@@ -388,9 +388,7 @@ export async function runOrphanScan(
   vaultRoot: string,
 ): Promise<OrphanScanResult> {
   if (!vaultRoot) {
-    throw new Error(
-      'runOrphanScan: vaultRoot is required and must be a non-empty path',
-    );
+    throw new Error('runOrphanScan: vaultRoot is required and must be a non-empty path');
   }
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts(now);
