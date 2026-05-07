@@ -302,7 +302,7 @@ Skipped {A} checkpoint file(s) ({reason_summary}):
   - all records have `reason: "concurrent_during_recovery"` → `owning session became active mid-recovery`
   - all records have `reason: "delete_failed"` → `checkpoint delete failed`
   - all records have `reason: "already_recovered"` → `already preserved in a prior recovered log`
-  - all records have `reason: "marker_write_failed"` → `recovered log saved but recovery-of marker missing — manually add `<!-- recovery-of: {token}:{date} -->` as the first body line of the recovered log (token+date are in the `orphaned_recovered_logs` block path's filename + the still-present checkpoint filenames), OR delete the recovered log AND its checkpoints together; otherwise the next /wrapup will keep re-recovering them`
+  - all records have `reason: "marker_write_failed"` → `recovered log saved but recovery-of marker missing — see "Resolving marker_write_failed" below`
   - multiple distinct reasons → `mixed: ` + comma-joined sorted unique reason values (e.g. `mixed: active, delete_failed`)
   - **fallback (catch-all):** all records share a single `reason` value not listed above → `skipped (reason: {reason})` — render the raw enum value verbatim. This row exists to prevent silent rendering drift when a new `reason` value is added to the enum without a matching table entry; the surface signal is generic on purpose so a missing row is visible to the user (and prompts a contributor to add the proper mapping above).
 
@@ -313,6 +313,16 @@ Orphaned recovered log(s) needing manual cleanup ({L}):
 {Recap reminder message from Step 6}
 
 Good session! See you next time.
+
+### Resolving `marker_write_failed`
+
+Render this subsection in the Step 7 report **only when the report contains a `marker_write_failed` record**. The text is a numbered list (more robust against LLM paraphrase pressure than long single-liners) and disambiguates token sourcing — date is in the recovered-log filename, token is in the still-present checkpoint filenames in the `Skipped {A} checkpoint file(s)` block.
+
+> A `marker_write_failed` record means a recovered session log exists on disk but is missing its `<!-- recovery-of: {token}:{date} -->` marker line. Without intervention, every subsequent /wrapup will re-recover the same checkpoints and grow this list. Pick **one** of the following — both are correct and final:
+>
+> 1. **Repair in place.** Open the recovered log path listed in `Orphaned recovered log(s) needing manual cleanup` and add `<!-- recovery-of: {token}:{date} -->` as the very first body line, before the `# Session Summary :` heading. Source `{date}` from the recovered-log filename's date prefix; source `{token}` from the still-present checkpoint filenames in the `Skipped {A} checkpoint file(s)` block above (pattern: `YYYY-MM-DD-{token}-checkpoint-NN.md`).
+>
+> 2. **Discard and let the next /wrapup re-recover.** Delete BOTH the recovered log AND its associated checkpoint files together. Next /wrapup's orphan recovery will re-process the checkpoints from scratch; the (hopefully) successful re-write will include the marker. Only choose this when you trust the next recovery to capture the same content.
 
 ---
 
