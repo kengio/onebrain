@@ -1,17 +1,27 @@
 ---
-latest_version: 2.2.5
-released: 2026-05-06
+latest_version: 2.3.0
+released: 2026-05-07
 ---
 
 # Plugin Changelog
 
-All notable changes to the OneBrain plugin (skills, agents, hooks, INSTRUCTIONS.md).
+All notable changes to the OneBrain plugin — i.e., any vault-deployed content (Claude plugin under `.claude/plugins/onebrain/`, Gemini config under `.gemini/`, future harness configs).
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-> **Versioning:** Plugin version is tracked in `plugin.json`. Bump when skills, agents, hooks, or INSTRUCTIONS change.
-> For CLI binary changes, see [CHANGELOG.md](CHANGELOG.md).
+> **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
+> For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.0 — feat(gemini): project-level `.gemini/` config alongside `.claude/`
+
+Project-level `.gemini/` config ships alongside the Claude plugin so a single `onebrain init` (or `/update`) sets up both harnesses in the user's vault. Skills, agents, and INSTRUCTIONS stay single-source-of-truth in `.claude/plugins/onebrain/` — both harnesses reference them on demand, no duplication.
+
+- feat(.gemini/settings.json): declarative hooks — `AfterAgent` (matcher `*`) → `onebrain checkpoint stop` (= Claude `Stop` parity); `AfterTool` (matcher `write_file|replace`, regex against Gemini's actual tool names) → `onebrain qmd-reindex` (= Claude `PostToolUse` parity). Both wrapped as `{cmd} > /dev/null 2>&1; echo '{}'` to satisfy Gemini's JSON-on-stdout protocol.
+- feat(.gemini/settings.json): `model.disableLoopDetection: true` so legitimate multi-file skill activations (e.g. `/onebrain:help` reading SKILL.md + plugin.json + skills folder) don't trip Gemini's repetitive-tool-call heuristic.
+- feat(.gemini/commands/onebrain): 25 hand-curated `.toml` slash commands under the `onebrain:` namespace (`/onebrain:braindump`, `/onebrain:capture`, ...). Namespacing avoids collisions with Gemini built-ins (`/help`, `/tasks`) and mirrors the Claude plugin path. Tab-complete on the suffix works (`/dail<tab>` → `/onebrain:daily`).
+- note: this release establishes the unified-plugin policy — anything inside `.claude/plugins/onebrain/` OR `.gemini/` (or future harness configs) bumps the plugin track. CLI track (`package.json`) stays independent for TS source changes only.
+- note: distribution — `vault-sync` (CLI v2.2.0+) auto-deploys `.gemini/` to the vault root alongside `.claude/plugins/onebrain/`. No manual install step required.
 
 ## v2.2.5 — fix: Windows skill + script compat (PowerShell / cmd / native Python)
 

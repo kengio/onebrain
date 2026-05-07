@@ -250,21 +250,20 @@ There are no `install.sh` or `install.ps1` scripts to maintain — the equivalen
 
 ## Versioning
 
-Three independent version tracks — bump only the track that changed:
+Two independent version tracks — bump only the track that changed:
 
 | Track | Files | Bump when |
 |---|---|---|
-| **Plugin** | `plugin.json` · `PLUGIN-CHANGELOG.md` | Anything inside `.claude/plugins/onebrain/` (skills, agents, INSTRUCTIONS, hooks, vault structure) |
-| **CLI** | `package.json` · `CHANGELOG.md` | TypeScript source changes (`src/`) only |
-| **Gemini** | `.gemini/settings.json` `onebrain.version` · `GEMINI-CHANGELOG.md` | Anything inside `.gemini/` (settings, commands, hook config) |
+| **Plugin** | `plugin.json` · `PLUGIN-CHANGELOG.md` | ANY vault-deployed content changes — `.claude/plugins/onebrain/` (Claude plugin), `.gemini/` (Gemini config), or any future harness config. "Plugin" here means OneBrain content shipped to the vault, regardless of which harness reads it. |
+| **CLI** | `package.json` · `CHANGELOG.md` | TypeScript source changes (`src/`) only — the `@onebrain-ai/cli` binary. |
 
 **Bump rules**
 
-- **Plugin / Gemini:** patch for fixes/docs, minor for new content (skills, commands, hooks).
+- **Plugin:** patch for fixes/docs, minor for new content (skills, commands, hooks, harness configs), major for breaking schema changes.
 - **CLI:** patch for bug fixes, minor for new commands, major for breaking changes.
 
 After merging a CLI change → push tag `v{cli-version}` to trigger release workflow (builds binaries + publishes npm).
-The Gemini track has its own changelog (`GEMINI-CHANGELOG.md`) but no separate git tag — the `onebrain.version` field in `.gemini/settings.json` is the machine-readable source of truth, and `/doctor` / `/update` can read it to detect drift.
+The Plugin track has its own changelog (`PLUGIN-CHANGELOG.md`) but no separate git tag — `plugin.json` is the source of truth and `vault-sync` reads it on every `/update` to detect drift.
 
 ## Reporting Issues
 
