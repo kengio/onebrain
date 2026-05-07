@@ -1,4 +1,7 @@
 {
+  "model": {
+    "disableLoopDetection": true
+  },
   "hooks": {
     "AfterAgent": [
       {
