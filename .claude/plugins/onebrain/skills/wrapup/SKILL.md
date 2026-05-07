@@ -43,7 +43,7 @@ If none found: continue normally.
 After Step 1, scan for unmerged checkpoints belonging to **other** sessions (orphans).
 
 **Variable scope (used throughout this step):** Initialize two lists at the top of Step 1b and keep them alive until Step 7 reads them at the end of /wrapup:
-- `skipped_active = []` — `{path, age_minutes, reason}` records, where `reason` ∈ `{"active", "age_unknown", "concurrent_during_recovery", "delete_failed", "already_recovered"}`. Both the *Active-Session Guard* and *Auto-Recover Each Orphan Group* append to this list.
+- `skipped_active = []` — `{path, age_minutes, reason}` records, where `reason` ∈ `{"active", "age_unknown", "concurrent_during_recovery", "delete_failed", "already_recovered"}`. Both the *Active-Session Guard* and *Auto-Recover Each Orphan Group* append to this list. **When adding a new value to this enum, also add a corresponding row to the `{reason_summary}` rendering table in Step 7** (search this file for `{reason_summary}` rendering); unmapped values render via the catch-all fallback row but the user-facing string is generic, so an explicit row is required for new values.
 - `orphaned_recovered_logs = []` — paths of recovered session logs that could not be cleaned up after concurrency abort. Listed in its own Step 7 block (these are not checkpoint files, so they don't fit the checkpoint-file heading).
 
 ### Scan Scope
@@ -97,7 +97,9 @@ The threshold gives the owning session a buffer of two full checkpoint windows (
 
 For each orphan group (process in chronological order by date in filename):
 
-**a. Already-recovered short-circuit.** Before reading checkpoint files, glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` for the group's date. For each match, check whether its frontmatter has `case: recovered` AND its body references at least one path from `group_files`. If so, the group's content is already in a prior recovered session log (typically from a previous /wrapup that hit `delete_failed` on these checkpoints): for each file in `group_files`, append `{path, age_minutes: <original group age>, reason: "already_recovered"}` to `skipped_active`, then attempt to delete the checkpoints (since they are now safely persisted in the prior recovered log). Per-file delete failures here record `delete_failed` and continue, identical to step (g)'s rule. Continue with the next group — do not proceed to step (b).
+**a. Already-recovered short-circuit.** Before reading checkpoint files, glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` for the group's date. For each match, search the file body for the standardised recovery marker `<!-- recovery-of: {token}:{date} -->` where `{token}` is the orphan group's session token and `{date}` is the group's date (use a literal substring match, not a regex — the marker is fixed-format). If a match is found, the group's content is already in a prior recovered session log (typically from a previous /wrapup that hit `delete_failed` on these checkpoints): for each file in `group_files`, append `{path, age_minutes: <original group age>, reason: "already_recovered"}` to `skipped_active`, then attempt to delete the checkpoints (since they are now safely persisted in the prior recovered log). Per-file delete failures here record `delete_failed` and continue, identical to step (g)'s rule. Continue with the next group — do not proceed to step (b).
+
+> **Why marker, not frontmatter:** the marker names the specific `token:date` pair recovered, which frontmatter doesn't. A multi-group recovery log can therefore short-circuit per group rather than as a whole, and the marker is harness-/version-independent (frontmatter keys have drifted across releases). See `skills/startup/references/session-formats.md` → *Recovered from checkpoints* for the canonical marker spec.
 
 **b. Read all checkpoint files** in the group. Extract content from each.
 
@@ -108,7 +110,7 @@ For each orphan group (process in chronological order by date in filename):
    - Next session number = count of matches + 1 (zero-padded to 2 digits)
    - Verify the slot is free; increment NN until free
 
-**e. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**). Apply the **Preservation rule** from Step 4 below: deduplication only, no summarization. Every unique decision, action item, open question, learning, and topic from every checkpoint must appear in the recovered session log.
+**e. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**) — this includes the required `<!-- recovery-of: {token}:{date} -->` body marker as the first body line. The marker must appear once per group recovered into this log; if a single recovery pass aggregates multiple groups (rare — date-grouping usually yields one group per date), emit one marker line per group on consecutive lines before the `# Session Summary` heading. Apply the **Preservation rule** from Step 4 below: deduplication only, no summarization. Every unique decision, action item, open question, learning, and topic from every checkpoint must appear in the recovered session log.
 
 **f. Verify the session log** exists and is non-empty before continuing.
 
@@ -290,13 +292,14 @@ Skipped {A} checkpoint file(s) ({reason_summary}):
   · `YYYY-MM-DD-{token}-checkpoint-NN.md` (age: {age_minutes}m, reason: {reason})
 (**Required output — do NOT omit when skipped_active is non-empty.** This block is the user's only signal that checkpoint files were intentionally left on disk. `{A}` is the file count, equal to `len(skipped_active)`. List one line per `{path, age_minutes, reason}` record. Render `age_minutes` as a non-negative integer; if `-1` (sentinel), render as `age: unknown`. Render `reason` verbatim from the record. If `{A}` > 5, list the first 5 and add a final line `· (+{A-5} more)`. Omit this block ONLY when `skipped_active` is empty.
 
-**`{reason_summary}` rendering — use the table below VERBATIM, do not paraphrase:**
+**`{reason_summary}` rendering — use the table below VERBATIM, do not paraphrase. Enum values are defined at the top of Step 1b alongside `skipped_active`; if you add a new value there, add its row here too:**
   - all records have `reason: "active"` → `another harness still running`
   - all records have `reason: "age_unknown"` → `age could not be determined`
   - all records have `reason: "concurrent_during_recovery"` → `owning session became active mid-recovery`
   - all records have `reason: "delete_failed"` → `checkpoint delete failed`
   - all records have `reason: "already_recovered"` → `already preserved in a prior recovered log`
-  - multiple distinct reasons → `mixed: ` + comma-joined sorted unique reason values (e.g. `mixed: active, delete_failed`))
+  - multiple distinct reasons → `mixed: ` + comma-joined sorted unique reason values (e.g. `mixed: active, delete_failed`)
+  - **fallback (catch-all):** all records share a single `reason` value not listed above → `skipped (reason: {reason})` — render the raw enum value verbatim. This row exists to prevent silent rendering drift when a new `reason` value is added to the enum without a matching table entry; the surface signal is generic on purpose so a missing row is visible to the user (and prompts a contributor to add the proper mapping above).)
 
 Orphaned recovered log(s) needing manual cleanup ({L}):
   · `YYYY/MM/YYYY-MM-DD-session-NN.md`

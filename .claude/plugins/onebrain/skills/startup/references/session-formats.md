@@ -130,3 +130,17 @@ synthesized_from_checkpoints: true
 auto-recovered: true
 ---
 ```
+
+**Body marker (required for this case):** the very first body line — placed before `# Session Summary :` — must be the recovery-of marker:
+```markdown
+<!-- recovery-of: {token}:{YYYY-MM-DD} -->
+```
+
+Where `{token}` is the recovered group's session token (parsed from the checkpoint filenames) and `{YYYY-MM-DD}` is the recovered session's date (the checkpoint files' date prefix, not today). Emit one marker line per recovered group; if a single recovery pass aggregates multiple groups, write one marker per group on consecutive lines.
+
+**Why a body marker, not just frontmatter:** /wrapup's `already-recovered` short-circuit (Step 1b → Auto-Recover step a) needs a stable, version-independent signal that a given group was already preserved in a prior recovered log. Frontmatter shape has drifted across releases (`auto-recovered: true` here, `case: recovered` in older drafts, `synthesized_from_checkpoints: true` shared with manual wrapups). The body marker is the only signal that:
+1. Names the specific token + date pair recovered (frontmatter doesn't), so multi-group recovery logs short-circuit per group rather than as a whole,
+2. Survives any future frontmatter-key rename without breaking existing recovered logs,
+3. Is greppable by a fast `rg`/`grep` before any YAML parse.
+
+Recovered logs written by older /wrapup versions (predating this marker) won't match the short-circuit and will be re-recovered into a duplicate session log; this is acceptable — the duplicate is harmless and the user can dedupe manually if desired.

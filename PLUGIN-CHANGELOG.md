@@ -13,13 +13,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.3.3 — feat(wrapup): configurable Active-Session Guard threshold
+## v2.3.3 — feat(wrapup): PR #156 follow-ups (configurable threshold + recovered-log marker + fallback row)
 
-Follow-ups to PR #156's hard-coded 60-min mtime guard. Threshold now derives from `vault.yml`'s `checkpoint.minutes` via the `max(60, 2 * checkpoint.minutes)` policy, so users who raised `checkpoint.minutes` (60 or 90) get a proportionally larger guard instead of the original guard firing on legitimate live sessions. CLI and skill stay symmetric — the startup banner and the recovery skill agree on what is and isn't an orphan.
+Three PR #156 follow-ups bundled. CLI track ships matching changes in v2.3.0 (see [CHANGELOG.md](CHANGELOG.md)).
 
-- feat(wrapup/SKILL.md): Step 1b resolves `threshold_minutes = max(60, 2 * checkpoint.minutes)` from vault.yml once before scanning groups, then compares each group's `age_minutes` against that threshold (was: hard-coded 60).
-- feat(wrapup/SKILL.md): explicit fail-safe — missing/malformed vault.yml or non-positive `checkpoint.minutes` falls back to 60-min default. Recovery is critical-path; never block on a config issue.
-- docs(wrapup/SKILL.md): cross-link to `src/commands/internal/orphan-scan.ts` → `getActiveSessionGuardMs` so the symmetric policy is discoverable from the skill side.
+- feat(wrapup/SKILL.md): Step 1b resolves `threshold_minutes = max(60, 2 * checkpoint.minutes)` from vault.yml once before scanning groups (was: hard-coded 60). Users who raised `checkpoint.minutes` to 60/90 now get a proportionally larger guard. Missing/malformed vault.yml falls back to 60-min default — recovery is critical-path, never block on config issues. Cross-link to the symmetric CLI helper documents the contract.
+- feat(session-formats.md, wrapup/SKILL.md): standardise the `<!-- recovery-of: {token}:{date} -->` body marker for recovered session logs. The `already-recovered` short-circuit (Step 1b → step a) now matches via the marker instead of `case: recovered` frontmatter — version-independent, harness-independent, names the specific token+date pair so multi-group recovery logs short-circuit per group rather than as a whole.
+- feat(wrapup/SKILL.md): `{reason_summary}` rendering table gets a catch-all fallback row for unmapped enum values. The surface signal stays generic so a missing explicit row is visible to the user and prompts contributors to add the proper mapping. Cross-linked to the enum definition at the top of Step 1b so future contributors who add a new `reason` value see both anchors.
 
 ## v2.3.2 — refactor(update): delegate CLI bump to `onebrain update`
 
