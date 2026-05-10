@@ -1,6 +1,6 @@
 ---
-latest_version: 2.3.3
-released: 2026-05-07
+latest_version: 2.3.4
+released: 2026-05-10
 ---
 
 # Plugin Changelog
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.4 — docs(instructions): establish 11 iron-rule Working Principles
+
+Promote `## Working Principles` in `INSTRUCTIONS.md` from 4 unnumbered guidelines to 11 numbered iron rules with a precedence-stating intro. These are non-negotiable defaults that apply across every session, every skill, every workflow — and explicitly take precedence over skill-specific instructions when in conflict. Synthesised from a 60+ memory audit, an insights-report friction analysis, and 29 reviewer-passes across 15 distinct role perspectives (writer, designer, student, PM, lawyer, doctor, therapist, teacher, sales, fiction author, financial analyst, journalist, founder, translator, dev) so the language survives universally — neither dev-jargon nor watered-down for technical work.
+
+- docs(INSTRUCTIONS.md): convert `## Working Principles` to numbered list with intro stating these rules outrank skill-specific instructions when they conflict.
+- docs(INSTRUCTIONS.md): new rules — *Speak in the user's vocabulary · Verify before asserting · Find the cause, not the symptom · Show a draft before extensive work · Update plan and task status in real time · Don't make the user wait · Update on evidence, not pressure · Carry changes through to related places.*
+- docs(INSTRUCTIONS.md): rewrite original 4 rules per cross-role review — drop dev-only references (`AskUserQuestion`, slash-command exception list, "refactor"); merge "Surgical changes" into "Minimal footprint" with cleanup-after-yourself extension; add verifiable-criteria preference to "Define success".
+- docs(INSTRUCTIONS.md): each rule body now includes register-matching, root-cause depth, draft-first for structural work, streaming-vs-background nuance, and explicit code-context coverage (callers, tests, types, migrations) — keeping rigor for dev users while staying accessible to writers, students, lawyers, clinicians, and operators.
+- docs(INSTRUCTIONS.md): bullet 11 restructured per round-3 cross-role consensus — universal list (other notes, files that reference it, similar cases) leads, dev-specific examples fenced as `(in code: …)` so non-dev readers have a clear visual signal to skim past while dev users keep their precision.
 
 ## v2.3.3 — feat(wrapup): PR #156 follow-ups (configurable threshold + recovered-log marker + fallback row)
 
