@@ -18,7 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Companion to plugin v2.4.1's `/qmd uninstall` doc fix. `migrateLegacyQmdEntries(groups, false)` previously stripped only legacy `qmd update …` entries, preserving the canonical `onebrain qmd-reindex` entry on the assumption that a hand-registered hook should survive. In practice no realistic user setup separates the two — `/qmd setup` always writes both, `/qmd uninstall` always removes both — and the preservation made the post-uninstall hook fire forever against a deleted collection.
 
 - fix(register-hooks): when `qmd_collection` is absent from `vault.yml`, strip both legacy `qmd update …` AND canonical `onebrain qmd-reindex` PostToolUse entries. `qmd_collection`'s absence is now the authoritative signal that qmd is not in use.
-- test(register-hooks): flip the "mixed legacy + canonical → strips legacy, keeps canonical" assertion to "strips both"; add a new "canonical-only entry → strips it" test pinning the `/qmd uninstall` path explicitly.
+- test(register-hooks): flip the "mixed legacy + canonical → strips legacy, keeps canonical" assertion to "strips both"; add "canonical-only entry → strips it" test pinning the `/qmd uninstall` path; add "canonical + user hook co-resident → strips canonical, keeps user" test pinning the strip-by-command-value invariant.
 
 ## v2.2.2 — fix(checkpoint, orphan-scan, migrate): read from new 07-logs layout
 
