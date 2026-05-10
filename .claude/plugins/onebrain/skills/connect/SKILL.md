@@ -135,6 +135,30 @@ If the user asks to retro-tag existing notes (e.g. "update all notes in 01-proje
 
 ---
 
+## Step 9: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-connect.md` — one file per day.
+- **Tags:** `[audit-log, connect]`
+- **Skill:** `/connect`
+- **No links applied:** if no wikilinks were approved/implemented in Step 5 (and no Step 8 retro-tag changes were written), skip writing — there is nothing to log.
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+
+- Scope: knowledge-folder
+- Total: N links added across M notes
+
+### Wikilinks added
+- `03-knowledge/ai/Foo.md` → added `[[Bar]]`, `[[Baz]]`
+- `03-knowledge/dev/Qux.md` → added `[[Foo]]`
+```
+
+---
+
 ## Known Gotchas
 
 - **"Entire knowledge base" scope can be very large.** If note count exceeds 20, Step 2b delegates to the Knowledge Linker agent — the inline Steps 3-4 path is only for small scopes. Do not try to hold hundreds of notes in context.

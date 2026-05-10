@@ -79,7 +79,13 @@ async function listMdFiles(dir: string): Promise<string[]> {
 
 /**
  * Core logic for backfill-recapped migration.
- * Scans session logs and adds `recapped: <today-date>` to frontmatter where missing.
+ * Scans session logs at `[logsFolder]/session/YYYY/MM/` and adds
+ * `recapped: <today-date>` to frontmatter where missing.
+ *
+ * Post-v2.4.0: session logs live under `session/YYYY/MM/`, not at the
+ * `logsFolder` top level. Caller (`/update`) always runs the 07-logs
+ * structure migration (Step 0) before invoking this, so by the time
+ * we walk, the new layout is in place.
  *
  * @param logsFolder - absolute path to logs folder
  * @param cutoffDate - ISO date string (YYYY-MM-DD); skip logs with date > cutoffDate
@@ -93,17 +99,20 @@ export async function runBackfillRecapped(
   let backfilled = 0;
   let skipped = 0;
 
-  // List all year directories
+  // List all year directories under session/ (post-v2.4.0 layout).
+  const sessionRoot = join(logsFolder, 'session');
   let yearDirs: string[] = [];
   try {
-    yearDirs = await readdir(logsFolder);
+    yearDirs = await readdir(sessionRoot);
   } catch {
-    // Logs folder doesn't exist; return empty result
+    // session/ doesn't exist (fresh vault, no session logs yet, or
+    // pre-v2.4.0 vault that hasn't run the structure migration).
+    // Return empty — nothing to backfill.
     return { backfilled: 0, skipped: 0 };
   }
 
   for (const yearDir of yearDirs) {
-    const yearPath = join(logsFolder, yearDir);
+    const yearPath = join(sessionRoot, yearDir);
 
     // List all month directories under year
     let monthDirs: string[] = [];

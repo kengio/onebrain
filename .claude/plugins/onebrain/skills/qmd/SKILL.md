@@ -138,6 +138,26 @@ Embeddings: {ready / not yet — run /qmd embed to enable semantic search}
 → Run /qmd status to check index health
 → Run /qmd uninstall to remove qmd integration
 
+### Step 10: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-qmd-setup.md` — one file per (subcommand, day). Different qmd subcommands produce separate files (e.g. `…qmd-setup.md`, `…qmd-embed.md`).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: setup`, `collection: <collection-name>`
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+- Collection: {collection-name}
+- Files indexed: N
+- Chunks generated: M
+- Errors: 0
+- Duration: Xs
+```
+
 ---
 
 ## /qmd embed
@@ -183,6 +203,26 @@ Report completion or any errors.
 
 Say:
 ✅ Embeddings generated. Semantic search now active — use natural language queries.
+
+### Step 5: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-qmd-embed.md` — one file per (subcommand, day).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: embed`, `collection: <collection-name>`
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+- Collection: {collection-name}
+- Files indexed: N
+- Chunks generated: M
+- Errors: 0
+- Duration: Xs
+```
 
 ---
 
@@ -242,6 +282,26 @@ Report progress and any errors.
 Say:
 > Index updated. All vault notes are now searchable.
 
+### Step 4: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-qmd-reindex.md` — one file per (subcommand, day).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: reindex`, `collection: <collection-name>`
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+- Collection: {collection-name}
+- Files indexed: N
+- Chunks generated: M
+- Errors: 0
+- Duration: Xs
+```
+
 ---
 
 ## /qmd uninstall
@@ -296,6 +356,24 @@ Say:
 > qmd search disabled for this vault. The agent will use standard Glob/Grep/Read search.
 >
 > You can re-enable anytime with `/qmd setup`.
+
+### Step 6: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-qmd-uninstall.md` — one file per (subcommand, day).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: uninstall`, `collection: <collection-name>`
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+- Collection removed: {collection-name}
+- vault.yml: qmd_collection key removed
+- PostToolUse hook: removed
+```
 
 ---
 

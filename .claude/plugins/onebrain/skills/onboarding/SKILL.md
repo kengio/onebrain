@@ -245,6 +245,62 @@ If user selects "Skip for now": continue to Step 12.
 
 ---
 
+## Step 11c: Write Onboarding Log
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-onboarding.md` — one-shot per vault lifetime. If the file already exists (re-run scenario), overwrite is fine — re-run reflects the latest setup.
+- **Tags:** `[audit-log, onboarding]`
+- **Skill:** `/onboarding`
+- **Per-skill discriminators in frontmatter:** `path: A | B`, `plugin_version: X.Y.Z`, `run: N` (incremented if file already exists from a prior re-run; default `1` on first run).
+- **One-shot exception:** unlike append-per-day skills, onboarding overwrites the file on re-run (a single snapshot, not an audit trail). The `## Run HH:MM` heading is still present so the snapshot reads consistently with other audit logs.
+- **Failure mode:** report once and continue to Step 12 — log entry is supplementary, not blocking onboarding completion.
+
+Template (file creation/overwrite form — substitute live values from the interview answers + Step 11 config):
+
+```markdown
+---
+tags: [audit-log, onboarding]
+skill: /onboarding
+date: YYYY-MM-DD
+path: A
+plugin_version: X.Y.Z
+run: 1
+---
+
+# Onboarding — YYYY-MM-DD
+
+## Run HH:MM
+
+- Path: A (or B)
+- Plugin version: X.Y.Z
+- Run: 1 (or N for re-run)
+
+### Identity & Personality
+- Agent name: {agent_name}
+- Personality: {agent_personality}
+- User: {preferred_name}
+- Language: {detected from interview, e.g. "Thai/English bilingual"}
+
+### Vault Configuration
+- Folders: 8-folder layout
+- Inbox: [inbox_folder]
+- Projects: [projects_folder]
+- Areas: [areas_folder]
+- Knowledge: [knowledge_folder]
+- Resources: [resources_folder]
+- Agent: [agent_folder]
+- Archive: [archive_folder]
+- Logs: [logs_folder]
+
+### Initial Capabilities Enabled
+- qmd: {yes (collection: <name>) / no}
+- Auto-summary: yes
+- Plugin hooks: registered
+```
+
+---
+
 ## Step 12: Completion Message
 
 Say:
@@ -427,7 +483,13 @@ Check if `vault.yml` already exists in the vault root:
 
 ## Path B : Step 12b: qmd Setup (Optional)
 
-Identical to Step 11b in Path A. Ask the user whether to set up qmd, and if yes, run the `/qmd setup` flow (skipping its initial confirmation question). Continue to Step 13 regardless of outcome.
+Identical to Step 11b in Path A. Ask the user whether to set up qmd, and if yes, run the `/qmd setup` flow (skipping its initial confirmation question). Continue to Step 12c regardless of outcome.
+
+---
+
+## Path B : Step 12c: Write Onboarding Log
+
+Identical to **Step 11c** in Path A. Write the one-shot snapshot to `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-onboarding.md` using the same template (substitute live values from Path B Steps 2–8, Step 10/12 config, and qmd state from Step 12b). Create `[logs_folder]/log/YYYY/MM/` if missing. On failure, report once and continue to Step 13 — non-blocking.
 
 ---
 

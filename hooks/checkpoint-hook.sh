@@ -138,7 +138,7 @@ if ! [[ "$today_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
   echo "checkpoint-hook.sh: invalid date '${today_date}' — cannot construct checkpoint path" >&2
   exit 0
 fi
-checkpoint_dir="${logs_folder_abs}/${today_date%%-*}/$(echo "$today_date" | cut -d'-' -f2)"
+checkpoint_dir="${logs_folder_abs}/checkpoint"
 
 # --- PostCompact: reset counter so fresh accumulation begins after compact ---
 if [ "$mode" = "postcompact" ]; then

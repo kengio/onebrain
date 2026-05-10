@@ -150,6 +150,46 @@ After the review session ends:
 
 Note: If more than 40 entries, review shows all entries sequentially (no truncation needed — user controls pace via manage.../stop).
 
+## Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-memory.md` — shared file. `/learn` and `/memory-review` both append to this same daily file.
+- **Tags:** `[audit-log, memory]`
+- **Skill:** `skill: [/learn, /memory-review]` (YAML list — file is shared)
+- **Run heading exception:** because the file is shared, `/memory-review` writes its sections as `## Run HH:MM /memory-review` (and `/learn` writes `## Run HH:MM /learn`). This is the only audit-log file where the run heading carries a discriminator.
+- **Entry types written by /memory-review:** `updated` (confirm via update flow), `deprecated` (manage → deprecate), `deleted` (manage → delete confirmed). `keep` actions do not need their own bullets — they only bump `verified` — but they may be summarized in a one-line tally bullet.
+- **Edge case:** if the user invoked **stop** without any committed action, skip writing this entry.
+
+Per-skill body template (the appended block, when today's file already exists):
+
+```markdown
+## Run HH:MM /memory-review
+- **deleted** memory/feedback_outdated.md
+  - Reason: superseded by feedback_new_workflow
+  - Last content snippet: "always use bun install (replaced by /update)"
+- **deprecated** memory/project_omnibrain.md
+  - Reason: project folded into OneBrain Cloud (2026-05-04)
+  - Status: status: archived
+```
+
+The full file (creation form) — frontmatter + heading + first run:
+
+```markdown
+---
+tags: [audit-log, memory]
+skill: [/learn, /memory-review]
+date: YYYY-MM-DD
+---
+
+# Memory Changes — YYYY-MM-DD
+
+## Run HH:MM /memory-review
+- **deleted** memory/feedback_outdated.md
+  - Reason: superseded by feedback_new_workflow
+  - Last content snippet: "always use bun install (replaced by /update)"
+```
+
 ## Edge Cases
 
 - If entry's row is missing from MEMORY-INDEX.md but file exists in memory/ (out of sync) →

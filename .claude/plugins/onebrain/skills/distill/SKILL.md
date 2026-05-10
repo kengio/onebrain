@@ -25,7 +25,7 @@ Search across the vault for notes related to the topic. Use 2–3 specific keywo
 
 Use qmd if available for content searches; Grep/Glob as fallback.
 
-1. **Session logs**: Search `[logs_folder]/**/*-session-*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections. (Use the `*-session-*.md` pattern, not bare `*.md` — `*-checkpoint-*.md` and `*-update-*.md` files in the same folder shouldn't contribute distillation content.)
+1. **Session logs**: Search `[logs_folder]/session/**/*-session-*.md` for topic keywords — extract matching `## Key Decisions`, `## Action Items`, `## Open Questions` sections. (Post-v2.4.0: session logs live under `session/` only; the `-session-` infix is now defense-in-depth.)
 2. **Inbox**: Search `[inbox_folder]/*.md` for related content
 3. **memory/ files**: Search `[agent_folder]/memory/` for related entries — match topic keywords against filename and frontmatter `topics:` field
 4. **Project/knowledge notes**: Search `[projects_folder]/**/*.md`, `[knowledge_folder]/**/*.md`, and `[resources_folder]/**/*.md` — filter by note title or first 100 words
@@ -149,6 +149,75 @@ Say:
 
 ```
 onebrain qmd-reindex
+```
+
+---
+
+## Step 7: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-distill-{slug}.md` — one file per (topic, day). Same topic same day → append a new `## Run HH:MM` section. Different topics same day produce separate files.
+- **Tags:** `[audit-log, distill]`
+- **Skill:** `/distill`
+- **Per-skill discriminators in frontmatter:** `topic: "<full topic verbatim>"`, `slug: "<slug>"`, `destination: "[knowledge_folder]/[subfolder]/[Topic].md"`
+
+### Slug rules (apply in order)
+
+1. Use the topic verbatim — preserve original language (Thai/English mix is fine).
+2. **Sanitize invalid filename chars:** replace each of `/ \ : * ? " < > |` → `-`.
+3. **Whitespace:** replace ` ` (space) → `-`. Then collapse runs of multiple `-` into a single `-`.
+4. **NFC normalize:** apply `slug.normalize('NFC')` (macOS NFD → NFC) before writing — required so Thai filenames match across filesystems.
+5. **Truncate to 50 characters** (count chars, not bytes).
+6. **Lowercase ASCII letters** (Thai chars have no case — no-op).
+7. **Always store the full topic** in frontmatter `topic:` — used to recover the original when the slug is truncated.
+
+Examples:
+
+| Topic | Slug | Filename |
+|---|---|---|
+| `การจัดการ memory ของ AI agent ใน production` (49 chars) | `การจัดการ-memory-ของ-ai-agent-ใน-production` | `2026-05-10-distill-การจัดการ-memory-ของ-ai-agent-ใน-production.md` |
+| `Claude Code hooks: best practices` (33 chars) | `claude-code-hooks-best-practices` (`:` → `-`, lowercased) | `2026-05-10-distill-claude-code-hooks-best-practices.md` |
+
+### Per-skill body template
+
+```markdown
+## Run HH:MM
+
+- Sources: {N} session logs, {M} inbox notes, {Q} knowledge notes
+- Destination: `[knowledge_folder]/[subfolder]/[Topic].md` ({created / appended / overwritten})
+
+### Synthesis Highlights
+- Core question: {…}
+- Key decisions: {…}
+- Lessons promoted candidates: {N} (use /learn to promote)
+- Open questions: {N}
+```
+
+The full file (creation form) — frontmatter + heading + first run — looks like:
+
+```markdown
+---
+tags: [audit-log, distill]
+skill: /distill
+date: YYYY-MM-DD
+topic: "{full topic verbatim}"
+slug: "{slug after rules above}"
+destination: "[knowledge_folder]/[subfolder]/[Topic].md"
+---
+
+# Distill — {topic} — YYYY-MM-DD
+
+## Run HH:MM
+
+- Sources: {N} session logs, {M} inbox notes, {Q} knowledge notes
+- Destination: `[knowledge_folder]/[subfolder]/[Topic].md` ({created / appended / overwritten})
+
+### Synthesis Highlights
+- Core question: {…}
+- Key decisions: {…}
+- Lessons promoted candidates: {N} (use /learn to promote)
+- Open questions: {N}
 ```
 
 ---

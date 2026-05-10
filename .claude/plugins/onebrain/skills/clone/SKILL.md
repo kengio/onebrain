@@ -132,6 +132,30 @@ Then say:
 
 ---
 
+## Step 5: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-clone.md` — one file per day. Applies to both Step 4a (Folder Copy) and Step 4b (Display Paths).
+- **Tags:** `[audit-log, clone]`
+- **Skill:** `/clone`
+- **Per-skill discriminators in frontmatter:** `method: folder-copy | display-paths`, `include_archive: true | false`
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+- Method: folder-copy
+- Source vault: /Users/keng/.../ob-1
+- Destination: /tmp/clone-target/
+- Files copied: N
+- Memory bundle: included (12 files)
+```
+
+For Step 4b (Display Paths), set `Method:` to `display-paths`, `Destination:` to `(paths displayed only — no copy performed)`, and `Files copied:` to `0`.
+
+---
+
 ## Known Gotchas
 
 - **`qmd_collection` in `vault.yml` is vault-specific.** When cloning to a new vault, the `qmd_collection` value will point to the old vault's collection. The user must run `/qmd setup` in the new vault to create a collection for the new vault and update `vault.yml` accordingly.

@@ -112,6 +112,46 @@ After writing or updating the file, say in one line:
 
 ---
 
+## Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-memory.md` — shared file. `/learn` and `/memory-review` both append to this same daily file.
+- **Tags:** `[audit-log, memory]`
+- **Skill:** `skill: [/learn, /memory-review]` (YAML list — file is shared)
+- **Run heading exception:** because the file is shared, `/learn` writes its sections as `## Run HH:MM /learn` (and `/memory-review` writes `## Run HH:MM /memory-review`). This is the only audit-log file where the run heading carries a discriminator.
+- **Entry types written by /learn:** `created` (new memory file) or `updated` (`update` conflict resolution merged into existing file). If `supersede` was chosen, also log a `**deprecated**` bullet for the superseded file.
+
+Per-skill body template (the appended block, when today's file already exists):
+
+```markdown
+## Run HH:MM /learn
+- **created** memory/feedback_new_workflow.md
+  - Content: "always run /update after PR merge"
+  - Source: user instruction in this session
+```
+
+The full file (creation form) — frontmatter + heading + first run:
+
+```markdown
+---
+tags: [audit-log, memory]
+skill: [/learn, /memory-review]
+date: YYYY-MM-DD
+---
+
+# Memory Changes — YYYY-MM-DD
+
+## Run HH:MM /learn
+- **created** memory/feedback_new_workflow.md
+  - Content: "always run /update after PR merge"
+  - Source: user instruction in this session
+```
+
+For each memory file touched in this call, write one bullet under the section, with `**created**` or `**updated**` as the entry type.
+
+---
+
 ## In-Skill Examples
 
 **Input:** "always run 3 review rounds before merging any PR — we got burned when a PR slipped through with a broken import"

@@ -62,14 +62,33 @@ function sessionLogFrontmatter(autoSaved: boolean): string {
   return `---\ntags: [session-log]\ndate: ${PAST_DATE}\nauto-saved: ${autoSaved}\n---\n\n## Session\n\nTest.`;
 }
 
-async function makeMonthDir(logsDir: string, year: string, month: string): Promise<string> {
-  const dir = join(logsDir, year, month);
+// Post-v2.4.0 layout:
+//   - checkpoints live in `logsDir/checkpoint/` (flat)
+//   - session logs live in `logsDir/session/YYYY/MM/`
+//
+// `makeThisMonthDir` and `makeMonthDir` now return the flat checkpoint
+// directory regardless of year/month — the `year`/`month` parameters
+// remain in the signature so call sites that previously relied on them
+// continue to compile, but those values are ignored here. Tests that
+// need a session-log directory must call `makeSessionMonthDir` explicitly.
+async function makeCheckpointDir(logsDir: string): Promise<string> {
+  const dir = join(logsDir, 'checkpoint');
   await mkdir(dir, { recursive: true });
   return dir;
 }
 
+async function makeSessionMonthDir(logsDir: string, year: string, month: string): Promise<string> {
+  const dir = join(logsDir, 'session', year, month);
+  await mkdir(dir, { recursive: true });
+  return dir;
+}
+
+async function makeMonthDir(logsDir: string, _year: string, _month: string): Promise<string> {
+  return makeCheckpointDir(logsDir);
+}
+
 async function makeThisMonthDir(logsDir: string): Promise<string> {
-  return makeMonthDir(logsDir, THIS_YEAR, THIS_MONTH);
+  return makeCheckpointDir(logsDir);
 }
 
 // ---------------------------------------------------------------------------
@@ -149,56 +168,44 @@ describe('runOrphanScan', () => {
   });
 
   it('skips checkpoint when a manual (non-auto-saved) session log exists for that date', async () => {
-    const monthDir = await makeThisMonthDir(logsDir);
+    const checkpointDir = await makeThisMonthDir(logsDir);
+    const sessionMonthDir = await makeSessionMonthDir(logsDir, THIS_YEAR, THIS_MONTH);
     const cpName = checkpointName(PAST_DATE, 'tokenAA', 1);
-    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
+    await writeFile(join(checkpointDir, cpName), checkpointFrontmatter(false), 'utf8');
     const logName = sessionLogName(PAST_DATE, 1);
-    await writeFile(join(monthDir, logName), sessionLogFrontmatter(false), 'utf8');
+    await writeFile(join(sessionMonthDir, logName), sessionLogFrontmatter(false), 'utf8');
     const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });
 
   it('does NOT skip when only auto-saved session log exists for that date', async () => {
-    const monthDir = await makeThisMonthDir(logsDir);
+    const checkpointDir = await makeThisMonthDir(logsDir);
+    const sessionMonthDir = await makeSessionMonthDir(logsDir, THIS_YEAR, THIS_MONTH);
     const cpName = checkpointName(PAST_DATE, 'tokenBB', 1);
-    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
+    await writeFile(join(checkpointDir, cpName), checkpointFrontmatter(false), 'utf8');
     const logName = sessionLogName(PAST_DATE, 1);
-    await writeFile(join(monthDir, logName), sessionLogFrontmatter(true), 'utf8');
+    await writeFile(join(sessionMonthDir, logName), sessionLogFrontmatter(true), 'utf8');
     const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 1 });
   });
 
-  // Regression: previously the `hasManualSessionLog` filter excluded
-  // `-checkpoint-` files but accepted any other date-prefixed `.md`. A
-  // `/update` migration log written on the same date as an orphan
-  // checkpoint would fall through and silently suppress the orphan
-  // count. Filter now whitelists `-session-` so the orphan still counts.
-  it('does NOT skip when only an update-log exists for that date (no real session log)', async () => {
-    const monthDir = await makeThisMonthDir(logsDir);
-    const cpName = checkpointName(PAST_DATE, 'tokenUL', 1);
-    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
-    // /update writes YYYY-MM-DD-update-vX.Y.Z.md (no `-session-` infix)
-    const updateName = `${PAST_DATE}-update-v2.1.10.md`;
+  // Regression: `hasManualSessionLog` only matches files whose name
+  // contains the literal `-session-` infix. Post-v2.4.0 the session
+  // folder (`session/YYYY/MM/`) physically separates session logs from
+  // other artifacts, but the whitelist remains as defense-in-depth so
+  // a future stray non-session file in `session/` (e.g., a manual edit
+  // accident) cannot false-suppress an orphan checkpoint.
+  it('does NOT suppress orphan when a non-session file lives next to session logs', async () => {
+    const checkpointDir = await makeThisMonthDir(logsDir);
+    const sessionMonthDir = await makeSessionMonthDir(logsDir, THIS_YEAR, THIS_MONTH);
+    const cpName = checkpointName(PAST_DATE, 'tokenStrayFile', 1);
+    await writeFile(join(checkpointDir, cpName), checkpointFrontmatter(false), 'utf8');
+    // Stray non-session file dropped into session/YYYY/MM/ (e.g. manual edit
+    // mistake). Without the `-session-` infix filter, hasManualSessionLog
+    // would accept it and falsely suppress the orphan.
     await writeFile(
-      join(monthDir, updateName),
-      `---\ntags: [update-log]\ndate: ${PAST_DATE}\nfrom_version: 2.1.9\nto_version: 2.1.10\n---\n\n# Update Log\n\n- [x] Step 1\n`,
-      'utf8',
-    );
-    const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
-    expect(result).toEqual({ orphan_count: 1 });
-  });
-
-  // Same bug class as the update-log case: /weekly writes
-  // YYYY-MM-DD-weekly.md (no `-session-` infix). Under the old blacklist
-  // it would also fall through and silently suppress the orphan count.
-  it('does NOT skip when only a weekly log exists for that date (no real session log)', async () => {
-    const monthDir = await makeThisMonthDir(logsDir);
-    const cpName = checkpointName(PAST_DATE, 'tokenWL', 1);
-    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
-    const weeklyName = `${PAST_DATE}-weekly.md`;
-    await writeFile(
-      join(monthDir, weeklyName),
-      `---\ntags: [weekly-review]\ndate: ${PAST_DATE}\n---\n\n# Weekly Review\n`,
+      join(sessionMonthDir, `${PAST_DATE}-stray-note.md`),
+      `---\ntags: [stray]\ndate: ${PAST_DATE}\n---\n\nManual edit\n`,
       'utf8',
     );
     const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
@@ -208,17 +215,24 @@ describe('runOrphanScan', () => {
   // Companion case: both an update log AND a manual session log exist
   // for the same date — the manual session log still wins, orphan
   // suppressed. Verifies the whitelist didn't regress the skip behavior.
+  // Post-v2.4.0: update log lives in update/ (own folder), so its presence
+  // is irrelevant to hasManualSessionLog (which only scans session/YYYY/MM/).
+  // Test still useful as regression: confirms orphan stays suppressed when
+  // a real manual session log is present.
   it('still skips when both an update-log and a manual session log exist for that date', async () => {
-    const monthDir = await makeThisMonthDir(logsDir);
+    const checkpointDir = await makeThisMonthDir(logsDir);
+    const sessionMonthDir = await makeSessionMonthDir(logsDir, THIS_YEAR, THIS_MONTH);
+    const updateDir = join(logsDir, 'update');
+    await mkdir(updateDir, { recursive: true });
     const cpName = checkpointName(PAST_DATE, 'tokenULSL', 1);
-    await writeFile(join(monthDir, cpName), checkpointFrontmatter(false), 'utf8');
+    await writeFile(join(checkpointDir, cpName), checkpointFrontmatter(false), 'utf8');
     await writeFile(
-      join(monthDir, `${PAST_DATE}-update-v2.1.10.md`),
+      join(updateDir, `${PAST_DATE}-update-v2.1.10.md`),
       `---\ntags: [update-log]\ndate: ${PAST_DATE}\n---\n\nUpdate.`,
       'utf8',
     );
     const logName = sessionLogName(PAST_DATE, 1);
-    await writeFile(join(monthDir, logName), sessionLogFrontmatter(false), 'utf8');
+    await writeFile(join(sessionMonthDir, logName), sessionLogFrontmatter(false), 'utf8');
     const result = await runOrphanScan(logsDir, 'current99', PINNED_NOW, tmpDir);
     expect(result).toEqual({ orphan_count: 0 });
   });

@@ -154,6 +154,35 @@ onebrain qmd-reindex
 
 ---
 
+## Step 7: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-consolidate.md` — one file per day.
+- **Tags:** `[audit-log, consolidate]`
+- **Skill:** `/consolidate`
+- **Empty inbox:** if Step 1 found nothing to process, skip writing — there is nothing to log.
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+
+- Inbox files processed: N
+
+### Moved
+- `00-inbox/2026-05-10-ai-thoughts.md` → `03-knowledge/ai/AI Architecture Thoughts.md` (new)
+- `00-inbox/2026-05-09-meeting-notes.md` → appended to `01-projects/finastra/Finastra.md`
+
+### Wikilinks added
+- `03-knowledge/ai/AI Architecture Thoughts.md` ↔ `[[Agent Frameworks]]`, `[[OneBrain CLI]]`
+
+### Skipped
+- `00-inbox/2026-05-08-temp.md` — too short, asked user → kept in inbox
+```
+
+---
+
 ## Known Gotchas
 
 - **Mixed-content notes.** Braindumps often start with a personal insight but contain project tasks, external references, and reflections all in one file. Read the FULL note before classifying — the first paragraph can be misleading about the overall content type.

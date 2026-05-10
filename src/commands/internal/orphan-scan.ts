@@ -1,8 +1,19 @@
 /**
  * orphan-scan — internal command
  *
- * Scans the logs folder for unmerged checkpoint files (orphans).
- * An orphan is a checkpoint whose session was never wrapped up via /wrapup.
+ * Scans `[logs_folder]/checkpoint/` (flat) for unmerged checkpoint files
+ * (orphans). An orphan is a checkpoint whose session was never wrapped up
+ * via /wrapup.
+ *
+ * Structure (post-v2.4.0): checkpoints live at `[logs]/checkpoint/` flat,
+ * session logs at `[logs]/session/YYYY/MM/`. Filenames retain their date
+ * prefix (`YYYY-MM-DD-{token}-checkpoint-NN.md`).
+ *
+ * No date-range filter: `checkpoint/` is supposed to be ephemeral
+ * (cleaned by /wrapup after each session). Stale checkpoints surfacing
+ * here are bugs to expose, not hide — the Active-Session Guard catches
+ * legitimately active cross-harness sessions, and /doctor's "old
+ * checkpoint" warning catches anything else.
  *
  * Active-Session Guard: groups whose newest checkpoint is younger than the
  * vault.yml-derived threshold are NOT counted as orphans — they belong to
@@ -79,30 +90,6 @@ function parseFrontmatter(rawText: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
-}
-
-// ---------------------------------------------------------------------------
-// Month directory helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Get current and previous month as { thisYear, thisMonth, prevYear, prevMonth }
- * All values are zero-padded strings.
- */
-function getMonthParts(now: Date = new Date()): {
-  thisYear: string;
-  thisMonth: string;
-  prevYear: string;
-  prevMonth: string;
-} {
-  const thisYear = String(now.getFullYear());
-  const thisMonth = String(now.getMonth() + 1).padStart(2, '0');
-
-  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevYear = String(prevDate.getFullYear());
-  const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
-
-  return { thisYear, thisMonth, prevYear, prevMonth };
 }
 
 // ---------------------------------------------------------------------------
@@ -280,35 +267,40 @@ async function hasManualSessionLog(monthDir: string, date: string): Promise<bool
 }
 
 /**
- * Collect candidate orphan groups from a single month directory.
+ * Collect candidate orphan groups from the flat `checkpoint/` directory.
+ *
  * Returns a Map of `token → absolute file paths`. A "candidate" is any
  * checkpoint file whose token != current session, whose date != today,
- * and whose date has no manual session log (the `merged: true`
- * frontmatter check from earlier versions was removed in v2.2.0 — the
- * filename surviving on disk is now the orphan signal).
+ * and whose date has no manual session log in the matching session
+ * folder (`[logs]/session/YYYY/MM/`).
  *
  * Active-Session mtime filtering is intentionally NOT applied here — the
- * guard runs once at the merged-across-months level, so a token whose
- * checkpoints span both months is evaluated against its globally-newest
- * mtime (not per-month).
+ * guard runs once at the merged level in `runOrphanScan`, so groups are
+ * evaluated against their globally-newest mtime.
  */
-async function collectCandidateGroupsForMonth(
-  monthDir: string,
+async function collectCandidateGroups(
+  checkpointDir: string,
+  sessionDir: string,
   currentToken: string,
   today: string,
 ): Promise<Map<string, string[]>> {
   const groups = new Map<string, string[]>();
-  const files = await listMdFiles(monthDir);
+  const files = await listMdFiles(checkpointDir);
   const checkpoints = files.filter((f) => f.includes('-checkpoint-') && f.endsWith('.md'));
 
   // Cache per-date "manual session log exists?" lookups: many checkpoints
   // typically share the same date, and hasManualSessionLog re-reads every
-  // session log's frontmatter on every call.
+  // session log's frontmatter on every call. Translate date → session
+  // month dir lazily on first miss.
   const manualLogCache = new Map<string, boolean>();
   async function dateHasManualLog(date: string): Promise<boolean> {
     const cached = manualLogCache.get(date);
     if (cached !== undefined) return cached;
-    const result = await hasManualSessionLog(monthDir, date);
+    // Date format: YYYY-MM-DD → look up [sessionDir]/YYYY/MM/
+    const year = date.slice(0, 4);
+    const month = date.slice(5, 7);
+    const sessionMonthDir = join(sessionDir, year, month);
+    const result = await hasManualSessionLog(sessionMonthDir, date);
     manualLogCache.set(date, result);
     return result;
   }
@@ -327,17 +319,17 @@ async function collectCandidateGroupsForMonth(
     if (!ftoken) continue;
 
     // Skip today's checkpoints — not orphans yet (still being written).
-    // The mtime guard below catches cross-day active sessions whose
-    // filename date is yesterday but mtime is fresh.
+    // The mtime guard in runOrphanScan catches cross-day active sessions
+    // whose filename date is yesterday but mtime is fresh.
     if (fdate === today) continue;
 
     // Skip current session's own checkpoints
     if (ftoken === currentToken) continue;
 
-    // Skip if a manual session log covers this date
+    // Skip if a manual session log covers this date (in session/ dir)
     if (await dateHasManualLog(fdate)) continue;
 
-    const fpath = join(monthDir, fname);
+    const fpath = join(checkpointDir, fname);
     const existing = groups.get(ftoken);
     if (existing) existing.push(fpath);
     else groups.set(ftoken, [fpath]);
@@ -391,27 +383,15 @@ export async function runOrphanScan(
     throw new Error('runOrphanScan: vaultRoot is required and must be a non-empty path');
   }
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const { thisYear, thisMonth, prevYear, prevMonth } = getMonthParts(now);
 
-  const monthDirs: Array<{ year: string; month: string }> = [
-    { year: thisYear, month: thisMonth },
-    { year: prevYear, month: prevMonth },
-  ];
+  const checkpointDir = join(logsFolder, 'checkpoint');
+  const sessionDir = join(logsFolder, 'session');
 
-  // Merge candidate groups across months keyed by token. A session that
-  // crosses a month boundary will surface here as one entry whose file
-  // list spans both directories, so the mtime guard sees its globally
-  // newest checkpoint and the group is correctly classified.
-  const allGroups = new Map<string, string[]>();
-  for (const { year, month } of monthDirs) {
-    const monthDir = join(logsFolder, year, month);
-    const monthGroups = await collectCandidateGroupsForMonth(monthDir, sessionToken, today);
-    for (const [token, files] of monthGroups) {
-      const existing = allGroups.get(token);
-      if (existing) existing.push(...files);
-      else allGroups.set(token, [...files]);
-    }
-  }
+  // Single flat scan of `checkpoint/`. The dir is ephemeral (cleaned by
+  // /wrapup) so any file present is a real candidate; the Active-Session
+  // Guard below filters live cross-harness sessions, and /doctor's
+  // "old checkpoint" warning surfaces anything else stale.
+  const allGroups = await collectCandidateGroups(checkpointDir, sessionDir, sessionToken, today);
 
   // Resolve threshold once per call — cheap (one vault.yml read) and keeps
   // the per-group guard pure (no I/O ordering concerns inside the loop).

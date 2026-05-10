@@ -61,7 +61,9 @@ Find notes that are directly in a top-level folder (not already in a subfolder):
 - `[areas_folder]/*.md` : glob top-level only
 - `[knowledge_folder]/*.md` : glob top-level only
 - `[resources_folder]/*.md` : glob top-level only
-- `[logs_folder]/*-session-*.md` : flat session log files not yet in a `YYYY/MM/` subfolder (use the `*-session-*.md` pattern so a flat-root `*-checkpoint-*.md` or `*-update-*.md` file is not treated as a session log to migrate)
+- ~~`[logs_folder]/*-session-*.md`~~ — Removed in v2.4.0. Session logs now live under `[logs_folder]/session/YYYY/MM/`; `/update` migration owns the 07-logs structure end-to-end. `/reorganize` no longer touches `[logs_folder]/`.
+
+**Legacy 07-logs structure guard (post-v2.4.0)**: before scanning anything else, check whether `[logs_folder]/YYYY/MM/` contains any of `*-session-*.md`, `*-checkpoint-*.md`, or `*-update-*.md` files. If yes → **abort immediately** with the message: `⚠️ 07-logs structure outdated — run /update first to migrate, then re-run /reorganize.` Do not proceed; do not touch any folder. The /update Step 0 migration owns this structure transition; running /reorganize on a half-migrated vault would leave session logs stranded outside `session/`.
 
 Also check `[archive_folder]/*.md` for any flat archive files.
 
@@ -75,7 +77,6 @@ Report:
 🗂️  [resources_folder]/ ({N} notes)
 🗂️  [areas_folder]/ ({N} notes)
 🗂️  [projects_folder]/ ({N} notes)
-🗂️  [logs_folder]/ ({N} session logs)
 🗂️  [archive_folder]/ ({N} archive files)
 
 If nothing is found:
@@ -91,10 +92,6 @@ For each note, analyze its content and frontmatter to suggest a subfolder:
 - Read the file's title, tags, and first paragraph
 - Suggest a kebab-case subfolder path (max 2 levels, e.g. `programming/python`, `health/fitness`)
 - Group notes with the same suggested subfolder together
-
-**For `[logs_folder]/` session log files:**
-- Extract `YYYY` and `MM` from the filename (`YYYY-MM-DD-session-NN.md`)
-- Suggest `YYYY/MM` as the subfolder
 
 **For `[archive_folder]/` flat files:**
 - Use today's date for archiving: `YYYY/MM`
@@ -142,7 +139,7 @@ For each approved move:
 2. Move the file from `[source_path]` to `[target_path]`. Use `mv` on Bash, `Move-Item` on PowerShell, `move` on cmd.
 3. Confirm each move silently; report errors immediately
 
-Process notes by folder (all knowledge, then resources, then areas, then projects, then logs, then archive).
+Process notes by folder (all knowledge, then resources, then areas, then projects, then archive).
 
 ---
 
@@ -155,7 +152,6 @@ Report:
 - Moved N notes in `[resources_folder]/` into N subfolders
 - Moved N notes in `[areas_folder]/` into N subfolders
 - Moved N notes in `[projects_folder]/` into N subfolders
-- Moved N session logs in `[logs_folder]/` into YYYY/MM folders
 - Moved N files in `[archive_folder]/` into YYYY/MM folders
 - Skipped N notes (left in place)
 
@@ -165,6 +161,39 @@ Want to run `/connect` to find new connections between your organized notes?
 
 ```
 onebrain qmd-reindex
+```
+
+---
+
+### Step 6: Write Log Entry
+
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-reorganize.md` — one file per day. Applies whether the run was a Full Migration (5-folder → 8-folder), a Subfolder Migration, or both.
+- **Tags:** `[audit-log, reorganize]`
+- **Skill:** `/reorganize`
+- **Per-skill discriminator in frontmatter:** `mode: full | subfolder | both`
+- **No-op runs:** if the scan found nothing to do (already organized), skip writing — there is nothing to log.
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+
+- Mode: subfolder
+- Files moved: N
+- Folders created: M
+
+### Files moved
+- `03-knowledge/ai-thought.md` → `03-knowledge/ai/AI Thought.md`
+- `03-knowledge/python.md` → `03-knowledge/dev/Python.md`
+... (full list)
+
+### Folders created
+- `03-knowledge/ai/`, `03-knowledge/dev/`
+
+### Wikilinks repaired
+- N links updated across M notes (preserved targets via Obsidian)
 ```
 
 ---

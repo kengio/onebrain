@@ -59,10 +59,22 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Warn if count > 10: suggest running /consolidate
 
 **Old unmerged checkpoints:**
-- Glob `[logs_folder]/**/*-checkpoint-*.md`
+- Glob `[logs_folder]/checkpoint/*-checkpoint-*.md` (post-v2.4.0: flat directory, no `**/`)
 - Any checkpoint file that exists is unmerged by definition — /wrapup deletes checkpoints directly after the session log is confirmed written, so leftover files indicate a session that never wrapped up. Pre-v2.2.0 vaults may contain stragglers with `merged: true` from the legacy flow; treat those the same (the field is no longer authoritative)
 - Keep only files whose date (from filename) is older than 7 days
 - Suggest running /wrapup
+
+**07-logs structure check (post-v2.4.0):**
+- Verify the 4 expected subfolders exist under `[logs_folder]/`: `session/`, `checkpoint/`, `update/`, `log/`. The migration is owned by `/update` Step 0, so missing subfolders here usually means either (a) fresh vault that hasn't run `/update` yet, or (b) interrupted migration.
+- Skip the check entirely if `[logs_folder]/YYYY/MM/` still contains legacy log files — that's the legacy structure indicator, and the user should run `/update` first
+- If `[logs_folder]/session/` is missing on a non-legacy vault: 🟡 "07-logs/session/ missing — first session log will create it"
+- If `[logs_folder]/log/` is missing on a non-legacy vault: 🟡 "07-logs/log/ missing — first audit log will create it"
+- (No warning if all 4 subfolders are present — clean state)
+
+**Log folder size (housekeeping):**
+- Count files in `[logs_folder]/log/YYYY/` for the current year
+- Warn if count > 1000: 🟡 "log/ folder: N files in YYYY — consider archive (move stale log/YYYY/MM/ folders to 06-archive/ manually)". User decides retention; OneBrain has no automatic archive policy. /reorganize does NOT touch [logs_folder]/ post-v2.4.0
+- Skip silently if `log/` doesn't exist yet (pre-migration vault)
 
 ### Config Checks (`--config`)
 
@@ -185,8 +197,31 @@ Read and follow `references/migration-safety-net.md` at the end of every `/docto
 
 ## On Completion
 
-Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`.
-If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
+1. Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`. If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
+
+2. **Write doctor log entry.** Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+   - **Filename:** `YYYY-MM-DD-doctor.md` — one file per day.
+   - **Tags:** `[audit-log, doctor]` (umbrella tag, replacing the old `[doctor-log]` exception).
+   - **Skill:** `/doctor`
+   - **Per-skill discriminator in frontmatter:** `flags: [--vault, --config, --fix]` (subset of flags active for this run; empty list `[]` means default — all checks).
+
+   Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+   ```markdown
+   ## Run HH:MM
+
+   - Flags: --vault, --config (or "default" when no flags)
+
+   ### Findings
+   - 🔴/🟡/✅ <one line per finding from Step 3>
+
+   ### Fixes Applied
+   - <one line per fix from Step 4 if --fix was run, otherwise: (none — diagnostic only)>
+
+   ### Recommendations
+   - <one line per actionable recommendation>
+   ```
 
 ---
 

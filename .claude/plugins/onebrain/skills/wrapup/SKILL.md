@@ -26,9 +26,9 @@ See `skills/startup/references/session-formats.md` → Session Log Format for fr
 
 1. Get today's date as `YYYY-MM-DD`. Extract `YYYY` and `MM`.
 2. Use `session_token` from context if already loaded (set by `onebrain session-init` at startup); if absent, run `onebrain session-init` and use the `SESSION_TOKEN` value.
-3. Glob checkpoint files:
-   - Glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-{session_token}-checkpoint-*.md`
-   - Also check yesterday's folder: compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/YYYY_PREV/MM_PREV/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`
+3. Glob checkpoint files (post-v2.4.0: checkpoints live in flat `[logs_folder]/checkpoint/` regardless of date):
+   - Glob today's: `[logs_folder]/checkpoint/YYYY-MM-DD-{session_token}-checkpoint-*.md`
+   - Also yesterday's (handles cross-midnight sessions): compute yesterday's date (decrement by 1 day, accounting for month/year rollover); glob `[logs_folder]/checkpoint/YYYY-MM-DD_PREV-{session_token}-checkpoint-*.md`
 4. If any found: **read every file** and extract its content. Every checkpoint must be fully incorporated during the review in Step 3 and reflected in the log written in Step 4 : not just used as background context. Checkpoints capture activity that may have been compressed out of current context; missing any of them means losing that history.
 5. Store the list of found checkpoint paths for use in Step 5. **Only paths that were read and incorporated go on this list.**
 
@@ -48,11 +48,7 @@ After Step 1, scan for unmerged checkpoints belonging to **other** sessions (orp
 
 ### Scan Scope
 
-Glob checkpoint files across current month and the previous month to handle cross-month sessions. Compute the two month paths:
-- Current month: `[logs_folder]/YYYY/MM/`
-- Previous month: decrement MM by 1 (with year rollover if MM=01)
-
-For each of those two paths, glob `*-checkpoint-*.md`.
+Glob `[logs_folder]/checkpoint/*-checkpoint-*.md` (flat — post-v2.4.0 all checkpoints live in one directory regardless of date). No date filter: `checkpoint/` is ephemeral (cleaned by /wrapup after each session), so any file surfacing here is either an active cross-harness session (caught by the Active-Session Guard below) or a real orphan that needs recovery.
 
 ### Identify Orphans
 
@@ -95,11 +91,13 @@ The threshold gives the owning session a buffer of two full checkpoint windows (
 
 ### Auto-Recover Each Orphan Group
 
+**Progress signal**: if there are more than 3 orphan groups to recover, emit a one-line progress signal between groups so the user knows the skill is making progress: `Recovering orphan group {n}/{N} ({date})…`. Skip the signal when N ≤ 3 (recovery is fast enough that the signal would be noise).
+
 For each orphan group (process in chronological order by date in filename):
 
-**a. Already-recovered short-circuit.** Before reading checkpoint files, glob `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-*.md` for the group's date. For each match, search the file for the standardised recovery marker. The marker is `<!-- recovery-of: {token}:{date} -->` where `{token}` is the orphan group's session token and `{date}` is the group's date.
+**a. Already-recovered short-circuit.** Before reading checkpoint files, glob `[logs_folder]/session/YYYY/MM/YYYY-MM-DD-session-*.md` for the group's date (using the orphan date's YYYY/MM). For each match, search the file for the standardised recovery marker. The marker is `<!-- recovery-of: {token}:{date} -->` where `{token}` is the orphan group's session token and `{date}` is the group's date.
 
-> **Anchored match required (security):** match the marker **only when it appears at the start of a line** — i.e., either the literal string `\n<!-- recovery-of: {token}:{date} -->` or the file beginning with `<!-- recovery-of: {token}:{date} -->`. A bare substring match would false-positive on session logs whose body quotes the marker as documentation (e.g., a meta-note about how the recovery flow works). The destructive consequence of a false-positive is checkpoint deletion based on a documentation quote — not acceptable. Use `rg -n -F` with `--multiline` and a `(?m)^` anchor, or grep the file line-by-line and check `line.startswith('<!-- recovery-of: ')` followed by a token/date check.
+> **Anchored match required (security):** match the marker **only when it appears at the start of a line** — i.e., either the literal string `\n<!-- recovery-of: {token}:{date} -->` or the file beginning with `<!-- recovery-of: {token}:{date} -->`. A bare substring match would false-positive on session logs whose body quotes the marker as documentation (e.g., a meta-note about how the recovery flow works). The destructive consequence of a false-positive is checkpoint deletion based on a documentation quote — not acceptable. Use `rg -n -F` with `--multiline` and a `(?m)^` anchor, or grep the file line-by-line. **Strip trailing `\r` from each line before the `startswith` check** — Windows-edited logs use CRLF endings; without this the line literal `<!-- recovery-of: ... -->\r` won't match the bare prefix and a legitimate already-recovered marker is silently missed. After CRLF strip, check `line.startswith('<!-- recovery-of: ')` followed by a token/date check.
 
 If an anchored match is found, the group's content is already in a prior recovered session log (typically from a previous /wrapup that hit `delete_failed` on these checkpoints): for each file in `group_files`, append `{path, age_minutes: <original group age>, reason: "already_recovered"}` to `skipped_active`, then attempt to delete the checkpoints (since they are now safely persisted in the prior recovered log). Per-file delete failures here record `delete_failed` and continue, identical to step (g)'s rule. Continue with the next group — do not proceed to step (b).
 
@@ -110,17 +108,17 @@ If an anchored match is found, the group's content is already in a prior recover
 **c. Determine the session date** from the filename (`YYYY-MM-DD` prefix of the checkpoint files). If files in the group have different date prefixes (cross-midnight session), use the earliest date.
 
 **d. Determine the session file name** for that date:
-   - List files in `[logs_folder]/YYYY/MM/` matching `YYYY-MM-DD-session-*.md` (using the orphan date's YYYY/MM)
+   - List files in `[logs_folder]/session/YYYY/MM/` matching `YYYY-MM-DD-session-*.md` (using the orphan date's YYYY/MM)
    - Next session number = count of matches + 1 (zero-padded to 2 digits)
    - Verify the slot is free; increment NN until free
 
-**e. Write the recovered session log** at `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**) — this includes the required `<!-- recovery-of: {token}:{date} -->` body marker as the first body line. The marker must appear once per group recovered into this log; if a single recovery pass aggregates multiple groups (rare — date-grouping usually yields one group per date), emit one marker line per group on consecutive lines before the `# Session Summary` heading. Apply the **Preservation rule** from Step 4 below: deduplication only, no summarization. Every unique decision, action item, open question, learning, and topic from every checkpoint must appear in the recovered session log.
+**e. Write the recovered session log** at `[logs_folder]/session/YYYY/MM/YYYY-MM-DD-session-NN.md`. Create the directory `[logs_folder]/session/YYYY/MM/` (using the orphan date's YYYY/MM) if it does not already exist. Use the Session Log Format from `skills/startup/references/session-formats.md` (case: **Recovered from checkpoints**) — this includes the required `<!-- recovery-of: {token}:{date} -->` body marker as the first body line. The marker must appear once per group recovered into this log; if a single recovery pass aggregates multiple groups (rare — date-grouping usually yields one group per date), emit one marker line per group on consecutive lines before the `# Session Summary` heading. Apply the **Preservation rule** from Step 4 below: deduplication only, no summarization. Every unique decision, action item, open question, learning, and topic from every checkpoint must appear in the recovered session log.
 
 **f. Verify the session log** exists and is non-empty before continuing. **Marker re-read check (required):** re-read the file from disk and confirm the `<!-- recovery-of: {token}:{date} -->` marker line is present at the start of a line, before the `# Session Summary :` heading. If the marker is missing (LLM omission, partial write, encoding glitch), the next /wrapup's already-recovered short-circuit will fail to detect this log and could re-recover the same checkpoints into a duplicate session log. To prevent that destructive path, treat a missing-marker as **abort recovery for this group**: do NOT proceed to step (g) (no delete), append the session log path to `orphaned_recovered_logs`, and for each file in `group_files` append `{path, age_minutes, reason: "marker_write_failed"}` to `skipped_active`. The user sees both blocks in Step 7 and can investigate the recovered log + the still-present checkpoints together.
 
 **g. Delete checkpoint files** for this group after confirming step f succeeded.
 
-   - **Pre-delete re-stat (concurrency guard) — runs ONCE before any deletes:** re-stat every file in `group_files` (stored in *Identify Orphans* step 3) AND re-glob the group's filename pattern (`YYYY-MM-DD-{token}-checkpoint-*.md`) under `[logs_folder]/YYYY/MM/`. The owning session became active during recovery if **either** of these holds:
+   - **Pre-delete re-stat (concurrency guard) — runs ONCE before any deletes:** re-stat every file in `group_files` (stored in *Identify Orphans* step 3) AND re-glob the group's filename pattern (`YYYY-MM-DD-{token}-checkpoint-*.md`) under `[logs_folder]/checkpoint/` (flat). The owning session became active during recovery if **either** of these holds:
        - any file's mtime has changed since the Active-Session Guard's stat above, OR
        - the re-glob result contains a path NOT present in `group_files` (set difference: `re_glob_files \ group_files` is non-empty).
    - **If concurrent activity is detected:** **abort the delete entirely for this group.** Then attempt to delete the recovered session log written in step (e) so it does not leak duplicate content into the vault. For each file in `group_files`, append `{path, age_minutes, reason: "concurrent_during_recovery"}` to `skipped_active` (use the original `age_minutes` from the Active-Session Guard). If the recovered-log delete itself fails, append the recovered-log path to `orphaned_recovered_logs` (a separate list initialized at the top of Step 1b) so the user sees it under its own Step 7 block — these are session-log files, not checkpoint files, and conflate poorly with the checkpoint-file heading. Continue with the next group.
@@ -135,10 +133,10 @@ If an anchored match is found, the group's content is already in a prior recover
 ## Step 2: Determine Session File Name
 
 1. Using the date from Step 1, extract `YYYY`, `MM` (zero-padded month), and `DD` (zero-padded day).
-2. List files in `[logs_folder]/YYYY/MM/` matching **`YYYY-MM-DD-session-*.md`** — use today's actual date as a literal prefix (e.g. `2026-04-25-session-*.md`), not as a wildcard. Only count sessions from today.
+2. List files in `[logs_folder]/session/YYYY/MM/` matching **`YYYY-MM-DD-session-*.md`** — use today's actual date as a literal prefix (e.g. `2026-04-25-session-*.md`), not as a wildcard. Only count sessions from today.
 3. The next session number = count of matches + 1 (zero-padded to 2 digits: 01, 02, etc.)
 4. Verify `YYYY-MM-DD-session-NN.md` does not already exist before writing; if it does, increment NN until a free slot is found.
-5. File name: `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
+5. File name: `[logs_folder]/session/YYYY/MM/YYYY-MM-DD-session-NN.md`
 
 ---
 
@@ -167,7 +165,7 @@ Reflect on the conversation that just occurred. Identify:
 >
 > Quality heuristic: the session log's combined length of Key Decisions + Action Items + Open Questions should be at least as long as the sum of those sections across all checkpoints. If your draft is shorter, you've lost detail — go back and add the missing items.
 
-Create `[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md`:
+Create `[logs_folder]/session/YYYY/MM/YYYY-MM-DD-session-NN.md` using the Session Log Format from `skills/startup/references/session-formats.md`:
 - If checkpoints were incorporated in Step 1 → use **Standard /wrapup — checkpoints incorporated**
 - Otherwise → use **Standard /wrapup — no checkpoints incorporated**
 
@@ -248,11 +246,13 @@ Guard: only delete AFTER confirming the session log write succeeded. Never delet
 At the end of every /wrapup, compute `unrecapped_count` and `last_recapped`:
 
 **Fast path:** read `stats.last_recap` from `vault.yml` if available.
-**Glob session logs only:** match the `*-session-*.md` file pattern, never bare
-`*.md` — the logs folder also contains checkpoint files (`*-checkpoint-*.md`)
-and `/update` migration logs (`*-update-*.md`) that would inflate the count
-if matched. Use `[logs_folder]/YYYY/MM/*-session-*.md` over the last 6 months
-and check the `recapped:` field on each.
+**Glob session logs only:** match the `*-session-*.md` file pattern under
+`[logs_folder]/session/` (post-v2.4.0: session logs live in their own
+subfolder). Use `[logs_folder]/session/YYYY/MM/*-session-*.md` over the
+last 6 months and check the `recapped:` field on each. The `-session-`
+infix filter is no longer strictly required since `session/` only contains
+session logs, but keep it as a defense-in-depth for any non-session
+artifact a future version might place there.
 
 Compute:
 - `unrecapped_count` — number of session logs without `recapped:` field
@@ -275,7 +275,7 @@ Say:
 ──────────────────────────────────────────────────────────────
 💾 Session Saved
 ──────────────────────────────────────────────────────────────
-`[logs_folder]/YYYY/MM/YYYY-MM-DD-session-NN.md`
+`[logs_folder]/session/YYYY/MM/YYYY-MM-DD-session-NN.md`
 
 I logged {N} action items.
 (omit this line if no action items)
@@ -307,7 +307,7 @@ Skipped {A} checkpoint file(s) ({reason_summary}):
   - **fallback (catch-all):** all records share a single `reason` value not listed above → `skipped (reason: {reason})` — render the raw enum value verbatim. This row exists to prevent silent rendering drift when a new `reason` value is added to the enum without a matching table entry; the surface signal is generic on purpose so a missing row is visible to the user (and prompts a contributor to add the proper mapping above).
 
 Orphaned recovered log(s) needing manual cleanup ({L}):
-  · `YYYY/MM/YYYY-MM-DD-session-NN.md`
+  · `session/YYYY/MM/YYYY-MM-DD-session-NN.md`
 (**Required output — do NOT omit when orphaned_recovered_logs is non-empty.** These are session-log files written by an aborted recovery — either (a) the owning session became active mid-recovery and the cleanup delete of the recovered log itself also failed (`concurrent_during_recovery`), or (b) the post-write marker re-read found the `<!-- recovery-of: ... -->` marker missing (`marker_write_failed`). In both cases the file persisted but its checkpoint group was NOT deleted. Cross-reference with the `Skipped {A} checkpoint file(s)` block above to identify which group each entry belongs to and the actionable fix per `reason`. `{L}` is `len(orphaned_recovered_logs)`. List one line per path. Omit this block ONLY when `orphaned_recovered_logs` is empty.)
 
 {Recap reminder message from Step 6}
@@ -350,7 +350,7 @@ Render this subsection in the Step 7 report **only when the report contains a `m
 
 - **Orphan checkpoints from a different token.** Rare case: if the vault was used before CLI v2.0.10 (which fixed the token mismatch between `session-init` and the stop hook), checkpoint files may exist under a different token than the current session. If Step 1 finds no checkpoints but you expect some, look for date-matching checkpoint files in the folder with any token and offer to synthesize them manually.
 
-- **Cross-month midnight sessions.** If a session starts before midnight and /wrapup runs after midnight in a new month, Step 1 looks in "yesterday's folder." Decrementing the month is sufficient for all months except January — for January specifically, also roll back the year (e.g., January 1 → December of the prior year). All other month boundaries only need the month decremented.
+- **Cross-month midnight sessions (post-v2.4.0).** Checkpoints live flat in `[logs_folder]/checkpoint/`, so cross-midnight wrapup is now driven entirely by date prefix in the filename — no folder math required. Step 1's yesterday-glob simply decrements the date by one day (with month/year rollover for the literal date in the filename) and globs the same flat directory. The previous `YYYY_PREV/MM_PREV` folder math is no longer applicable.
 
 - **Pre-v2.2.0 checkpoint files with `merged:` field.** Older vaults may contain checkpoint files that have a `merged: false` or `merged: true` frontmatter field from earlier wrapup runs. The new flow ignores this field entirely — any checkpoint file that exists at /wrapup time is treated as unmerged, regardless of the field's value. The 14-day-old check in /doctor catches any stragglers regardless of the field.
 

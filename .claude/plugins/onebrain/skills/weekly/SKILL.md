@@ -15,7 +15,7 @@ Best run on Friday afternoon or over the weekend.
 
 Determine the current week's date range (Mon–Sun).
 
-List all session log files in `[logs_folder]/**/*-session-*.md` from this week. If there are none, check the past 7 days. (Use the `*-session-*.md` pattern, not bare `*.md` — the logs folder also contains `*-checkpoint-*.md` and `*-update-*.md` files that would inflate the weekly review.)
+List all session log files in `[logs_folder]/session/**/*-session-*.md` from this week (post-v2.4.0: session logs live under the dedicated `session/` subfolder). If there are none, check the past 7 days. The `-session-*` infix is no longer strictly required since `session/` only contains session logs, but kept as defense-in-depth.
 
 Report:
 > I found N sessions this week:
@@ -112,9 +112,69 @@ If the weekly review reveals a persistent pattern or learning, save it via `/lea
 
 ---
 
-## Step 8: Close Out
+## Step 8: Write Weekly Log
 
-✅ Weekly note saved to `[logs_folder]/YYYY/MM/YYYY-MM-DD-weekly.md`.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+- **Filename:** `YYYY-MM-DD-weekly.md` — one file per weekly run; date = the day `/weekly` was invoked, not the start-of-week. Same-day re-run → append a new `## Run HH:MM` section.
+- **Tags:** `[audit-log, weekly]` (umbrella tag, replacing the old `[weekly-review]` exception).
+- **Skill:** `/weekly`
+- **Per-skill discriminators in frontmatter:** `week_start: YYYY-MM-DD` (Monday of the reviewed week), `week_end: YYYY-MM-DD` (Sunday), `sessions_reviewed: N` (count from Step 1), `intentions_set: N` (count from Step 6, `0` if user skipped Step 6).
+
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+
+```markdown
+## Run HH:MM
+
+- Week: YYYY-MM-DD → YYYY-MM-DD
+- Sessions reviewed: N
+- Intentions set: N
+
+### Sessions This Week
+- [bulleted list of session logs reviewed, by date]
+
+### Patterns I Noticed
+- [2–4 themes from the week]
+
+### Intentions for Next Week
+- [intention 1]
+- [intention 2]
+- [intention 3]
+
+### Notes & Insights
+- [any insights worth preserving; omit this section if none]
+```
+
+The full file (creation form) — frontmatter + heading + first run:
+
+```markdown
+---
+tags: [audit-log, weekly]
+skill: /weekly
+date: YYYY-MM-DD
+week_start: YYYY-MM-DD
+week_end: YYYY-MM-DD
+sessions_reviewed: N
+intentions_set: N
+---
+
+# Weekly Review — YYYY-MM-DD
+
+## Run HH:MM
+
+- Week: YYYY-MM-DD → YYYY-MM-DD
+- Sessions reviewed: N
+- Intentions set: N
+
+### Sessions This Week
+…
+```
+
+---
+
+## Step 9: Close Out
+
+✅ Weekly note saved to `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-weekly.md`.
 [If tasks created]: I logged your 3 intentions for next week.
 [If insights saved]: Added a pattern to your memory.
 
@@ -124,6 +184,4 @@ Enjoy your {weekend/time off}. See you next week!
 
 ## Known Gotchas
 
-- **No sessions this week.** If the week has no session logs, skip "What you worked on" and "Patterns I noticed" — don't fabricate activity. Acknowledge it directly: "No sessions logged this week." and jump to Step 5 (reflection questions).
-
-- **Weekly note file path.** Step 8 mentions saving to `[logs_folder]/YYYY/MM/YYYY-MM-DD-weekly.md`, but the actual write step is not explicitly in the skill — this file is a summary artifact for the user's review, not a session log. Write it with frontmatter `tags: [weekly-review]` and omit session/checkpoint fields.
+- **No sessions this week.** If the week has no session logs, skip "What you worked on" and "Patterns I noticed" — don't fabricate activity. Acknowledge it directly: "No sessions logged this week." and jump to Step 5 (reflection questions). Step 8 still writes a weekly log with `sessions_reviewed: 0`.

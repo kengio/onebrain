@@ -83,19 +83,45 @@ Steps:
 
 2. Read the newly-written `[vault]/.claude/plugins/onebrain/skills/update/SKILL.md` into agent context. Follow THESE instructions (not the pre-update copy) for all remaining steps.
 3. Execute migration in this order:
-   a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/05-agent/MEMORY-YYYY-MM-DD.md`
-      and `[agent_folder]/context/` → `[archive_folder]/05-agent/context.YYYY-MM-DD/` (if context/ exists)
+   **0. 07-logs structure migration (one-shot, idempotent)** — run BEFORE backup.
+
+   **Detect**: if `[logs_folder]/YYYY/MM/` contains ANY of `*-session-*.md`, `*-checkpoint-*.md`, or `*-update-*.md` files (recursive glob), run the migration. Otherwise skip — vault is already on the new layout.
+
+   **Migrate** (cross-shell — bash brace expansion is not portable):
+   ```
+   node -e "['session','checkpoint','update','log'].forEach(d => require('fs').mkdirSync(require('path').join('[logs_folder]', d), { recursive: true }))"
+   ```
+   Then `mv` files (atomic within same volume; iCloud Drive vault is one volume):
+   - `*-session-*.md` → `[logs_folder]/session/YYYY/MM/` (**preserve** YYYY/MM)
+   - `*-checkpoint-*.md` → `[logs_folder]/checkpoint/` (**flatten**)
+   - `*-update-*.md` → `[logs_folder]/update/` (**flatten**)
+
+   **Cleanup**: remove empty `[logs_folder]/YYYY/MM/` and `[logs_folder]/YYYY/`. Remove stray `.DS_Store`. Keep `[logs_folder]/.gitkeep`.
+
+   **Idempotency on interrupt**: if `mv` is cut off mid-run, the next `/update` re-detects via the trigger above (any unmoved file in `YYYY/MM/`) and finishes the move. The trigger condition itself is the verification — no count snapshot needed. Files are never duplicated because each `mv` removes the source.
+
+   a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/[agent_folder]/MEMORY-YYYY-MM-DD.md`
+      and `[agent_folder]/context/` → `[archive_folder]/[agent_folder]/context.YYYY-MM-DD/` (if context/ exists). The `[agent_folder]` literal under `[archive_folder]/` mirrors the source's relative path so users who remapped `folders.agent` in vault.yml see backups land in the matching subfolder.
    b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
       - **Full vault sync:** run `onebrain vault-sync --branch {branch}` (the CLI defaults the vault root to the current working directory; explicit `"$PWD"` was Bash-only and broke on PowerShell/cmd). Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md/PLUGIN-CHANGELOG.md to vault root (overwrite), merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only), pins plugin to vault, and clears plugin cache.
       - **Settings merge:** WebFetch `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json`. Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys (skip any `onebrain@*` key whose marketplace points to a `directory` source — repo-dev-only, not valid in vault context); `extraKnownMarketplaces` → skip (repo-dev-only config, not valid in vault context); `hooks` → skip (handled by migration Step 6).
    c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 8 migration steps
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
-4. Write migration log to `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`:
+4. Write migration log. Follow `../_shared/audit-log-format.md` (canonical frontmatter umbrella tag, failure mode) with these specifics for `/update`:
+
+   - **Filename:** `YYYY-MM-DD-update-vX.X.X.md` — one file per update run; lives in `[logs_folder]/update/` (flat, post-v2.4.0). `/update` is the one outlier: its log lives under `[logs_folder]/update/`, NOT `[logs_folder]/log/`.
+   - **Tags:** `[audit-log, update]` (umbrella tag, replacing the old `[update-log]` exception).
+   - **Skill:** `/update`
+   - **Per-skill discriminators in frontmatter:** `channel: stable | next | N.x` (mapped from `update_channel` in vault.yml), plus the existing `from_version: X.X.X` and `to_version: X.X.X`.
+
+   **Create the `update/` directory if missing** (`mkdir -p [logs_folder]/update` or per-shell equivalent) — fresh post-v2.4.0 vaults that never ran the migration won't have the dir yet, so Step 4 must self-bootstrap.
 
    ```markdown
    ---
-   tags: [update-log]
+   tags: [audit-log, update]
+   skill: /update
    date: YYYY-MM-DD
+   channel: stable
    from_version: X.X.X
    to_version: X.X.X
    ---
@@ -121,6 +147,7 @@ Steps:
    - Mark each step `[x]` on completion; leave `[ ]` if skipped (with reason)
    - If a step had nothing to do (e.g. context/ already absent), write `[x] Step 2: Skipped — context/ not present`
    - If /doctor found issues in Step 7, list them under the step line
+   - If Step 0 (07-logs structure migration) ran, add a one-line entry: `[x] Step 0: 07-logs migration — N files moved`. Skip if Step 0 was a no-op. (The new `[logs_folder]/{session,checkpoint,update,log}/` directory layout is itself the verification artifact — no separate `## Migration:` section needed.)
 
 5. Report summary to user:
 
@@ -139,7 +166,7 @@ Steps:
 ──────────────────────────────────────────────────────────────
 🔄 Dry Run — v{current} → v{new}
 ──────────────────────────────────────────────────────────────
-Would create: `[logs_folder]/YYYY/MM/YYYY-MM-DD-update-vX.X.X.md`
+Would create: `[logs_folder]/update/YYYY-MM-DD-update-vX.X.X.md`
 Would modify: `[agent_folder]/MEMORY.md` — remove Key Learnings section
 Would create: `[agent_folder]/memory/kebab-topic.md`
 Would delete: `[agent_folder]/context/`
