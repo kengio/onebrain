@@ -21,6 +21,7 @@ Promote `## Working Principles` in `INSTRUCTIONS.md` from 4 unnumbered guideline
 - docs(INSTRUCTIONS.md): new rules — *Speak in the user's vocabulary · Verify before asserting · Find the cause, not the symptom · Show a draft before extensive work · Update plan and task status in real time · Don't make the user wait · Update on evidence, not pressure · Carry changes through to related places.*
 - docs(INSTRUCTIONS.md): rewrite original 4 rules per cross-role review — drop dev-only references (`AskUserQuestion`, slash-command exception list, "refactor"); merge "Surgical changes" into "Minimal footprint" with cleanup-after-yourself extension; add verifiable-criteria preference to "Define success".
 - docs(INSTRUCTIONS.md): each rule body now includes register-matching, root-cause depth, draft-first for structural work, streaming-vs-background nuance, and explicit code-context coverage (callers, tests, types, migrations) — keeping rigor for dev users while staying accessible to writers, students, lawyers, clinicians, and operators.
+- docs(INSTRUCTIONS.md): bullet 11 restructured per round-3 cross-role consensus — universal list (other notes, files that reference it, similar cases) leads, dev-specific examples fenced as `(in code: …)` so non-dev readers have a clear visual signal to skim past while dev users keep their precision.
 
 ## v2.3.3 — feat(wrapup): PR #156 follow-ups (configurable threshold + recovered-log marker + fallback row)
 
