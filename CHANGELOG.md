@@ -13,13 +13,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## v2.2.2 — fix(orphan-scan): read from flat `checkpoint/` subfolder
+## v2.2.2 — fix(checkpoint, orphan-scan, migrate): read from new 07-logs layout
 
-Companion to plugin v2.4.0's 07-logs restructure. `orphan-scan` now scans the post-v2.4.0 layout (checkpoints flat in `[logs_folder]/checkpoint/`, session logs nested under `[logs_folder]/session/YYYY/MM/`).
+Companion to plugin v2.4.0's 07-logs restructure. Three TypeScript modules updated to read from the post-v2.4.0 layout (checkpoints flat in `[logs_folder]/checkpoint/`, session logs nested under `[logs_folder]/session/YYYY/MM/`). Includes two **data-loss bug fixes** that the initial implementation missed.
 
-- fix(orphan-scan): scan `[logs_folder]/checkpoint/` (flat) instead of iterating `[logs_folder]/YYYY/MM/`. Date prefix in filename (`YYYY-MM-DD-`) drives the 2-month lookback filter — a single flat read replaces the per-month loop.
-- fix(orphan-scan): `hasManualSessionLog` resolves the session folder from the date (`[logs_folder]/session/YYYY/MM/`) instead of receiving a pre-computed monthDir. Cross-month tokens still merge into one group keyed by token.
-- test(orphan-scan): updated 38 existing tests to write checkpoints into `checkpoint/` flat dir and session logs into `session/YYYY/MM/`. New `makeCheckpointDir` and `makeSessionMonthDir` helpers; legacy `makeMonthDir`/`makeThisMonthDir` aliased to the checkpoint helper for the parameterless call sites.
+- **fix(checkpoint.ts)** — `maxCheckpointNnSync` was reading from the legacy `[logs_folder]/YYYY/MM/` path. Post-migration, every checkpoint would land at `NN=01` (silently overwriting prior checkpoints in the same session). Now reads from flat `[logs_folder]/checkpoint/`. Tests updated. **Critical fix.**
+- **fix(migrate.ts)** — `runBackfillRecapped` walked two levels under `[logs_folder]/YYYY/MM/`. Post-migration session logs live at `[logs_folder]/session/YYYY/MM/` (three levels) — the walk never reached them and silently skipped every backfill (`backfilled: 0` always). Now walks `session/YYYY/MM/`. Tests updated. **Critical fix.**
+- fix(orphan-scan) — scan `[logs_folder]/checkpoint/` (flat) instead of iterating `[logs_folder]/YYYY/MM/`. The 2-month allowlist filter (originally kept for compat) was removed in round-4 simplification: `checkpoint/` is ephemeral, so any file present is a real candidate; the Active-Session Guard handles cross-harness sessions, /doctor's "old checkpoint" warning surfaces anything else stale.
+- fix(orphan-scan) — `hasManualSessionLog` resolves the session folder from the date (`[logs_folder]/session/YYYY/MM/`) instead of receiving a pre-computed monthDir.
+- test(orphan-scan, checkpoint, migrate) — 84 tests updated for new paths. New helpers (`makeCheckpointDir`, `makeSessionMonthDir`); legacy `makeMonthDir`/`makeThisMonthDir` aliased for parameterless call sites; one update-log dead-code-path test rewritten to test the post-v2.4.0 stray-file scenario.
 
 ## v2.2.1 — fix(orphan-scan): symmetric Active-Session Guard (PR #156 follow-ups)
 
