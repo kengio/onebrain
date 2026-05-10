@@ -156,25 +156,19 @@ onebrain qmd-reindex
 
 ## Step 7: Write Log Entry
 
-Append an audit-log entry for this consolidate run.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-consolidate.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM (N inbox files processed)` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
+- **Filename:** `YYYY-MM-DD-consolidate.md` — one file per day.
+- **Tags:** `[audit-log, consolidate]`
+- **Skill:** `/consolidate`
 - **Empty inbox:** if Step 1 found nothing to process, skip writing — there is nothing to log.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, consolidate]
-created: YYYY-MM-DD
----
+## Run HH:MM
 
-# Consolidate — YYYY-MM-DD
-
-## Run HH:MM (N inbox files processed)
+- Inbox files processed: N
 
 ### Moved
 - `00-inbox/2026-05-10-ai-thoughts.md` → `03-knowledge/ai/AI Architecture Thoughts.md` (new)
@@ -186,8 +180,6 @@ created: YYYY-MM-DD
 ### Skipped
 - `00-inbox/2026-05-08-temp.md` — too short, asked user → kept in inbox
 ```
-
-When appending to an existing daily file, omit the frontmatter and `# Consolidate — YYYY-MM-DD` heading — start at `## Run HH:MM (...)`.
 
 ---
 

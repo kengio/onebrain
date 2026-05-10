@@ -152,27 +152,19 @@ Note: If more than 40 entries, review shows all entries sequentially (no truncat
 
 ## Write Log Entry
 
-After completion, append an audit-log entry for this /memory-review session.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-memory.md`
-- **Shared file:** `/memory-review` and `/learn` both append to this same daily file. Always **append** a new `## HH:MM /memory-review` section — never overwrite the file. If `/learn` ran earlier today (or runs later), its `## HH:MM /learn` sections must coexist in the same file.
-- **Behavior:** if today's file exists → append a new `## HH:MM /memory-review` section. If not → create with the frontmatter + heading + first section below.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
+- **Filename:** `YYYY-MM-DD-memory.md` — shared file. `/learn` and `/memory-review` both append to this same daily file.
+- **Tags:** `[audit-log, memory]`
+- **Skill:** `skill: [/learn, /memory-review]` (YAML list — file is shared)
+- **Run heading exception:** because the file is shared, `/memory-review` writes its sections as `## Run HH:MM /memory-review` (and `/learn` writes `## Run HH:MM /learn`). This is the only audit-log file where the run heading carries a discriminator.
 - **Entry types written by /memory-review:** `updated` (confirm via update flow), `deprecated` (manage → deprecate), `deleted` (manage → delete confirmed). `keep` actions do not need their own bullets — they only bump `verified` — but they may be summarized in a one-line tally bullet.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
 - **Edge case:** if the user invoked **stop** without any committed action, skip writing this entry.
 
-Template (file creation form):
+Per-skill body template (the appended block, when today's file already exists):
 
 ```markdown
----
-tags: [audit-log, memory]
-created: YYYY-MM-DD
----
-
-# Memory Changes — YYYY-MM-DD
-
-## HH:MM /memory-review
+## Run HH:MM /memory-review
 - **deleted** memory/feedback_outdated.md
   - Reason: superseded by feedback_new_workflow
   - Last content snippet: "always use bun install (replaced by /update)"
@@ -181,7 +173,22 @@ created: YYYY-MM-DD
   - Status: status: archived
 ```
 
-When appending to an existing daily file, write only the `## HH:MM /memory-review` block — do not duplicate frontmatter or the `# Memory Changes — YYYY-MM-DD` heading.
+The full file (creation form) — frontmatter + heading + first run:
+
+```markdown
+---
+tags: [audit-log, memory]
+skill: [/learn, /memory-review]
+date: YYYY-MM-DD
+---
+
+# Memory Changes — YYYY-MM-DD
+
+## Run HH:MM /memory-review
+- **deleted** memory/feedback_outdated.md
+  - Reason: superseded by feedback_new_workflow
+  - Last content snippet: "always use bun install (replaced by /update)"
+```
 
 ## Edge Cases
 

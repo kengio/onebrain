@@ -155,12 +155,12 @@ onebrain qmd-reindex
 
 ## Step 7: Write Log Entry
 
-Write an audit-log entry for this distill run. One file per topic per day (discriminator = topic slug) — running /distill twice on the same topic same day appends to the same file; different topics same day produce separate files.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-distill-{slug}.md`
-- **Behavior:** append per (topic, day). If file exists → append a new `## Run HH:MM` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-distill-{slug}.md` — one file per (topic, day). Same topic same day → append a new `## Run HH:MM` section. Different topics same day produce separate files.
+- **Tags:** `[audit-log, distill]`
+- **Skill:** `/distill`
+- **Per-skill discriminators in frontmatter:** `topic: "<full topic verbatim>"`, `slug: "<slug>"`, `destination: "[knowledge_folder]/[subfolder]/[Topic].md"`
 
 ### Slug rules (apply in order)
 
@@ -179,25 +179,13 @@ Examples:
 | `การจัดการ memory ของ AI agent ใน production` (49 chars) | `การจัดการ-memory-ของ-ai-agent-ใน-production` | `2026-05-10-distill-การจัดการ-memory-ของ-ai-agent-ใน-production.md` |
 | `Claude Code hooks: best practices` (33 chars) | `claude-code-hooks-best-practices` (`:` → `-`, lowercased) | `2026-05-10-distill-claude-code-hooks-best-practices.md` |
 
-### Template
+### Per-skill body template
 
 ```markdown
----
-tags: [audit-log, distill]
-created: YYYY-MM-DD
-topic: "{full topic verbatim}"
-slug: "{slug after rules above}"
----
-
-# Distill — {topic} — YYYY-MM-DD
-
 ## Run HH:MM
 
-### Sources
-- {N} session logs, {M} inbox notes, {Q} knowledge notes
-
-### Destination
-- `[knowledge_folder]/[subfolder]/[Topic].md` ({created / appended / overwritten})
+- Sources: {N} session logs, {M} inbox notes, {Q} knowledge notes
+- Destination: `[knowledge_folder]/[subfolder]/[Topic].md` ({created / appended / overwritten})
 
 ### Synthesis Highlights
 - Core question: {…}
@@ -206,7 +194,31 @@ slug: "{slug after rules above}"
 - Open questions: {N}
 ```
 
-When appending to an existing file (same topic, same day), omit the frontmatter and `# Distill — …` heading — start at `## Run HH:MM`.
+The full file (creation form) — frontmatter + heading + first run — looks like:
+
+```markdown
+---
+tags: [audit-log, distill]
+skill: /distill
+date: YYYY-MM-DD
+topic: "{full topic verbatim}"
+slug: "{slug after rules above}"
+destination: "[knowledge_folder]/[subfolder]/[Topic].md"
+---
+
+# Distill — {topic} — YYYY-MM-DD
+
+## Run HH:MM
+
+- Sources: {N} session logs, {M} inbox notes, {Q} knowledge notes
+- Destination: `[knowledge_folder]/[subfolder]/[Topic].md` ({created / appended / overwritten})
+
+### Synthesis Highlights
+- Core question: {…}
+- Key decisions: {…}
+- Lessons promoted candidates: {N} (use /learn to promote)
+- Open questions: {N}
+```
 
 ---
 

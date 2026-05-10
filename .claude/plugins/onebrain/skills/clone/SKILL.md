@@ -134,33 +134,25 @@ Then say:
 
 ## Step 5: Write Log Entry
 
-Append an audit-log entry for this clone run. Applies to both Step 4a (Folder Copy) and Step 4b (Display Paths).
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-clone.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-clone.md` — one file per day. Applies to both Step 4a (Folder Copy) and Step 4b (Display Paths).
+- **Tags:** `[audit-log, clone]`
+- **Skill:** `/clone`
+- **Per-skill discriminators in frontmatter:** `method: folder-copy | display-paths`, `include_archive: true | false`
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, clone]
-created: YYYY-MM-DD
----
-
-# Clone — YYYY-MM-DD
-
 ## Run HH:MM
+- Method: folder-copy
 - Source vault: /Users/keng/.../ob-1
 - Destination: /tmp/clone-target/
 - Files copied: N
 - Memory bundle: included (12 files)
 ```
 
-When appending to an existing daily file, omit the frontmatter and `# Clone — YYYY-MM-DD` heading — start at `## Run HH:MM`.
-
-For Step 4b (Display Paths), set `Destination:` to `(paths displayed only — no copy performed)` and `Files copied:` to `0`.
+For Step 4b (Display Paths), set `Method:` to `display-paths`, `Destination:` to `(paths displayed only — no copy performed)`, and `Files copied:` to `0`.
 
 ---
 

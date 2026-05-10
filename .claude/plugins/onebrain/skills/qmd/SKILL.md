@@ -140,23 +140,16 @@ Embeddings: {ready / not yet — run /qmd embed to enable semantic search}
 
 ### Step 10: Write Log Entry
 
-Append an audit-log entry for this setup run.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-qmd-setup.md`
-- **Behavior:** append per (subcommand, day). One file per qmd subcommand per day; same subcommand same day → append a `## Run HH:MM` section. Different qmd subcommands produce separate files (e.g. `…qmd-setup.md`, `…qmd-embed.md`).
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-qmd-setup.md` — one file per (subcommand, day). Different qmd subcommands produce separate files (e.g. `…qmd-setup.md`, `…qmd-embed.md`).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: setup`, `collection: <collection-name>`
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, qmd]
-created: YYYY-MM-DD
----
-
-# qmd setup — YYYY-MM-DD
-
 ## Run HH:MM
 - Collection: {collection-name}
 - Files indexed: N
@@ -164,8 +157,6 @@ created: YYYY-MM-DD
 - Errors: 0
 - Duration: Xs
 ```
-
-When appending to an existing daily file, omit the frontmatter and `# qmd setup — YYYY-MM-DD` heading — start at `## Run HH:MM`.
 
 ---
 
@@ -215,31 +206,23 @@ Say:
 
 ### Step 5: Write Log Entry
 
-Append an audit-log entry for this embed run.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-qmd-embed.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-qmd-embed.md` — one file per (subcommand, day).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: embed`, `collection: <collection-name>`
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, qmd]
-created: YYYY-MM-DD
----
-
-# qmd embed — YYYY-MM-DD
-
 ## Run HH:MM
+- Collection: {collection-name}
 - Files indexed: N
 - Chunks generated: M
 - Errors: 0
 - Duration: Xs
 ```
-
-When appending, omit the frontmatter and `# qmd embed — YYYY-MM-DD` heading — start at `## Run HH:MM`.
 
 ---
 
@@ -301,31 +284,23 @@ Say:
 
 ### Step 4: Write Log Entry
 
-Append an audit-log entry for this reindex run.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-qmd-reindex.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-qmd-reindex.md` — one file per (subcommand, day).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: reindex`, `collection: <collection-name>`
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, qmd]
-created: YYYY-MM-DD
----
-
-# qmd reindex — YYYY-MM-DD
-
 ## Run HH:MM
+- Collection: {collection-name}
 - Files indexed: N
 - Chunks generated: M
 - Errors: 0
 - Duration: Xs
 ```
-
-When appending, omit the frontmatter and `# qmd reindex — YYYY-MM-DD` heading — start at `## Run HH:MM`.
 
 ---
 
@@ -384,30 +359,21 @@ Say:
 
 ### Step 6: Write Log Entry
 
-Append an audit-log entry for this uninstall run.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-qmd-uninstall.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-qmd-uninstall.md` — one file per (subcommand, day).
+- **Tags:** `[audit-log, qmd]`
+- **Skill:** `/qmd`
+- **Per-skill discriminators in frontmatter:** `subcommand: uninstall`, `collection: <collection-name>`
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, qmd]
-created: YYYY-MM-DD
----
-
-# qmd uninstall — YYYY-MM-DD
-
 ## Run HH:MM
 - Collection removed: {collection-name}
 - vault.yml: qmd_collection key removed
 - PostToolUse hook: removed
 ```
-
-When appending, omit the frontmatter and `# qmd uninstall — YYYY-MM-DD` heading — start at `## Run HH:MM`.
 
 ---
 

@@ -137,34 +137,25 @@ If the user asks to retro-tag existing notes (e.g. "update all notes in 01-proje
 
 ## Step 9: Write Log Entry
 
-Append an audit-log entry for this connect run.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-connect.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM (scope: ...)` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
+- **Filename:** `YYYY-MM-DD-connect.md` — one file per day.
+- **Tags:** `[audit-log, connect]`
+- **Skill:** `/connect`
 - **No links applied:** if no wikilinks were approved/implemented in Step 5 (and no Step 8 retro-tag changes were written), skip writing — there is nothing to log.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, connect]
-created: YYYY-MM-DD
----
+## Run HH:MM
 
-# Connect — YYYY-MM-DD
-
-## Run HH:MM (scope: knowledge-folder)
+- Scope: knowledge-folder
+- Total: N links added across M notes
 
 ### Wikilinks added
 - `03-knowledge/ai/Foo.md` → added `[[Bar]]`, `[[Baz]]`
 - `03-knowledge/dev/Qux.md` → added `[[Foo]]`
-
-### Total: N links added across M notes
 ```
-
-When appending to an existing daily file, omit the frontmatter and `# Connect — YYYY-MM-DD` heading — start at `## Run HH:MM (...)`.
 
 ---
 

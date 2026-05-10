@@ -114,34 +114,41 @@ After writing or updating the file, say in one line:
 
 ## Write Log Entry
 
-After confirming, append an audit-log entry for this /learn call.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-memory.md`
-- **Shared file:** `/learn` and `/memory-review` both append to this same daily file. Always **append** a new `## HH:MM /learn` section — never overwrite the file. If `/memory-review` ran earlier today (or runs later), its `## HH:MM /memory-review` sections must coexist in the same file.
-- **Behavior:** if today's file exists → append a new `## HH:MM /learn` section. If not → create with the frontmatter + heading + first section below.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Entry types written by /learn:** `created` (new memory file) or `updated` (`update` conflict resolution merged into existing file).
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-memory.md` — shared file. `/learn` and `/memory-review` both append to this same daily file.
+- **Tags:** `[audit-log, memory]`
+- **Skill:** `skill: [/learn, /memory-review]` (YAML list — file is shared)
+- **Run heading exception:** because the file is shared, `/learn` writes its sections as `## Run HH:MM /learn` (and `/memory-review` writes `## Run HH:MM /memory-review`). This is the only audit-log file where the run heading carries a discriminator.
+- **Entry types written by /learn:** `created` (new memory file) or `updated` (`update` conflict resolution merged into existing file). If `supersede` was chosen, also log a `**deprecated**` bullet for the superseded file.
 
-Template (file creation form):
+Per-skill body template (the appended block, when today's file already exists):
 
 ```markdown
----
-tags: [audit-log, memory]
-created: YYYY-MM-DD
----
-
-# Memory Changes — YYYY-MM-DD
-
-## HH:MM /learn
+## Run HH:MM /learn
 - **created** memory/feedback_new_workflow.md
   - Content: "always run /update after PR merge"
   - Source: user instruction in this session
 ```
 
-When appending to an existing daily file, write only the `## HH:MM /learn` block — do not duplicate frontmatter or the `# Memory Changes — YYYY-MM-DD` heading.
+The full file (creation form) — frontmatter + heading + first run:
 
-For each memory file touched in this call, write one bullet under the section, with `**created**` or `**updated**` as the entry type. If `supersede` was chosen, also log a `**deprecated**` bullet for the superseded file.
+```markdown
+---
+tags: [audit-log, memory]
+skill: [/learn, /memory-review]
+date: YYYY-MM-DD
+---
+
+# Memory Changes — YYYY-MM-DD
+
+## Run HH:MM /learn
+- **created** memory/feedback_new_workflow.md
+  - Content: "always run /update after PR merge"
+  - Source: user instruction in this session
+```
+
+For each memory file touched in this call, write one bullet under the section, with `**created**` or `**updated**` as the entry type.
 
 ---
 

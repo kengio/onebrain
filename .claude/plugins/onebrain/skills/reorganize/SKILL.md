@@ -61,7 +61,9 @@ Find notes that are directly in a top-level folder (not already in a subfolder):
 - `[areas_folder]/*.md` : glob top-level only
 - `[knowledge_folder]/*.md` : glob top-level only
 - `[resources_folder]/*.md` : glob top-level only
-- ~~`[logs_folder]/*-session-*.md`~~ — Removed in v2.4.0. Session logs now live under `[logs_folder]/session/YYYY/MM/`; `/update` migration owns the 07-logs structure end-to-end. `/reorganize` no longer touches `[logs_folder]/`
+- ~~`[logs_folder]/*-session-*.md`~~ — Removed in v2.4.0. Session logs now live under `[logs_folder]/session/YYYY/MM/`; `/update` migration owns the 07-logs structure end-to-end. `/reorganize` no longer touches `[logs_folder]/`.
+
+**Legacy 07-logs structure guard (post-v2.4.0)**: before scanning anything else, check whether `[logs_folder]/YYYY/MM/` contains any of `*-session-*.md`, `*-checkpoint-*.md`, or `*-update-*.md` files. If yes → **abort immediately** with the message: `⚠️ 07-logs structure outdated — run /update first to migrate, then re-run /reorganize.` Do not proceed; do not touch any folder. The /update Step 0 migration owns this structure transition; running /reorganize on a half-migrated vault would leave session logs stranded outside `session/`.
 
 Also check `[archive_folder]/*.md` for any flat archive files.
 
@@ -165,25 +167,22 @@ onebrain qmd-reindex
 
 ### Step 6: Write Log Entry
 
-Append an audit-log entry for this reorganize run. This applies whether the run was a Full Migration (5-folder → 8-folder), a Subfolder Migration, or both.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-reorganize.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM` section. If not → create with frontmatter + first section.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
+- **Filename:** `YYYY-MM-DD-reorganize.md` — one file per day. Applies whether the run was a Full Migration (5-folder → 8-folder), a Subfolder Migration, or both.
+- **Tags:** `[audit-log, reorganize]`
+- **Skill:** `/reorganize`
+- **Per-skill discriminator in frontmatter:** `mode: full | subfolder | both`
 - **No-op runs:** if the scan found nothing to do (already organized), skip writing — there is nothing to log.
-- **Failure mode:** report once and continue — log entry is supplementary, not blocking.
 
-Template (file creation form):
+Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
 ```markdown
----
-tags: [audit-log, reorganize]
-created: YYYY-MM-DD
----
-
-# Reorganize — YYYY-MM-DD
-
 ## Run HH:MM
+
+- Mode: subfolder
+- Files moved: N
+- Folders created: M
 
 ### Files moved
 - `03-knowledge/ai-thought.md` → `03-knowledge/ai/AI Thought.md`
@@ -196,8 +195,6 @@ created: YYYY-MM-DD
 ### Wikilinks repaired
 - N links updated across M notes (preserved targets via Obsidian)
 ```
-
-When appending to an existing daily file, omit the frontmatter and `# Reorganize — YYYY-MM-DD` heading — start at `## Run HH:MM`.
 
 ---
 

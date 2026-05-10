@@ -15,10 +15,11 @@ async function makeTmpDir(): Promise<string> {
 }
 
 /**
- * Make a month directory under logs folder
+ * Make a session-log month directory at the post-v2.4.0 path
+ * (`<logsDir>/session/YYYY/MM/`).
  */
 async function makeMonthDir(logsDir: string, year: string, month: string): Promise<string> {
-  const dir = join(logsDir, year, month);
+  const dir = join(logsDir, 'session', year, month);
   await mkdir(dir, { recursive: true });
   return dir;
 }

@@ -142,23 +142,15 @@ Do NOT write to MEMORY.md. Critical Behaviors are promoted exclusively via /lear
 
 ## Write Log Entry
 
-Append an audit-log entry for this run.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-recap.md`
-- **Behavior:** append per day. If today's file exists → append a new `## Run HH:MM` section. If not → create the file with the frontmatter + first section below.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
-- **Failure mode:** if the write fails, report it to the user in one line and continue — log entry is supplementary, not blocking.
+- **Filename:** `YYYY-MM-DD-recap.md` — one file per day.
+- **Tags:** `[audit-log, recap]`
+- **Skill:** `/recap`
 
-Template (used to create the file or as the new section to append):
+Per-skill body template (replace the canonical `## Run HH:MM` section's body with this):
 
 ```markdown
----
-tags: [audit-log, recap]
-created: YYYY-MM-DD
----
-
-# Recap — YYYY-MM-DD
-
 ## Run HH:MM
 
 ### Memory Changes
@@ -173,8 +165,6 @@ created: YYYY-MM-DD
 ### Skipped (insufficient frequency)
 - "use bun for everything" — only 1 occurrence
 ```
-
-When appending to an existing file, omit the frontmatter and `# Recap — YYYY-MM-DD` heading — start the appended block at `## Run HH:MM`.
 
 ## Output
 

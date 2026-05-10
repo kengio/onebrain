@@ -48,7 +48,7 @@ After Step 1, scan for unmerged checkpoints belonging to **other** sessions (orp
 
 ### Scan Scope
 
-Glob `[logs_folder]/checkpoint/*-checkpoint-*.md` (flat — post-v2.4.0 all checkpoints live in one directory regardless of date). Filter the resulting list to current-month + previous-month date prefixes (`YYYY-MM-DD` matches the current month or, after decrementing MM by 1 with year rollover if MM=01, the previous month). The 2-month filter mirrors `onebrain orphan-scan`'s lookback so the recovery skill and the startup banner agree on what is and isn't an orphan; checkpoints older than ~60 days are not surfaced as orphans (avoids unbounded scanning costs as `checkpoint/` accumulates when /wrapup is never run — same rationale as orphan-scan).
+Glob `[logs_folder]/checkpoint/*-checkpoint-*.md` (flat — post-v2.4.0 all checkpoints live in one directory regardless of date). No date filter: `checkpoint/` is ephemeral (cleaned by /wrapup after each session), so any file surfacing here is either an active cross-harness session (caught by the Active-Session Guard below) or a real orphan that needs recovery.
 
 ### Identify Orphans
 
@@ -91,11 +91,13 @@ The threshold gives the owning session a buffer of two full checkpoint windows (
 
 ### Auto-Recover Each Orphan Group
 
+**Progress signal**: if there are more than 3 orphan groups to recover, emit a one-line progress signal between groups so the user knows the skill is making progress: `Recovering orphan group {n}/{N} ({date})…`. Skip the signal when N ≤ 3 (recovery is fast enough that the signal would be noise).
+
 For each orphan group (process in chronological order by date in filename):
 
 **a. Already-recovered short-circuit.** Before reading checkpoint files, glob `[logs_folder]/session/YYYY/MM/YYYY-MM-DD-session-*.md` for the group's date (using the orphan date's YYYY/MM). For each match, search the file for the standardised recovery marker. The marker is `<!-- recovery-of: {token}:{date} -->` where `{token}` is the orphan group's session token and `{date}` is the group's date.
 
-> **Anchored match required (security):** match the marker **only when it appears at the start of a line** — i.e., either the literal string `\n<!-- recovery-of: {token}:{date} -->` or the file beginning with `<!-- recovery-of: {token}:{date} -->`. A bare substring match would false-positive on session logs whose body quotes the marker as documentation (e.g., a meta-note about how the recovery flow works). The destructive consequence of a false-positive is checkpoint deletion based on a documentation quote — not acceptable. Use `rg -n -F` with `--multiline` and a `(?m)^` anchor, or grep the file line-by-line and check `line.startswith('<!-- recovery-of: ')` followed by a token/date check.
+> **Anchored match required (security):** match the marker **only when it appears at the start of a line** — i.e., either the literal string `\n<!-- recovery-of: {token}:{date} -->` or the file beginning with `<!-- recovery-of: {token}:{date} -->`. A bare substring match would false-positive on session logs whose body quotes the marker as documentation (e.g., a meta-note about how the recovery flow works). The destructive consequence of a false-positive is checkpoint deletion based on a documentation quote — not acceptable. Use `rg -n -F` with `--multiline` and a `(?m)^` anchor, or grep the file line-by-line. **Strip trailing `\r` from each line before the `startswith` check** — Windows-edited logs use CRLF endings; without this the line literal `<!-- recovery-of: ... -->\r` won't match the bare prefix and a legitimate already-recovered marker is silently missed. After CRLF strip, check `line.startswith('<!-- recovery-of: ')` followed by a token/date check.
 
 If an anchored match is found, the group's content is already in a prior recovered session log (typically from a previous /wrapup that hit `delete_failed` on these checkpoints): for each file in `group_files`, append `{path, age_minutes: <original group age>, reason: "already_recovered"}` to `skipped_active`, then attempt to delete the checkpoints (since they are now safely persisted in the prior recovered log). Per-file delete failures here record `delete_failed` and continue, identical to step (g)'s rule. Continue with the next group — do not proceed to step (b).
 

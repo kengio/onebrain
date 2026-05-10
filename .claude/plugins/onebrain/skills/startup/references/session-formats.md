@@ -56,10 +56,13 @@ Written by the Stop hook. Keep under 250 words total.
 ---
 tags: [checkpoint, session-log]
 date: YYYY-MM-DD
+session_token: <token>
 checkpoint: NN
 trigger: stop
 ---
 ```
+
+`session_token` is the same token embedded in the filename — duplicating it in frontmatter lets `/wrapup`, `/doctor`, and orphan-scan filter checkpoints by token without parsing filenames. The agent (per `INSTRUCTIONS.md` Auto Checkpoint section) sets this from the `session_token` already in context (recovered via `onebrain session-init` if missing).
 
 **Body:** use Shared Body Sections above. `## What We Worked On`: 2-3 sentences describing the session focus.
 

@@ -15,16 +15,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## v2.4.0 — feat(07-logs): subfolder restructure + per-skill log entries
 
-Restructure `07-logs/` into 4 typed subfolders and add audit log entries for 11 skills. Companion CLI release v2.2.2 updates `orphan-scan` to read from the new flat `checkpoint/` directory.
+Restructure `07-logs/` into 4 typed subfolders and add audit log entries for 12 skills. Companion CLI release v2.2.2 updates `orphan-scan` and the Stop hook's NN-counting helper to read from the new flat `checkpoint/` directory.
 
 - feat(07-logs): split into `session/YYYY/MM/`, `checkpoint/` (flat), `update/` (flat), `log/YYYY/MM/`. Mental model: session/checkpoint = NN per run, everything else = append per day.
-- feat(/update): one-shot, idempotent migration moves existing files to the new layout (preserve YYYY/MM for session, flatten for checkpoint+update). Migration log appended to the run's update log; verification via pre/post counts.
-- feat(startup): legacy structure detection in INSTRUCTIONS Step 3 → ⚠️ banner if `[logs_folder]/session/` is missing AND `[logs_folder]/YYYY/` exists; nudges user to run /update.
-- feat(skills): /recap, /distill, /memory-review, /learn, /consolidate, /connect, /reorganize, /onboarding, /qmd, /clone, /doctor each write a log entry to `log/YYYY/MM/YYYY-MM-DD-{skill}.md` (append per day; /distill and /qmd discriminated by topic-slug / subcommand).
-- feat(/wrapup): orphan recovery scan now reads flat `checkpoint/` filtered to current+prev month (mirrors orphan-scan); writes session log to `session/YYYY/MM/`; cross-midnight handling simplified — date math only, no folder math.
-- feat(/doctor): adds housekeeping warning when `log/YYYY/` exceeds 1000 files; checkpoint glob switched to `checkpoint/*-checkpoint-*.md` (flat).
-- fix(checkpoint-hook.sh): writes to flat `checkpoint/` regardless of date.
-- chore(INSTRUCTIONS): file-naming, Recalling Information, Auto-Checkpoint sections updated to new paths.
+- feat(/update Step 0): idempotent migration moves files to the new layout (preserve YYYY/MM for session; flatten checkpoint + update). Detect-by-residual-files re-runs cleanly on interrupt.
+- feat(startup): legacy structure detection nudges /update with a one-line banner; orphan-scan fallback auto-detects pre- vs post-v2.4.0 layout (multi-vault user safety).
+- feat(skills): /recap, /distill, /memory-review, /learn, /consolidate, /connect, /reorganize, /onboarding, /qmd, /clone, /doctor, /weekly each write an audit log to `log/YYYY/MM/`. Shared `_shared/audit-log-format.md` reference deduplicates frontmatter + append-per-day algorithm + run-section heading + failure-mode rules.
+- feat(audit-log frontmatter): canonical 3-field schema (`tags: [audit-log, X]`, `skill: /X`, `date: YYYY-MM-DD`) across all skill audit logs; per-skill discriminators (topic, subcommand, mode, path, version).
+- feat(/wrapup): orphan recovery reads flat `checkpoint/`, writes to `session/YYYY/MM/`. Cross-midnight handling simplified to filename-date math. Progress signal for N>3 orphan groups. CRLF-safe marker check.
+- feat(/doctor): 07-logs structure check (verifies the 4 subfolders); housekeeping warning at >1000 log files. /reorganize now aborts if pre-v2.4.0 structure is detected (run /update first).
+- fix(checkpoint-hook.sh + checkpoint.ts): both write to and read from flat `checkpoint/`. Pre-fix, NN counting was reading from legacy `YYYY/MM/` path → every checkpoint after migration would have collided at NN=01.
+- fix(/update backup): `[archive_folder]/[agent_folder]/...` instead of hardcoded `05-agent` so users who remapped `folders.agent` see backups land in the matching subfolder.
+- fix(migrate.ts runBackfillRecapped): walks `[logs_folder]/session/YYYY/MM/` post-v2.4.0 (was walking `[logs_folder]/YYYY/MM/` and silently skipping all session logs).
 
 ## v2.3.4 — docs(instructions): establish 11 iron-rule Working Principles
 

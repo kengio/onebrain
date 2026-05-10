@@ -51,7 +51,7 @@ async function createCheckpointFile(
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   const date = `${yyyy}-${mm}-${dd}`;
-  const dir = join(vaultDir, '07-logs', yyyy, mm);
+  const dir = join(vaultDir, '07-logs', 'checkpoint');
   await mkdir(dir, { recursive: true });
   const nnStr = String(nn).padStart(2, '0');
   await writeFile(
@@ -500,7 +500,7 @@ describe('maxCheckpointNnSync', () => {
   });
 
   it('returns max NN from checkpoint files on disk', async () => {
-    const dir = join(VAULT(), LOGS, '2023', '11');
+    const dir = join(VAULT(), LOGS, 'checkpoint');
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-01.md`), '', 'utf8');
     await writeFile(join(dir, `${DATE}-${TOKEN}-checkpoint-03.md`), '', 'utf8');
@@ -509,7 +509,7 @@ describe('maxCheckpointNnSync', () => {
   });
 
   it('ignores files for other tokens', async () => {
-    const dir = join(VAULT(), LOGS, '2023', '11');
+    const dir = join(VAULT(), LOGS, 'checkpoint');
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, `${DATE}-99999-checkpoint-05.md`), '', 'utf8');
     const result = maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS);
@@ -517,7 +517,7 @@ describe('maxCheckpointNnSync', () => {
   });
 
   it('ignores files for other dates', async () => {
-    const dir = join(VAULT(), LOGS, '2023', '11');
+    const dir = join(VAULT(), LOGS, 'checkpoint');
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, `2023-11-15-${TOKEN}-checkpoint-02.md`), '', 'utf8');
     const result = maxCheckpointNnSync(VAULT(), DATE, TOKEN, LOGS);

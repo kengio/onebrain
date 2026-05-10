@@ -64,6 +64,13 @@ Run all applicable checks based on flags (default: all). Collect findings before
 - Keep only files whose date (from filename) is older than 7 days
 - Suggest running /wrapup
 
+**07-logs structure check (post-v2.4.0):**
+- Verify the 4 expected subfolders exist under `[logs_folder]/`: `session/`, `checkpoint/`, `update/`, `log/`. The migration is owned by `/update` Step 0, so missing subfolders here usually means either (a) fresh vault that hasn't run `/update` yet, or (b) interrupted migration.
+- Skip the check entirely if `[logs_folder]/YYYY/MM/` still contains legacy log files — that's the legacy structure indicator, and the user should run `/update` first
+- If `[logs_folder]/session/` is missing on a non-legacy vault: 🟡 "07-logs/session/ missing — first session log will create it"
+- If `[logs_folder]/log/` is missing on a non-legacy vault: 🟡 "07-logs/log/ missing — first audit log will create it"
+- (No warning if all 4 subfolders are present — clean state)
+
 **Log folder size (housekeeping):**
 - Count files in `[logs_folder]/log/YYYY/` for the current year
 - Warn if count > 1000: 🟡 "log/ folder: N files in YYYY — consider archive (move stale log/YYYY/MM/ folders to 06-archive/ manually)". User decides retention; OneBrain has no automatic archive policy. /reorganize does NOT touch [logs_folder]/ post-v2.4.0
@@ -192,17 +199,19 @@ Read and follow `references/migration-safety-net.md` at the end of every `/docto
 
 1. Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`. If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
 
-2. **Write doctor log entry** to `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-doctor.md` (append per day, sections per run). Format:
+2. **Write doctor log entry.** Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
+
+   - **Filename:** `YYYY-MM-DD-doctor.md` — one file per day.
+   - **Tags:** `[audit-log, doctor]` (umbrella tag, replacing the old `[doctor-log]` exception).
+   - **Skill:** `/doctor`
+   - **Per-skill discriminator in frontmatter:** `flags: [--vault, --config, --fix]` (subset of flags active for this run; empty list `[]` means default — all checks).
+
+   Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
 
    ```markdown
-   ---
-   tags: [doctor-log]
-   created: YYYY-MM-DD
-   ---
-
-   # Doctor Report — YYYY-MM-DD
-
    ## Run HH:MM
+
+   - Flags: --vault, --config (or "default" when no flags)
 
    ### Findings
    - 🔴/🟡/✅ <one line per finding from Step 3>
@@ -213,11 +222,6 @@ Read and follow `references/migration-safety-net.md` at the end of every `/docto
    ### Recommendations
    - <one line per actionable recommendation>
    ```
-
-   - Append `## Run HH:MM` section if today's file already exists; create the file with frontmatter + first run section if not.
-   - Time = local time at run start, format `HH:MM` (24-hour).
-   - Create `[logs_folder]/log/YYYY/MM/` if missing.
-   - On write failure: report the error to the user and continue — the doctor report on screen is the primary output; the log entry is supplementary.
 
 ---
 

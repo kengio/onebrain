@@ -247,30 +247,42 @@ If user selects "Skip for now": continue to Step 12.
 
 ## Step 11c: Write Onboarding Log
 
-Write a **one-shot** snapshot of the initial setup config to `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-onboarding.md`. This is one snapshot per vault lifetime — onboarding is not expected to run again.
+Follow `../_shared/audit-log-format.md` (canonical frontmatter, failure mode) with:
 
-- **Target path:** `[logs_folder]/log/YYYY/MM/YYYY-MM-DD-onboarding.md`
-- **Behavior:** one-shot. If the file already exists (re-run scenario), overwrite is fine — re-run reflects the latest setup.
-- **Create parent dir:** `[logs_folder]/log/YYYY/MM/` if missing.
+- **Filename:** `YYYY-MM-DD-onboarding.md` — one-shot per vault lifetime. If the file already exists (re-run scenario), overwrite is fine — re-run reflects the latest setup.
+- **Tags:** `[audit-log, onboarding]`
+- **Skill:** `/onboarding`
+- **Per-skill discriminators in frontmatter:** `path: A | B`, `plugin_version: X.Y.Z`, `run: N` (incremented if file already exists from a prior re-run; default `1` on first run).
+- **One-shot exception:** unlike append-per-day skills, onboarding overwrites the file on re-run (a single snapshot, not an audit trail). The `## Run HH:MM` heading is still present so the snapshot reads consistently with other audit logs.
 - **Failure mode:** report once and continue to Step 12 — log entry is supplementary, not blocking onboarding completion.
 
-Template (substitute live values from the interview answers + Step 11 config):
+Template (file creation/overwrite form — substitute live values from the interview answers + Step 11 config):
 
 ```markdown
 ---
 tags: [audit-log, onboarding]
-created: YYYY-MM-DD
+skill: /onboarding
+date: YYYY-MM-DD
+path: A
+plugin_version: X.Y.Z
+run: 1
 ---
 
 # Onboarding — YYYY-MM-DD
 
-## Identity & Personality
+## Run HH:MM
+
+- Path: A (or B)
+- Plugin version: X.Y.Z
+- Run: 1 (or N for re-run)
+
+### Identity & Personality
 - Agent name: {agent_name}
 - Personality: {agent_personality}
 - User: {preferred_name}
 - Language: {detected from interview, e.g. "Thai/English bilingual"}
 
-## Vault Configuration
+### Vault Configuration
 - Folders: 8-folder layout
 - Inbox: [inbox_folder]
 - Projects: [projects_folder]
@@ -281,7 +293,7 @@ created: YYYY-MM-DD
 - Archive: [archive_folder]
 - Logs: [logs_folder]
 
-## Initial Capabilities Enabled
+### Initial Capabilities Enabled
 - qmd: {yes (collection: <name>) / no}
 - Auto-summary: yes
 - Plugin hooks: registered

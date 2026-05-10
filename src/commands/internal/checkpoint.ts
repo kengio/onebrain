@@ -197,9 +197,15 @@ function loadVaultSettings(vaultRoot: string): {
 }
 
 /**
- * Scan the logs directory and return the highest checkpoint NN for this session.
- * Returns 0 if no checkpoint files exist (i.e. next NN should be 01).
- * Sync — safe to use in handleStop's hot path.
+ * Scan the flat checkpoint directory and return the highest checkpoint NN
+ * for this session. Returns 0 if no checkpoint files exist (i.e. next NN
+ * should be 01). Sync — safe to use in handleStop's hot path.
+ *
+ * Post-v2.4.0: checkpoints live at `[logs_folder]/checkpoint/` flat (no
+ * YYYY/MM nesting). The `${date}-${token}-checkpoint-` prefix isolates
+ * this session's checkpoints from other sessions/tokens sharing the dir.
+ * `date` is kept in the signature for the prefix; the directory itself
+ * is no longer date-derived.
  */
 export function maxCheckpointNnSync(
   vaultRoot: string,
@@ -207,9 +213,7 @@ export function maxCheckpointNnSync(
   token: string,
   logsFolder: string,
 ): number {
-  const yyyy = date.slice(0, 4);
-  const mm = date.slice(5, 7);
-  const dir = join(vaultRoot, logsFolder, yyyy, mm);
+  const dir = join(vaultRoot, logsFolder, 'checkpoint');
   const prefix = `${date}-${token}-checkpoint-`;
   try {
     let max = 0;
