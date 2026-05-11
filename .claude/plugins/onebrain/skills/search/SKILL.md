@@ -2,16 +2,9 @@
 name: search
 description: General vault retrieval — answers both "what" and "why" questions across MEMORY.md, memory/, session logs, plan files, decisions logs, and vault notes. Uses qmd (lex+vec+hyde) with grep fallback.
 auto-invoke:
-  - "ค้นหา"
   - "search vault"
-  - "หาเรื่อง"
   - "find in vault"
-  - "ดูว่าเคย"
-  - "ทำไม"
   - "why did"
-schedulable: false
-schedulable_with_args: true
-required_args: [query]
 ---
 
 # /search — General vault retrieval
@@ -39,11 +32,11 @@ Distinct from existing skills:
 
 - **qmd lex+vec+hyde** if `qmd_collection` is configured in vault.yml (preferred)
 - **Glob + Grep fallback** if qmd unavailable
-- **Heuristic question-type detection**: matches `^(why|ทำไม)` → "why mode"; else → "what mode"
+- **Heuristic question-type detection**: matches `^why\b` (or the agent's bilingual intent inference on non-English equivalents) → "why mode"; else → "what mode"
 
 ## Output format — what mode
 
-For "what is X" / "ตอนนี้ X เป็นไง" questions, synthesize a direct answer + cite top 5 sources:
+For "what is X" / "what's the current state of X" questions, synthesize a direct answer + cite top 5 sources:
 
 ```
 📌 Direct answer (1–3 sentences synthesized from sources)
@@ -55,7 +48,7 @@ For "what is X" / "ตอนนี้ X เป็นไง" questions, synthesiz
 
 ## Output format — why mode
 
-For "why did X" / "ทำไม X" questions, reconstruct chronological decision chain:
+For "why did X" / "why is X" questions, reconstruct chronological decision chain:
 
 ```
 🕐 Decision chain (chronological):
@@ -89,7 +82,3 @@ This skill is long-running for large vaults. Emit:
 → [step 3/4] scoring + ranking results...
 → [step 4/4] formatting answer...
 ```
-
-## Schedulable
-
-This skill is schedulable when invoked with a required `query` argument. In headless/scheduled mode, output goes to `[logs_folder]/scheduler/YYYY/MM/YYYY-MM-DD-search.md` instead of an in-session response.

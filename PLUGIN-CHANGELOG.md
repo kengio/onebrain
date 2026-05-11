@@ -1,5 +1,5 @@
 ---
-latest_version: 2.4.4
+latest_version: 2.4.5
 released: 2026-05-12
 ---
 
@@ -11,12 +11,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
+## 2.4.5 — 2026-05-12
+
+- Hot-fix: enforced English-only across /search per `onebrain-repo-english-only` rule
+- Removed non-English auto-invoke triggers; kept 3 English: `search vault`, `find in vault`, `why did`
+- Removed non-English example phrases and regex tokens from SKILL.md body + references + INSTRUCTIONS routing description
+- Removed premature `schedulable` / `schedulable_with_args` / `required_args` frontmatter (defer to E9 scheduler shipping in a later PR)
+- Bilingual user input still routes via agent's intent matching on the English description; non-English literals were redundant
+
 ## 2.4.4 — 2026-05-12
 
 - New skill /search — general vault retrieval (E5)
 - Answers both what + why questions across MEMORY/memory/sessions/plans/decisions logs/notes
 - Uses qmd (lex+vec+hyde) with grep fallback
-- Auto-invoke triggers: "ค้นหา", "search vault", "หาเรื่อง", "ทำไม", "why did"
+- Auto-invoke triggers: `search vault`, `find in vault`, `why did` (initial entry shipped with non-English triggers; hot-fixed in 2.4.5)
 - Registered under 🔍 RECALL tier in /help
 
 ## 2.4.3 — 2026-05-12
