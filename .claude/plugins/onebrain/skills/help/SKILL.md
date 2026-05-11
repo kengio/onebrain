@@ -5,69 +5,49 @@ description: "List all available OneBrain commands with descriptions and use cas
 
 # Available Commands
 
-When this skill is invoked, present all available OneBrain commands to the user.
+Skills are organized by workflow phase — Input → Process → Recall → Maintain.
 
-## Step 0: Show Plugin Version and Install Location
+## 📥 INPUT — Capture & ingest
 
-1. Determine install location: use Glob to check if `.claude/plugins/onebrain/.claude-plugin/plugin.json` exists relative to the vault root
-   - If it exists → this is a **project plugin**
-   - If it does not exist → this is a **global plugin** (installed at `$HOME/.claude/plugins/` on Unix or `$env:USERPROFILE/.claude/plugins/` on Windows PowerShell)
-2. Read the version from the correct path:
-   - If project plugin: read from `.claude/plugins/onebrain/.claude-plugin/plugin.json`
-   - If global plugin: use Glob on `$HOME/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` (Unix) or `$env:USERPROFILE/.claude/plugins/cache/onebrain/onebrain/*/.claude-plugin/plugin.json` (Windows PowerShell) to find all cached versions. The Glob tool does not expand `~`, so use the env var that resolves to the user's home directory. If multiple matches are returned, use the one with the highest version number (compare the version directory name as semver). If no matches are found, skip the version display.
-3. Display as the first line of your response:
-   - If project plugin: OneBrain v{version} (project plugin)
-   - If global plugin: OneBrain v{version} (global plugin)
-   - If version could not be determined: OneBrain
+| Command | Purpose |
+|---------|---------|
+| `/onboarding` | First-run setup (capture identity + preferences) · *first run only* |
+| `/capture` | Quick titled note with auto-links |
+| `/braindump` | Stream-of-consciousness multi-thread dump |
+| `/bookmark` | Save URL with AI-generated metadata |
+| `/summarize` | Fetch URL → deep summary note |
+| `/import` | Local file (PDF/docs/images) → vault note |
+| `/reading-notes` | Book/article → structured notes |
+| `/research` | Web research → resources/ note |
 
-## Step 1: Present the Command List
+## ⚙️ PROCESS — Synthesize & organize
 
-Display a grouped plain text output:
+| Command | Purpose |
+|---------|---------|
+| `/consolidate` | Inbox → knowledge base |
+| `/distill` | Multi-session notes → digest |
+| `/connect` | Find note-to-note links |
+| `/recap` | Session insights → memory/ |
+| `/weekly` | Weekly reflection |
+| `/daily` | Daily briefing |
+| `/learn` | Teach agent a fact / preference |
 
-```
-──────────────────────────────────────────────────────────────
-📖 OneBrain Commands — v{version}
-──────────────────────────────────────────────────────────────
-Capture & Organize
-  /capture        Quick note capture with wikilinks
-  /braindump      Dump raw thoughts, ideas, tasks
-  /bookmark       Save a URL to Bookmarks.md
-  /consolidate    Process inbox into knowledge base
+## 🔍 RECALL — Retrieve & navigate
 
-Research & Recall
-  /research       Web research → structured knowledge note
-  /summarize      URL → deep summary note
-  /reading-notes  Book or article → structured notes
-  /connect        Find connections between notes
+| Command | Purpose |
+|---------|---------|
+| `/tasks` | Live task dashboard |
+| `/moc` | Vault portal map |
+| `/memory-review` | Audit memory/ files |
 
-Review & Reflect
-  /daily          Daily briefing — tasks + last session
-  /weekly         Weekly reflection and planning
-  /recap          Promote session insights to memory
-  /distill        Compress a research thread into knowledge
+## 🔧 MAINTAIN — System housekeeping
 
-System
-  /tasks          Open live task dashboard
-  /moc            Refresh vault portal (MOC.md)
-  /doctor         Vault health check
-  /update         Update OneBrain to latest version
-  /learn          Teach the agent something to remember
-  /wrapup         Save session summary to log
-  /memory-review  Interactive memory pruning
-  /clone          Package agent context for vault transfer
-  /reorganize     Migrate flat notes into subfolders
-  /qmd            Manage search index
-  /onboarding     First-run vault setup
-  /help           Show this list
-──────────────────────────────────────────────────────────────
-/help [command] for details on any command
-```
-
-## Step 2: Add a Usage Note
-
-After the command list, add:
-
-Tips:
-  • Commands use the `/` prefix — for example, `/braindump`, `/tasks`, `/research`
-  • You can also describe what you want in plain language
-  • New to OneBrain? Start with `/onboarding`
+| Command | Purpose |
+|---------|---------|
+| `/update` | Pull latest from GitHub |
+| `/doctor` | Vault + plugin health check |
+| `/reorganize` | Migrate vault structure |
+| `/clone` | Package agent context for transfer |
+| `/qmd` | qmd search index management |
+| `/help` | This catalog |
+| `/wrapup` | Session log |

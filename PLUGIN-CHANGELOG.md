@@ -11,6 +11,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
 
+## 2.4.2 — 2026-05-12
+
+- /help reorganized into 4 Workflow tiers: 📥 INPUT · ⚙️ PROCESS · 🔍 RECALL · 🔧 MAINTAIN
+- /onboarding moved from Maintain → Input (first run only)
+- README skill list reordered to mirror tier structure
+- Discoverability win for new users; existing users now see skills by phase
+
 ## [Unreleased]
 
 ## v2.4.1 — fix(qmd, /update): drop stale `--qmd` / `--remove-qmd` flags from docs
