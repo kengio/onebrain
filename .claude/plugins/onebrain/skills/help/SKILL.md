@@ -36,6 +36,7 @@ Skills are organized by workflow phase — Input → Process → Recall → Main
 
 | Command | Purpose |
 |---------|---------|
+| `/search` | General vault retrieval — answers what + why questions |
 | `/tasks` | Live task dashboard |
 | `/moc` | Vault portal map |
 | `/memory-review` | Audit memory/ files |

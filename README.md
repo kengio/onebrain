@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <strong>Your personal AI OS</strong> — persistent memory, 24+ skills, and a full local stack<br>
+  <strong>Your personal AI OS</strong> — persistent memory, 25+ skills, and a full local stack<br>
   (Claude Code + Obsidian + tmux + Telegram), entirely on your own machine.
 </p>
 
@@ -35,7 +35,7 @@
 
 ## What is OneBrain?
 
-OneBrain is an AI operating system layer built on top of Obsidian. It gives your AI agent persistent memory, a structured knowledge vault, and 24+ pre-built skills — so every session picks up exactly where the last one left off.
+OneBrain is an AI operating system layer built on top of Obsidian. It gives your AI agent persistent memory, a structured knowledge vault, and 25+ pre-built skills — so every session picks up exactly where the last one left off.
 
 Unlike chat-based AI tools, OneBrain lives in plain Markdown files you own forever. No cloud sync required. No proprietary format. Just your agent, your vault, your data.
 
@@ -70,7 +70,7 @@ OneBrain doesn't compete with Claude Code, Gemini CLI, or any other AI harness �
 
 | # | Layer | Role | What lives here |
 |---|---|---|---|
-| 01 | **OneBrain** | OS layer (plugin + CLI) | 24+ skills · lifecycle hooks · vault sync · indexing · checkpoints · harness routing |
+| 01 | **OneBrain** | OS layer (plugin + CLI) | 25+ skills · lifecycle hooks · vault sync · indexing · checkpoints · harness routing |
 | 02 | **Harness** | Agentic runtime | Bring your own — Claude Code · Gemini CLI · Codex · Qwen · ... |
 | 03 | **LLM** | Intelligence source | Local (mlx, ollama) · cloud (claude, gemini, gpt) · raw API |
 | 04 | **Obsidian Vault** | Source of truth | Plain Markdown — notes, memory, decisions, knowledge graph |
@@ -84,7 +84,7 @@ A great harness already knows how to talk to an LLM, edit files, and run shell c
 | | What OneBrain adds | Why it matters |
 |---|---|---|
 | 🧠 | **Memory** — Identity, preferences, decisions, project state — promoted across four tiers as it earns trust | The harness alone starts every session from zero. OneBrain doesn't. |
-| ⚡ | **Skills** — 24+ vault-aware verbs (`/braindump`, `/research`, `/distill`, `/learn`, `/wrapup`, …) | Pre-built workflows the harness would otherwise need you to script every time. |
+| ⚡ | **Skills** — 25+ vault-aware verbs (`/braindump`, `/research`, `/distill`, `/learn`, `/wrapup`, …) | Pre-built workflows the harness would otherwise need you to script every time. |
 | 🎯 | **Calibration** — Every correction, every preference, every learned habit tunes the agent to *you* | The longer you use it, the sharper it gets — your vault is the training data. |
 | 🔀 | **Continuity** — Context lives in the vault, not the harness | Switch from Claude Code to Gemini CLI to Codex. Same memory. Same skills. Same agent. |
 
@@ -210,7 +210,7 @@ OneBrain doesn't just store markdown. Every feature exists to make you and the a
 |---|---|---|
 | 🧠 | **Persistent Memory** | Remembers your name, goals, preferences, and decisions across every session |
 | 🖥️ | **Personal AI OS** | Full local stack: Claude Code + Obsidian + tmux + Telegram — no cloud infra needed |
-| ⚡ | **24+ Skills** | Braindump, research, consolidate, bookmark, import files, daily briefing, and more |
+| ⚡ | **25+ Skills** | Braindump, research, consolidate, bookmark, import files, daily briefing, and more |
 | 📂 | **Vault-native Markdown** | Plain Markdown, no lock-in. Your data stays yours forever |
 | 🔀 | **Multi-Harness OS** | Switch between Claude Code, Gemini CLI, Codex, Qwen, or BYO LLM — context never breaks. [See architecture ↑](#the-harness-os-architecture) |
 | 🔌 | **Zero Config** | Clone, open in Obsidian, run `/onboarding`. Ready in under 2 minutes |
@@ -340,7 +340,7 @@ Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
 
 <a id="commands"></a>
 
-## 📋 24+ Commands
+## 📋 25+ Commands
 
 Skills are organized by workflow phase. **Gemini CLI users:** prepend the `onebrain:` namespace, e.g. `/onebrain:braindump` instead of `/braindump` (avoids collisions with Gemini built-in commands like `/help` and `/tasks`).
 
@@ -373,6 +373,7 @@ Skills are organized by workflow phase. **Gemini CLI users:** prepend the `onebr
 
 | Command | What it does |
 |---------|-------------|
+| `/search` | General vault retrieval — answers what + why questions across MEMORY, sessions, plans, decisions logs, notes |
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
 | `/memory-review` | Interactive review of memory files — keep, update, deprecate, or delete entries |

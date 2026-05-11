@@ -145,6 +145,7 @@ These workflows are documented in `.claude/plugins/onebrain/skills/`:
 | `/daily` | `daily/SKILL.md` | Daily briefing: surfaces tasks due and open items from last session | user asks for a daily briefing, daily check-in, or what's on for today |
 | `/recap` | `recap/SKILL.md` | Batch-promote session log insights → memory/ files (does NOT write to MEMORY.md) | user asks to recap or synthesize recent sessions |
 | `/distill` | `distill/SKILL.md` | Aggregate notes from multiple sessions on a topic → structured digest note in `[knowledge_folder]/` (does NOT touch MEMORY.md — use `/learn` to promote lessons manually) | user asks to distill, synthesize, or crystallize a completed research thread or topic |
+| `/search` | `search/SKILL.md` | General vault retrieval (what + why) | user asks to find/search content, or asks "why did we" / "ทำไม" questions |
 | `/tasks` | `tasks/SKILL.md` | Create or update live task dashboard (TASKS.md) and open in Obsidian | user asks to view the task dashboard, regenerate TASKS.md, or open it in Obsidian |
 | `/moc` | `moc/SKILL.md` | Create or update vault portal (MOC.md) and open in Obsidian | user asks to update the vault map |
 | `/wrapup` | `wrapup/SKILL.md` | Wrap up session → session log | explicit `/wrapup` command only — end-of-session signals are handled silently by Auto Session Summary |
