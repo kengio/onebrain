@@ -342,35 +342,52 @@ Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
 
 ## 📋 24+ Commands
 
-The full skill surface, alphabetized by workflow. **Gemini CLI users:** prepend the `onebrain:` namespace, e.g. `/onebrain:braindump` instead of `/braindump` (avoids collisions with Gemini built-in commands like `/help` and `/tasks`).
+Skills are organized by workflow phase. **Gemini CLI users:** prepend the `onebrain:` namespace, e.g. `/onebrain:braindump` instead of `/braindump` (avoids collisions with Gemini built-in commands like `/help` and `/tasks`).
+
+### 📥 INPUT — Capture & ingest
 
 | Command | What it does |
 |---------|-------------|
-| `/onboarding` | First-run setup — run this first |
+| `/onboarding` | First-run setup — run this first · *first run only* |
 | `/braindump` | Dump everything on your mind — it gets classified and filed |
 | `/capture` | Quick note with auto-linking to related notes |
 | `/bookmark [url]` | Save a URL with AI-generated name, description, and category to Bookmarks.md |
-| `/consolidate` | Process inbox into permanent knowledge |
-| `/connect` | Find connections between notes, suggest wikilinks |
-| `/research [topic]` | Web research → structured note in your vault |
 | `/summarize [url]` | Fetch a URL and save a deep summary note |
 | `/import [path]` | Import local files (PDF, Word, images, scripts) into vault notes |
 | `/reading-notes` | Turn a book or article into structured notes |
+| `/research [topic]` | Web research → structured note in your vault |
+
+### ⚙️ PROCESS — Synthesize & organize
+
+| Command | What it does |
+|---------|-------------|
+| `/consolidate` | Process inbox into permanent knowledge |
+| `/distill [topic]` | Crystallize a completed topic thread into a permanent knowledge note in `03-knowledge/` |
+| `/connect` | Find connections between notes, suggest wikilinks |
+| `/recap` | Cross-session synthesis — batch-promote recurring insights from session logs into `memory/` files (does NOT write to MEMORY.md) |
 | `/weekly` | Review the week, surface patterns, set intentions |
 | `/daily` | Daily briefing — surfaces tasks and last session context, then saves your focus as a daily note |
-| `/recap` | Cross-session synthesis — batch-promote recurring insights from session logs into `memory/` files (does NOT write to MEMORY.md) |
-| `/distill [topic]` | Crystallize a completed topic thread into a permanent knowledge note in `03-knowledge/` |
+| `/learn` | Teach the agent something — facts about your world or behavioral preferences |
+
+### 🔍 RECALL — Retrieve & navigate
+
+| Command | What it does |
+|---------|-------------|
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
-| `/wrapup` | Wrap up session — merges any auto-checkpoints and saves full summary to session log |
-| `/learn` | Teach the agent something — facts about your world or behavioral preferences |
 | `/memory-review` | Interactive review of memory files — keep, update, deprecate, or delete entries |
-| `/clone` | Package your agent context for transfer to a new vault |
-| `/reorganize` | Migrate flat notes into organized subfolders |
-| `/qmd` | Set up fast vault search index — enables semantic search across all notes |
-| `/doctor` | Vault + config health check — broken links, orphan notes, stale memory entries, inbox backlog |
+
+### 🔧 MAINTAIN — System housekeeping
+
+| Command | What it does |
+|---------|-------------|
 | `/update` | Update skills, config, and plugins from GitHub |
+| `/doctor` | Vault + config health check — broken links, orphan notes, stale memory entries, inbox backlog |
+| `/reorganize` | Migrate flat notes into organized subfolders |
+| `/clone` | Package your agent context for transfer to a new vault |
+| `/qmd` | Set up fast vault search index — enables semantic search across all notes |
 | `/help` | List all available commands with descriptions |
+| `/wrapup` | Wrap up session — merges any auto-checkpoints and saves full summary to session log |
 
 <details>
 <summary><strong>📁 Vault Structure</strong></summary>
