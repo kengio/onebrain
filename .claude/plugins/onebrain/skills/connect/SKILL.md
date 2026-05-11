@@ -159,6 +159,33 @@ Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bul
 
 ---
 
+## Progress reporting
+
+This skill is long-running. Emit a 1-line status update after each major step so the user can see progress in real time.
+
+**In-session format:**
+
+```
+→ [step N/M] <action being taken>
+```
+
+**Examples:**
+
+```
+→ [step 1/4] reading target note · finding candidate links...
+→ [step 2/4] dispatching knowledge-linker sub-agent...
+→ [step 3/4] linker returned 14 candidates · ranking...
+→ [step 4/4] writing top suggestions + adding to ## Related...
+```
+
+**Rules:**
+- Emit one line per major step (NOT per sub-step or tool call)
+- M = total steps known up front (count them before starting)
+- Status lines use `→ [step N/M]` prefix exactly so they're visually distinct from skill output
+- Do NOT emit heartbeats for fast operations (< 5 seconds)
+
+---
+
 ## Known Gotchas
 
 - **"Entire knowledge base" scope can be very large.** If note count exceeds 20, Step 2b delegates to the Knowledge Linker agent — the inline Steps 3-4 path is only for small scopes. Do not try to hold hundreds of notes in context.

@@ -230,6 +230,33 @@ Each subagent reads the relevant handler reference file before processing. Handl
 
 ---
 
+## Progress reporting
+
+This skill is long-running. Emit a 1-line status update after each major step so the user can see progress in real time.
+
+**In-session format:**
+
+```
+→ [step N/M] <action being taken>
+```
+
+**Examples:**
+
+```
+→ [step 1/4] reading file · detecting format...
+→ [step 2/4] extracting content (PDF parse / OCR / Markdown)...
+→ [step 3/4] enriching via tag-suggester + link-suggester...
+→ [step 4/4] writing to 04-resources/ + linking related notes...
+```
+
+**Rules:**
+- Emit one line per major step (NOT per sub-step or tool call)
+- M = total steps known up front (count them before starting)
+- Status lines use `→ [step N/M]` prefix exactly so they're visually distinct from skill output
+- Do NOT emit heartbeats for fast operations (< 5 seconds)
+
+---
+
 ## Known Gotchas
 
 - **Password-protected PDFs and Word files.** The Read tool returns empty content or a decryption error on protected files. When a non-trivially sized file (> 0 bytes) returns completely empty content, create a stub note with the message "File may be password-protected — content could not be extracted. Unlock the file and re-import."

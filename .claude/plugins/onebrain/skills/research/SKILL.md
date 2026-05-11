@@ -126,6 +126,35 @@ You might also explore:
 
 ---
 
+## Progress reporting
+
+This skill is long-running. Emit a 1-line status update after each major step so the user can see progress in real time.
+
+**In-session format:**
+
+```
+→ [step N/M] <action being taken>
+```
+
+**Examples:**
+
+```
+→ [step 1/6] fetching seed sources...
+→ [step 2/6] expanding queries via qmd...
+→ [step 3/6] reading 12 web sources...
+→ [step 4/6] extracting key claims + cross-referencing...
+→ [step 5/6] drafting resource note...
+→ [step 6/6] saving to 04-resources/ + adding links...
+```
+
+**Rules:**
+- Emit one line per major step (NOT per sub-step or tool call)
+- M = total steps known up front (count them before starting)
+- Status lines use `→ [step N/M]` prefix exactly so they're visually distinct from skill output
+- Do NOT emit heartbeats for fast operations (< 5 seconds)
+
+---
+
 ## Known Gotchas
 
 - **Versioned tools and libraries.** Web search may return cached or outdated documentation pages. Include the version number in search queries when the topic is a versioned library or framework, and note the publication date of each source in the note.

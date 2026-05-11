@@ -198,6 +198,35 @@ Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bul
 
 ---
 
+## Progress reporting
+
+This skill is long-running. Emit a 1-line status update after each major step so the user can see progress in real time.
+
+**In-session format:**
+
+```
+→ [step N/M] <action being taken>
+```
+
+**Examples:**
+
+```
+→ [step 1/6] scanning flat notes...
+→ [step 2/6] proposing subfolder structure...
+→ [step 3/6] showing user diff preview...
+→ [step 4/6] (awaiting confirmation)...
+→ [step 5/6] moving files in batches...
+→ [step 6/6] updating MEMORY-INDEX + wikilinks...
+```
+
+**Rules:**
+- Emit one line per major step (NOT per sub-step or tool call)
+- M = total steps known up front (count them before starting)
+- Status lines use `→ [step N/M]` prefix exactly so they're visually distinct from skill output
+- Do NOT emit heartbeats for fast operations (< 5 seconds)
+
+---
+
 ## Known Gotchas
 
 - **Wikilinks are path-independent in Obsidian.** Moving files does NOT break `[[Note Name]]` links — Obsidian resolves by filename, not path. The skill already notes this, but it is the most common user concern; reassure proactively before executing moves.

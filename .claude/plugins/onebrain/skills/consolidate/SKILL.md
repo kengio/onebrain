@@ -183,6 +183,34 @@ Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bul
 
 ---
 
+## Progress reporting
+
+This skill is long-running. Emit a 1-line status update after each major step so the user can see progress in real time.
+
+**In-session format:**
+
+```
+→ [step N/M] <action being taken>
+```
+
+**Examples:**
+
+```
+→ [step 1/5] reading inbox · 8 notes found...
+→ [step 2/5] dispatching inbox-classifier in parallel...
+→ [step 3/5] classifier returned recommendations...
+→ [step 4/5] applying user decisions per note...
+→ [step 5/5] moving notes + updating MEMORY-INDEX...
+```
+
+**Rules:**
+- Emit one line per major step (NOT per sub-step or tool call)
+- M = total steps known up front (count them before starting)
+- Status lines use `→ [step N/M]` prefix exactly so they're visually distinct from skill output
+- Do NOT emit heartbeats for fast operations (< 5 seconds)
+
+---
+
 ## Known Gotchas
 
 - **Mixed-content notes.** Braindumps often start with a personal insight but contain project tasks, external references, and reflections all in one file. Read the FULL note before classifying — the first paragraph can be misleading about the overall content type.

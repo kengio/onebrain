@@ -110,6 +110,16 @@ When editing INSTRUCTIONS.md or skills, use Claude Code tool names (`Read`, `Wri
 3. Write the skill as a numbered sequence of steps the AI should follow
 4. Register the command in [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) and [README.md](README.md) (also increment the command count in the README feature list)
 
+### Long-running skills: heartbeat pattern
+
+Skills that run more than a few seconds (multi-step workflows, batch processing) should emit progress heartbeats. Add a `## Progress reporting` section to your SKILL.md with the format:
+
+```
+→ [step N/M] <action being taken>
+```
+
+See `/research`, `/consolidate`, `/distill`, `/reorganize`, `/connect`, `/import` for reference implementations.
+
 ## Editing an Existing Skill
 
 - Keep the frontmatter intact

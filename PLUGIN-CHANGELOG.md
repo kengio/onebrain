@@ -1,6 +1,6 @@
 ---
-latest_version: 2.4.1
-released: 2026-05-10
+latest_version: 2.4.3
+released: 2026-05-12
 ---
 
 # Plugin Changelog
@@ -10,6 +10,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
+
+## 2.4.3 — 2026-05-12
+
+- Added `## Progress reporting` section to 6 long-running skills (E3)
+- Skills updated: /research, /consolidate, /distill, /reorganize, /connect, /import
+- Format: `→ [step N/M] <action>` emitted at each major step
+- Trust improvement during multi-step skill runs
 
 ## 2.4.2 — 2026-05-12
 

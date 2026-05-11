@@ -222,6 +222,34 @@ destination: "[knowledge_folder]/[subfolder]/[Topic].md"
 
 ---
 
+## Progress reporting
+
+This skill is long-running. Emit a 1-line status update after each major step so the user can see progress in real time.
+
+**In-session format:**
+
+```
+→ [step N/M] <action being taken>
+```
+
+**Examples:**
+
+```
+→ [step 1/5] identifying topic sources via qmd...
+→ [step 2/5] reading 9 source notes...
+→ [step 3/5] clustering themes...
+→ [step 4/5] drafting digest...
+→ [step 5/5] writing to 03-knowledge/ + linking...
+```
+
+**Rules:**
+- Emit one line per major step (NOT per sub-step or tool call)
+- M = total steps known up front (count them before starting)
+- Status lines use `→ [step N/M]` prefix exactly so they're visually distinct from skill output
+- Do NOT emit heartbeats for fast operations (< 5 seconds)
+
+---
+
 ## Known Gotchas
 
 - **`synthesized_from_checkpoints: true` logs are recovery summaries.** Checkpoint-synthesized session logs contain less detail than manually written ones — they summarize what was captured by the hook, not a full session review. Treat them as supporting context rather than authoritative sources when distilling decisions.
