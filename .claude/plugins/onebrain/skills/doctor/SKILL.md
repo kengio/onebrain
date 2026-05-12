@@ -130,6 +130,52 @@ Only run when vault.yml contains a `schedule:` block. Skip entirely otherwise.
 - **Schedule drift** — Read `vault.yml` `schedule:` block. For each entry, check that the corresponding launchd plist exists at `~/Library/LaunchAgents/com.onebrain.<labelSafe>.plist` where `labelSafe` strips leading `/` from `entry.skill` and replaces non-`[a-zA-Z0-9-]` chars with `-`. If any entry's plist is missing → 🟡 drift — suggest `onebrain register-schedule`. If any installed plist no longer matches a vault.yml entry (stale orphan) → 🟡 stale plist — suggest `onebrain register-schedule --remove` then re-register.
 - **One-shot reachability** — For each entry with `at:` (one-shot), verify the timestamp has not already passed. If passed and the plist still exists → 🟡 expired one-shot not cleaned up — suggest `onebrain register-schedule --remove` to clear the stale plist (the self-delete shell may have failed to run).
 
+### Pause: Orphan Pointer
+
+Check: `[logs_folder]/pause/_active.md` exists but no pause file matches its slug.
+
+How to detect:
+1. Read `_active.md`. If absent → skip.
+2. Parse slug. Glob `[logs_folder]/pause/*-{slug}-pause-*.md`. If empty match → orphan pointer.
+
+Report (if orphan):
+```
+⚠️ Pause pointer references `{slug}` but no snapshot files exist.
+   Fix: rm 07-logs/pause/_active.md (or create initial /pause)
+```
+
+### Pause: Missing Pointer
+
+Check: pause files exist but `_active.md` is missing.
+
+How to detect:
+1. Glob `[logs_folder]/pause/*-pause-*.md`. If empty → skip.
+2. If `_active.md` exists → skip.
+3. Otherwise: missing pointer. Identify slug(s) from filenames.
+
+Report (if missing):
+```
+⚠️ Pause files exist but no active pointer:
+   - {slug-1} (N snapshots, latest YYYY-MM-DD)
+   - {slug-2} (M snapshots, latest YYYY-MM-DD)
+   Fix: echo "{chosen-slug}" > 07-logs/pause/_active.md
+```
+
+### Pause: Idle Thread
+
+Check: active pause thread has had no new activity (no new pause file, no `/resume`) for > 14 days.
+
+How to detect:
+1. Read `_active.md`. If absent → skip.
+2. Glob pause files for the slug. Get max date prefix from filenames.
+3. If `(today - max_date).days > 14` → idle.
+
+Report (if idle):
+```
+⚠️ Pause thread `{slug}` idle for {N} days (last snapshot YYYY-MM-DD).
+   Fix: /wrapup to consolidate, or /pause to refresh, or /resume to continue
+```
+
 ---
 
 ## Step 3: Report Findings
