@@ -544,6 +544,16 @@ schedule:
 
 This matches the same shape Claude Code uses for `hooks` in `settings.json` — direct binary invocation with positional argv. No wrapper skill needed.
 
+### Quick start — preset bundles
+
+Don't want to hand-craft cron entries? OneBrain ships three preset tiers. New vaults are prompted during `/onboarding`; existing vaults can trigger the selector by running `/schedule-add` when the `schedule:` block is empty.
+
+- **Minimal** — `/daily` briefing only
+- **Essentials (default)** — `/daily` + `/weekly` Friday + `/recap` Sunday
+- **Maintenance Plus** — Essentials + `/doctor` monthly + `/tasks` daily + `onebrain qmd-reindex` Sunday (mixes skill + command modes)
+
+Canonical tier definitions live at `.claude/plugins/onebrain/skills/_shared/schedule-presets.md`.
+
 CLI flags:
 
 | Flag | Purpose |
