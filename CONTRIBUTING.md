@@ -187,6 +187,22 @@ schedule:
 
 Command mode matches the Claude Code hook shape — single source of pattern across event-driven (hooks) and time-driven (schedules) automation.
 
+### Updating preset bundles
+
+The canonical preset tier definitions live at `.claude/plugins/onebrain/skills/_shared/schedule-presets.md`. To add or modify a tier:
+
+1. Edit `_shared/schedule-presets.md` — that file is the single source of truth.
+2. Do NOT duplicate tier definitions in `/schedule-add` or `/onboarding`; both read from `_shared`.
+3. Schedule entries may use skill mode (`skill: /name`) for OneBrain skills with `schedulable:` frontmatter, OR command mode (`command: binary`, `args: [...]`) for direct CLI invocations matching the Claude Code hook shape.
+
+Reasonable cadences:
+- Daily skills → 9am briefings; 6am pre-work refreshes
+- Weekly workday-end (wrap work cycle) → Friday 17:00
+- Weekly weekend (reflection / maintenance) → Sunday mid-day or pre-dawn
+- Monthly → 1st of month 09:00 (calendar-based)
+
+Stagger times across the day to avoid simultaneous launchd job spawns.
+
 ## Editing an Existing Skill
 
 - Keep the frontmatter intact
