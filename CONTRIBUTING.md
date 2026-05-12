@@ -174,6 +174,19 @@ Errors write to `[logs_folder]/scheduler/YYYY/MM/YYYY-MM-DD-{skill}.err.md` (onl
 
 Use `cron:` for recurring schedules and `at:` for one-shot fire-once-then-uninstall entries. Exactly one must be set per entry. The launchd plist for one-shot entries emits a self-delete shell wrapper that runs the skill, calls `launchctl bootout`, and deletes its own plist file.
 
+### Don't wrap CLI tasks in skills
+
+If you have a CLI maintenance task (e.g., `onebrain qmd-reindex`), do NOT create a thin wrapper skill just to make it schedulable. Use command mode in `vault.yml` instead:
+
+```yaml
+schedule:
+  - cron: "0 3 * * 0"
+    command: onebrain
+    args: [qmd-reindex]
+```
+
+Command mode matches the Claude Code hook shape — single source of pattern across event-driven (hooks) and time-driven (schedules) automation.
+
 ## Editing an Existing Skill
 
 - Keep the frontmatter intact

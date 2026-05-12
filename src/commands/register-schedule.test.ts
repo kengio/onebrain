@@ -120,6 +120,114 @@ describe('registerSchedule', () => {
   });
 });
 
+describe('registerSchedule — command mode', () => {
+  test('--dry-run produces plist with command + argv', async () => {
+    writeFileSync(
+      join(testVault, 'vault.yml'),
+      `schedule:\n  - cron: "0 3 * * 0"\n    command: onebrain\n    args:\n      - qmd-reindex\n`,
+    );
+    const captured = captureConsoleLog();
+    try {
+      await registerSchedule({ vault: testVault, dryRun: true });
+      const joined = captured.lines().join('\n');
+      expect(joined).toContain('<string>onebrain</string>');
+      expect(joined).toContain('<string>qmd-reindex</string>');
+      expect(joined).not.toContain('<string>--skill</string>');
+    } finally {
+      captured.restore();
+    }
+  });
+
+  test('command entry skips schedulable validation', async () => {
+    writeFileSync(
+      join(testVault, 'vault.yml'),
+      `schedule:\n  - cron: "0 3 * * 0"\n    command: nonexistent-binary\n    args:\n      - foo\n`,
+    );
+    await expect(registerSchedule({ vault: testVault, dryRun: true })).resolves.toBeUndefined();
+  });
+
+  test('--status shows command entries with cmd: prefix and joined argv', async () => {
+    writeFileSync(
+      join(testVault, 'vault.yml'),
+      `schedule:\n  - cron: "0 9 * * *"\n    skill: /daily\n  - cron: "0 3 * * 0"\n    command: onebrain\n    args: [qmd-reindex]\n`,
+    );
+    const captured = captureConsoleLog();
+    try {
+      await registerSchedule({ vault: testVault, status: true });
+      const plain = stripAnsi(captured.lines().join('\n'));
+      expect(plain).toContain('Registered schedules: 2');
+      expect(plain).toContain('skill: /daily');
+      expect(plain).toContain('cmd: onebrain qmd-reindex');
+    } finally {
+      captured.restore();
+    }
+  });
+
+  test('--status shows skill args inline when present', async () => {
+    mkdirSync(join(testVault, '.claude/plugins/onebrain/skills/distill'), { recursive: true });
+    writeFileSync(
+      join(testVault, '.claude/plugins/onebrain/skills/distill/SKILL.md'),
+      '---\nname: distill\nschedulable_with_args: true\nrequired_args: [topic]\n---\n',
+    );
+    writeFileSync(
+      join(testVault, 'vault.yml'),
+      `schedule:\n  - cron: "0 9 * * *"\n    skill: /distill\n    args:\n      topic: this-week\n`,
+    );
+    const captured = captureConsoleLog();
+    try {
+      await registerSchedule({ vault: testVault, status: true });
+      const plain = stripAnsi(captured.lines().join('\n'));
+      expect(plain).toContain('skill: /distill (topic=this-week)');
+    } finally {
+      captured.restore();
+    }
+  });
+
+  test('one-shot command rejects shell-special chars', async () => {
+    writeFileSync(
+      join(testVault, 'vault.yml'),
+      `schedule:\n  - at: "2026-05-13 14:30"\n    command: onebrain\n    args:\n      - "$EVIL"\n`,
+    );
+    await expect(registerSchedule({ vault: testVault, dryRun: true })).rejects.toThrow(
+      /shell-special/,
+    );
+  });
+
+  test('mixed skill + command in same vault.yml — both register', async () => {
+    writeFileSync(
+      join(testVault, 'vault.yml'),
+      `schedule:\n  - cron: "0 9 * * *"\n    skill: /daily\n  - cron: "0 3 * * 0"\n    command: onebrain\n    args: [qmd-reindex]\n`,
+    );
+    const captured = captureConsoleLog();
+    try {
+      await registerSchedule({ vault: testVault, dryRun: true });
+      const joined = captured.lines().join('\n');
+      expect(joined).toContain('com.onebrain.daily');
+      expect(joined).toContain('com.onebrain.onebrain');
+    } finally {
+      captured.restore();
+    }
+  });
+
+  test('collision: skill /onebrain and command onebrain rejected', async () => {
+    mkdirSync(join(testVault, '.claude/plugins/onebrain/skills/onebrain'), { recursive: true });
+    writeFileSync(
+      join(testVault, '.claude/plugins/onebrain/skills/onebrain/SKILL.md'),
+      '---\nname: onebrain\nschedulable: true\n---\n',
+    );
+    writeFileSync(
+      join(testVault, 'vault.yml'),
+      `schedule:\n  - cron: "0 9 * * *"\n    skill: /onebrain\n  - cron: "0 3 * * 0"\n    command: onebrain\n`,
+    );
+    await expect(registerSchedule({ vault: testVault, dryRun: true })).rejects.toThrow(
+      /Conflict.*normalize to the same plist path/,
+    );
+  });
+});
+
+// biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ANSI escape sequences
+const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
+
 function captureConsoleLog() {
   const original = console.log;
   const lines: string[] = [];

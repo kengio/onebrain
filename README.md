@@ -528,6 +528,22 @@ Or use the interactive wizards from inside your vault:
 
 Output goes to `[logs_folder]/scheduler/YYYY/MM/YYYY-MM-DD-{skill}.md` as readable markdown.
 
+### Command mode (CLI binaries, hook-style)
+
+For CLI maintenance tasks that aren't OneBrain skills, use the `command + args[]` shape:
+
+```yaml
+schedule:
+  - cron: "0 3 * * 0"
+    command: onebrain
+    args: [qmd-reindex]
+  - cron: "0 5 * * *"
+    command: rsync
+    args: [-av, /vault, /backup]
+```
+
+This matches the same shape Claude Code uses for `hooks` in `settings.json` — direct binary invocation with positional argv. No wrapper skill needed.
+
 CLI flags:
 
 | Flag | Purpose |

@@ -1,5 +1,5 @@
 ---
-latest_version: 2.3.0
+latest_version: 2.3.1
 released: 2026-05-12
 ---
 
@@ -12,6 +12,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.3.1 — feat(scheduler): hook-style command mode for direct CLI scheduling
+
+- `ScheduleEntry.command` field added: schedule any CLI binary using the same `command + args[]` shape as Claude Code hooks
+- `args` is now `Record<string, string>` (skill mode → `--key=value` flags) OR `string[]` (command mode → positional argv)
+- `validateEntry` enforces exactly-one-of(skill, command) + matching args shape; type guards `isSkillMode` / `isCommandMode` exported
+- One-shot command entries reject shell-special chars in args (`"`, `$`, backtick, `\`) — same guard as v2.3.0
+- `register-schedule --status` displays command entries as `cmd: <binary> <args>` and skill entries with inline `(key=value)` args
+- Collision detection extended: skill and command entries derive plist labels independently; conflicts reported with mode-tagged names
+- Zero breaking change to existing skill-mode entries — full v2.3.0 test suite passes without modification
 
 ## v2.3.0 — feat(scheduler): OneBrain scheduler — launchd-backed recurring + one-shot schedules (E9)
 

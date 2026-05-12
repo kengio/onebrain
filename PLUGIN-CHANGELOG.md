@@ -1,5 +1,5 @@
 ---
-latest_version: 2.4.7
+latest_version: 2.4.8
 released: 2026-05-12
 ---
 
@@ -10,6 +10,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
+
+## 2.4.8 — 2026-05-12
+
+- `/schedule-list` displays both skill-mode (`skill: /name (k=v)`) and command-mode (`cmd: binary arg1 arg2`) entries
+- INSTRUCTIONS.md adds "Skill mode vs command mode" subsection with full YAML example
+- README + CONTRIBUTING document command mode as alternative to thin wrapper skills
+- Companion to CLI v2.3.1 which introduces the command-mode backend
 
 ## 2.4.7 — 2026-05-12
 

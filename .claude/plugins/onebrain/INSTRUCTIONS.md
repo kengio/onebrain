@@ -388,6 +388,35 @@ For interactive setup:
 
 For manual config: edit `vault.yml` `schedule:` block + run `onebrain register-schedule`.
 
+### Skill mode vs command mode
+
+`vault.yml` `schedule:` entries support two coexisting modes:
+
+- **Skill mode** (`skill: /daily`) — invokes a OneBrain skill via headless Claude Code. Args use map form: `args: { key: value }` (emitted as `--key=value` flags). Requires the skill's frontmatter to declare `schedulable: true` (or `schedulable_with_args: true` with `required_args`).
+- **Command mode** (`command: onebrain`) — invokes any CLI binary directly using the same `command + args[]` shape as Claude Code hooks (`settings.json`). Args use string array: `args: [arg1, arg2]` (positional argv). No frontmatter validation; trust model matches hooks.
+
+Example:
+
+```yaml
+schedule:
+  - cron: "0 9 * * *"
+    skill: /daily
+  - cron: "0 9 * * *"
+    skill: /distill
+    args:
+      topic: this-week
+  - cron: "0 3 * * 0"
+    command: onebrain
+    args: [qmd-reindex]
+  - cron: "0 5 * * *"
+    command: rsync
+    args: [-av, /vault, /backup]
+```
+
+Use skill mode for OneBrain workflows. Use command mode for CLI maintenance and generic binaries that don't have (or don't need) a skill wrapper.
+
+**Adding entries:** the `/schedule-add` wizard targets skill mode only. To add a command-mode entry, edit `vault.yml` directly and re-run `onebrain register-schedule`. The `/schedule-list` and `/schedule-remove` skills handle both modes transparently.
+
 ## Headless invocation
 
 Scheduled skills run via headless Claude Code: `claude --vault {VAULT} --skill /daily --headless`. The session loads MEMORY.md, vault.yml, MEMORY-INDEX.md as normal (SessionStart hook fires). PreToolUse, PostToolUse, Stop hooks fire as normal. PreCompact / PostCompact do not fire (sessions are too short).
