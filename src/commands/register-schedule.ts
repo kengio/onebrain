@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import pc from 'picocolors';
 import { parse as parseYaml } from 'yaml';
 import { validateAt, validateCron } from '../lib/scheduler/cron-parse.js';
-import { isOneShot, validateEntry } from '../lib/scheduler/entry.js';
-import { generatePlist, plistPath } from '../lib/scheduler/launchd.js';
+import { isCommandMode, isOneShot, isSkillMode, validateEntry } from '../lib/scheduler/entry.js';
+import { generatePlist, labelForEntry, plistPath } from '../lib/scheduler/launchd.js';
 import type { ScheduleConfig, ScheduleEntry, SkillFrontmatter } from '../lib/scheduler/types.js';
 
 export interface RegisterScheduleOptions {
@@ -37,18 +37,24 @@ export async function registerSchedule(opts: RegisterScheduleOptions): Promise<v
     return;
   }
 
-  // Validate each entry (exactly-one-of cron/at, plus the corresponding format)
+  // Validate each entry (exactly-one-of cron/at + skill/command, plus format checks)
   for (const entry of entries) {
     const ve = validateEntry(entry);
     if (!ve.valid) throw new Error(`Invalid schedule entry: ${ve.reason}`);
+
     if (isOneShot(entry)) {
       const va = validateAt(entry.at);
       if (!va.valid) throw new Error(`Invalid at "${entry.at}": ${va.reason}`);
+      sanitizeArgsForOneShot(entry);
     } else if (entry.cron !== undefined) {
       const vc = validateCron(entry.cron);
       if (!vc.valid) throw new Error(`Invalid cron "${entry.cron}": ${vc.reason}`);
     }
-    await validateSchedulable(opts.vault, entry);
+
+    if (isSkillMode(entry)) {
+      await validateSchedulable(opts.vault, entry);
+    }
+    // Command mode: no schedulable-frontmatter validation (hook-style trust model)
   }
 
   // TODO: resolve the real `onebrain` binary path for production use.
@@ -74,18 +80,25 @@ export async function registerSchedule(opts: RegisterScheduleOptions): Promise<v
   // Collision detection: two entries normalizing to the same plist path conflict
   const seen = new Map<string, ScheduleEntry>();
   for (const entry of entries) {
-    const target = plistPath(entry.skill, ctx.homedir);
+    const target = plistPath(labelForEntry(entry), ctx.homedir);
     if (seen.has(target)) {
-      throw new Error(
-        `Conflict: ${entry.skill} and ${seen.get(target)?.skill} normalize to the same plist path ${target}`,
-      );
+      const existing = seen.get(target);
+      if (existing) {
+        const existingLabel = isCommandMode(existing)
+          ? `command:${existing.command}`
+          : `skill:${existing.skill}`;
+        const newLabel = isCommandMode(entry) ? `command:${entry.command}` : `skill:${entry.skill}`;
+        throw new Error(
+          `Conflict: ${newLabel} and ${existingLabel} normalize to the same plist path ${target}`,
+        );
+      }
     }
     seen.set(target, entry);
   }
 
   for (const entry of entries) {
     const plistContent = generatePlist(entry, ctx);
-    const targetPath = plistPath(entry.skill, ctx.homedir);
+    const targetPath = plistPath(labelForEntry(entry), ctx.homedir);
 
     if (opts.dryRun) {
       console.log(pc.cyan(`---  ${targetPath}  ---`));
@@ -100,7 +113,7 @@ export async function registerSchedule(opts: RegisterScheduleOptions): Promise<v
   console.log(pc.green(`\nRegistered ${entries.length} schedule entries.`));
   console.log(pc.dim('Use launchctl to load (or restart launchd):'));
   for (const entry of entries) {
-    const target = plistPath(entry.skill, ctx.homedir);
+    const target = plistPath(labelForEntry(entry), ctx.homedir);
     console.log(pc.dim(`  launchctl load ${target}`));
   }
 }
@@ -112,7 +125,21 @@ async function readVaultConfig(vault: string): Promise<ScheduleConfig> {
   return (parseYaml(raw) ?? {}) as ScheduleConfig;
 }
 
+function sanitizeArgsForOneShot(entry: ScheduleEntry): void {
+  const values: string[] = isCommandMode(entry)
+    ? ((entry.args as string[] | undefined) ?? [])
+    : Object.values((entry.args as Record<string, string> | undefined) ?? {});
+  for (const v of values) {
+    if (/["$`\\]/.test(v)) {
+      throw new Error(`Arg value must not contain shell-special chars (", $, \`, \\): ${v}`);
+    }
+  }
+}
+
 async function validateSchedulable(vault: string, entry: ScheduleEntry): Promise<void> {
+  if (!entry.skill) {
+    throw new Error('validateSchedulable invoked on non-skill entry — caller bug');
+  }
   const skillName = entry.skill.replace(/^\//, '');
   const skillPath = join(vault, '.claude/plugins/onebrain/skills', skillName, 'SKILL.md');
   if (!existsSync(skillPath)) {
@@ -131,7 +158,7 @@ async function validateSchedulable(vault: string, entry: ScheduleEntry): Promise
   }
   if (fm.schedulable_with_args) {
     const required = fm.required_args ?? [];
-    const provided = Object.keys(entry.args ?? {});
+    const provided = Object.keys((entry.args as Record<string, string> | undefined) ?? {});
     const missing = required.filter((r) => !provided.includes(r));
     if (missing.length > 0) {
       throw new Error(`Skill ${entry.skill} requires args: [${missing.join(', ')}]`);
@@ -140,14 +167,14 @@ async function validateSchedulable(vault: string, entry: ScheduleEntry): Promise
     throw new Error(`Skill ${entry.skill} does not declare schedulable: true in frontmatter`);
   }
 
-  // Reject shell-special chars in args values: the one-shot shell wrapper interpolates
-  // arg values into a sh -c "..." string, so double-quote, $, backtick, and backslash
-  // can execute arbitrary commands or break the generated shell command.
+  // Reject shell-special chars in args values for skill mode: the one-shot shell wrapper
+  // interpolates arg values into a sh -c "..." string, and recurring mode's plist generator
+  // also embeds arg values. Reject early here to provide a clear error message.
   if (entry.args) {
-    for (const [k, v] of Object.entries(entry.args)) {
+    for (const [k, v] of Object.entries(entry.args as Record<string, string>)) {
       if (/["$`\\]/.test(v)) {
         throw new Error(
-          `Arg "${k}" value must not contain shell-special chars (", $, backtick, \\): ${v}`,
+          `Arg "${k}" value must not contain shell-special chars (", $, \`, \\): ${v}`,
         );
       }
     }
@@ -158,7 +185,7 @@ async function removeAll(vault: string): Promise<void> {
   const config = await readVaultConfig(vault);
   const entries = config.schedule ?? [];
   for (const entry of entries) {
-    const target = plistPath(entry.skill, homedir());
+    const target = plistPath(labelForEntry(entry), homedir());
     if (existsSync(target)) {
       await unlink(target);
       console.log(pc.green(`✓ Removed ${target}`));
@@ -171,11 +198,26 @@ async function printStatus(vault: string): Promise<void> {
   const entries = config.schedule ?? [];
   console.log(pc.cyan(`Registered schedules: ${entries.length}`));
   for (const entry of entries) {
-    const target = plistPath(entry.skill, homedir());
+    const target = plistPath(labelForEntry(entry), homedir());
     const installed = existsSync(target) ? '✓' : '✗';
     const when = entry.at ?? entry.cron ?? '?';
     const tag = entry.at ? pc.magenta('[once]') : pc.dim('[cron]');
-    console.log(`  ${installed} ${tag} ${when}  ${entry.skill}`);
+
+    let targetLabel: string;
+    if (isCommandMode(entry)) {
+      const argv = (entry.args as string[] | undefined) ?? [];
+      const argStr = argv.length ? ` ${argv.join(' ')}` : '';
+      targetLabel = `${pc.yellow('cmd:')} ${entry.command}${argStr}`;
+    } else {
+      const argsMap = (entry.args as Record<string, string> | undefined) ?? {};
+      const argStr = Object.keys(argsMap).length
+        ? ` (${Object.entries(argsMap)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(', ')})`
+        : '';
+      targetLabel = `${pc.green('skill:')} ${entry.skill}${argStr}`;
+    }
+    console.log(`  ${installed} ${tag} ${when}  ${targetLabel}`);
   }
 }
 
