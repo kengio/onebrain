@@ -70,6 +70,65 @@ trigger: stop
 
 ---
 
+## Pause File Format
+
+Written by `/pause` (user-driven snapshot) or auto-finalize before AUTO-SUMMARY / `/wrapup` "n" branch when an active pause thread exists. Filename pattern: `YYYY-MM-DD-{slug}-pause-NN.md` (NN scoped to slug across all dates, not reset per day).
+
+**Frontmatter:**
+```yaml
+---
+tags: [pause, session-log]
+date: YYYY-MM-DD
+session_token: <token>
+task_slug: <kebab-case-slug>
+pause: NN
+trigger: manual
+---
+```
+
+- `trigger: manual` — written by `/pause` (default)
+- `trigger: auto-finalize` — written automatically before session end when `_active.md` exists and skip conditions don't apply (see `skills/pause/SKILL.md` §Auto-Finalize)
+
+`task_slug` and `pause` mirror the filename so frontmatter-only filters work without parsing filenames.
+
+**Body:** use Shared Body Sections above, PLUS two additional sections at the top:
+
+```markdown
+## Where I Stopped
+
+1–2 sentences describing the current state of the work: file being edited, decision pending, last test run.
+
+## Resume With
+
+One concrete action to perform first on resume — specific file path, command, or decision point.
+
+## What We Worked On
+
+[checkpoint section]
+
+## Key Decisions
+
+[bullet list]
+
+## Insights & Learnings
+
+[omit if none]
+
+## Action Items
+
+- [ ] task 📅 YYYY-MM-DD
+
+## Open Questions
+
+[bullet list]
+```
+
+**Word cap:** 350 words total (100 more than checkpoint, to accommodate Where I Stopped + Resume With).
+
+**Dataview compatibility:** same rule as Checkpoint Format — never write `` `=… `` anywhere in the file.
+
+---
+
 ## Session Log Format
 
 **Header line** (before body sections):
@@ -138,6 +197,20 @@ synthesized_from_checkpoints: true
 auto-recovered: true
 ---
 ```
+
+**Thread wrapup — pause snapshots incorporated** (used by: `/wrapup` Thread Wrapup Branch when user confirms `y` on the active-thread prompt):
+```yaml
+---
+tags: [session-log]
+date: YYYY-MM-DD
+session_token: <token>
+session: NN
+synthesized_from_pause: true
+pause_slug: <kebab-case-slug>
+---
+```
+
+`pause_slug` records which thread this log consolidates. Body content merges all pause files of the slug + checkpoint files of the current session into one log, following the Preservation rule from /wrapup Step 4.
 
 `session_token` mirrors the token embedded in the filename so cross-references (orphan recovery's `recovery-of:` marker, /distill source-log filtering, /doctor checks) can match by frontmatter without parsing filenames. Source the token from the `session_token` already in agent context (set by `onebrain session-init` at startup); for **Recovered from checkpoints**, source it from the orphan group's parsed token (the same one embedded in the body marker), not the live session's token.
 
