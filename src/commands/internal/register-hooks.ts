@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path';
 import { spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { loadVaultConfig, mkdirIdempotent } from '../../lib/index.js';
-import { detectHarness } from './harness.js';
+import { detectHarnesses } from './harness.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -483,7 +483,7 @@ export async function runRegisterHooks(
   const vaultRoot = opts.vaultDir ?? process.cwd();
   const isTTY = opts.isTTY ?? process.stdout.isTTY ?? false;
 
-  const harness = await detectHarness(vaultRoot);
+  const harnesses = await detectHarnesses(vaultRoot);
   let qmdCollection: string | undefined;
   try {
     const vaultConfig = await loadVaultConfig(vaultRoot);
@@ -514,74 +514,81 @@ export async function runRegisterHooks(
   let permSpinner: ReturnType<typeof spinner> | null = null;
 
   try {
-    // ── Steps 1-3: Claude harness only — write .claude/settings.json ─────
-    if (harness === 'claude') {
-      hooksSpinner = isTTY ? spinner() : null;
-      hooksSpinner?.start('Registering hooks...');
+    // Iterate every detected harness. A vault with both `.claude/` and
+    // `.gemini/` present should have OneBrain configured for BOTH — the
+    // previous implementation early-returned on the first match and silently
+    // skipped the other. Each branch writes independent config files; the
+    // shared `result` is populated only by the claude branch (it owns the
+    // .claude/settings.json hook/permission state).
+    for (const harness of harnesses) {
+      // ── Steps 1-3: Claude harness — write .claude/settings.json ─────
+      if (harness === 'claude') {
+        hooksSpinner = isTTY ? spinner() : null;
+        hooksSpinner?.start('Registering hooks...');
 
-      const settings = await readSettings(settingsPath);
-      result.hooks = applyHooks(settings);
+        const settings = await readSettings(settingsPath);
+        result.hooks = applyHooks(settings);
 
-      // ── Step 1b: qmd PostToolUse hook (applied before stop so it appears in hook line) ──
-      let qmdStatus: HookStatus | undefined;
-      if (qmdCollection) {
-        qmdStatus = applyQmdHook(settings);
-      } else {
-        // qmd disabled (no qmd_collection in vault.yml): strip any legacy
-        // `qmd update …` PostToolUse entries so they don't keep firing against
-        // a collection the user no longer maintains. Issue #127.
-        const groups = settings.hooks?.['PostToolUse'] ?? [];
-        const stripped = migrateLegacyQmdEntries(groups, false);
-        if (stripped && groups.length === 0 && settings.hooks) {
-          // Removing the key (rather than setting it to undefined) keeps the
-          // serialized JSON clean — `JSON.stringify` would emit `"PostToolUse":null`
-          // for the assignment form, which surprises downstream consumers.
-          // biome-ignore lint/performance/noDelete: see comment above
-          delete settings.hooks['PostToolUse'];
+        // ── Step 1b: qmd PostToolUse hook (applied before stop so it appears in hook line) ──
+        let qmdStatus: HookStatus | undefined;
+        if (qmdCollection) {
+          qmdStatus = applyQmdHook(settings);
+        } else {
+          // qmd disabled (no qmd_collection in vault.yml): strip any legacy
+          // `qmd update …` PostToolUse entries so they don't keep firing against
+          // a collection the user no longer maintains. Issue #127.
+          const groups = settings.hooks?.['PostToolUse'] ?? [];
+          const stripped = migrateLegacyQmdEntries(groups, false);
+          if (stripped && groups.length === 0 && settings.hooks) {
+            // Removing the key (rather than setting it to undefined) keeps the
+            // serialized JSON clean — `JSON.stringify` would emit `"PostToolUse":null`
+            // for the assignment form, which surprises downstream consumers.
+            // biome-ignore lint/performance/noDelete: see comment above
+            delete settings.hooks['PostToolUse'];
+          }
         }
-      }
 
-      if (isTTY) {
-        const parts = HOOK_EVENTS.map((e) => {
-          const status = result.hooks[e];
-          const icon = pc.green(status === 'ok' ? '✓' : status === 'migrated' ? '↑' : '+');
-          return `${pc.dim(e)} ${icon}`;
-        });
-        if (qmdStatus) {
-          const qmdIcon = qmdStatus === 'ok' ? '✓' : qmdStatus === 'migrated' ? '↑' : '+';
-          parts.push(`${pc.dim('PostToolUse')} ${pc.green(qmdIcon)}`);
+        if (isTTY) {
+          const parts = HOOK_EVENTS.map((e) => {
+            const status = result.hooks[e];
+            const icon = pc.green(status === 'ok' ? '✓' : status === 'migrated' ? '↑' : '+');
+            return `${pc.dim(e)} ${icon}`;
+          });
+          if (qmdStatus) {
+            const qmdIcon = qmdStatus === 'ok' ? '✓' : qmdStatus === 'migrated' ? '↑' : '+';
+            parts.push(`${pc.dim('PostToolUse')} ${pc.green(qmdIcon)}`);
+          }
+          hooksSpinner?.stop(`Hooks  ${parts.join('  ')}`);
+        } else {
+          const hookLine = HOOK_EVENTS.map((e) => {
+            const status = result.hooks[e] ?? 'ok';
+            return `${e} ${status}`;
+          }).join('  ');
+          note(hookLine);
+          if (qmdStatus) note(`PostToolUse ${qmdStatus}`);
         }
-        hooksSpinner?.stop(`Hooks  ${parts.join('  ')}`);
-      } else {
-        const hookLine = HOOK_EVENTS.map((e) => {
-          const status = result.hooks[e];
-          const label =
-            status === 'ok' || status === 'added' || status === 'migrated'
-              ? 'ok'
-              : (status ?? 'ok');
-          return `${e} ${label}`;
-        }).join('  ');
-        note(hookLine);
-        if (qmdStatus) note(`PostToolUse ${qmdStatus}`);
+
+        // ── Step 2: Permissions ───────────────────────────────────────────────
+        permSpinner = isTTY ? spinner() : null;
+        permSpinner?.start('Updating permissions...');
+
+        result.permissionsAdded = applyPermissions(settings);
+        await writeSettings(settingsPath, settings);
+
+        permSpinner?.stop('Permissions ok');
+        if (!isTTY) note('permissions ok');
+      } // end claude harness block
+
+      // ── Step 4: Gemini harness — no-op (handled by extension link, see header) ──
+      // (Intentionally empty — Gemini reads hooks/commands/skills from the
+      // self-contained extension at .claude/plugins/onebrain/gemini/, which
+      // the user links via `gemini extensions link`.)
+
+      // ── Step 5: Direct harness ────────────────────────────────────────────
+      if (harness === 'direct') {
+        await registerDirectPath();
       }
-
-      // ── Step 2: Permissions ───────────────────────────────────────────────
-      permSpinner = isTTY ? spinner() : null;
-      permSpinner?.start('Updating permissions...');
-
-      result.permissionsAdded = applyPermissions(settings);
-      await writeSettings(settingsPath, settings);
-
-      permSpinner?.stop('Permissions ok');
-      if (!isTTY) note('permissions ok');
-    } // end claude harness block
-
-    // ── Step 4: Gemini harness — no-op (handled by extension link, see header) ──
-
-    // ── Step 5: Direct harness ────────────────────────────────────────────
-    if (harness === 'direct') {
-      await registerDirectPath();
-    }
+    } // end harness iteration
 
     result.ok = true;
 

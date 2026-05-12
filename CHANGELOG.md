@@ -1,5 +1,5 @@
 ---
-latest_version: 2.2.4
+latest_version: 2.2.5
 released: 2026-05-12
 ---
 
@@ -12,6 +12,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.5 — fix(hooks): iterate all detected harnesses + raw status label in non-TTY
+
+- Fix: `register-hooks` now updates ALL configured harnesses (.claude AND .gemini) instead of exiting on the first match
+- Multi-harness vaults previously had `.claude/settings.json` silently skipped when `.gemini/` was also present
+- `detectHarnesses()` returns `Harness[]`; `detectHarness()` kept as thin single-value wrapper for backward compat
+- Fix: non-TTY hook status report now shows raw status (`Stop migrated`) instead of collapsing all to `ok`
+- Workaround for affected vaults (pre-2.2.5): `ONEBRAIN_HARNESS=claude onebrain register-hooks`
 
 ## v2.2.4 — feat(register-hooks): emit exec-form hooks (Claude Code 2.1.139)
 

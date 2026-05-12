@@ -1058,3 +1058,134 @@ describe('registerDirectPath', () => {
     expect(result.ok).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Multi-harness vault — both .claude/ and .gemini/ present
+// ---------------------------------------------------------------------------
+//
+// Bug found 2026-05-12: detectHarness returned a SINGLE harness, so vaults
+// with BOTH .claude/ and .gemini/ had the .claude block skipped (gemini won
+// the priority race) — register-hooks silently never wrote .claude/settings.json.
+// The fix is detectHarnesses → Harness[] + runRegisterHooks loops every
+// detected harness. This test would have caught the regression.
+
+describe('runRegisterHooks with multi-harness vault', () => {
+  let vaultDir: string;
+
+  beforeEach(async () => {
+    vaultDir = join(tmpdir(), `ob-multi-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    await mkdir(join(vaultDir, '.claude'), { recursive: true });
+    await mkdir(join(vaultDir, '.gemini'), { recursive: true });
+    await writeFile(join(vaultDir, 'vault.yml'), 'update_channel: stable\n', 'utf8');
+  });
+
+  afterEach(async () => {
+    await rm(vaultDir, { recursive: true, force: true });
+  });
+
+  test('vault with BOTH .claude/ and .gemini/ → .claude/settings.json IS updated', async () => {
+    const result = await runRegisterHooks({ vaultDir });
+    expect(result.ok).toBe(true);
+    // Stop hook registered into .claude/settings.json — the bug was that the
+    // claude branch never ran when .gemini/ was also present.
+    expect(result.hooks['Stop']).toBe('added');
+
+    const settings = JSON.parse(
+      await readFile(join(vaultDir, '.claude', 'settings.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    expect(settings['hooks']).toBeDefined();
+    expect((settings['hooks'] as Record<string, unknown>)['Stop']).toBeDefined();
+    expect((settings['permissions'] as { allow: string[] }).allow).toContain('Bash(onebrain *)');
+  });
+
+  test('vault with BOTH .claude/ and .gemini/ → .gemini/settings.json untouched', async () => {
+    const geminiSettings = join(vaultDir, '.gemini', 'settings.json');
+    const userSettings = { theme: 'my-theme', model: 'gemini-2.5-pro' };
+    await writeFile(geminiSettings, JSON.stringify(userSettings), 'utf8');
+
+    const result = await runRegisterHooks({ vaultDir });
+    expect(result.ok).toBe(true);
+
+    // Gemini config is owned by the user / installed via extension link — we
+    // must never mutate it, even when iterating it as one of the detected
+    // harnesses.
+    const after = JSON.parse(await readFile(geminiSettings, 'utf8')) as Record<string, unknown>;
+    expect(after).toEqual(userSettings);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Non-TTY status label — must show RAW status (Bug 2 fix, 2026-05-12)
+// ---------------------------------------------------------------------------
+//
+// Before the fix, the non-TTY branch collapsed `ok`, `added`, and `migrated`
+// all to the literal string `'ok'`, which hid migration events from CI users
+// and made the Stop line inconsistent with the qmd line (which already used
+// raw status). The fix: drop the relabel and print raw status.
+
+describe('runRegisterHooks non-TTY status output', () => {
+  let captured: string[];
+  let originalWrite: typeof process.stdout.write;
+
+  beforeEach(() => {
+    captured = [];
+    originalWrite = process.stdout.write.bind(process.stdout);
+    // biome-ignore lint/suspicious/noExplicitAny: monkey-patching stdout for capture
+    process.stdout.write = ((chunk: any) => {
+      captured.push(typeof chunk === 'string' ? chunk : String(chunk));
+      return true;
+      // biome-ignore lint/suspicious/noExplicitAny: same as above
+    }) as any;
+  });
+
+  afterEach(() => {
+    process.stdout.write = originalWrite;
+  });
+
+  test('migration scenario reports raw "Stop migrated" (not "Stop ok")', async () => {
+    const settingsPath = join(tempDir, '.claude', 'settings.json');
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          Stop: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint stop' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    const result = await runRegisterHooks({ vaultDir: tempDir, isTTY: false });
+    expect(result.ok).toBe(true);
+    expect(result.hooks['Stop']).toBe('migrated');
+
+    const out = captured.join('');
+    expect(out).toContain('Stop migrated');
+    expect(out).not.toContain('Stop ok');
+  });
+
+  test('fresh install reports raw "Stop added"', async () => {
+    const result = await runRegisterHooks({ vaultDir: tempDir, isTTY: false });
+    expect(result.ok).toBe(true);
+
+    const out = captured.join('');
+    expect(out).toContain('Stop added');
+    expect(out).not.toContain('Stop ok');
+  });
+
+  test('idempotent re-run reports raw "Stop ok"', async () => {
+    await runRegisterHooks({ vaultDir: tempDir, isTTY: false });
+    captured.length = 0;
+
+    const result = await runRegisterHooks({ vaultDir: tempDir, isTTY: false });
+    expect(result.ok).toBe(true);
+    expect(result.hooks['Stop']).toBe('ok');
+
+    const out = captured.join('');
+    expect(out).toContain('Stop ok');
+  });
+});
