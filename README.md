@@ -342,7 +342,7 @@ Same vault. Same skills. Same memory. The LLM swaps; OneBrain doesn't notice.
 
 <a id="commands"></a>
 
-<!-- NEW-BADGE-CLEANUP: remove 🆕 markers from /search, /pause, /resume, /schedule-* on or after 2026-05-19 -->
+<!-- NEW-BADGE-CLEANUP: remove the green NEW shields.io badges from /search, /pause, /resume, /schedule-* on or after 2026-05-19 -->
 
 ## 📋 31+ Commands
 
@@ -377,7 +377,7 @@ Skills are organized by workflow phase. **Gemini CLI users:** prepend the `onebr
 
 | Command | What it does |
 |---------|-------------|
-| `/search` 🆕 | General vault retrieval — answers what + why questions across MEMORY, sessions, plans, decisions logs, notes |
+| `/search` ![NEW](https://img.shields.io/badge/NEW-success?style=flat-square) | General vault retrieval — answers what + why questions across MEMORY, sessions, plans, decisions logs, notes |
 | `/tasks` | Live task dashboard in Obsidian — creates/updates `TASKS.md` with always-current query sections |
 | `/moc` | Vault portal in Obsidian — creates/updates `MOC.md` with projects, areas, knowledge, tasks, and pinned links |
 | `/memory-review` | Interactive review of memory files — keep, update, deprecate, or delete entries |
@@ -393,12 +393,12 @@ Skills are organized by workflow phase. **Gemini CLI users:** prepend the `onebr
 | `/qmd` | Set up fast vault search index — enables semantic search across all notes |
 | `/help` | List all available commands with descriptions |
 | `/wrapup` | Wrap up session — merges any auto-checkpoints and saves full summary to session log |
-| `/pause` 🆕 | Save a snapshot of long-running work mid-flight so a future session can `/resume` (does NOT end the session or clear context) |
-| `/resume` 🆕 | Load the latest snapshot of an active pause thread and pick up seamlessly in a fresh session |
-| `/schedule-add` 🆕 | Interactive wizard for adding a recurring scheduled skill |
-| `/schedule-once` 🆕 | One-shot wizard: schedule a skill to run once at a specific datetime |
-| `/schedule-list` 🆕 | Show all scheduled entries |
-| `/schedule-remove` 🆕 | Remove a scheduled entry |
+| `/pause` ![NEW](https://img.shields.io/badge/NEW-success?style=flat-square) | Save a snapshot of long-running work mid-flight so a future session can `/resume` (does NOT end the session or clear context) |
+| `/resume` ![NEW](https://img.shields.io/badge/NEW-success?style=flat-square) | Load the latest snapshot of an active pause thread and pick up seamlessly in a fresh session |
+| `/schedule-add` ![NEW](https://img.shields.io/badge/NEW-success?style=flat-square) | Interactive wizard for adding a recurring scheduled skill |
+| `/schedule-once` ![NEW](https://img.shields.io/badge/NEW-success?style=flat-square) | One-shot wizard: schedule a skill to run once at a specific datetime |
+| `/schedule-list` ![NEW](https://img.shields.io/badge/NEW-success?style=flat-square) | Show all scheduled entries |
+| `/schedule-remove` ![NEW](https://img.shields.io/badge/NEW-success?style=flat-square) | Remove a scheduled entry |
 
 <details>
 <summary><strong>📁 Vault Structure</strong></summary>
