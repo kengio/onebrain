@@ -121,7 +121,8 @@ async function validateSchedulable(vault: string, entry: ScheduleEntry): Promise
   if (!match) {
     throw new Error(`Skill ${entry.skill} has no YAML frontmatter`);
   }
-  const fm = parseYaml(match[1]) as SkillFrontmatter;
+  // biome-ignore lint/style/noNonNullAssertion: regex has a capture group; match[1] is present when match is non-null
+  const fm = parseYaml(match[1]!) as SkillFrontmatter;
 
   if (fm.schedulable === false) {
     throw new Error(`Skill ${entry.skill} requires user input — cannot schedule`);

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { atToLaunchd, cronFieldsToLaunchd, validateAt, validateCron } from './cron-parse';
+import { atToLaunchd, cronFieldsToLaunchd, validateAt, validateCron } from './cron-parse.js';
 
 describe('validateCron', () => {
   test('accepts valid daily cron', () => {

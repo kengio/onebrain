@@ -1,5 +1,5 @@
-import { atToLaunchd, cronFieldsToLaunchd } from './cron-parse';
-import type { ScheduleEntry } from './types';
+import { atToLaunchd, cronFieldsToLaunchd } from './cron-parse.js';
+import type { ScheduleEntry } from './types.js';
 
 const xmlEscape = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

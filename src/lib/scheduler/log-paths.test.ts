@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { schedulerLogPath } from './log-paths';
+import { schedulerLogPath } from './log-paths.js';
 
 describe('schedulerLogPath', () => {
   test('success path', () => {

@@ -1,4 +1,4 @@
-import type { ScheduleEntry } from './types';
+import type { ScheduleEntry } from './types.js';
 
 export function isOneShot(entry: ScheduleEntry): entry is ScheduleEntry & { at: string } {
   return entry.at !== undefined;

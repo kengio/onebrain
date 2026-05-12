@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isOneShot, validateEntry } from './entry';
+import { isOneShot, validateEntry } from './entry.js';
 
 describe('isOneShot', () => {
   test('returns true when at is set', () => {

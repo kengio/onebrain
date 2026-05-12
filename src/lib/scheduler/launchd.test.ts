@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { generatePlist, plistPath } from './launchd';
+import { generatePlist, plistPath } from './launchd.js';
 
 const ctx = {
   vaultPath: '/Users/test/vault',
