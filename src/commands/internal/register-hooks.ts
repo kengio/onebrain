@@ -24,7 +24,20 @@ import { detectHarness } from './harness.js';
 interface HookEntry {
   type?: string;
   command?: string;
+  args?: string[];
   [key: string]: unknown;
+}
+
+/**
+ * Exec-form hook spec — split command + args so settings.json emits
+ * `{ command: "onebrain", args: [...] }` (Claude Code ≥2.1.139).
+ *
+ * Exec form spawns the binary directly without a shell, so vault paths
+ * containing spaces (e.g. Obsidian-on-iCloud) never need quoting.
+ */
+interface HookSpec {
+  command: string;
+  args: string[];
 }
 
 interface HookGroup {
@@ -48,8 +61,8 @@ interface SettingsJson {
 // Constants
 // ---------------------------------------------------------------------------
 
-const HOOK_COMMANDS: Record<string, string> = {
-  Stop: 'onebrain checkpoint stop',
+const HOOK_SPECS: Record<string, HookSpec> = {
+  Stop: { command: 'onebrain', args: ['checkpoint', 'stop'] },
 };
 
 const HOOK_EVENTS = ['Stop'] as const;
@@ -102,17 +115,57 @@ async function writeSettings(settingsPath: string, settings: SettingsJson): Prom
 type HookStatus = 'added' | 'migrated' | 'ok';
 
 /**
- * Check whether a command is already registered under an event.
+ * Match a hook entry against an exec-form spec, accepting both:
+ * - new exec form: `{ command: "onebrain", args: ["checkpoint", "stop"] }`
+ * - legacy shell form: `{ command: "onebrain checkpoint stop" }` (no args)
  */
-function checkHookPresence(
-  groups: HookGroup[],
-  targetCmd: string,
-): 'found' | 'migrate' | 'missing' {
+function matchesSpec(entry: HookEntry, spec: HookSpec): boolean {
+  const fullCmd = [spec.command, ...spec.args].join(' ');
+  if (
+    entry.command === spec.command &&
+    JSON.stringify(entry.args ?? []) === JSON.stringify(spec.args)
+  ) {
+    return true;
+  }
+  if (entry.command === fullCmd && !entry.args) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * If `entry` is the legacy shell form of `spec`, rewrite it in place to
+ * exec form. Returns true when a rewrite happened.
+ */
+function rewriteIfShellForm(entry: HookEntry, spec: HookSpec): boolean {
+  const fullCmd = [spec.command, ...spec.args].join(' ');
+  if (entry.command === fullCmd && !entry.args) {
+    entry.command = spec.command;
+    entry.args = [...spec.args];
+    if (!entry.type) entry.type = 'command';
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check whether a hook matching `spec` is already registered under an event.
+ *
+ * Returns:
+ * - `found`: an entry already matches `spec` (in either exec or shell form).
+ *   Callers should still run `rewriteIfShellForm` first so legacy entries
+ *   converge to exec form on the same pass.
+ * - `migrate`: an old `checkpoint-hook.sh` entry was found — caller should
+ *   rewrite it to exec form rather than appending a new entry.
+ * - `missing`: no matching or migratable entry — caller should push a new
+ *   exec-form entry.
+ */
+function checkHookPresence(groups: HookGroup[], spec: HookSpec): 'found' | 'migrate' | 'missing' {
   let foundMigrate = false;
   for (const group of groups) {
     for (const entry of group.hooks ?? []) {
+      if (matchesSpec(entry, spec)) return 'found';
       const cmd = entry.command ?? '';
-      if (cmd === targetCmd) return 'found';
       if (cmd.includes('checkpoint-hook.sh')) foundMigrate = true;
     }
   }
@@ -155,27 +208,42 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
   }
 
   for (const event of HOOK_EVENTS) {
-    const cmd = HOOK_COMMANDS[event];
-    if (!cmd) continue; // HOOK_COMMANDS covers all HOOK_EVENTS — this is a safety guard
+    const spec = HOOK_SPECS[event];
+    if (!spec) continue; // HOOK_SPECS covers all HOOK_EVENTS — this is a safety guard
     if (!hooks[event]) hooks[event] = [];
     const groups = hooks[event];
-    const presence = checkHookPresence(groups, cmd);
+
+    // Pass 1: rewrite any legacy shell-form entries (`command: "onebrain
+    // checkpoint stop"`) to exec form in place. This converts old entries on
+    // the same run that registers new ones, without producing duplicates.
+    let rewroteShellForm = false;
+    for (const group of groups) {
+      for (const entry of group.hooks ?? []) {
+        if (rewriteIfShellForm(entry, spec)) rewroteShellForm = true;
+      }
+    }
+
+    const presence = checkHookPresence(groups, spec);
 
     if (presence === 'found') {
-      result[event] = 'ok';
+      result[event] = rewroteShellForm ? 'migrated' : 'ok';
     } else if (presence === 'migrate') {
       for (const group of groups) {
         if (group.matcher === undefined) group.matcher = '';
         for (const entry of group.hooks ?? []) {
           if ((entry.command ?? '').includes('checkpoint-hook.sh')) {
-            entry.command = cmd;
+            entry.command = spec.command;
+            entry.args = [...spec.args];
             if (!entry.type) entry.type = 'command';
           }
         }
       }
       result[event] = 'migrated';
     } else {
-      groups.push({ matcher: '', hooks: [{ type: 'command', command: cmd }] });
+      groups.push({
+        matcher: '',
+        hooks: [{ type: 'command', command: spec.command, args: [...spec.args] }],
+      });
       result[event] = 'added';
     }
   }
@@ -187,8 +255,17 @@ function applyHooks(settings: SettingsJson): Record<string, HookStatus> {
 // Step 2: Register PostToolUse qmd hook (optional, --qmd / --remove-qmd)
 // ---------------------------------------------------------------------------
 
-const QMD_CMD = 'onebrain qmd-reindex';
+const QMD_SPEC: HookSpec = { command: 'onebrain', args: ['qmd-reindex'] };
 const QMD_MATCHER = 'Write|Edit';
+
+/**
+ * True for any entry that represents the canonical qmd-reindex hook in
+ * either exec or legacy shell form. Used by the strip-on-uninstall path
+ * (`keepCanonical=false`) so /qmd uninstall removes both forms.
+ */
+function isCanonicalQmdEntry(entry: HookEntry): boolean {
+  return matchesSpec(entry, QMD_SPEC);
+}
 
 /**
  * Match legacy templates that registered `qmd update <args>` as the PostToolUse
@@ -226,13 +303,16 @@ function isLegacyQmdCmd(cmd: string): boolean {
  * end up calling the hook twice on each Write.
  */
 function migrateLegacyQmdEntries(groups: HookGroup[], keepCanonical: boolean): boolean {
-  // Three sequential passes over `groups`:
-  //   1. Rewrite-or-strip any `qmd update …` entries (rewrite keeps canonical,
-  //      strip removes them entirely).
-  //   2. Dedupe `onebrain qmd-reindex` entries — runs on every keepCanonical=true
-  //      call so a settings.json that already had two canonical entries (Pass 1
-  //      saw nothing to do) still ends up with one.
-  //   3. Splice out groups whose hooks array became empty (reverse iteration —
+  // Four sequential passes over `groups`:
+  //   1. Rewrite-or-strip any `qmd update …` entries (rewrite directly to
+  //      exec form; strip removes them entirely).
+  //   2. (keepCanonical only) Rewrite legacy shell-form `onebrain qmd-reindex`
+  //      entries to exec form in place, so both Pass-1 migrations and
+  //      hand-edited shell-form entries converge to the same shape.
+  //   3. Dedupe canonical entries (matched by spec, so both forms count as
+  //      one) — runs on every keepCanonical=true call so a settings.json
+  //      that already had two canonical entries still ends up with one.
+  //   4. Splice out groups whose hooks array became empty (reverse iteration —
   //      forward indices stay valid as we splice from the tail).
   let touched = false;
 
@@ -242,7 +322,8 @@ function migrateLegacyQmdEntries(groups: HookGroup[], keepCanonical: boolean): b
       let groupTouched = false;
       for (const entry of group.hooks) {
         if (isLegacyQmdCmd(entry.command ?? '')) {
-          entry.command = QMD_CMD;
+          entry.command = QMD_SPEC.command;
+          entry.args = [...QMD_SPEC.args];
           if (!entry.type) entry.type = 'command';
           groupTouched = true;
         }
@@ -255,19 +336,28 @@ function migrateLegacyQmdEntries(groups: HookGroup[], keepCanonical: boolean): b
       const before = group.hooks.length;
       group.hooks = group.hooks.filter((h) => {
         const cmd = h.command ?? '';
-        return !isLegacyQmdCmd(cmd) && cmd !== QMD_CMD;
+        // Drop legacy `qmd update …` and canonical qmd-reindex (either form).
+        return !isLegacyQmdCmd(cmd) && !isCanonicalQmdEntry(h);
       });
       if (group.hooks.length !== before) touched = true;
     }
   }
 
   if (keepCanonical) {
+    // Pass 2: rewrite shell-form canonical entries to exec form in place.
+    for (const group of groups) {
+      for (const entry of group.hooks ?? []) {
+        if (rewriteIfShellForm(entry, QMD_SPEC)) touched = true;
+      }
+    }
+
+    // Pass 3: dedupe — keep first canonical (now always exec form), drop rest.
     let seenCanonical = false;
     for (const group of groups) {
       if (!group.hooks) continue;
       const before = group.hooks.length;
       group.hooks = group.hooks.filter((h) => {
-        if (h.command !== QMD_CMD) return true;
+        if (!isCanonicalQmdEntry(h)) return true;
         if (seenCanonical) return false;
         seenCanonical = true;
         return true;
@@ -291,12 +381,16 @@ function applyQmdHook(settings: SettingsJson): HookStatus {
 
   // Migrate before the canonical-presence check so a settings.json containing
   // only legacy entries reports `migrated` and produces a single canonical
-  // entry — never `added` plus a stale duplicate.
+  // entry — never `added` plus a stale duplicate. Migration also rewrites
+  // legacy shell-form `onebrain qmd-reindex` entries to exec form.
   const migrated = migrateLegacyQmdEntries(groups, true);
 
-  const already = groups.some((g) => g.hooks?.some((h) => h.command === QMD_CMD));
+  const already = groups.some((g) => g.hooks?.some((h) => isCanonicalQmdEntry(h)));
   if (already) return migrated ? 'migrated' : 'ok';
-  groups.push({ matcher: QMD_MATCHER, hooks: [{ type: 'command', command: QMD_CMD }] });
+  groups.push({
+    matcher: QMD_MATCHER,
+    hooks: [{ type: 'command', command: QMD_SPEC.command, args: [...QMD_SPEC.args] }],
+  });
   return 'added';
 }
 

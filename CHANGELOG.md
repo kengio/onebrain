@@ -1,6 +1,6 @@
 ---
-latest_version: 2.2.3
-released: 2026-05-10
+latest_version: 2.2.4
+released: 2026-05-12
 ---
 
 # CLI Changelog
@@ -12,6 +12,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > For plugin changes (skills, agents, hooks, INSTRUCTIONS), see [PLUGIN-CHANGELOG.md](PLUGIN-CHANGELOG.md).
 
 ## [Unreleased]
+
+## v2.2.4 — feat(register-hooks): emit exec-form hooks (Claude Code 2.1.139)
+
+Hooks emitted by `onebrain register-hooks` now use Claude Code 2.1.139's exec form (`command: "onebrain", args: [...]`) instead of shell form. Exec form spawns the binary directly without a shell, eliminating path-quoting issues for vault paths containing spaces (e.g. Obsidian-on-iCloud).
+
+- feat(register-hooks): Stop and PostToolUse qmd hooks emit `{ command: "onebrain", args: [...] }` exec form
+- fix(register-hooks): idempotent shell→exec migration — legacy shell-form entries (`command: "onebrain checkpoint stop"`) are rewritten in place on next register-hooks run, no duplicates
+- fix(register-hooks): legacy `qmd update -c <col>` entries now migrate directly to exec form, skipping the intermediate shell-form state
+- test(register-hooks): new tests for fresh exec-form emission, shell→exec Stop migration, shell→exec qmd migration, and direct-to-exec legacy qmd migration
 
 ## v2.2.3 — fix(register-hooks): strip canonical qmd hook when qmd_collection absent
 

@@ -184,13 +184,93 @@ describe('runRegisterHooks', () => {
     const settings = await readSettingsFile(tempDir);
     const hooks = settings['hooks'] as Record<
       string,
-      Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>
+      Array<{
+        matcher: string;
+        hooks: Array<{ type: string; command: string; args?: string[] }>;
+      }>
     >;
 
     const group = hooks['Stop']?.[0];
     expect(group).toBeDefined();
     expect(group?.matcher).toBe('');
     expect(group?.hooks?.[0]?.type).toBe('command');
+  });
+
+  test('fresh Stop hook is emitted in exec form (command + args, no shell string)', async () => {
+    // Claude Code 2.1.139+: exec form avoids shell quoting issues for vault
+    // paths containing spaces (Obsidian-on-iCloud).
+    await runRegisterHooks({ vaultDir: tempDir });
+
+    const settings = await readSettingsFile(tempDir);
+    const hooks = settings['hooks'] as Record<
+      string,
+      Array<{ hooks: Array<{ command: string; args?: string[] }> }>
+    >;
+    const entry = hooks['Stop']?.[0]?.hooks?.[0];
+    expect(entry?.command).toBe('onebrain');
+    expect(entry?.args).toEqual(['checkpoint', 'stop']);
+  });
+
+  test('rewrites legacy shell-form Stop hook to exec form on register', async () => {
+    // Pre-existing settings.json from a CLI older than 2.2.4 — single shell-
+    // form command string. Running register-hooks must rewrite it in place to
+    // exec form rather than seeing it as missing-and-then-re-added.
+    const settingsPath = join(tempDir, '.claude', 'settings.json');
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          Stop: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint stop' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    const result = await runRegisterHooks({ vaultDir: tempDir });
+    expect(result.ok).toBe(true);
+    expect(result.hooks['Stop']).toBe('migrated');
+
+    const settings = await readSettingsFile(tempDir);
+    const stopGroups = (
+      settings['hooks'] as Record<
+        string,
+        Array<{ matcher: string; hooks: Array<{ command: string; args?: string[] }> }>
+      >
+    )['Stop'];
+    // Single entry — no duplicate appended; rewritten in place.
+    const entries = (stopGroups ?? []).flatMap((g) => g.hooks);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.command).toBe('onebrain');
+    expect(entries[0]?.args).toEqual(['checkpoint', 'stop']);
+  });
+
+  test('shell→exec migration is idempotent — second run reports ok', async () => {
+    const settingsPath = join(tempDir, '.claude', 'settings.json');
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          Stop: [
+            {
+              matcher: '',
+              hooks: [{ type: 'command', command: 'onebrain checkpoint stop' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    const first = await runRegisterHooks({ vaultDir: tempDir });
+    expect(first.hooks['Stop']).toBe('migrated');
+
+    const second = await runRegisterHooks({ vaultDir: tempDir });
+    expect(second.hooks['Stop']).toBe('ok');
   });
 
   test('idempotent re-run — nothing changes', async () => {
@@ -231,12 +311,18 @@ describe('runRegisterHooks', () => {
     const stopGroups = (
       settings['hooks'] as Record<
         string,
-        { matcher: string; hooks: { type: string; command: string }[] }[]
+        { matcher: string; hooks: { type: string; command: string; args?: string[] }[] }[]
       >
     )['Stop'];
-    const commands = (stopGroups ?? []).flatMap((g) => g.hooks.map((h) => h.command));
-    expect(commands).toContain('onebrain checkpoint stop');
-    expect(commands.some((c) => c.includes('checkpoint-hook.sh'))).toBe(false);
+    const entries = (stopGroups ?? []).flatMap((g) => g.hooks);
+    // Migrated to exec form (Claude Code ≥2.1.139).
+    expect(entries.some((e) => e.command === 'onebrain' && Array.isArray(e.args))).toBe(true);
+    expect(
+      entries.some(
+        (e) => e.command === 'onebrain' && e.args?.[0] === 'checkpoint' && e.args?.[1] === 'stop',
+      ),
+    ).toBe(true);
+    expect(entries.some((e) => (e.command ?? '').includes('checkpoint-hook.sh'))).toBe(false);
     // Migrated entries must also have type and matcher (same requirement as new entries)
     for (const group of stopGroups ?? []) {
       expect(group.matcher).toBe('');
@@ -315,17 +401,38 @@ describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
   // ---- legacy `qmd update -c <collection>` migration (issue #127) ----------
 
   /**
-   * Read the PostToolUse hook commands from the vault's settings.json.
-   * Helper keeps the migration assertions readable.
+   * Read PostToolUse commands as joined `command + args` strings for readable
+   * assertions. Exec-form entries (`command: "onebrain", args: ["qmd-reindex"]`)
+   * surface as `"onebrain qmd-reindex"` so legacy assertions still hold.
    */
   async function readPostToolUseCommands(vault: string): Promise<string[]> {
     const text = await readFile(join(vault, '.claude', 'settings.json'), 'utf8');
     const settings = JSON.parse(text) as Record<string, unknown>;
     const hooks = settings['hooks'] as Record<string, unknown[]> | undefined;
     const groups = (hooks?.['PostToolUse'] ?? []) as Array<{
-      hooks?: Array<{ command?: string }>;
+      hooks?: Array<{ command?: string; args?: string[] }>;
     }>;
-    return groups.flatMap((g) => (g.hooks ?? []).map((h) => h.command ?? ''));
+    return groups.flatMap((g) =>
+      (g.hooks ?? []).map((h) => {
+        const args = h.args ?? [];
+        return args.length > 0 ? [h.command ?? '', ...args].join(' ') : (h.command ?? '');
+      }),
+    );
+  }
+
+  /**
+   * Read the raw PostToolUse hook entries (preserves exec-form `args`).
+   */
+  async function readPostToolUseEntries(
+    vault: string,
+  ): Promise<Array<{ command?: string; args?: string[] }>> {
+    const text = await readFile(join(vault, '.claude', 'settings.json'), 'utf8');
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const hooks = settings['hooks'] as Record<string, unknown[]> | undefined;
+    const groups = (hooks?.['PostToolUse'] ?? []) as Array<{
+      hooks?: Array<{ command?: string; args?: string[] }>;
+    }>;
+    return groups.flatMap((g) => g.hooks ?? []);
   }
 
   test('legacy `qmd update -c …` PostToolUse entry → migrated to `onebrain qmd-reindex`', async () => {
@@ -543,10 +650,76 @@ describe('qmd PostToolUse hook via vault.yml qmd_collection', () => {
     const settings = JSON.parse(text) as Record<string, unknown>;
     const groups = (settings['hooks'] as Record<string, unknown[]>)['PostToolUse'] as Array<{
       matcher: string;
-      hooks: Array<{ command: string }>;
+      hooks: Array<{ command: string; args?: string[] }>;
     }>;
-    const canonical = groups.find((g) => g.hooks.some((h) => h.command === 'onebrain qmd-reindex'));
+    // Exec-form match: `command: "onebrain", args: ["qmd-reindex"]`.
+    const canonical = groups.find((g) =>
+      g.hooks.some((h) => h.command === 'onebrain' && h.args?.[0] === 'qmd-reindex'),
+    );
     expect(canonical?.matcher).toBe('Write|Edit');
+  });
+
+  test('legacy `qmd update -c …` migrates directly to exec form (not shell-form intermediate)', async () => {
+    // Issue #127 + 2.2.4: legacy `qmd update <args>` shell-form entries must
+    // land in exec form on first run, skipping the intermediate shell-form
+    // `onebrain qmd-reindex` state.
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'qmd update -c ob-1-test' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const entries = await readPostToolUseEntries(vaultDir);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.command).toBe('onebrain');
+    expect(entries[0]?.args).toEqual(['qmd-reindex']);
+  });
+
+  test('rewrites legacy shell-form qmd hook to exec form on register', async () => {
+    // Pre-existing canonical shell-form entry from a CLI older than 2.2.4 —
+    // must be rewritten in place to exec form, not duplicated.
+    await writeFile(
+      join(vaultDir, 'vault.yml'),
+      'method: onebrain\nqmd_collection: ob-1-test\n',
+      'utf8',
+    );
+    await writeFile(
+      join(vaultDir, '.claude', 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Write|Edit',
+              hooks: [{ type: 'command', command: 'onebrain qmd-reindex' }],
+            },
+          ],
+        },
+      }),
+      'utf8',
+    );
+
+    await runRegisterHooks({ vaultDir });
+
+    const entries = await readPostToolUseEntries(vaultDir);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.command).toBe('onebrain');
+    expect(entries[0]?.args).toEqual(['qmd-reindex']);
   });
 
   test('qmd disabled (no qmd_collection) → legacy entry is stripped, not left dangling', async () => {
