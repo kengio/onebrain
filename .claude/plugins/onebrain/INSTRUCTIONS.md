@@ -417,6 +417,21 @@ Use skill mode for OneBrain workflows. Use command mode for CLI maintenance and 
 
 **Adding entries:** the `/schedule-add` wizard targets skill mode only. To add a command-mode entry, edit `vault.yml` directly and re-run `onebrain register-schedule`. The `/schedule-list` and `/schedule-remove` skills handle both modes transparently.
 
+### Presets
+
+New users and fresh vaults can install a maintenance preset in one decision. Three opinionated tier bundles plus a custom escape hatch are defined in `_shared/schedule-presets.md`:
+
+- **Minimal** — `/daily` 09:00 (1 entry)
+- **Essentials (Recommended)** — `/daily` 09:00 + `/weekly` Friday 17:00 + `/recap` Sunday 12:00 (3 entries)
+- **Maintenance Plus** — Essentials + `/doctor` monthly + `/tasks` daily 06:00 + `onebrain qmd-reindex` Sunday 03:00 (6 entries; includes 1 command-mode entry)
+- **Custom** — drops into the `/schedule-add` wizard
+
+Presets surface automatically:
+- In `/onboarding` after agent identity setup (default = Essentials)
+- In `/schedule-add` Step 0 when `vault.yml` has no existing `schedule:` entries
+
+Users with a populated `schedule:` block never see the preset prompt — preset selection is strictly first-run.
+
 ## Headless invocation
 
 Scheduled skills run via headless Claude Code: `claude --vault {VAULT} --skill /daily --headless`. The session loads MEMORY.md, vault.yml, MEMORY-INDEX.md as normal (SessionStart hook fires). PreToolUse, PostToolUse, Stop hooks fire as normal. PreCompact / PostCompact do not fire (sessions are too short).
