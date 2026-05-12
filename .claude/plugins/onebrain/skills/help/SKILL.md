@@ -1,6 +1,7 @@
 ---
 name: help
 description: "List all available OneBrain commands with descriptions and use cases. Invoke when user asks what you can do, wants to see commands, or seems confused about capabilities. Do NOT use for: actually running a command (identify the right skill and invoke it directly), answering questions about vault content (search directly), or general Claude questions."
+schedulable: false
 ---
 
 # Available Commands

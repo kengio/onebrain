@@ -1,6 +1,8 @@
 ---
 name: distill
 description: "Aggregate already-vaulted notes from multiple sessions or sources on a specific topic into a single structured digest note. Use when the user wants to synthesize a completed research thread — 'distill everything I know about X', 'crystallize my notes on Y'. Do NOT use for: promoting session insights to memory (use recap), writing today's session summary (use wrapup), or clearing raw inbox items (use consolidate — distill works on notes already in the vault)."
+schedulable_with_args: true
+required_args: [topic]
 ---
 
 # Distill

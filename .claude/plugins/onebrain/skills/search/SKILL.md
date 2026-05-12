@@ -5,6 +5,8 @@ auto-invoke:
   - "search vault"
   - "find in vault"
   - "why did"
+schedulable_with_args: true
+required_args: [query]
 ---
 
 # /search — General vault retrieval

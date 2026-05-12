@@ -1,6 +1,7 @@
 ---
 name: consolidate
 description: "Review inbox and recent notes, synthesize and merge into the knowledge base. Use when the user wants to process, organize, or clear the inbox regardless of topic — 'clean up my inbox', 'process my notes'. Do NOT use for: capturing new information now (use capture or braindump), synthesizing already-vaulted notes on a specific topic (use distill — consolidate works on the inbox), or finding note connections (use connect)."
+schedulable: false
 ---
 
 # Consolidate
