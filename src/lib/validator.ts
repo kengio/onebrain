@@ -606,8 +606,13 @@ interface SettingsForCheck {
  */
 function effectiveCommand(h: { command?: string; args?: string[] }): string {
   const parts: string[] = [];
-  if (h.command) parts.push(h.command);
-  if (h.args && h.args.length > 0) parts.push(...h.args);
+  if (typeof h.command === 'string' && h.command.length > 0) parts.push(h.command);
+  // settings.json is user-edited JSON, so `args` may carry non-string entries
+  // despite the typed interface — filter defensively before joining so a stray
+  // null/number can't produce ghost substring matches.
+  if (Array.isArray(h.args)) {
+    for (const a of h.args) if (typeof a === 'string' && a.length > 0) parts.push(a);
+  }
   return parts.join(' ');
 }
 
@@ -624,14 +629,22 @@ type HookForm = 'exec' | 'legacy' | 'absent';
 const CANONICAL_HOOK_COMMAND = 'onebrain';
 
 function detectHookForm(settings: SettingsForCheck, event: string, cmdSubstring: string): HookForm {
+  // Scan ALL matching entries — if any one is in canonical exec form, report
+  // 'exec' even when a legacy duplicate also matches. This handles partial
+  // migrations where a new canonical entry was added before the legacy one
+  // was removed: the canonical entry is what actually fires, so it should
+  // win the form classification.
+  let sawLegacy = false;
   const groups = settings.hooks?.[event] ?? [];
   for (const g of groups) {
     for (const h of g.hooks ?? []) {
       if (!effectiveCommand(h).includes(cmdSubstring)) continue;
       const isCanonical = h.command === CANONICAL_HOOK_COMMAND && (h.args?.length ?? 0) > 0;
-      return isCanonical ? 'exec' : 'legacy';
+      if (isCanonical) return 'exec';
+      sawLegacy = true;
     }
   }
+  if (sawLegacy) return 'legacy';
   return 'absent';
 }
 

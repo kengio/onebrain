@@ -17,8 +17,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `checkSettingsHooks` now joins `command` + `args[]` into the effective command string before substring matching, so canonical exec-form hooks (`{command: "onebrain", args: ["checkpoint", "stop"]}`) are no longer false-flagged as missing
 - New `detectHookForm` helper classifies each matching entry as `exec` (canonical), `legacy` (shell-form, wrapper, etc.), or `absent` — legacy entries now warn with "--fix will migrate to exec form" instead of staying invisible
+- `detectHookForm` scans all matching entries per event: if any entry is in canonical exec form, the hook is reported as exec even when a legacy duplicate also matches (handles partial-migration state where a stale legacy entry was left behind alongside the new canonical one)
+- `effectiveCommand` filters non-string `args[]` entries — hand-edited `settings.json` with stray `null`/numbers can't produce ghost substring matches
 - Stale-hook sweep also uses the joined effective command, so a stale `onebrain` reference hidden in `args[]` of a wrapper entry is no longer missed
-- Adds 6 unit tests covering exec form, legacy shell form, bash-wrapper form, absent entries, and qmd-conditional skipping
+- 10 unit tests covering exec, legacy shell, bash-wrapper, absent, partial migration, mixed-state Stop+PostToolUse, stale exec-form events, defensive args filtering, and qmd-conditional skipping
 - No behavior change for vaults already in canonical exec form (the common case post-v2.3.0)
 
 ## v2.3.1 — feat(scheduler): hook-style command mode for direct CLI scheduling

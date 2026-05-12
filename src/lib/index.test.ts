@@ -541,4 +541,100 @@ describe('checkSettingsHooks — hook schema detection', () => {
     const result = await checkSettingsHooks(dir, configWithQmd);
     expect(result.status).toBe('ok');
   });
+
+  it('reports exec when canonical and legacy duplicates coexist (partial migration)', async () => {
+    // Mid-migration state: a legacy shell-form entry was left behind when a
+    // new canonical entry was added. The canonical one is what actually
+    // fires, so the check should treat the hook as exec — not legacy.
+    await writeSettings({
+      permissions: { allow: allowList },
+      hooks: {
+        Stop: [
+          {
+            matcher: '',
+            hooks: [
+              { command: 'onebrain checkpoint stop' },
+              { command: 'onebrain', args: ['checkpoint', 'stop'] },
+            ],
+          },
+        ],
+        PostToolUse: [
+          { matcher: 'Write|Edit', hooks: [{ command: 'onebrain', args: ['qmd-reindex'] }] },
+        ],
+      },
+    });
+
+    const result = await checkSettingsHooks(dir, configWithQmd);
+    expect(result.status).toBe('ok');
+    expect(result.details?.some((d) => d.includes('legacy shell form'))).toBe(false);
+  });
+
+  it('evaluates Stop and PostToolUse independently in a mixed migration state', async () => {
+    // Stop already migrated to exec form, qmd still on legacy. Should fire
+    // exactly one warning (qmd legacy), not two.
+    await writeSettings({
+      permissions: { allow: allowList },
+      hooks: {
+        Stop: [{ matcher: '', hooks: [{ command: 'onebrain', args: ['checkpoint', 'stop'] }] }],
+        PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ command: 'onebrain qmd-reindex' }] }],
+      },
+    });
+
+    const result = await checkSettingsHooks(dir, configWithQmd);
+    expect(result.status).toBe('warn');
+    expect(
+      result.details?.some((d) => d.includes('PostToolUse (qmd) hook in legacy shell form')),
+    ).toBe(true);
+    expect(result.details?.some((d) => d.includes('Stop hook'))).toBe(false);
+  });
+
+  it('flags a stale exec-form onebrain hook under a disallowed event', async () => {
+    // Before this fix, the stale-hook sweep only inspected `command`. An
+    // exec-form onebrain entry under PreCompact (where it has no business
+    // running) was masked because the verb hid in args[]. The sweep now
+    // uses effectiveCommand, so this stale event surfaces correctly.
+    await writeSettings({
+      permissions: { allow: allowList },
+      hooks: {
+        Stop: [{ matcher: '', hooks: [{ command: 'onebrain', args: ['checkpoint', 'stop'] }] }],
+        PostToolUse: [
+          { matcher: 'Write|Edit', hooks: [{ command: 'onebrain', args: ['qmd-reindex'] }] },
+        ],
+        PreCompact: [{ matcher: '', hooks: [{ command: 'onebrain', args: ['some-stale-verb'] }] }],
+      },
+    });
+
+    const result = await checkSettingsHooks(dir, configWithQmd);
+    expect(result.status).toBe('warn');
+    expect(result.details?.some((d) => d.includes('stale PreCompact hook'))).toBe(true);
+  });
+
+  it('ignores non-string args entries (defensive against hand-edited settings.json)', async () => {
+    // settings.json is user-editable JSON, so args could carry a stray
+    // null/number that would otherwise spread into the joined effective
+    // command and produce a ghost match.
+    await writeSettings({
+      permissions: { allow: allowList },
+      hooks: {
+        Stop: [
+          {
+            matcher: '',
+            hooks: [
+              {
+                command: 'onebrain',
+                args: ['checkpoint', null as unknown as string, 'stop'],
+              },
+            ],
+          },
+        ],
+        PostToolUse: [
+          { matcher: 'Write|Edit', hooks: [{ command: 'onebrain', args: ['qmd-reindex'] }] },
+        ],
+      },
+    });
+
+    const result = await checkSettingsHooks(dir, configWithQmd);
+    // Filtered effective command is `onebrain checkpoint stop` → matches.
+    expect(result.status).toBe('ok');
+  });
 });
