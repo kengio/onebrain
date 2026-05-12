@@ -246,6 +246,29 @@ If user selects "Skip for now": continue to Step 12.
 
 ---
 
+## Step 11b2: Schedule Presets (optional)
+
+1. Read the canonical preset tier table from `.claude/plugins/onebrain/skills/_shared/schedule-presets.md`.
+
+2. If `vault.yml` already has a non-empty `schedule:` block (re-running onboarding on an existing vault), skip this step entirely.
+
+3. Show via `AskUserQuestion` with default = Tier 2:
+   - **Tier 1 — Minimal** (1 entry)
+   - **Tier 2 — Essentials (Recommended)** (3 entries — default)
+   - **Tier 3 — Maintenance Plus** (6 entries; includes a CLI command-mode entry)
+   - **Skip** (no presets — user can run `/schedule-add` later)
+
+4. On Tier 1/2/3 selection: atomically write entries to `vault.yml` `schedule:` block (load → mutate → write entire file). Then run `onebrain register-schedule`. Confirm: `✓ Installed Tier N preset.`
+
+5. On Skip: take no action; continue.
+
+#### Edge cases
+
+- `vault.yml` not yet created at this point → ensure this step runs AFTER vault.yml creation; reorder if needed.
+- `onebrain register-schedule` fails (e.g. CLI not on PATH yet) → log the failure but don't block onboarding completion. The entries are still in vault.yml; user can register manually later.
+
+---
+
 ## Step 11c: Write Onboarding Log
 
 Follow `../_shared/audit-log-format.md` (canonical frontmatter, failure mode) with:
@@ -485,6 +508,12 @@ Check if `vault.yml` already exists in the vault root:
 ## Path B : Step 12b: qmd Setup (Optional)
 
 Identical to Step 11b in Path A. Ask the user whether to set up qmd, and if yes, run the `/qmd setup` flow (skipping its initial confirmation question). Continue to Step 12c regardless of outcome.
+
+---
+
+## Path B : Step 12b2: Schedule Presets (optional)
+
+Identical to **Step 11b2** in Path A. Read presets from `_shared/schedule-presets.md`, skip if `vault.yml` already has a non-empty `schedule:` block, show `AskUserQuestion` with default = Tier 2, apply selected tier atomically. On `onebrain register-schedule` failure, log and continue — non-blocking.
 
 ---
 
