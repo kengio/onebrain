@@ -171,8 +171,8 @@ Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bul
 - Inbox files processed: N
 
 ### Moved
-- `00-inbox/2026-05-10-ai-thoughts.md` → `03-knowledge/ai/AI Architecture Thoughts.md` (new)
-- `00-inbox/2026-05-09-meeting-notes.md` → appended to `01-projects/finastra/Finastra.md`
+- `[inbox_folder]/2026-05-10-ai-thoughts.md` → `[knowledge_folder]/ai/AI Architecture Thoughts.md` (new)
+- `[inbox_folder]/2026-05-09-meeting-notes.md` → appended to `[projects_folder]/example/Project Name.md`
 
 ### Wikilinks added
 - `03-knowledge/ai/AI Architecture Thoughts.md` ↔ `[[Agent Frameworks]]`, `[[OneBrain CLI]]`

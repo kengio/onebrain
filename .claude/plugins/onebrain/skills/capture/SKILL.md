@@ -117,9 +117,9 @@ Say in one line:
 
 | Input | Type | Destination |
 |-------|------|-------------|
-| "checkpoint write-before-delete ordering is critical" | personal insight | `03-knowledge/onebrain/Checkpoint Write Ordering.md` |
-| "found this Obsidian PKM article" | external reference | `04-resources/productivity/Obsidian PKM Methods.md` |
-| "just started the Mac Mini research project" | project update | append to `01-projects/hardware/Mac Mini.md` |
+| "write-before-delete ordering is critical" | personal insight | `[knowledge_folder]/dev/Write-Before-Delete Ordering.md` |
+| "found this Obsidian PKM article" | external reference | `[resources_folder]/productivity/Obsidian PKM Methods.md` |
+| "just started a new research project" | project update | append to `[projects_folder]/example/Project Name.md` |
 
 ## Known Gotchas
 

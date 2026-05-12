@@ -14,9 +14,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## 2.4.6 — 2026-05-12
 
 - Remove vault-author-specific references from plugin source for genericity
-- /search SKILL.md: drop hardcoded `[projects_folder]/onebrain/plans/*.md` source — replaced with generic project tracker reference (OneBrain users don't have a fixed `plans/` directory)
-- /search SKILL.md: replace hardcoded vault folder names (`03-knowledge/`, `01-projects/`, `04-resources/`, `02-areas/`) with `[knowledge_folder]/`, `[projects_folder]/`, `[resources_folder]/`, `[areas_folder]/` placeholders
-- /clone SKILL.md: replace personal example path `/Users/keng/.../ob-1` with generic `/path/to/source/vault` in audit-log template
+- /search: drop hardcoded `[projects_folder]/onebrain/plans/*.md` source; replace with generic `[projects_folder]/**/*.md` covering embedded specs/plans/design docs (keeps search coverage for projects with any folder layout)
+- /search: replace hardcoded vault folder names with `[knowledge_folder]`/`[projects_folder]`/`[resources_folder]`/`[areas_folder]` placeholders; update progress line + frontmatter description to match
+- /clone: replace personal example path with generic `/path/to/source/vault` in audit-log template
+- /capture, /consolidate: replace concrete vault-author note paths in routing/moved examples with `[folder]/example/...` placeholders
 
 ## 2.4.5 — 2026-05-12
 
