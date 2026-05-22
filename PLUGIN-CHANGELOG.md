@@ -1,5 +1,5 @@
 ---
-latest_version: 3.0.0
+latest_version: 3.0.1
 released: 2026-05-22
 ---
 
@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary (`@onebrain-ai/cli`) changes, see [CHANGELOG.md](CHANGELOG.md).
+
+## v3.0.1 — 2026-05-22
+
+- **chore: relicense MIT → AGPL-3.0-only** to align with the OneBrain CLI (`onebrain-ai/onebrain-cli`), which has shipped under AGPL since v3.0.0-alpha.0. Same license now spans the binary and the plugin manifest / skills / hooks that consume it, so the network-use copyleft (AGPL §13) applies consistently across the whole OneBrain runtime.
+- **LICENSE**: replaced 21-line MIT text with the canonical 661-line GNU Affero General Public License v3.
+- **plugin.json**: added `"license": "AGPL-3.0-only"` field. Previously absent; existing copies of the plugin (v2.x and v3.0.0) inherited the repo-root LICENSE — explicit field documents intent at the manifest level.
+- **plugin.json**: bump `3.0.0` → `3.0.1` for the license-field addition (manifest change ⇒ version bump per repo convention).
+- **MIT compatibility**: prior releases (v2.x through v3.0.0) remain available under MIT for downstream users who pinned to those versions. AGPL applies from v3.0.1 forward.
+- **No skill / hook / agent code changes** in this release — purely the license + manifest update.
 
 ## v3.0.0 — 2026-05-22
 
