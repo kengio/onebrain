@@ -9,260 +9,169 @@ schedulable: true
 Diagnose the health of your OneBrain vault and plugin configuration. Inspired by `brew doctor` and `npm doctor`.
 
 Usage:
-- `/doctor` — full check (vault + config)
-- `/doctor --vault` — vault health only
-- `/doctor --config` — plugin config only
-- `/doctor --fix` — auto-fix safe issues (stale confidence scores + broken wikilinks via fuzzy match)
+- `/doctor` — full check (vault + config + memory)
+- `/doctor --vault` — vault content checks only (skips CLI doctor)
+- `/doctor --config` — plugin config + CLI doctor only (skips vault content)
+- `/doctor --fix` — auto-fix safe issues (CLI fix recipes + skill fixes)
 
-**Flag detection:** Determine active flags from the user's message. `--vault` = user mentions vault-only or health check; `--config` = user mentions config or plugin check; `--fix` = user explicitly asks to fix or auto-fix. Default (no flags mentioned) = run all checks.
+**Flag detection:** Determine active flags from the user's message. `--vault` = user mentions vault-only or content health; `--config` = user mentions config or plugin check; `--fix` = user explicitly asks to fix or auto-fix. Default (no flags) = run all checks.
+
+**Two-source architecture** (post-v3.0.0 GA):
+- **CLI doctor** (`onebrain doctor --json`) handles the 8 built-in checks: vault.yml, vault.yml-keys, folders, plugin-files, settings-hooks, orphan-checkpoints, qmd-embeddings, claude-settings. Rust-native, single subprocess call, structured JSON output.
+- **Skill checks** handle vault-content + state-machine checks the CLI doesn't cover: broken wikilinks, orphan notes, stale memory/ files, MEMORY.md size, inbox backlog, log folder size, scheduler health, pause-thread state, memory health.
+
+The skill merges both into one unified report.
 
 ---
 
 ## Step 1: Read vault.yml
 
-Read `vault.yml`. If it is missing, flag immediately:
-> ⛔ vault.yml not found — OneBrain may not be configured correctly.
+Read `vault.yml`. If it's missing → ⛔ `vault.yml not found — OneBrain may not be configured correctly.` Stop.
+
+Resolve folder variables (`[inbox_folder]`, `[projects_folder]`, etc.) from vault.yml or defaults.
 
 ---
 
-## Step 2: Run Checks
+## Step 2a: Run CLI doctor (skip if `--vault` flag)
 
-Run all applicable checks based on flags (default: all). Collect findings before reporting.
+Run `onebrain doctor --json` (or `onebrain doctor --fix --json` if `--fix` is active). Parse the JSON envelope:
 
-### Vault Checks (`--vault`)
-
-**Broken wikilinks:**
-- Grep all `.md` files in `[projects_folder]/`, `[areas_folder]/`, `[knowledge_folder]/`, `[resources_folder]/`, `[agent_folder]/` for `\[\[.*?\]\]`
-- **Skip** wikilinks found inside fenced code blocks (between ` ``` ` fences), blockquote lines (lines beginning with `>`), or inline code spans (the entire `[[...]]` is enclosed within backticks on that line)
-- For each wikilink, extract the note name: strip any `|display text` suffix **and** any `#anchor` fragment (e.g. `[[Note#section|label]]` → match name is `Note`; preserve full original text for display)
-- Check if a `.md` file with that exact name exists anywhere in the vault (case-insensitive)
-- Flag any that don't resolve; store as: `{ broken_link, display_text, anchor, source_file, source_line }` (preserving all parts for accurate replacement later)
-
-**Orphan notes:**
-- Find notes in `[knowledge_folder]/` and `[resources_folder]/` that have no inbound wikilinks from any other note
-- These may be disconnected from the knowledge graph
-- Report only — no auto-fix (linking requires semantic judgment; use /connect instead)
-
-**Stale memory/ files:**
-- If `[agent_folder]/MEMORY.md` does not exist, report: `🟡 MEMORY.md: not found — run /onboarding` and skip both this check and the MEMORY.md size check below
-- If `memory/` folder does not exist, skip this check
-- Read all `memory/` files with `status: active` or `status: needs-review`; skip `status: deprecated`
-- Flag files where `verified:` frontmatter is older than 90 days
-- Flag files with no `verified:` field
-- Flag files with `conf: low` where `verified:` is older than 30 days (or absent)
-
-**MEMORY.md size:**
-- Count lines in `[agent_folder]/MEMORY.md`
-- Warn if count > 180: suggest manually pruning Critical Behaviors — remove entries that no longer apply or have been superseded
-
-**Inbox backlog:**
-- Count files in `[inbox_folder]/*.md`
-- Warn if count > 10: suggest running /consolidate
-
-**Old unmerged checkpoints:**
-- Glob `[logs_folder]/checkpoint/*-checkpoint-*.md` (post-v2.4.0: flat directory, no `**/`)
-- Any checkpoint file that exists is unmerged by definition — /wrapup deletes checkpoints directly after the session log is confirmed written, so leftover files indicate a session that never wrapped up. Pre-v2.2.0 vaults may contain stragglers with `merged: true` from the legacy flow; treat those the same (the field is no longer authoritative)
-- Keep only files whose date (from filename) is older than 7 days
-- Suggest running /wrapup
-
-**07-logs structure check (post-v2.4.0):**
-- Verify the 4 expected subfolders exist under `[logs_folder]/`: `session/`, `checkpoint/`, `update/`, `log/`. The migration is owned by `/update` Step 0, so missing subfolders here usually means either (a) fresh vault that hasn't run `/update` yet, or (b) interrupted migration.
-- Skip the check entirely if `[logs_folder]/YYYY/MM/` still contains legacy log files — that's the legacy structure indicator, and the user should run `/update` first
-- If `[logs_folder]/session/` is missing on a non-legacy vault: 🟡 "07-logs/session/ missing — first session log will create it"
-- If `[logs_folder]/log/` is missing on a non-legacy vault: 🟡 "07-logs/log/ missing — first audit log will create it"
-- (No warning if all 4 subfolders are present — clean state)
-
-**Log folder size (housekeeping):**
-- Count files in `[logs_folder]/log/YYYY/` for the current year
-- Warn if count > 1000: 🟡 "log/ folder: N files in YYYY — consider archive (move stale log/YYYY/MM/ folders to 06-archive/ manually)". User decides retention; OneBrain has no automatic archive policy. /reorganize does NOT touch [logs_folder]/ post-v2.4.0
-- Skip silently if `log/` doesn't exist yet (pre-migration vault)
-
-### Config Checks (`--config`)
-
-**onebrain CLI binary:**
-- Check `which onebrain` (macOS/Linux) or `where onebrain` (Windows)
-- If not found: 🔴 "onebrain CLI not installed — hooks (checkpoint, qmd-reindex) will not fire; run /onboarding or `npm install -g @onebrain-ai/cli` to install" — then **skip the OneBrain hooks and qmd PostToolUse hook checks below** (mark them as N/A — root cause is the missing CLI, not the hooks)
-- If found: ✅ (no output in clean state)
-
-**vault.yml:**
-- Verify all declared folder paths exist in the vault
-- Check `qmd_collection` is present (warn if absent — qmd search won't work)
-- Check if `timezone` key is present — it is no longer used; warn the user to remove it
-
-**plugin.json:**
-- Read `.claude/plugins/onebrain/.claude-plugin/plugin.json`
-- Verify `name`, `version`, `description` fields exist and are non-empty
-
-**Plugin install path:**
-- Read `$HOME/.claude/plugins/installed_plugins.json` (Unix) or `$env:USERPROFILE/.claude/plugins/installed_plugins.json` (Windows PowerShell). Do not pass an unexpanded `~` to file-reading tools — they will not expand it.
-- Find the entry where key starts with `onebrain@` and `scope == "project"` and `projectPath` matches the current vault
-- If not found: 🟡 "onebrain not found in installed_plugins.json — run /onboarding or /plugin to install"
-- Before any path comparison, normalize `installPath` separators with `installPath.replaceAll('\\', '/')` — Windows paths can mix backslashes and forward slashes, and substring matches against `'/.claude/plugins/cache/'` will silently fail otherwise.
-- If the normalized `installPath` contains `/.claude/plugins/cache/`: 🔴 "Plugin loading from user cache — run /doctor --fix to pin to vault"
-- If the normalized `installPath` ends with `.claude/plugins/onebrain`: ✅ "Plugin: vault-level"
-
-**INSTRUCTIONS.md:**
-- Check file exists at `.claude/plugins/onebrain/INSTRUCTIONS.md`
-- Check `skills/startup/AUTO-SUMMARY.md` exists — if missing: 🔴 "AUTO-SUMMARY.md not found — auto session summary disabled; run /update to restore"
-
-**vault.yml recap block:**
-- Check `recap:` block is present in vault.yml
-- If absent: 🟡 "`recap:` block missing from vault.yml — /recap will use defaults (min_sessions: 6, min_frequency: 2); run /update to add it"
-
-**OneBrain hooks:**
-- Read `[vault]/.claude/settings.json` (vault-level settings — the `.claude/` folder inside the vault, not `~/.claude/settings.json`)
-- Allowed events: only `Stop` and `PostToolUse` (the latter conditional on `qmd_collection`).
-- Check required `Stop` hook: entry exists under `hooks.Stop` and its **effective command** (the `command` field joined with `args[]` by spaces — so both legacy `{command: "onebrain checkpoint stop"}` and exec-form `{command: "onebrain", args: ["checkpoint", "stop"]}` reduce to the same string) contains `onebrain checkpoint stop` → ✅ / 🔴 missing or wrong
-- Sweep all other hook events (PreCompact, PostCompact, UserPromptSubmit, SessionStart, etc.): any entry whose effective command contains `onebrain` → 🟡 stale onebrain hook under non-allowed event — suggest running /update to remove it. Non-onebrain entries under those events are user-added and must be preserved (not flagged).
-
-**qmd PostToolUse hook (only when `qmd_collection` is set in vault.yml):**
-- If `qmd_collection` is absent in vault.yml: skip this entire check
-- If `qmd_collection` is present:
-  - Check `which qmd` (macOS/Linux) or `where qmd` (Windows): qmd binary must be installed → ✅ / 🔴 "qmd not installed — qmd_collection is set but binary is missing; run `/qmd setup` to reinstall"
-  - Read `[vault]/.claude/settings.json` (same file used for the Stop hook); check that `hooks.PostToolUse` contains an entry whose effective command (see Stop hook note above for the legacy + exec-form merge rule) contains `onebrain qmd-reindex` → ✅ / 🔴 "PostToolUse qmd hook missing in settings.json — run /update to register"
-
-### Scheduler Health (added 2026-05-12)
-
-Only run when vault.yml contains a `schedule:` block. Skip entirely otherwise.
-
-- **Scheduler errors** — Glob `[logs_folder]/scheduler/**/*.err.md` from the last 7 days. If any exist, report count + most recent 3 files as wikilinks under 🟡 (warning).
-- **Consecutive failures** — For each schedulable skill in `vault.yml` `schedule:`, count consecutive `.err.md` files from newest to oldest with no intervening success `.md`. If 3 or more → 🔴 CRITICAL — suggest `onebrain register-schedule --resume <skill>`.
-- **Schedule drift** — Read `vault.yml` `schedule:` block. For each entry, check that the corresponding launchd plist exists at `~/Library/LaunchAgents/com.onebrain.<labelSafe>.plist` where `labelSafe` strips leading `/` from `entry.skill` and replaces non-`[a-zA-Z0-9-]` chars with `-`. If any entry's plist is missing → 🟡 drift — suggest `onebrain register-schedule`. If any installed plist no longer matches a vault.yml entry (stale orphan) → 🟡 stale plist — suggest `onebrain register-schedule --remove` then re-register.
-- **One-shot reachability** — For each entry with `at:` (one-shot), verify the timestamp has not already passed. If passed and the plist still exists → 🟡 expired one-shot not cleaned up — suggest `onebrain register-schedule --remove` to clear the stale plist (the self-delete shell may have failed to run).
-
-### Pause: Orphan Pointer
-
-Check: `[logs_folder]/pause/_active.md` exists but no pause file matches its slug.
-
-How to detect:
-1. Read `_active.md`. If absent → skip.
-2. Parse slug. Glob `[logs_folder]/pause/*-{slug}-pause-*.md`. If empty match → orphan pointer.
-
-Report (if orphan):
-```
-⚠️ Pause pointer references `{slug}` but no snapshot files exist.
-   Fix: rm 07-logs/pause/_active.md (or create initial /pause)
+```json
+{
+  "ok": true|false,
+  "summary": {"total": N, "errors": N, "warnings": N, "passing": N},
+  "checks": [
+    {"check": "<name>", "status": "ok|warn|error", "message": "...", "details": ["..."], "hint": "...", "fix": {...}}
+  ]
+}
 ```
 
-### Pause: Missing Pointer
+Status → render emoji: `ok` → ✅, `warn` → 🟡, `error` → 🔴.
 
-Check: pause files exist but `_active.md` is missing.
+If the CLI is not installed (`onebrain` not on PATH or exit ≠ 0 with "command not found"): emit one finding — 🔴 `onebrain CLI not installed — hooks will not fire; install via brew tap onebrain-ai/onebrain && brew install onebrain (or npm install -g @onebrain-ai/cli)` — and **skip the rest of CLI doctor**. The CLI is the source of truth for the 8 core checks; without it, fall through to skill checks only.
 
-How to detect:
-1. Glob `[logs_folder]/pause/*-pause-*.md`. If empty → skip.
-2. If `_active.md` exists → skip.
-3. Otherwise: missing pointer. Identify slug(s) from filenames.
+When `--fix --json` returned `fix[]`, render each fix's outcome under the matching check ("✓ fixed", "✕ failed", or "skip"); the post-fix `checks[]` reflects state after the fix attempts.
 
-Report (if missing):
-```
-⚠️ Pause files exist but no active pointer:
-   - {slug-1} (N snapshots, latest YYYY-MM-DD)
-   - {slug-2} (M snapshots, latest YYYY-MM-DD)
-   Fix: echo "{chosen-slug}" > 07-logs/pause/_active.md
-```
-
-### Pause: Idle Thread
-
-Check: active pause thread has had no new activity (no new pause file, no `/resume`) for > 14 days.
-
-How to detect:
-1. Read `_active.md`. If absent → skip.
-2. Glob pause files for the slug. Get max date prefix from filenames.
-3. If `(today - max_date).days > 14` → idle.
-
-Report (if idle):
-```
-⚠️ Pause thread `{slug}` idle for {N} days (last snapshot YYYY-MM-DD).
-   Fix: /wrapup to consolidate, or /pause to refresh, or /resume to continue
-```
+> **Why pass `--json`:** WebFetch / shell text parsing of `onebrain doctor`'s human format is fragile. `--json` is the stable contract (frozen for v3.x — see CLI CHANGELOG).
 
 ---
 
-## Step 3: Report Findings
+## Step 2b: Run skill-only checks (skip if `--config` flag)
 
-Use this format:
+The CLI doctor does NOT cover the following — they remain in the skill:
+
+**Broken wikilinks**
+- Grep `[projects_folder]`, `[areas_folder]`, `[knowledge_folder]`, `[resources_folder]`, `[agent_folder]` for `\[\[.*?\]\]` in `.md` files.
+- **Skip** wikilinks inside fenced code blocks (between ` ``` ` fences), blockquote lines (lines beginning with `>`), inline code spans (the entire `[[...]]` enclosed in backticks on that line), or YAML frontmatter (between the leading `---` and the closing `---`).
+- For each wikilink, extract note name: strip `|display text` suffix AND `#anchor` fragment. Preserve original text for accurate replacement.
+- Check if a `.md` file with that exact name exists anywhere in the vault (case-insensitive). Flag unresolved as `{broken_link, display_text, anchor, source_file, source_line}`.
+
+**Orphan notes**
+- Find notes in `[knowledge_folder]/` and `[resources_folder]/` with zero inbound wikilinks from any other note. Report only — no auto-fix (linking requires semantic judgment; use `/connect`).
+
+**Stale memory/ files**
+- If `[agent_folder]/MEMORY.md` is absent: 🟡 `MEMORY.md not found — run /onboarding` (skip this + MEMORY.md size check).
+- If `memory/` folder is absent: skip.
+- Read `memory/` files with `status: active` or `needs-review` (skip `deprecated`).
+- Flag: `verified:` older than 90 days OR no `verified:` field OR (`conf: low` AND `verified:` absent/older than 30 days).
+
+**MEMORY.md size**
+- Count lines in `[agent_folder]/MEMORY.md`. Warn if > 180: suggest pruning Critical Behaviors.
+
+**Inbox backlog**
+- Count `[inbox_folder]/*.md`. Warn if > 10: suggest `/consolidate`.
+
+**Old unmerged checkpoints (>7 days)**
+- The CLI's `orphan-checkpoints` check uses an *active-session* threshold (`max(60min, 2 * checkpoint.minutes)`) — anything younger may still be a live session.
+- The skill check is complementary: glob `[logs_folder]/checkpoint/*-checkpoint-*.md`, keep files whose date prefix is older than 7 days. If any → 🟡 suggest `/wrapup` for the stragglers. (Pre-v2.2.0 vaults may contain `merged: true` field — ignore it; any file present is unmerged by definition.)
+
+**07-logs structure**
+- Verify the 4 subfolders exist under `[logs_folder]/`: `session/`, `checkpoint/`, `update/`, `log/`. If `[logs_folder]/YYYY/MM/` still contains legacy log files: 🟡 `legacy log structure — run /update to migrate` (and skip the per-subfolder warnings).
+- Otherwise warn per missing subfolder: 🟡 `07-logs/<name>/ missing — first <type> will create it`. No warning when all 4 present.
+
+**Log folder size (housekeeping)**
+- Count `[logs_folder]/log/YYYY/` for the current year. Warn if > 1000: 🟡 `log/ folder: N files in YYYY — consider archive (move stale log/YYYY/MM/ folders to 06-archive/ manually)`. User decides retention; OneBrain has no automatic policy. Skip silently if `log/` doesn't exist.
+
+**vault.yml `recap:` block** (the CLI's `vault.yml-keys` schema check covers required keys; `recap:` may be optional)
+- If `recap:` block is absent: 🟡 `recap: block missing — /recap will use defaults (min_sessions: 6, min_frequency: 2); run /update to add it`.
+
+**Scheduler health** — only when `vault.yml` has a `schedule:` block.
+- **Errors**: glob `[logs_folder]/scheduler/**/*.err.md` from the last 7 days. If any → 🟡 report count + most recent 3 as wikilinks.
+- **Consecutive failures**: for each `schedule:` entry, count consecutive `.err.md` files from newest with no intervening success `.md`. If ≥ 3 → 🔴 CRITICAL — suggest `onebrain register-schedule --resume <skill>`.
+- **Schedule drift**: for each entry, check `~/Library/LaunchAgents/com.onebrain.<labelSafe>.plist` exists where `labelSafe` strips leading `/` from `entry.skill` and replaces non-`[a-zA-Z0-9-]` chars with `-`. If missing → 🟡 `onebrain register-schedule` to repair. If installed plist no longer matches a vault.yml entry → 🟡 stale plist — `onebrain register-schedule --remove` then re-register.
+- **One-shot reachability**: for each `at:` entry, verify timestamp hasn't already passed. If passed and plist still exists → 🟡 expired one-shot not cleaned up.
+
+**Pause: orphan pointer**
+- Read `[logs_folder]/pause/_active.md`. If absent → skip. Parse slug. Glob `[logs_folder]/pause/*-{slug}-pause-*.md`. If empty match → ⚠️ `Pause pointer references {slug} but no snapshot files exist. Fix: rm 07-logs/pause/_active.md (or create initial /pause)`.
+
+**Pause: missing pointer**
+- Glob `[logs_folder]/pause/*-pause-*.md`. If empty → skip. If `_active.md` exists → skip. Otherwise → ⚠️ `Pause files exist but no active pointer:` + list slugs + counts + latest date. `Fix: echo "{chosen-slug}" > 07-logs/pause/_active.md`.
+
+**Pause: idle thread**
+- Read `_active.md`. If absent → skip. Glob files for the slug. Get max date prefix. If `(today - max_date).days > 14` → ⚠️ `Pause thread {slug} idle for N days (last snapshot YYYY-MM-DD). Fix: /wrapup to consolidate, or /pause to refresh, or /resume to continue`.
+
+**Memory health** — run all checks from `references/memory-health-checks.md`. Findings go under the 🧠 Memory section.
+
+---
+
+## Step 3: Merge + Report
+
+Combine CLI doctor findings (Step 2a) and skill findings (Step 2b) into one unified report.
 
 ```
 ──────────────────────────────────────────────────────────────
 🏥 OneBrain Doctor · YYYY-MM-DD
 ──────────────────────────────────────────────────────────────
-📁 Vault
-  🔴 Broken links (N): [[Missing Note]] in "Source Note"
-  🟡 Orphan notes (N): 03-knowledge/topic/Note.md
-  🟡 Inbox backlog: N files — consider /consolidate
-  🟢 Checkpoints: all merged
+⚙️ Config (from `onebrain doctor`)
+  <one line per CLI check — use the JSON `message` and emoji from status>
 
-⚙️ Config
-  🔴 onebrain CLI: not installed — run /onboarding or npm install -g @onebrain-ai/cli
-  🟢 vault.yml: OK
-  🟢 plugin.json: OK (vX.X.X)
-  ✅ Plugin: vault-level (.claude/plugins/onebrain/)
-  🔴 Plugin: loading from user cache — run /doctor --fix to pin to vault
-  🟡 Plugin: not found in installed_plugins.json — run /onboarding
-  🔴 qmd_collection: missing — qmd search will not work
-  🟡 vault.yml: `timezone` key found — no longer used, safe to remove
-  🔴 OneBrain hooks: Stop missing or wrong — run /update to register
-  🟡 OneBrain hooks: stale PostCompact onebrain entry — run /update to remove it
-  🟡 OneBrain hooks: stale UserPromptSubmit onebrain entry — run /update to remove it
-  🟢 OneBrain hooks: Stop registered correctly
-  🔴 qmd: binary not installed — run /qmd setup
-  🔴 qmd: PostToolUse hook missing in settings.json — run /update to register
-  🟢 qmd: PostToolUse hook registered correctly
+📁 Vault
+  <broken-links, orphan-notes, inbox-backlog, 07-logs structure, old checkpoints, log folder size>
 
 🧠 Memory
-  🟡 Stale memory/ files (N): not verified in 90+ days
-  🟡 MEMORY.md structure: pre-v1.10.1 Identity format — run /doctor --fix or /update
-  🟡 MEMORY.md size: N lines — consider /distill to compress
-  🟢 MEMORY.md size: OK (N lines)
+  <MEMORY.md size, stale memory/ files, MEMORY.md structure, memory-health checks>
+
+📅 Scheduler   (only if schedule: block present)
+  <errors, consecutive failures, drift, expired one-shots>
+
+⏸️ Pause   (only if pause state has findings)
+  <orphan pointer, missing pointer, idle thread>
+
 ──────────────────────────────────────────────────────────────
-🔴 N issues found (M critical 🔴, P warnings 🟡)
-Run `/doctor --fix` to repair.
+{summary line}
 ```
 
-If no issues:
-```
-✅ Everything looks healthy. No issues found.
-```
+**Summary line:**
+- All green → ✅ `Everything looks healthy. N checks · 0 issues.`
+- Otherwise → `🔴 N issues found (M critical, P warnings). Run /doctor --fix to repair safe issues.` (use CLI's `summary` + skill issue count)
+
+For each finding, prefer the CLI's `message` verbatim when it's from `onebrain doctor` (single source of truth for the 8 built-in checks). For skill findings, render the action-oriented form (`Fix: <command>`).
 
 ---
 
 ## Step 4: Auto-fix (`--fix` flag only)
 
-Read `references/autofix-procedures.md` and run Pass A, Pass B, Pass C, and Pass D in order.
-Each pass confirms with the user before writing. Run the Final step (`onebrain qmd-reindex`) after all passes.
+Two-stream fix:
 
----
+1. **CLI fixes** — already executed by `onebrain doctor --fix --json` in Step 2a. The JSON `fix[]` array reports outcomes (`fixed`, `failed`, `skip`). Render under each affected check.
 
-## Memory Health Checks
+2. **Skill fixes** — Read `references/autofix-procedures.md` and run Pass A, B, C, D in order. Each pass confirms with the user before writing. After all passes, run `onebrain qmd-reindex` as the Final step.
 
-Run all checks from `references/memory-health-checks.md`. Add findings to the Step 3 report under the 🧠 Memory section.
-
----
-
-## /doctor --fix
-
-Ongoing maintenance procedures are in `references/autofix-procedures.md` under "Ongoing Maintenance".
-
----
-
-## Migration Safety Net
-
-Read and follow `references/migration-safety-net.md` at the end of every `/doctor` run.
+The CLI fix recipes cover: settings-hooks, plugin-files, vault.yml-keys, claude-settings, qmd. The skill fix passes cover: stale confidence-score updates, broken-wikilink fuzzy-match repair, MEMORY.md structure migration. Together: CLI handles config, skill handles content.
 
 ---
 
 ## On Completion
 
-1. Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`. If `--fix` was run: also update `stats.last_doctor_fix: YYYY-MM-DD`.
+1. Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`. If `--fix` ran: also update `stats.last_doctor_fix: YYYY-MM-DD`.
 
 2. **Write doctor log entry.** Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
-
    - **Filename:** `YYYY-MM-DD-doctor.md` — one file per day.
-   - **Tags:** `[audit-log, doctor]` (umbrella tag, replacing the old `[doctor-log]` exception).
+   - **Tags:** `[audit-log, doctor]`.
    - **Skill:** `/doctor`
-   - **Per-skill discriminator in frontmatter:** `flags: [--vault, --config, --fix]` (subset of flags active for this run; empty list `[]` means default — all checks).
+   - **Per-skill discriminator:** `flags: [--vault, --config, --fix]` (subset active this run; empty list = default — all checks).
 
-   Per-skill body template (canonical `## Run HH:MM` heading; metadata in first bullet):
+   Body template:
 
    ```markdown
    ## Run HH:MM
@@ -270,21 +179,27 @@ Read and follow `references/migration-safety-net.md` at the end of every `/docto
    - Flags: --vault, --config (or "default" when no flags)
 
    ### Findings
-   - 🔴/🟡/✅ <one line per finding from Step 3>
+   - 🔴/🟡/✅ <one line per finding>
 
    ### Fixes Applied
-   - <one line per fix from Step 4 if --fix was run, otherwise: (none — diagnostic only)>
+   - <one line per fix; or "(none — diagnostic only)">
 
    ### Recommendations
    - <one line per actionable recommendation>
    ```
 
+3. Read and follow `references/migration-safety-net.md` at the end of every `/doctor` run.
+
 ---
 
 ## Known Gotchas
 
-- **Wikilinks in frontmatter YAML values are not navigable links.** Fields like `superseded_by: [[old-file]]` contain wikilink syntax but are not real links — Obsidian does not resolve them. The broken-link checker already skips fenced code blocks and blockquotes; also skip any `[[...]]` that appears on a line before the closing `---` of the frontmatter block.
+- **Wikilinks in frontmatter YAML values are not navigable links.** Fields like `superseded_by: [[old-file]]` contain wikilink syntax but Obsidian doesn't resolve them. The broken-link checker already skips fenced code blocks and blockquotes; also skip any `[[...]]` that appears on a line before the closing `---` of the frontmatter block.
 
-- **`--fix` is not transactional.** If Pass C is interrupted (user says "stop", or a file write fails), previously edited files are already changed but later files are not. Report each fixed file immediately as it completes so the user has a clear record of what was and was not changed if something interrupts.
+- **`--fix` is not transactional.** If Pass C is interrupted (user says "stop", a file write fails), previously edited files are already changed but later ones are not. Report each fixed file immediately as it completes so the user has a clear record of what was and wasn't changed.
 
-- **vault.yml with Windows line endings (CRLF).** If edited on Windows, YAML values may have a trailing `\r`. **Always** strip trailing whitespace from any vault.yml-derived path string (e.g. `value.replace(/\s+$/, '')` or equivalent) before passing it to file-existence checks, Glob, or Read — otherwise a folder named `00-inbox\r` will silently fail to match the on-disk `00-inbox/`. Apply this in Step 2 (folder existence) and any other step that reads a path out of vault.yml.
+- **vault.yml with Windows line endings (CRLF).** YAML values may have a trailing `\r` if edited on Windows. Strip trailing whitespace from any vault.yml-derived path string (e.g. `value.replace(/\s+$/, '')`) before passing it to file-existence checks, Glob, or Read — otherwise a folder named `00-inbox\r` will silently fail to match the on-disk `00-inbox/`.
+
+- **CLI doctor JSON is the v3.x stable contract.** If the JSON shape changes in a future v3.x release, the skill MUST update accordingly (CLI repo's CHANGELOG announces schema changes). If `onebrain doctor --json` fails to parse, treat it like CLI-not-installed (fall back to skill checks only) and surface the parse error.
+
+- **`onebrain doctor` already handles the schema-policy checks.** Don't duplicate them in skill body: `vault.yml-keys`, `plugin-files` integrity, `settings-hooks` (Stop + PostToolUse qmd), and `claude-settings` (stale marketplace) are CLI-side. The skill's job is content-level checks (wikilinks, memory, pause, scheduler) the CLI doesn't know about.

@@ -1,5 +1,5 @@
 ---
-latest_version: 3.0.2
+latest_version: 3.0.3
 released: 2026-05-22
 ---
 
@@ -10,6 +10,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary changes, see the [`onebrain-ai/onebrain-cli`](https://github.com/onebrain-ai/onebrain-cli/blob/main/CHANGELOG.md) repository.
+
+## v3.0.3 — 2026-05-22
+
+- **perf(doctor): delegate the 8 schema-validation checks to `onebrain doctor --json`** — skill SKILL.md trimmed 290 → 205 lines (-29%). The skill now runs a single subprocess call for `vault.yml`, `vault.yml-keys`, `folders`, `plugin-files`, `settings-hooks`, `orphan-checkpoints`, `qmd-embeddings`, `claude-settings` (Rust-native, structured JSON). Skill-only checks (broken wikilinks, orphan notes, MEMORY.md size, inbox backlog, scheduler health, pause-thread state, memory health) remain in the skill — those are vault-content / state-machine checks the CLI doesn't cover.
+- **fix(doctor): `--fix` flow delegates to `onebrain doctor --fix --json`** for CLI-side fix recipes (settings-hooks, plugin-files, vault.yml-keys, claude-settings, qmd). Skill `--fix` passes (wikilink fuzzy-match, MEMORY.md structure, confidence-score updates) remain skill-side via `references/autofix-procedures.md`.
+- **chore: remove dead GitHub workflows** — `ci.yml` (`bun install` + `tsc --noEmit` + `biome check` + `bun test`) and `release.yml` (binary build via `bun build --compile` from `src/index.ts` + npm publish) targeted the v2.x TypeScript CLI code that was removed in v3.0.2. Plugin repo has no test/build surface anymore; CLI workflows live at [`onebrain-ai/onebrain-cli/.github/workflows/`](https://github.com/onebrain-ai/onebrain-cli/tree/main/.github/workflows). Resolves "next PR would fail CI on missing tsconfig/package.json/src" footgun.
+- **No skill behavior changes** beyond /doctor — all other skills unchanged. CLI v3.0.0 floor pin retained (`requires.cli >=3.0.0`).
 
 ## v3.0.2 — 2026-05-22
 
