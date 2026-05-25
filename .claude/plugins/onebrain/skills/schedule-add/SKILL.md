@@ -1,6 +1,6 @@
 ---
 name: schedule-add
-description: Interactive wizard to add a scheduled OneBrain skill. Walks user through skill selection, frequency, time, and writes to vault.yml + invokes onebrain register-schedule.
+description: Interactive wizard to add a scheduled OneBrain skill. Walks user through skill selection, frequency, time, and writes to onebrain.yml + invokes onebrain register-schedule.
 schedulable: false
 ---
 
@@ -8,12 +8,12 @@ schedulable: false
 
 ## Purpose
 
-For users who don't want to hand-edit vault.yml or learn cron syntax. Walks through:
+For users who don't want to hand-edit onebrain.yml or learn cron syntax. Walks through:
 1. Which skill to schedule
 2. How often (Daily/Weekly/Monthly/Custom)
 3. What time
 4. Confirms cron preview
-5. Writes to vault.yml + runs `onebrain register-schedule`
+5. Writes to onebrain.yml + runs `onebrain register-schedule`
 
 ---
 
@@ -21,7 +21,7 @@ For users who don't want to hand-edit vault.yml or learn cron syntax. Walks thro
 
 ### Step 0: First-run preset detection (skip if schedule already has entries)
 
-1. Read `vault.yml`. Check if the `schedule:` key exists AND its value is a non-empty list.
+1. Read `onebrain.yml`. Check if the `schedule:` key exists AND its value is a non-empty list.
    - If `schedule:` is missing, null, or `[]` → continue with this step (preset selector).
    - If `schedule:` has one or more entries → skip Step 0 entirely; go straight to Step 1.
 
@@ -34,15 +34,15 @@ For users who don't want to hand-edit vault.yml or learn cron syntax. Walks thro
    - **Tier 4 — Custom** (skip presets, go to manual wizard)
 
 4. Apply the chosen tier:
-   - **Tier 1, 2, or 3:** atomically write the preset entries (verbatim from `_shared/schedule-presets.md`) to `vault.yml` `schedule:` block (load → mutate → write entire file; use a tmp file + rename). Then run `onebrain register-schedule`. Confirm: `✓ Installed Tier N preset (M entries).`
+   - **Tier 1, 2, or 3:** atomically write the preset entries (verbatim from `_shared/schedule-presets.md`) to `onebrain.yml` `schedule:` block (load → mutate → write entire file; use a tmp file + rename). Then run `onebrain register-schedule`. Confirm: `✓ Installed Tier N preset (M entries).`
    - **Tier 4 (Custom):** fall through to Step 1 (the existing skill picker wizard).
 
 5. On Tier 1/2/3 success → the skill exits here. The user has scheduled entries. Subsequent invocations of `/schedule-add` will see `schedule:` is non-empty and skip Step 0, falling straight into the manual wizard for adding additional entries.
 
 #### Edge cases
 
-- **vault.yml missing entirely** → wizard creates it with the preset entries as the only content of a new `schedule:` block.
-- **vault.yml has `schedule:` as a comment or YAML null** → treat as empty; proceed with preset selector.
+- **onebrain.yml missing entirely** → wizard creates it with the preset entries as the only content of a new `schedule:` block.
+- **onebrain.yml has `schedule:` as a comment or YAML null** → treat as empty; proceed with preset selector.
 - **Atomic write failure** → rollback (do not leave partial state); report the YAML error and exit.
 
 ### Step 1: Pick skill
@@ -115,7 +115,7 @@ Construct the cron string from frequency + time:
 
 ### Step 6: Conflict check
 
-Read vault.yml `schedule:` block (if it exists). Check for an entry with the same `skill` value.
+Read onebrain.yml `schedule:` block (if it exists). Check for an entry with the same `skill` value.
 
 If a conflict is found, show via `AskUserQuestion`:
 - question: "`{chosen_skill}` is already scheduled at {existing_cron}. Overwrite it?"
@@ -144,9 +144,9 @@ Confirm?
 
 If Cancel, stop.
 
-### Step 8: Write to vault.yml
+### Step 8: Write to onebrain.yml
 
-Read vault.yml. Locate the `schedule:` block. If the block does not exist, create it.
+Read onebrain.yml. Locate the `schedule:` block. If the block does not exist, create it.
 
 Build the new schedule entry:
 ```yaml
@@ -157,11 +157,11 @@ Build the new schedule entry:
 
 If overwriting an existing entry (conflict detected in Step 6), replace that entry. Otherwise append.
 
-Write the full updated vault.yml back atomically:
-1. Write to a temporary file (`vault.yml.tmp`) in the vault root.
-2. Rename to `vault.yml` (atomic replace).
+Write the full updated onebrain.yml back atomically:
+1. Write to a temporary file (`onebrain.yml.tmp`) in the vault root.
+2. Rename to `onebrain.yml` (atomic replace).
 
-If the write fails at any point, do not leave a partial file: delete `vault.yml.tmp` if it exists and report the error. Do not proceed to Step 9.
+If the write fails at any point, do not leave a partial file: delete `onebrain.yml.tmp` if it exists and report the error. Do not proceed to Step 9.
 
 ### Step 9: Register schedule
 
@@ -170,7 +170,7 @@ Run from the vault root:
 onebrain register-schedule
 ```
 
-If the command fails, report the error. vault.yml has already been updated — the user can retry `onebrain register-schedule` manually.
+If the command fails, report the error. onebrain.yml has already been updated — the user can retry `onebrain register-schedule` manually.
 
 ### Step 10: Confirm
 
@@ -183,9 +183,9 @@ Say:
 
 ## Edge cases
 
-- **vault.yml missing `schedule:` block** — wizard creates it in Step 8.
+- **onebrain.yml missing `schedule:` block** — wizard creates it in Step 8.
 - **Conflict (same skill, same time)** — handled in Step 6 with overwrite prompt.
-- **vault.yml YAML write failure** — rollback in Step 8; no partial state left on disk.
+- **onebrain.yml YAML write failure** — rollback in Step 8; no partial state left on disk.
 - **`schedulable_with_args` skill, no args provided** — wizard prompts in Step 2 before proceeding.
 - **Invalid cron (Custom)** — validate 5 fields; if invalid, ask again.
 - **Invalid HH:MM (Custom time)** — validate range; if invalid, ask again.
@@ -195,6 +195,6 @@ Say:
 ## Implementation notes
 
 - Use `yaml` library (already in CLI deps) — preserve comments and key order during write.
-- Atomically replace vault.yml: write to tmp → rename (POSIX-atomic on same filesystem).
+- Atomically replace onebrain.yml: write to tmp → rename (POSIX-atomic on same filesystem).
 - Day-of-week mapping: Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6, Sun=0.
 - `next_run_datetime` is a human-readable estimate (e.g. "tomorrow 9:00", "Friday 18:00") — compute from current datetime and cron.

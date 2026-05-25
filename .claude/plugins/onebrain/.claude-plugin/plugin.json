@@ -1,12 +1,12 @@
 {
   "name": "onebrain",
-  "version": "3.0.3",
-  "description": "OneBrain — Where human and AI thinking become one. A powerful thinking partner powered by AI synergy.",
+  "version": "3.1.0",
+  "description": "OneBrain — Your AI Thinking Partner",
   "author": {
     "name": "OneBrain Contributors"
   },
   "license": "AGPL-3.0-only",
   "requires": {
-    "cli": ">=3.0.0"
+    "cli": ">=3.1.0"
   }
 }

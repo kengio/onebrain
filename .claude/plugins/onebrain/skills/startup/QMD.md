@@ -38,4 +38,4 @@ Whenever you add, edit, or delete any file in the vault, check first whether qmd
 onebrain qmd-reindex
 ```
 
-This triggers a background reindex. The command reads `qmd_collection` from vault.yml and exits silently if qmd is not installed or the collection is not set. It is fire-and-forget — no need to wait for it to complete.
+This triggers a background reindex. The command reads `qmd_collection` from onebrain.yml and exits silently if qmd is not installed or the collection is not set. It is fire-and-forget — no need to wait for it to complete.

@@ -11,7 +11,7 @@ Update OneBrain system files from GitHub to the latest version.
 ## Version Check
 
 1. Read current version from vault's `plugin.json` (`[agent_folder]/../../.claude-plugin/plugin.json` or `.claude/plugins/onebrain/.claude-plugin/plugin.json`)
-2. Read `update_channel` from `vault.yml` (default: `stable` if field absent).
+2. Read `update_channel` from `onebrain.yml` (default: `stable` if field absent).
    Map to GitHub branch:
    - `stable` → `main`
    - `next` → `next`
@@ -57,11 +57,13 @@ After confirming the vault update (step 7 above), also bring the installed `oneb
 
    If not installed, skip this section entirely — the CLI cannot self-update if it isn't installed; first-time CLI install lives in the README, not here.
 
-2. Run `onebrain update`. The CLI handles everything: version comparison against the GitHub releases API, package-manager choice (`bun` on macOS/Linux, `npm` via PowerShell on Windows), install, and post-install binary validation. If already current it prints `Already up to date — @onebrain-ai/cli vX.Y.Z` and exits 0; no further action.
+2. **Check if a CLI self-update is available** with `onebrain update --check` (v3.1+ flag — prints the available CLI version without installing). Exit 0 + "Already up to date" message = nothing to do; skip step 3. Otherwise proceed.
 
-3. If `onebrain update` exits non-zero, surface its captured output (both stdout and stderr) verbatim to the user — `runUpdate` writes the human-readable step lines to stdout and the final error tag to stderr, so showing only stderr would hide the diagnostic context. Then continue with the rest of `/update` — CLI failure does not block the vault sync that already completed (and re-running `/update` retries the CLI bump idempotently).
+3. Run `onebrain update` to perform the CLI self-update. The CLI handles everything: version comparison against the GitHub releases API, package-manager choice (`bun` on macOS/Linux, `npm` via PowerShell on Windows), install, and post-install binary validation. If already current it prints `Already up to date — @onebrain-ai/cli vX.Y.Z` and exits 0; no further action.
 
-> **Why one command instead of a prompt.** `onebrain update` is the canonical CLI-update path. Duplicating its logic here (raw `npm view` + AskUserQuestion + `npm install -g`) would drift from the CLI's own version check and validation gates. The user already confirmed `/update` at step 6; the CLI bump rides on that confirmation.
+4. If `onebrain update` exits non-zero, surface its captured output (both stdout and stderr) verbatim to the user — `runUpdate` writes the human-readable step lines to stdout and the final error tag to stderr, so showing only stderr would hide the diagnostic context. Then continue with the rest of `/update` — CLI failure does not block the plugin sync that already completed (and re-running `/update` retries the CLI bump idempotently).
+
+> **Why one command instead of a prompt.** `onebrain update` is the canonical CLI-update path in v3.1+ (semantic swap: in v3.0 this name meant "pull plugin"; that behavior moved to `onebrain plugin update`). Duplicating its logic here (raw `npm view` + AskUserQuestion + `npm install -g`) would drift from the CLI's own version check and validation gates. The user already confirmed `/update` at step 6; the CLI bump rides on that confirmation.
 
 ## Self-Update Bootstrap (Read-New, Execute-In-Place)
 
@@ -102,9 +104,9 @@ Steps:
    **Idempotency on interrupt**: if `mv` is cut off mid-run, the next `/update` re-detects via the trigger above (any unmoved file in `YYYY/MM/`) and finishes the move. The trigger condition itself is the verification — no count snapshot needed. Files are never duplicated because each `mv` removes the source.
 
    a. Pre-migration backup: copy `[agent_folder]/MEMORY.md` → `[archive_folder]/[agent_folder]/MEMORY-YYYY-MM-DD.md`
-      and `[agent_folder]/context/` → `[archive_folder]/[agent_folder]/context.YYYY-MM-DD/` (if context/ exists). The `[agent_folder]` literal under `[archive_folder]/` mirrors the source's relative path so users who remapped `folders.agent` in vault.yml see backups land in the matching subfolder.
+      and `[agent_folder]/context/` → `[archive_folder]/[agent_folder]/context.YYYY-MM-DD/` (if context/ exists). The `[agent_folder]` literal under `[archive_folder]/` mirrors the source's relative path so users who remapped `folders.agent` in onebrain.yml see backups land in the matching subfolder.
    b. Sync remaining files — run these two sub-steps in parallel, then clean cache after both complete:
-      - **Full vault sync:** run `onebrain vault-sync --branch {branch}` (the CLI defaults the vault root to the current working directory; explicit `"$PWD"` was Bash-only and broke on PowerShell/cmd). Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md to vault root (overwrite), merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only), pins plugin to vault, and clears plugin cache. (Pre-v3.0.2 vaults receive a one-time cleanup of the now-removed `PLUGIN-CHANGELOG.md` root file as part of the plugin folder sync.)
+      - **Full vault sync:** run `onebrain plugin update --branch {branch}` (the CLI defaults the vault root to the current working directory; explicit `"$PWD"` was Bash-only and broke on PowerShell/cmd). Downloads the full GitHub tarball, syncs plugin folder (with stale file cleanup), copies README.md/CONTRIBUTING.md/CHANGELOG.md to vault root (overwrite), merges CLAUDE.md/GEMINI.md/AGENTS.md (vault is primary; injects new repo `@` imports only), pins plugin to vault, and clears plugin cache. (Pre-v3.0.2 vaults receive a one-time cleanup of the now-removed `PLUGIN-CHANGELOG.md` root file as part of the plugin folder sync.)
       - **Settings merge:** WebFetch `https://raw.githubusercontent.com/onebrain-ai/onebrain/{branch}/.claude/settings.json`, then merge into `[vault]/.claude/settings.json` (⚠️ JSON parsing — refetch via `curl -fsSL` if the response is not valid JSON; see Known Gotchas). Merge strategy (never overwrite, always additive): `permissions.allow` → union; `enabledPlugins` → merge keys (skip any `onebrain@*` key whose marketplace points to a `directory` source — repo-dev-only, not valid in vault context); `extraKnownMarketplaces` → skip (repo-dev-only config, not valid in vault context); `hooks` → skip (handled by migration Step 6).
    c. Once all step 3b sub-steps are complete, load `[vault]/.claude/plugins/onebrain/skills/update/references/migration-steps.md` and run all 8 migration steps
    d. Bump `plugin.json` version to `{new}` (last — completion signal; do not bump early)
@@ -113,7 +115,7 @@ Steps:
    - **Filename:** `YYYY-MM-DD-update-vX.X.X.md` — one file per update run; lives in `[logs_folder]/update/` (flat, post-v2.4.0). `/update` is the one outlier: its log lives under `[logs_folder]/update/`, NOT `[logs_folder]/log/`.
    - **Tags:** `[audit-log, update]` (umbrella tag, replacing the old `[update-log]` exception).
    - **Skill:** `/update`
-   - **Per-skill discriminators in frontmatter:** `channel: stable | next | N.x` (mapped from `update_channel` in vault.yml), plus the existing `from_version: X.X.X` and `to_version: X.X.X`.
+   - **Per-skill discriminators in frontmatter:** `channel: stable | next | N.x` (mapped from `update_channel` in onebrain.yml), plus the existing `from_version: X.X.X` and `to_version: X.X.X`.
 
    **Create the `update/` directory if missing** (`mkdir -p [logs_folder]/update` or per-shell equivalent) — fresh post-v2.4.0 vaults that never ran the migration won't have the dir yet, so Step 4 must self-bootstrap.
 
@@ -138,7 +140,7 @@ Steps:
    - [x] Step 5: Created MEMORY-INDEX.md (N active entries)
    - [x] Step 6: Registered Stop hook; removed stale onebrain entries from any other event (PreCompact, PostCompact, etc.) (+ PostToolUse qmd hook if qmd_collection set)
    - [x] Step 7: /doctor — N issues
-   - [x] Step 8: Initialized vault.yml stats + recap block
+   - [x] Step 8: Initialized onebrain.yml stats + recap block
 
    ## Summary
 
@@ -178,7 +180,7 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 ## Failure Recovery
 
 - Version stays old until plugin.json bump (step 3d) — re-running /update retries from start
-- Re-running /update from the start is safe — `onebrain vault-sync` downloads fresh and overwrites (idempotent)
+- Re-running /update from the start is safe — `onebrain plugin update` downloads fresh and overwrites (idempotent)
 - If vault in unrecoverable state: restore from backup in `[archive_folder]/`, then re-run /update
 
 ---
@@ -195,10 +197,10 @@ Dry run complete — {N} files would be created, {M} modified, {P} deleted.
 
 - **Harness file merge is vault-primary.** If a user removed a plugin `@` import from CLAUDE.md/GEMINI.md/AGENTS.md (e.g., `@.claude/plugins/onebrain/INSTRUCTIONS.md`), `/update` will re-inject it on the next run because the script cannot distinguish intentional deletion from never having had it. If a specific import should stay absent, re-remove it after updating.
 
-- **Root files live at the repo root, not the plugin folder.** `onebrain vault-sync` handles all six root-level files: README.md, CONTRIBUTING.md, CHANGELOG.md (simple overwrite) and CLAUDE.md, GEMINI.md, AGENTS.md (merge — preserves user `@` imports). Never copy any of these into the plugin folder. (Pre-v3.0.2 vaults also had `PLUGIN-CHANGELOG.md` — renamed to `CHANGELOG.md` in the plugin-only trim; `vault-sync` cleans up the stale `PLUGIN-CHANGELOG.md` on the next run.)
+- **Root files live at the repo root, not the plugin folder.** `onebrain plugin update` handles all six root-level files: README.md, CONTRIBUTING.md, CHANGELOG.md (simple overwrite) and CLAUDE.md, GEMINI.md, AGENTS.md (merge — preserves user `@` imports). Never copy any of these into the plugin folder. (Pre-v3.0.2 vaults also had `PLUGIN-CHANGELOG.md` — renamed to `CHANGELOG.md` in the plugin-only trim; `onebrain plugin update` cleans up the stale `PLUGIN-CHANGELOG.md` on the next run.)
 
 - **Failure recovery path:** If interrupted before step 3d (plugin.json bump), re-running /update will retry from step 1. The early bootstrap (download SKILL.md) is idempotent — safe to repeat.
 
-- **CLI update delegates to `onebrain update`.** Do not call `npm install -g @onebrain-ai/cli` or `bun install -g @onebrain-ai/cli` from this skill — `onebrain update` is the single source of truth for the CLI bump (version check, package-manager choice, validation). Raw npm/bun is reserved for first-time CLI bootstrap, which is a README/install-script concern, not a `/update` concern.
+- **CLI update delegates to `onebrain update`; plugin pull delegates to `onebrain plugin update`.** Do not call `npm install -g @onebrain-ai/cli` or `bun install -g @onebrain-ai/cli` from this skill — `onebrain update` is the single source of truth for the CLI bump (version check, package-manager choice, validation). Raw npm/bun is reserved for first-time CLI bootstrap, which is a README/install-script concern, not a `/update` concern. **v3.0 → v3.1 semantic swap:** in v3.0, `onebrain update` pulled the plugin; in v3.1 it self-updates the CLI binary, and the old plugin-pull behavior moved to `onebrain plugin update`. Don't reach for the legacy v3.0 names.
 
 - **WebFetch may return summarized markdown — use `curl -fsSL` when raw content is required.** WebFetch can post-process content even with `raw.githubusercontent.com` URLs and explicit "return verbatim" prompts. Anywhere `/update` parses JSON (`plugin.json`, `settings.json`) or downloads/displays files verbatim (`CHANGELOG.md`, `SKILL.md`), prefer `curl -fsSL <raw-url>` via the Bash tool instead. Symptoms of a summarized fetch: version mismatch on `plugin.json`, truncated/paraphrased changelog display, corrupted SKILL.md after self-update bootstrap.

@@ -8,7 +8,7 @@ schedulable: false
 
 Package your agent's full context for transfer to a new vault.
 
-**What gets cloned:** Everything in the agent folder : `MEMORY.md`, `MEMORY-INDEX.md`, `memory/`, and `CLONE.md` once generated. Also includes `vault.yml` and the OneBrain plugin.
+**What gets cloned:** Everything in the agent folder : `MEMORY.md`, `MEMORY-INDEX.md`, `memory/`, and `CLONE.md` once generated. Also includes `onebrain.yml` and the OneBrain plugin.
 **What does NOT get cloned:** your notes, projects, areas, knowledge, resources, archive, and logs.
 
 Usage: `/clone`
@@ -20,7 +20,7 @@ Usage: `/clone`
 - `05-agent/MEMORY.md`
 - `05-agent/MEMORY-INDEX.md`          ← include MEMORY-INDEX
 - `05-agent/memory/`           ← all memory files (was: context/ + memory/ separately; now merged)
-- `vault.yml`                  ← include vault.yml (has recap config)
+- `onebrain.yml`                  ← include onebrain.yml (has recap config)
 - `.claude/plugins/onebrain/`
 
 ---
@@ -77,7 +77,7 @@ Show the user what will be cloned:
 ✅  `[agent_folder]/MEMORY-INDEX.md`       memory index
 ✅  `[agent_folder]/CLONE.md`       this manifest
 ✅  `[agent_folder]/memory/`        {N} files
-✅  `vault.yml`                     vault configuration
+✅  `onebrain.yml`                     vault configuration
 ✅  `.claude/plugins/onebrain/`     OneBrain plugin
 
 ❌  notes, projects, areas, knowledge, resources, archive, logs
@@ -102,7 +102,7 @@ If the user chose option 1:
 3. Create the output folder
 4. Copy the following into the output folder, preserving all subfolders and files:
    - Entire `[agent_folder]/` to `[output_folder]/[agent_folder]/` (including CLONE.md, MEMORY.md, MEMORY-INDEX.md, memory/)
-   - `vault.yml` to `[output_folder]/vault.yml`
+   - `onebrain.yml` to `[output_folder]/onebrain.yml`
    - `.claude/plugins/onebrain/` to `[output_folder]/.claude/plugins/onebrain/`
    - If archive included: `[archive_folder]/[agent_folder]/memory/` to `[output_folder]/[archive_folder]/[agent_folder]/memory/`
 5. Confirm:
@@ -123,7 +123,7 @@ Print a markdown code block listing every file's relative path:
 [agent_folder]/MEMORY-INDEX.md
 [agent_folder]/CLONE.md
 [agent_folder]/memory/[each file]
-vault.yml
+onebrain.yml
 .claude/plugins/onebrain/
 ```
 
@@ -159,6 +159,6 @@ For Step 4b (Display Paths), set `Method:` to `display-paths`, `Destination:` to
 
 ## Known Gotchas
 
-- **`qmd_collection` in `vault.yml` is vault-specific.** When cloning to a new vault, the `qmd_collection` value will point to the old vault's collection. The user must run `/qmd setup` in the new vault to create a collection for the new vault and update `vault.yml` accordingly.
+- **`qmd_collection` in `onebrain.yml` is vault-specific.** When cloning to a new vault, the `qmd_collection` value will point to the old vault's collection. The user must run `/qmd setup` in the new vault to create a collection for the new vault and update `onebrain.yml` accordingly.
 
 - **Cloned memory/ files reference project paths from the old vault.** Project-type memory files may contain file paths (e.g., repo locations) that differ in the new environment. Run `/memory-review` after cloning to audit and update any path-specific facts.

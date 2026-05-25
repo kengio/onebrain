@@ -102,7 +102,7 @@ If no orphan groups found: skip to Step 2.
 
 For each orphan group from the *Identify Orphans* step above, decide between **recover** and **skip-active** by file age (the `skipped_active` list was initialized at the top of Step 1b):
 
-1. **Resolve the threshold once** (before scanning groups): read `vault.yml`'s `checkpoint.minutes` (defaults to 30 when the key is absent) and compute `threshold_minutes = max(60, 2 * checkpoint.minutes)`. Examples: default 30 → 60, raised 60 → 120, raised 90 → 180. If `vault.yml` is missing, malformed, or `checkpoint.minutes` is non-positive/non-numeric, fall back to `threshold_minutes = 60` — the recovery flow is critical-path; never block on a config issue.
+1. **Resolve the threshold once** (before scanning groups): read `onebrain.yml`'s `checkpoint.minutes` (defaults to 30 when the key is absent) and compute `threshold_minutes = max(60, 2 * checkpoint.minutes)`. Examples: default 30 → 60, raised 60 → 120, raised 90 → 180. If `onebrain.yml` is missing, malformed, or `checkpoint.minutes` is non-positive/non-numeric, fall back to `threshold_minutes = 60` — the recovery flow is critical-path; never block on a config issue.
 2. Compute `now_epoch` once: `now_epoch=$(date +%s)`.
 3. For every checkpoint file in the group, get its mtime as **epoch seconds**:
    - macOS / BSD: `stat -f '%m' <file>`
@@ -322,7 +322,7 @@ Guard: only delete AFTER confirming the session log write succeeded. If an indiv
 
 At the end of every /wrapup, compute `unrecapped_count` and `last_recapped`:
 
-**Fast path:** read `stats.last_recap` from `vault.yml` if available.
+**Fast path:** read `stats.last_recap` from `onebrain.yml` if available.
 **Glob session logs only:** match the `*-session-*.md` file pattern under
 `[logs_folder]/session/` (post-v2.4.0: session logs live in their own
 subfolder). Use `[logs_folder]/session/YYYY/MM/*-session-*.md` over the

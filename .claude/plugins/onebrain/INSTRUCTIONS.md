@@ -7,9 +7,11 @@
 
 ## Configuration
 
-These variables are used throughout this file. Start with the defaults below, then read `vault.yml` and override with the actual values. If `vault.yml` is missing, use the defaults as-is.
+These variables are used throughout this file. Start with the defaults below, then read `onebrain.yml` and override with the actual values. If `onebrain.yml` is missing, use the defaults as-is.
 
-| Variable | vault.yml key | Default |
+> **Config file rename (v3.1.0):** Canonical name is `onebrain.yml` (renamed from `vault.yml`). CLI v3.1+ also reads legacy `vault.yml` as a fallback with a deprecation warning. Run `onebrain doctor --fix` to migrate an existing vault.
+
+| Variable | onebrain.yml key | Default |
 |---|---|---|
 | `[inbox_folder]` | `folders.inbox` | `00-inbox` |
 | `[projects_folder]` | `folders.projects` | `01-projects` |
@@ -211,7 +213,7 @@ Session startup greets the user immediately, then runs a quick inline status che
 Run before responding to any user message.
 
 **Step 1 — Critical path (greeting blocks on these):** Run in parallel:
-- Read `vault.yml` → load Configuration variables; override defaults once resolved
+- Read `onebrain.yml` → load Configuration variables; override defaults once resolved. If `onebrain.yml` is missing, fall back to legacy `vault.yml` (v3.0 name) — same schema; surface a one-line deprecation note in the startup status so the user knows to run `onebrain doctor --fix` to migrate.
 - Read `[agent_folder]/MEMORY.md` → load identity, personality, active projects
 - Run `onebrain session-init` (from vault root) → parse JSON output; store `DATETIME` (for greeting), `session_token` (for checkpoints), and `qmd_unembedded` in context. JSON shape: `{"datetime":"Ddd · DD Mon YYYY · HH:MM","session_token":"XXXXX","qmd_unembedded":N}`. If the command fails or is unavailable, fall back to running `date '+%a · %d %b %Y · %H:%M'` for `DATETIME`, treating `session_token` as `99999`, and `qmd_unembedded` as `0`. If JSON output contains `{"decision":"block","reason":"onebrain-init-required"}`, skip Steps 2–4; instead output a single message: "OneBrain vault not initialized. Run `/onboarding` to set up your vault."
 
@@ -325,7 +327,7 @@ Determine action from the reason:
 - `Stop hook blocking error` with reason matching `NN since <context>` (zero-padded NN + ` since start` or ` since checkpoint-NN`) → spawn background agent (mode: bypassPermissions) to write the checkpoint; if session_token is not in context, re-run `onebrain session-init` first — if that fails, abort silently; agent receives session_token, NN and since-context from the reason, today's date, and `[logs_folder]`; main session continues immediately after dispatching
 - Ambiguous or unknown → default to stop checkpoint
 
-OneBrain registers only the Stop hook (plus a PostToolUse hook for qmd indexing if `qmd_collection` is set in vault.yml). PreCompact and PostCompact are not registered: PreCompact's `decision:"block"` aborts the compact entirely (bad UX), and Claude Code's PostCompact is observational-only — its stdout cannot reach the agent. Compact events (auto or manual) are observed indirectly via the Stop hook's accumulated message count, which carries across compacts and drives the next checkpoint emission via the normal threshold logic.
+OneBrain registers only the Stop hook (plus a PostToolUse hook for qmd indexing if `qmd_collection` is set in onebrain.yml). PreCompact and PostCompact are not registered: PreCompact's `decision:"block"` aborts the compact entirely (bad UX), and Claude Code's PostCompact is observational-only — its stdout cannot reach the agent. Compact events (auto or manual) are observed indirectly via the Stop hook's accumulated message count, which carries across compacts and drives the next checkpoint emission via the normal threshold logic.
 
 **Stop checkpoint format:** Read `skills/startup/references/session-formats.md` → Checkpoint Format. Keep under 250 words.
 
@@ -379,7 +381,7 @@ These principles are the foundation of how OneBrain assists across every session
 
 ## Scheduling — which tool to use
 
-OneBrain provides scheduling via OS-level cron (launchd on macOS). It is configured in `vault.yml` `schedule:` block, not invoked via slash. This is distinct from Claude Code's built-in `/loop` and `/schedule` commands.
+OneBrain provides scheduling via OS-level cron (launchd on macOS). It is configured in `onebrain.yml` `schedule:` block, not invoked via slash. This is distinct from Claude Code's built-in `/loop` and `/schedule` commands.
 
 | Tool | Use case | Runtime |
 |------|---------|---------|
@@ -395,11 +397,11 @@ For interactive setup:
 - `/schedule-list` — show all scheduled entries
 - `/schedule-remove` — remove an entry
 
-For manual config: edit `vault.yml` `schedule:` block + run `onebrain register-schedule`.
+For manual config: edit `onebrain.yml` `schedule:` block + run `onebrain register-schedule`.
 
 ### Skill mode vs command mode
 
-`vault.yml` `schedule:` entries support two coexisting modes:
+`onebrain.yml` `schedule:` entries support two coexisting modes:
 
 - **Skill mode** (`skill: /daily`) — invokes a OneBrain skill via headless Claude Code. Args use map form: `args: { key: value }` (emitted as `--key=value` flags). Requires the skill's frontmatter to declare `schedulable: true` (or `schedulable_with_args: true` with `required_args`).
 - **Command mode** (`command: onebrain`) — invokes any CLI binary directly using the same `command + args[]` shape as Claude Code hooks (`settings.json`). Args use string array: `args: [arg1, arg2]` (positional argv). No frontmatter validation; trust model matches hooks.
@@ -424,7 +426,7 @@ schedule:
 
 Use skill mode for OneBrain workflows. Use command mode for CLI maintenance and generic binaries that don't have (or don't need) a skill wrapper.
 
-**Adding entries:** the `/schedule-add` wizard targets skill mode only. To add a command-mode entry, edit `vault.yml` directly and re-run `onebrain register-schedule`. The `/schedule-list` and `/schedule-remove` skills handle both modes transparently.
+**Adding entries:** the `/schedule-add` wizard targets skill mode only. To add a command-mode entry, edit `onebrain.yml` directly and re-run `onebrain register-schedule`. The `/schedule-list` and `/schedule-remove` skills handle both modes transparently.
 
 ### Presets
 
@@ -437,7 +439,7 @@ New users and fresh vaults can install a maintenance preset in one decision. Thr
 
 Presets surface automatically:
 - In `/onboarding` after agent identity setup (default = Essentials)
-- In `/schedule-add` Step 0 when `vault.yml` has no existing `schedule:` entries
+- In `/schedule-add` Step 0 when `onebrain.yml` has no existing `schedule:` entries
 
 Users with a populated `schedule:` block never see the preset prompt — preset selection is strictly first-run.
 
@@ -449,7 +451,7 @@ The plist emitted by `onebrain register-schedule` always points at the local `on
 
 Headless sessions have no prior conversation history — each invocation is fresh. Memory access is via filesystem only.
 
-Skill arguments declared in `vault.yml` (`args: { topic: this-week }`) are appended to the slash-command prompt as `key=value` tokens — the skill receives them via Claude Code's standard ARGUMENTS slot.
+Skill arguments declared in `onebrain.yml` (`args: { topic: this-week }`) are appended to the slash-command prompt as `key=value` tokens — the skill receives them via Claude Code's standard ARGUMENTS slot.
 
 Permissions: scheduler runs with pre-allowed tools in `.claude/settings.json` `permissions.allow`. Avoid `--dangerously-skip-permissions` except for verified-safe contexts.
 

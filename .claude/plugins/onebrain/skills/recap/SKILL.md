@@ -19,8 +19,8 @@ If no unrecapped logs found → tell user "No unrecapped session logs found." an
 
 ## Run Threshold
 
-Read `recap.min_sessions` from `vault.yml` (default: `6` if field absent).
-Read `recap.min_frequency` from `vault.yml` (default: `2` if field absent).
+Read `recap.min_sessions` from `onebrain.yml` (default: `6` if field absent).
+Read `recap.min_frequency` from `onebrain.yml` (default: `2` if field absent).
 
 **1 unrecapped log:**
 → warn: "Only 1 session log — promotion filter requires at least {min_frequency} sessions."
@@ -116,7 +116,7 @@ AskUserQuestion showing both versions: `keep version A / keep version B / cancel
 
 ## Order of Operations
 
-1. Read `recap.min_sessions` and `recap.min_frequency` from `vault.yml` (apply defaults if absent)
+1. Read `recap.min_sessions` and `recap.min_frequency` from `onebrain.yml` (apply defaults if absent)
 2. Apply run threshold check (warn / stop / proceed per rules above)
 3. Extract insights from all unrecapped session logs; apply promotion filter (`min_frequency`)
 4. Collect and resolve all conflicts (sequential [1/N])
@@ -125,7 +125,7 @@ AskUserQuestion showing both versions: `keep version A / keep version B / cancel
    - Set `recapped: YYYY-MM-DD` in frontmatter
    - Extract 2–4 keywords from log content → set `topics: [...]` in frontmatter
 7. `auto-saved: true` and `synthesized_from_checkpoints: true` logs processed same way
-8. Update `vault.yml` `stats.last_recap: YYYY-MM-DD`
+8. Update `onebrain.yml` `stats.last_recap: YYYY-MM-DD`
 
 ## Writing Promoted Insights
 

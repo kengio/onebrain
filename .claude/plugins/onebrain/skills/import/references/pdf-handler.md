@@ -14,7 +14,7 @@ Note Template: see `note-template.md`.
    - **Core thesis or purpose**: what is this document fundamentally about?
 
 3. Choose output subfolder:
-   - Glob existing subfolders in `[resources_folder]/*/` (resolved from vault.yml)
+   - Glob existing subfolders in `[resources_folder]/*/` (resolved from onebrain.yml)
    - Pick a kebab-case subfolder matching the document's topic (e.g. `research`, `finance`, `legal`)
    - Prefer an existing subfolder if the topic matches; create a new one only if none fit
    - **Single-file mode**: confirm with user: "I'd file this under `[resources_folder]/[suggested]/`. OK?"

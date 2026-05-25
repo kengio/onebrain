@@ -11,7 +11,7 @@ Applies when: /doctor Config check shows 🔴 "Plugin loading from user cache"
 
 Run from vault root (pins to vault and clears cache in one step). The CLI defaults the vault path to the current working directory; passing explicit `"$PWD"` is Bash-only and breaks on PowerShell/cmd:
 ```
-onebrain vault-sync
+onebrain plugin update
 ```
 
 After running: Tell the user: "Start a new Claude Code session — the plugin will now load from the vault directory."
@@ -92,12 +92,12 @@ Modified files: [list of file paths that were changed]
 
 ---
 
-## Pass D: Deprecated vault.yml keys
+## Pass D: Deprecated onebrain.yml keys
 
-If `timezone` key was found in vault.yml (from Step 2 config check): confirm with AskUserQuestion:
-> `timezone` in vault.yml is no longer used — the agent now uses local machine time. Remove it?
+If `timezone` key was found in onebrain.yml (from Step 2 config check): confirm with AskUserQuestion:
+> `timezone` in onebrain.yml is no longer used — the agent now uses local machine time. Remove it?
 
-If **yes**: remove the `timezone` line from vault.yml. If **no**: leave as-is.
+If **yes**: remove the `timezone` line from onebrain.yml. If **no**: leave as-is.
 
 If `timezone` was not found: skip this pass, note "No deprecated keys to clean up."
 
@@ -105,7 +105,7 @@ If `timezone` was not found: skip this pass, note "No deprecated keys to clean u
 
 ## Final step
 
-After all fix passes complete, if any files were written to disk (Pass B or Pass C made confirmed changes — Pass A writes to `installed_plugins.json` outside vault, not indexed by qmd; Pass D edits vault.yml which is not indexed by qmd):
+After all fix passes complete, if any files were written to disk (Pass B or Pass C made confirmed changes — Pass A writes to `installed_plugins.json` outside vault, not indexed by qmd; Pass D edits onebrain.yml which is not indexed by qmd):
 ```
 onebrain qmd-reindex
 ```
@@ -131,11 +131,11 @@ These procedures run during `/doctor --fix` for issues that arise after initial 
    - 3–5 words
    - Update MEMORY-INDEX.md wikilinks to match renamed files
 
-**3. Reset `recap.min_frequency`** to `2` if invalid value found in vault.yml.
+**3. Reset `recap.min_frequency`** to `2` if invalid value found in onebrain.yml.
 
 **4. Rewrite MEMORY.md Identity & Personality to compact format:**
    - Trigger: old 6-field labels detected (`**Agent name:**`, `**User name:**`, etc.)
    - Confirm with AskUserQuestion: "MEMORY.md has pre-v1.10.1 Identity format. Rewrite to compact format?" Options: `yes / no`
    - If yes: apply same migration as /update Step 4 — extract field values using extraction hints, write compact block, preserve all other sections unchanged
 
-Update `vault.yml` `stats.last_doctor_fix: YYYY-MM-DD` on completion.
+Update `onebrain.yml` `stats.last_doctor_fix: YYYY-MM-DD` on completion.

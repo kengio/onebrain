@@ -1,6 +1,6 @@
 ---
-latest_version: 3.0.3
-released: 2026-05-22
+latest_version: 3.1.0
+released: 2026-05-25
 ---
 
 # Changelog
@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary changes, see the [`onebrain-ai/onebrain-cli`](https://github.com/onebrain-ai/onebrain-cli/blob/main/CHANGELOG.md) repository.
+
+## v3.1.0 — 2026-05-25
+
+- **Breaking:** config renamed `vault.yml` → `onebrain.yml` (README · CLAUDE.md · INSTRUCTIONS.md · all skills · marketplace.json). CLI v3.1+ dual-reads for back-compat; run `onebrain doctor --fix` to migrate.
+- **Breaking:** `/update` skill body now calls `onebrain plugin update` for plugin pull (semantic swap in CLI v3.1: `onebrain update` self-updates the CLI binary instead). `onebrain update --check` added as the pre-flight CLI version probe.
+- Marketplace + plugin descriptions updated to the new tagline "Your AI Thinking Partner".
+- `onebrain vault-sync` references in `/onboarding`, `/doctor --fix`, README, and CONTRIBUTING renamed to `onebrain plugin update` to match the v3.1 CLI surface.
+- `requires.cli` floor bumped to `>=3.1.0` (assumes `onebrain plugin update`, `onebrain update --check`, and `onebrain.yml` dual-read support).
 
 ## v3.0.3 — 2026-05-22
 

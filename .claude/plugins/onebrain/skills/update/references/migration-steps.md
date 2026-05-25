@@ -95,7 +95,7 @@ Always: update `updated:` frontmatter to today.
 
 Runs every /update — idempotent. Ensures all hooks point to the correct script.
 
-- Run `onebrain register-hooks` — registers Stop hook; auto-registers PostToolUse qmd hook when `qmd_collection` is set in vault.yml; removes stale onebrain entries from any other hook event (PreCompact, PostCompact, UserPromptSubmit, etc.); preserves user-added non-onebrain hooks under the same events
+- Run `onebrain register-hooks` — registers Stop hook; auto-registers PostToolUse qmd hook when `qmd_collection` is set in onebrain.yml; removes stale onebrain entries from any other hook event (PreCompact, PostCompact, UserPromptSubmit, etc.); preserves user-added non-onebrain hooks under the same events
 - Check output: "all hooks already registered" → ✅ done; "added X" → ✅ registered
 
 **Bash permission for onebrain CLI:**
@@ -115,12 +115,12 @@ Runs every /update — idempotent. Ensures all hooks point to the correct script
 - Expected: 0 orphans, 0 dead links, 0 non-compliant names, MEMORY-INDEX.md present
 - If any check fails: surface to user with suggestion to run /doctor --fix
 
-**Step 8: Initialize vault.yml stats + recap block + update_channel backfill**
-- **Skip if:** vault.yml already has both `stats:` and `recap:` blocks AND `update_channel:` is present
+**Step 8: Initialize onebrain.yml stats + recap block + update_channel backfill**
+- **Skip if:** onebrain.yml already has both `stats:` and `recap:` blocks AND `update_channel:` is present
 - Add stats: block: set last_doctor_run to today; leave last_memory_review and last_recap absent (written on first use)
 - Add recap: block: min_sessions: 6, min_frequency: 2
 - If `update_channel:` is missing, set it to `"stable"` (backfill for vaults migrated before update_channel became required)
-- Skip if vault.yml doesn't exist or user opted out via --skip-stats
+- Skip if onebrain.yml doesn't exist or user opted out via --skip-stats
 
 **Step 9: Backfill `[vault]/.claude/settings.json` marketplace repo**
 - **Skip if:** `[vault]/.claude/settings.json` does not exist

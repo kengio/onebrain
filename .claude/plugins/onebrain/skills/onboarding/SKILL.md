@@ -10,13 +10,13 @@ At the very start, before any user interaction, detect which install path was us
 
 Check if `.claude/plugins/onebrain/` exists locally in this vault directory.
 
-**Re-run check:** If `.claude/plugins/onebrain/` exists AND `vault.yml` exists, this is a re-run on an already-configured vault. Tell the user:
+**Re-run check:** If `.claude/plugins/onebrain/` exists AND `onebrain.yml` exists, this is a re-run on an already-configured vault. Tell the user:
 > OneBrain is already set up in this vault. Running onboarding again will update your identity and preferences : your notes and vault structure will not change. Continue?
 
 Wait for confirmation. If they confirm, proceed with Path A flow (existing steps). If they decline, stop.
 
 **Path B detected:** If `.claude/plugins/onebrain/` does NOT exist locally:
-- If `vault.yml` also exists : warn the user before continuing: `OneBrain vault config (vault.yml) found but plugin files are missing. Proceeding to re-adopt the plugin. Your existing vault.yml will be preserved. If MEMORY.md exists, you'll be asked whether to keep or replace it.`
+- If `onebrain.yml` also exists : warn the user before continuing: `OneBrain vault config (onebrain.yml) found but plugin files are missing. Proceeding to re-adopt the plugin. Your existing onebrain.yml will be preserved. If MEMORY.md exists, you'll be asked whether to keep or replace it.`
 - Skip to the **Path B** section at the bottom of this skill.
 
 **Path A detected:** If `.claude/plugins/onebrain/` exists locally (and it is a first run or confirmed re-run), continue with the steps below (existing onboarding flow).
@@ -184,9 +184,9 @@ If the write or append fails, tell the user: "Could not update CLAUDE.md. Please
 
 Do NOT overwrite existing data.
 
-**Fresh install:** If `05-agent/MEMORY.md` does not exist, write it with personalized content (using the hardcoded default `05-agent` since vault.yml does not exist yet). If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure the agent folder is writable and try again." Do not proceed to Step 9b.
+**Fresh install:** If `05-agent/MEMORY.md` does not exist, write it with personalized content (using the hardcoded default `05-agent` since onebrain.yml does not exist yet). If the write fails, report the error immediately and tell the user: "Could not write MEMORY.md. Ensure the agent folder is writable and try again." Do not proceed to Step 9b.
 
-> **Note:** vault.yml is not written until Step 11, so this step hardcodes the default agent folder path. Do not change this to use vault.yml : the file doesn't exist yet at this point.
+> **Note:** onebrain.yml is not written until Step 11, so this step hardcodes the default agent folder path. Do not change this to use onebrain.yml : the file doesn't exist yet at this point.
 
 Write `05-agent/MEMORY.md` with exactly 3 sections using the template in `references/memory-template.md`.
 Substitute all placeholder values from the interview answers above.
@@ -223,9 +223,9 @@ attachments/video/
 
 ---
 
-## Step 11: Write vault.yml
+## Step 11: Write onebrain.yml
 
-Write `vault.yml` to the vault root using the template in `references/vault-config-template.md`.
+Write `onebrain.yml` to the vault root using the template in `references/vault-config-template.md`.
 
 
 ---
@@ -250,7 +250,7 @@ If user selects "Skip for now": continue to Step 12.
 
 1. Read the canonical preset tier table from `.claude/plugins/onebrain/skills/_shared/schedule-presets.md`.
 
-2. If `vault.yml` already has a non-empty `schedule:` block (re-running onboarding on an existing vault), skip this step entirely.
+2. If `onebrain.yml` already has a non-empty `schedule:` block (re-running onboarding on an existing vault), skip this step entirely.
 
 3. Show via `AskUserQuestion` with default = Tier 2:
    - **Tier 1 — Minimal** (1 entry)
@@ -258,14 +258,14 @@ If user selects "Skip for now": continue to Step 12.
    - **Tier 3 — Maintenance Plus** (6 entries; includes a CLI command-mode entry)
    - **Skip** (no presets — user can run `/schedule-add` later)
 
-4. On Tier 1/2/3 selection: atomically write entries to `vault.yml` `schedule:` block (load → mutate → write entire file). Then run `onebrain register-schedule`. Confirm: `✓ Installed Tier N preset.`
+4. On Tier 1/2/3 selection: atomically write entries to `onebrain.yml` `schedule:` block (load → mutate → write entire file). Then run `onebrain register-schedule`. Confirm: `✓ Installed Tier N preset.`
 
 5. On Skip: take no action; continue.
 
 #### Edge cases
 
-- `vault.yml` not yet created at this point → ensure this step runs AFTER vault.yml creation; reorder if needed.
-- `onebrain register-schedule` fails (e.g. CLI not on PATH yet) → log the failure but don't block onboarding completion. The entries are still in vault.yml; user can register manually later.
+- `onebrain.yml` not yet created at this point → ensure this step runs AFTER onebrain.yml creation; reorder if needed.
+- `onebrain register-schedule` fails (e.g. CLI not on PATH yet) → log the failure but don't block onboarding completion. The entries are still in onebrain.yml; user can register manually later.
 
 ---
 
@@ -333,7 +333,7 @@ Say:
 👋 Onboarding Complete
 ──────────────────────────────────────────────────────────────
   `[agent_folder]/MEMORY.md`   identity and personality saved
-  `vault.yml`                  vault configuration saved
+  `onebrain.yml`                  vault configuration saved
   Folders created:             {list of folders created}
   Plugin hooks:                registered ✅
   [If qmd set up:] qmd search: `{collection-name}` ✅
@@ -407,7 +407,7 @@ From this point, the project-level copy takes priority over the global cache.
 Run from vault root (the CLI defaults the vault path to the current working directory; explicit `"$PWD"` is Bash-only and breaks on PowerShell/cmd):
 
 ```
-onebrain vault-sync
+onebrain plugin update
 ```
 
 This pins the plugin to the vault directory and clears the plugin cache in one step. Tell the user: "Start a new Claude Code session — the plugin will now load from the vault directory."
@@ -473,7 +473,7 @@ For each of `GEMINI.md` and `AGENTS.md`:
 
 ## Path B : Step 10: Write MEMORY.md
 
-> **Note:** If `vault.yml` already exists (the edge case where plugin dir was missing), read its `agent` key under the `folders` mapping (i.e., `folders.agent` in dot-notation) to determine the agent folder. If `vault.yml` does not exist, is unreadable, or lacks the `folders.agent` key, default to `[agent_folder]`. If `vault.yml` does not exist yet (normal first-time Path B), use the hardcoded default `05-agent` : vault.yml is not written until Step 12.
+> **Note:** If `onebrain.yml` already exists (the edge case where plugin dir was missing), read its `agent` key under the `folders` mapping (i.e., `folders.agent` in dot-notation) to determine the agent folder. If `onebrain.yml` does not exist, is unreadable, or lacks the `folders.agent` key, default to `[agent_folder]`. If `onebrain.yml` does not exist yet (normal first-time Path B), use the hardcoded default `05-agent` : onebrain.yml is not written until Step 12.
 
 Check if `[agent_folder]/MEMORY.md` already exists:
 
@@ -494,13 +494,13 @@ Identical to Step 10 in the standard flow, with one difference: only create fold
 
 ---
 
-## Path B : Step 12: Write vault.yml
+## Path B : Step 12: Write onebrain.yml
 
-Check if `vault.yml` already exists in the vault root:
+Check if `onebrain.yml` already exists in the vault root:
 
-**If it exists:** Check whether it already contains a `stats:` key and a `recap:` key. For any missing block, append it to the end of the file using the same defaults as Step 11 in Path A (`stats:` with commented-out fields; `recap:` with `min_sessions: 6` and `min_frequency: 2`). Tell the user: `Keeping your existing vault.yml` (and mention any blocks added).
+**If it exists:** Check whether it already contains a `stats:` key and a `recap:` key. For any missing block, append it to the end of the file using the same defaults as Step 11 in Path A (`stats:` with commented-out fields; `recap:` with `min_sessions: 6` and `min_frequency: 2`). Tell the user: `Keeping your existing onebrain.yml` (and mention any blocks added).
 
-**If it does not exist:** Write `vault.yml` using the same template as Step 11 in the standard Path A flow (including `stats:` and `recap:` blocks).
+**If it does not exist:** Write `onebrain.yml` using the same template as Step 11 in the standard Path A flow (including `stats:` and `recap:` blocks).
 
 
 ---
@@ -513,7 +513,7 @@ Identical to Step 11b in Path A. Ask the user whether to set up qmd, and if yes,
 
 ## Path B : Step 12b2: Schedule Presets (optional)
 
-Identical to **Step 11b2** in Path A. Read presets from `_shared/schedule-presets.md`, skip if `vault.yml` already has a non-empty `schedule:` block, show `AskUserQuestion` with default = Tier 2, apply selected tier atomically. On `onebrain register-schedule` failure, log and continue — non-blocking.
+Identical to **Step 11b2** in Path A. Read presets from `_shared/schedule-presets.md`, skip if `onebrain.yml` already has a non-empty `schedule:` block, show `AskUserQuestion` with default = Tier 2, apply selected tier atomically. On `onebrain register-schedule` failure, log and continue — non-blocking.
 
 ---
 
@@ -531,7 +531,7 @@ Say:
 👋 Onboarding Complete
 ──────────────────────────────────────────────────────────────
   `[agent_folder]/MEMORY.md`   identity and personality saved
-  `vault.yml`                  vault configuration saved
+  `onebrain.yml`                  vault configuration saved
   Folders created:             {list of folders created}
   Plugin hooks:                registered ✅
   [If qmd set up:] qmd search: `{collection-name}` ✅
@@ -543,6 +543,6 @@ Say:
 
 ## Known Gotchas
 
-- **Re-run on an already-configured vault.** The skill's re-run check (top of file) fires when both `.claude/plugins/onebrain/` and `vault.yml` exist. It presents the specific prompt "Running onboarding again will update your identity and preferences : your notes and vault structure will not change." Do not skip this guard or replace it with a more alarming message — the skill is designed to be re-runnable safely.
+- **Re-run on an already-configured vault.** The skill's re-run check (top of file) fires when both `.claude/plugins/onebrain/` and `onebrain.yml` exist. It presents the specific prompt "Running onboarding again will update your identity and preferences : your notes and vault structure will not change." Do not skip this guard or replace it with a more alarming message — the skill is designed to be re-runnable safely.
 
 - **Plugin hooks require a Claude Code session restart to activate.** The Stop hook registered during onboarding takes effect on the NEXT session start. If the user runs /wrapup immediately after onboarding and no checkpoint appears, remind them to restart the session.

@@ -6,10 +6,10 @@ schedulable: false
 
 # Import
 
-Process local files into permanent vault notes in `[resources_folder]/` (resolved from vault.yml; default: `04-resources/`).
+Process local files into permanent vault notes in `[resources_folder]/` (resolved from onebrain.yml; default: `04-resources/`).
 
 Usage:
-- `/import` : scan default import staging inbox (`[inbox_folder]/imports/`, resolved from vault.yml)
+- `/import` : scan default import staging inbox (`[inbox_folder]/imports/`, resolved from onebrain.yml)
 - `/import /path/to/file` : import a single explicit file
 - `/import --attach` : scan inbox and copy supported files into vault for inline Obsidian preview
 - `/import /path/to/file --attach` : single file with attach
@@ -20,13 +20,13 @@ Usage:
 
 ### Step 1: Resolve source and parse flags
 
-Resolve additional folders from `vault.yml` (read the file if it exists at the vault root):
-- If `vault.yml` does not exist: use all defaults below.
-- If `vault.yml` exists but cannot be parsed: report the error and stop : do not proceed with unknown folder paths.
+Resolve additional folders from `onebrain.yml` (read the file if it exists at the vault root):
+- If `onebrain.yml` does not exist: use all defaults below.
+- If `onebrain.yml` exists but cannot be parsed: report the error and stop : do not proceed with unknown folder paths.
 - `folders.import_inbox` → default: `[inbox_folder]/imports` (import staging folder; substituting the resolved `[inbox_folder]` placeholder)
 - `folders.attachments` → default: `attachments` (for --attach copies)
 
-Use `[inbox_folder]` and `[resources_folder]` from session config. Store resolved `[attachments_folder]` from vault.yml above.
+Use `[inbox_folder]` and `[resources_folder]` from session config. Store resolved `[attachments_folder]` from onebrain.yml above.
 
 Parse arguments:
 - Extract `--attach` flag if present (remove from path consideration)
@@ -43,7 +43,7 @@ Parse arguments:
 5. Skip Steps 2 and 3 below. Go directly to Step 4 with this single file.
 
 **Batch mode:**
-1. Use `[inbox_folder]` resolved in Step 1 above (default: `[inbox_folder]/imports` from vault.yml).
+1. Use `[inbox_folder]` resolved in Step 1 above (default: `[inbox_folder]/imports` from onebrain.yml).
 2. List all files recursively in the inbox folder.
 3. If the inbox folder does not exist, report:
    > Import inbox not found at `[inbox path]`. Run `/onboarding` to set up your vault, or use `/import /path/to/file` to import a specific file.

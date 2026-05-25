@@ -14,5 +14,5 @@ Used by `/doctor` Step 2 (Vault Checks) and Step 4 (`--fix` flag).
 | memory/ files with non-compliant names | List offenders (not kebab-case, has date prefix, or >5 words); `--fix` auto-renames |
 | memory/ files with non-default `type` AND not used by 2+ files | Warn possible typo; suggest nearest default via Levenshtein distance ≤2 |
 | `recapped` date in the future (>today) | Warn — likely manual mistake; suggest correcting |
-| `vault.yml` `recap.min_frequency` < 2 or non-integer | Warn invalid config; `--fix` resets to default 2 |
-| `vault.yml` `update_channel` invalid value | Warn: must be `stable`, `next`, or `N.x` pattern (e.g. `1.x`); suggest correcting or removing the field to use default (`stable`) |
+| `onebrain.yml` `recap.min_frequency` < 2 or non-integer | Warn invalid config; `--fix` resets to default 2 |
+| `onebrain.yml` `update_channel` invalid value | Warn: must be `stable`, `next`, or `N.x` pattern (e.g. `1.x`); suggest correcting or removing the field to use default (`stable`) |

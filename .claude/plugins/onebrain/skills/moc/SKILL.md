@@ -18,8 +18,8 @@ Usage:
 
 ## Step 1: Read vault configuration
 
-Read `vault.yml` from the current working directory. If it cannot be read or parsed, stop immediately and tell the user:
-> "vault.yml exists but could not be parsed : aborting. Check vault.yml for syntax errors and try again. Error: [error]."
+Read `onebrain.yml` from the current working directory. If it cannot be read or parsed, stop immediately and tell the user:
+> "onebrain.yml exists but could not be parsed : aborting. Check onebrain.yml for syntax errors and try again. Error: [error]."
 
 Store `moc_path = {vault_root}/MOC.md`.
 

@@ -226,7 +226,7 @@ OneBrain doesn't just store markdown. Every feature exists to make you and the a
 | 🪄 | **Smart Memory Review** | `/memory-review` lets you interactively prune, update, or archive memory entries one by one |
 | 🔒 | **Concurrent-session Safe** | Each session generates an isolated 6-char token — multiple parallel sessions never mix checkpoints |
 | 📱 | **Mobile Access** | Send instructions and receive briefings from anywhere via Telegram |
-| ⚙️ | **CLI Binary** | `onebrain` binary handles checkpoints, session init, doctor, vault-sync, and updates — no Bun, Python, or Node.js required |
+| ⚙️ | **CLI Binary** | `onebrain` binary handles checkpoints, session init, doctor, plugin update, and updates — no Bun, Python, or Node.js required |
 
 ---
 
@@ -443,7 +443,7 @@ onebrain/
 ├── CLAUDE.md          Instructions for Claude Code
 ├── GEMINI.md          Instructions for Gemini CLI
 ├── AGENTS.md          Universal agent instructions
-├── vault.yml          Your vault configuration (created during onboarding)
+├── onebrain.yml          Your vault configuration (created during onboarding)
 ├── .claude/plugins/   AI skills, hooks, and shared INSTRUCTIONS (read by Claude Code)
 └── .gemini/           Gemini CLI project config — hooks + namespaced slash commands
 ```
@@ -509,7 +509,7 @@ Multi-device sync and hosted agent runtimes. Your unified intelligence travels w
 
 ## Scheduling
 
-OneBrain skills can run automatically on a schedule via your OS scheduler (macOS launchd; Linux + Windows coming soon). Configure in `vault.yml`:
+OneBrain skills can run automatically on a schedule via your OS scheduler (macOS launchd; Linux + Windows coming soon). Configure in `onebrain.yml`:
 
 ```yaml
 schedule:

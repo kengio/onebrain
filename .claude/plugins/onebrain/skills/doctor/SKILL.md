@@ -17,18 +17,18 @@ Usage:
 **Flag detection:** Determine active flags from the user's message. `--vault` = user mentions vault-only or content health; `--config` = user mentions config or plugin check; `--fix` = user explicitly asks to fix or auto-fix. Default (no flags) = run all checks.
 
 **Two-source architecture** (post-v3.0.0 GA):
-- **CLI doctor** (`onebrain doctor --json`) handles the 8 built-in checks: vault.yml, vault.yml-keys, folders, plugin-files, settings-hooks, orphan-checkpoints, qmd-embeddings, claude-settings. Rust-native, single subprocess call, structured JSON output.
+- **CLI doctor** (`onebrain doctor --json`) handles the 8 built-in checks: onebrain.yml, onebrain.yml-keys, folders, plugin-files, settings-hooks, orphan-checkpoints, qmd-embeddings, claude-settings. Rust-native, single subprocess call, structured JSON output.
 - **Skill checks** handle vault-content + state-machine checks the CLI doesn't cover: broken wikilinks, orphan notes, stale memory/ files, MEMORY.md size, inbox backlog, log folder size, scheduler health, pause-thread state, memory health.
 
 The skill merges both into one unified report.
 
 ---
 
-## Step 1: Read vault.yml
+## Step 1: Read onebrain.yml
 
-Read `vault.yml`. If it's missing → ⛔ `vault.yml not found — OneBrain may not be configured correctly.` Stop.
+Read `onebrain.yml`. If it's missing → ⛔ `onebrain.yml not found — OneBrain may not be configured correctly.` Stop.
 
-Resolve folder variables (`[inbox_folder]`, `[projects_folder]`, etc.) from vault.yml or defaults.
+Resolve folder variables (`[inbox_folder]`, `[projects_folder]`, etc.) from onebrain.yml or defaults.
 
 ---
 
@@ -98,7 +98,7 @@ The CLI doctor does NOT cover the following — they remain in the skill:
 **Log folder size (housekeeping)**
 - Count `[logs_folder]/log/YYYY/` for the current year. Warn if > 1000: 🟡 `log/ folder: N files in YYYY — consider archive (move stale log/YYYY/MM/ folders to 06-archive/ manually)`. User decides retention; OneBrain has no automatic policy. Skip silently if `log/` doesn't exist.
 
-**vault.yml `recap:` block** (the CLI's `vault.yml-keys` schema check covers required keys; `recap:` may be optional)
+**onebrain.yml `recap:` block** (the CLI's `onebrain.yml-keys` schema check covers required keys; `recap:` may be optional)
 - If `recap:` block is absent: 🟡 `recap: block missing — /recap will use defaults (min_sessions: 6, min_frequency: 2); run /update to add it`.
 
 **Plugin install path** (CLI `plugin-files` validates structural integrity but not the install-path registry)
@@ -115,10 +115,10 @@ The CLI doctor does NOT cover the following — they remain in the skill:
 **Stale `PLUGIN-CHANGELOG.md` at vault root** (post-v3.0.2 migration cleanup)
 - Check if `PLUGIN-CHANGELOG.md` exists at vault root. If yes: 🟡 `Stale PLUGIN-CHANGELOG.md at vault root — renamed to CHANGELOG.md in plugin v3.0.2. Run \`rm PLUGIN-CHANGELOG.md\` to clean up`. (vault-sync currently doesn't delete files renamed-away from upstream — tracked for a future CLI fix.)
 
-**Scheduler health** — only when `vault.yml` has a `schedule:` block.
+**Scheduler health** — only when `onebrain.yml` has a `schedule:` block.
 - **Errors**: glob `[logs_folder]/scheduler/**/*.err.md` from the last 7 days. If any → 🟡 report count + most recent 3 as wikilinks.
 - **Consecutive failures**: for each `schedule:` entry, count consecutive `.err.md` files from newest with no intervening success `.md`. If ≥ 3 → 🔴 CRITICAL — suggest `onebrain register-schedule --resume <skill>`.
-- **Schedule drift**: for each entry, check `~/Library/LaunchAgents/com.onebrain.<labelSafe>.plist` exists where `labelSafe` strips leading `/` from `entry.skill` and replaces non-`[a-zA-Z0-9-]` chars with `-`. If missing → 🟡 `onebrain register-schedule` to repair. If installed plist no longer matches a vault.yml entry → 🟡 stale plist — `onebrain register-schedule --remove` then re-register.
+- **Schedule drift**: for each entry, check `~/Library/LaunchAgents/com.onebrain.<labelSafe>.plist` exists where `labelSafe` strips leading `/` from `entry.skill` and replaces non-`[a-zA-Z0-9-]` chars with `-`. If missing → 🟡 `onebrain register-schedule` to repair. If installed plist no longer matches a onebrain.yml entry → 🟡 stale plist — `onebrain register-schedule --remove` then re-register.
 - **One-shot reachability**: for each `at:` entry, verify timestamp hasn't already passed. If passed and plist still exists → 🟡 expired one-shot not cleaned up.
 
 **Pause: orphan pointer**
@@ -151,7 +151,7 @@ Combine CLI doctor findings (Step 2a) and skill findings (Step 2b) into one unif
 🧠 Memory                              (omit under --config flag, or when 0 memory findings)
   <MEMORY.md size, stale memory/ files, MEMORY.md structure, memory-health checks>
 
-📅 Scheduler                          (only if `schedule:` block present in vault.yml AND has findings)
+📅 Scheduler                          (only if `schedule:` block present in onebrain.yml AND has findings)
   <errors, consecutive failures, drift, expired one-shots>
 
 ⏸️ Pause                              (only if pause state has findings)
@@ -177,13 +177,13 @@ Two-stream fix:
 
 2. **Skill fixes** — Read `references/autofix-procedures.md` and run Pass A, B, C, D in order. Each pass confirms with the user before writing. After all passes, run `onebrain qmd-reindex` as the Final step.
 
-The CLI fix recipes cover: settings-hooks, plugin-files, vault.yml-keys, claude-settings, qmd. The skill fix passes cover: stale confidence-score updates, broken-wikilink fuzzy-match repair, MEMORY.md structure migration. Together: CLI handles config, skill handles content.
+The CLI fix recipes cover: settings-hooks, plugin-files, onebrain.yml-keys, claude-settings, qmd. The skill fix passes cover: stale confidence-score updates, broken-wikilink fuzzy-match repair, MEMORY.md structure migration. Together: CLI handles config, skill handles content.
 
 ---
 
 ## On Completion
 
-1. Update `vault.yml` `stats.last_doctor_run: YYYY-MM-DD`. If `--fix` ran: also update `stats.last_doctor_fix: YYYY-MM-DD`.
+1. Update `onebrain.yml` `stats.last_doctor_run: YYYY-MM-DD`. If `--fix` ran: also update `stats.last_doctor_fix: YYYY-MM-DD`.
 
 2. **Write doctor log entry.** Follow `../_shared/audit-log-format.md` (canonical frontmatter, append-per-day algorithm, run-section heading, failure mode) with:
    - **Filename:** `YYYY-MM-DD-doctor.md` — one file per day.
@@ -218,8 +218,8 @@ The CLI fix recipes cover: settings-hooks, plugin-files, vault.yml-keys, claude-
 
 - **`--fix` is not transactional.** If Pass C is interrupted (user says "stop", a file write fails), previously edited files are already changed but later ones are not. Report each fixed file immediately as it completes so the user has a clear record of what was and wasn't changed.
 
-- **vault.yml with Windows line endings (CRLF).** YAML values may have a trailing `\r` if edited on Windows. Strip trailing whitespace from any vault.yml-derived path string (e.g. `value.replace(/\s+$/, '')`) before passing it to file-existence checks, Glob, or Read — otherwise a folder named `00-inbox\r` will silently fail to match the on-disk `00-inbox/`.
+- **onebrain.yml with Windows line endings (CRLF).** YAML values may have a trailing `\r` if edited on Windows. Strip trailing whitespace from any onebrain.yml-derived path string (e.g. `value.replace(/\s+$/, '')`) before passing it to file-existence checks, Glob, or Read — otherwise a folder named `00-inbox\r` will silently fail to match the on-disk `00-inbox/`.
 
 - **CLI doctor JSON is the v3.x stable contract.** If the JSON shape changes in a future v3.x release, the skill MUST update accordingly (CLI repo's CHANGELOG announces schema changes). If `onebrain doctor --json` fails to parse, treat it like CLI-not-installed (fall back to skill checks only) and surface the parse error.
 
-- **`onebrain doctor` already handles the schema-policy checks.** Don't duplicate them in skill body: `vault.yml-keys`, `plugin-files` integrity, `settings-hooks` (Stop + PostToolUse qmd), and `claude-settings` (stale marketplace) are CLI-side. The skill's job is content-level checks (wikilinks, memory, pause, scheduler) the CLI doesn't know about.
+- **`onebrain doctor` already handles the schema-policy checks.** Don't duplicate them in skill body: `onebrain.yml-keys`, `plugin-files` integrity, `settings-hooks` (Stop + PostToolUse qmd), and `claude-settings` (stale marketplace) are CLI-side. The skill's job is content-level checks (wikilinks, memory, pause, scheduler) the CLI doesn't know about.

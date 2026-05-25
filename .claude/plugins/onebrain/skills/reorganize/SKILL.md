@@ -15,7 +15,7 @@ This skill handles two scenarios:
 
 ## Before You Begin
 
-**Check vault version:** Read `vault.yml`. If the `folders.areas` key is absent, this vault uses the old structure and needs full migration : run the Full Migration section first. If `folders.areas` is present, skip to the Subfolder Migration section.
+**Check vault version:** Read `onebrain.yml`. If the `folders.areas` key is absent, this vault uses the old structure and needs full migration : run the Full Migration section first. If `folders.areas` is present, skip to the Subfolder Migration section.
 
 **Important:** Obsidian wikilinks (`[[Note Name]]`) resolve by filename regardless of path : moving files does NOT break any existing links in your vault.
 
@@ -23,7 +23,7 @@ This skill handles two scenarios:
 
 ## Full Migration (5-folder → 8-folder)
 
-Only run if `vault.yml` is missing `folders.areas`.
+Only run if `onebrain.yml` is missing `folders.areas`.
 
 1. Create new folders: `02-areas/`, `04-resources/`, `05-agent/memory/`
 2. Rename `03-archive/` → `06-archive/`: move all contents preserving `YYYY/MM/` structure
@@ -34,7 +34,7 @@ Only run if `vault.yml` is missing `folders.areas`.
    - Otherwise → keep in `03-knowledge/` (treat as synthesized content)
    - Notes that cannot be automatically classified → list them and ask the user before moving
 5. Verify `05-agent/MEMORY-INDEX.md` exists; if not, create an empty MEMORY-INDEX.md with the standard frontmatter (`total_active: 0`, `total_needs_review: 0`, `updated: YYYY-MM-DD`)
-6. Update `vault.yml` with all 8 keys:
+6. Update `onebrain.yml` with all 8 keys:
    ```yaml
    folders:
      inbox: 00-inbox

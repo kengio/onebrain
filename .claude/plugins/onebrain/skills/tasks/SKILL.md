@@ -15,13 +15,13 @@ Usage:
 
 ## Step 1: Locate vault root
 
-Read `vault.yml` from the current working directory. The directory containing `vault.yml` is the vault root. If `vault.yml` does not exist, warn the user:
+Read `onebrain.yml` from the current working directory. The directory containing `onebrain.yml` is the vault root. If `onebrain.yml` does not exist, warn the user:
 
-> "vault.yml not found : using current working directory as vault root: [path]. Run `/onboarding` to set up your vault configuration."
+> "onebrain.yml not found : using current working directory as vault root: [path]. Run `/onboarding` to set up your vault configuration."
 
 Then proceed with cwd as vault root.
 
-`.claude` is always excluded as a hardcoded literal (not in vault.yml) : it is the plugin host directory and is not user-configurable.
+`.claude` is always excluded as a hardcoded literal (not in onebrain.yml) : it is the plugin host directory and is not user-configurable.
 
 ---
 

@@ -137,7 +137,7 @@ Every skill that modifies MEMORY-INDEX.md must update these frontmatter cache fi
 - `total_needs_review` — increment/decrement on status changes
 - `updated` — set to today after any modification
 
-On /memory-review completion: update `vault.yml` `stats.last_memory_review: YYYY-MM-DD`.
+On /memory-review completion: update `onebrain.yml` `stats.last_memory_review: YYYY-MM-DD`.
 Update regardless of whether any changes were made — the field tracks when the user last
 reviewed, not when they last changed something. Only skip the update if the user invoked
 **stop** without completing any entry action (keep, update, manage..., or skip).

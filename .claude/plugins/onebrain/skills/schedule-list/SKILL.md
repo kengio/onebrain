@@ -8,17 +8,17 @@ schedulable: false
 
 ## Purpose
 
-Display a formatted summary of all entries currently registered in the `schedule:` block of vault.yml. Both skill-mode entries (`skill: /daily`) and command-mode entries (`command: onebrain` + `args: [...]`) are shown side by side, with installed-on-disk status from launchd.
+Display a formatted summary of all entries currently registered in the `schedule:` block of onebrain.yml. Both skill-mode entries (`skill: /daily`) and command-mode entries (`command: onebrain` + `args: [...]`) are shown side by side, with installed-on-disk status from launchd.
 
 ---
 
 ## Skill flow
 
-### Step 1: Read vault.yml
+### Step 1: Read onebrain.yml
 
-Read vault.yml from the vault root. Locate the `schedule:` block.
+Read onebrain.yml from the vault root. Locate the `schedule:` block.
 
-If vault.yml does not exist or has no `schedule:` block, or the block is empty:
+If onebrain.yml does not exist or has no `schedule:` block, or the block is empty:
 
 ```
 No scheduled entries found.
@@ -30,7 +30,7 @@ Stop.
 
 ### Step 2: Fetch status
 
-Read the `schedule:` block from vault.yml directly to get the cron/at expression and `skill`/`command` field for each entry.
+Read the `schedule:` block from onebrain.yml directly to get the cron/at expression and `skill`/`command` field for each entry.
 
 Optionally run from the vault root:
 ```
@@ -90,14 +90,14 @@ After the table, append:
 → /schedule-remove  remove an entry
 ```
 
-For command-mode entries: note that the `/schedule-add` wizard targets skill mode only — command entries are added by editing `vault.yml` directly and running `onebrain register-schedule`.
+For command-mode entries: note that the `/schedule-add` wizard targets skill mode only — command entries are added by editing `onebrain.yml` directly and running `onebrain register-schedule`.
 
 ---
 
 ## Edge cases
 
 - **No entries at all** — handled in Step 1; early exit with helpful message.
-- **Status command unavailable** — graceful fallback to vault.yml data only (Step 2).
+- **Status command unavailable** — graceful fallback to onebrain.yml data only (Step 2).
 - **Partial status** — some entries return status, others don't; show what's available and mark unknowns as `(unknown)`.
 - **Cron alignment** — pad cron columns to the longest expression in the list for readable alignment.
 - **Mixed skill + command** — display both interleaved per original `schedule:` order; do not sort or group by mode.

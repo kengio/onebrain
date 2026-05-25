@@ -1,6 +1,6 @@
-# vault.yml Template — Reference
+# onebrain.yml Template — Reference
 
-Used by onboarding Step 11. Write to vault root as `vault.yml`.
+Used by onboarding Step 11. Write to vault root as `onebrain.yml`.
 
 ```yaml
 folders:

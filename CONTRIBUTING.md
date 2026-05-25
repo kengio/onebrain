@@ -47,7 +47,7 @@ The plugin track ships TWO sibling trees — one per harness — both versioned 
         └── *.toml                       One TOML per user-facing skill (29 commands; description + prompt)
 ```
 
-Both trees are deployed to the user's vault by `vault-sync` in a single sync step. Skills, agents, and INSTRUCTIONS live single-source-of-truth in `.claude/plugins/onebrain/`; the Gemini side references them on demand via the slash command prompts.
+Both trees are deployed to the user's vault by `onebrain plugin update` in a single sync step. Skills, agents, and INSTRUCTIONS live single-source-of-truth in `.claude/plugins/onebrain/`; the Gemini side references them on demand via the slash command prompts.
 
 Key files: [plugin.json](.claude/plugins/onebrain/.claude-plugin/plugin.json) · [INSTRUCTIONS.md](.claude/plugins/onebrain/INSTRUCTIONS.md) · [.gemini/settings.json](.gemini/settings.json)
 
@@ -150,14 +150,14 @@ schedulable: false
 `onebrain register-schedule` reads the target skill's frontmatter at register time and rejects entries that don't meet the schedulable contract:
 
 - `schedulable: false` → hard error
-- `schedulable_with_args: true` + missing required args in vault.yml → hard error
+- `schedulable_with_args: true` + missing required args in onebrain.yml → hard error
 - Arg value containing `"` → hard error (would break the one-shot shell wrapper)
 
 ### Headless context
 
 Scheduled skills run via `claude --vault {VAULT} --skill {SKILL} --headless`. The session has:
 
-- Full MEMORY.md, vault.yml, MEMORY-INDEX.md (SessionStart hook fires)
+- Full MEMORY.md, onebrain.yml, MEMORY-INDEX.md (SessionStart hook fires)
 - Tool access per `settings.json` `permissions.allow`
 - No prior conversation history
 - No interactive user input
@@ -176,7 +176,7 @@ Use `cron:` for recurring schedules and `at:` for one-shot fire-once-then-uninst
 
 ### Don't wrap CLI tasks in skills
 
-If you have a CLI maintenance task (e.g., `onebrain qmd-reindex`), do NOT create a thin wrapper skill just to make it schedulable. Use command mode in `vault.yml` instead:
+If you have a CLI maintenance task (e.g., `onebrain qmd-reindex`), do NOT create a thin wrapper skill just to make it schedulable. Use command mode in `onebrain.yml` instead:
 
 ```yaml
 schedule:
@@ -302,7 +302,7 @@ Tool-name matchers in Gemini accept regex (e.g. `write_file|replace`) — they m
 
 4. **Stop hooks must NOT use `"async": true`** — they inject prompts via `decision:block` written to stdout, which requires synchronous completion before Claude's next response. Async execution fires too late for prompt injection.
 
-5. Use `/update` (or `onebrain register-hooks`) to register or repair the `Stop` hook (and the optional `PostToolUse` qmd-reindex hook when `qmd_collection` is set in `vault.yml`) automatically.
+5. Use `/update` (or `onebrain register-hooks`) to register or repair the `Stop` hook (and the optional `PostToolUse` qmd-reindex hook when `qmd_collection` is set in `onebrain.yml`) automatically.
 
 ## Memory System
 
@@ -359,7 +359,7 @@ MEMORY-INDEX.md must be kept in sync at all times. Every skill that creates, upd
 Vault setup is owned by the `onebrain` CLI binary (Rust — lives at [`onebrain-ai/onebrain-cli`](https://github.com/onebrain-ai/onebrain-cli)), **not** by shell scripts in this repo. The user flow is:
 
 1. Install the CLI from any path — `brew install onebrain-ai/onebrain/onebrain` (macOS) or `npm install -g @onebrain-ai/cli` or direct download from [onebrain-ai/onebrain-cli/releases](https://github.com/onebrain-ai/onebrain-cli/releases/latest)
-2. `onebrain init` — in a new or existing folder, writes `vault.yml`, scaffolds the 8 standard folders, downloads the latest plugin bundle, installs the recommended Obsidian community plugins, and registers the `Stop` hook (plus a `PostToolUse` qmd-reindex hook when `qmd_collection` is set). Aborts safely if a `vault.yml` already exists
+2. `onebrain init` — in a new or existing folder, writes `onebrain.yml`, scaffolds the 8 standard folders, downloads the latest plugin bundle, installs the recommended Obsidian community plugins, and registers the `Stop` hook (plus a `PostToolUse` qmd-reindex hook when `qmd_collection` is set). Aborts safely if a `onebrain.yml` already exists
 3. `/onboarding` — inside the chosen harness, personalises identity + active projects
 
 There are no `install.sh` or `install.ps1` scripts to maintain — the equivalent logic lives in the CLI's `init` and `update` commands. Bug fixes for vault bootstrap belong in the [`onebrain-ai/onebrain-cli`](https://github.com/onebrain-ai/onebrain-cli) repo, not this one.
@@ -387,7 +387,7 @@ This repo is plugin-only. Bump `plugin.json` for any vault-deployed content chan
 - minor for new content (skills, commands, hooks, harness configs)
 - major for breaking schema changes or `requires.cli` floor bumps
 
-The plugin has its own changelog (`CHANGELOG.md`) but no GitHub Release / git tag — `plugin.json` is the source of truth and `vault-sync` reads it on every `/update` to detect drift. The OneBrain CLI is versioned and released separately at [`onebrain-ai/onebrain-cli`](https://github.com/onebrain-ai/onebrain-cli).
+The plugin has its own changelog (`CHANGELOG.md`) but no GitHub Release / git tag — `plugin.json` is the source of truth and `onebrain plugin update` reads it on every `/update` to detect drift. The OneBrain CLI is versioned and released separately at [`onebrain-ai/onebrain-cli`](https://github.com/onebrain-ai/onebrain-cli).
 
 ## Reporting Issues
 

@@ -16,4 +16,4 @@ total_needs_review: 0
 |------|--------|------|--------|-------------|
 ```
 
-Omit `last_review:` from frontmatter — last review date is tracked in `vault.yml stats.last_memory_review:`, updated by /memory-review on each run.
+Omit `last_review:` from frontmatter — last review date is tracked in `onebrain.yml stats.last_memory_review:`, updated by /memory-review on each run.
