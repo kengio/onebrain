@@ -1,6 +1,6 @@
 ---
-latest_version: 3.1.0
-released: 2026-05-25
+latest_version: 3.1.1
+released: 2026-05-27
 ---
 
 # Changelog
@@ -10,6 +10,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Versioning:** Plugin version is tracked in `plugin.json`. Bump when ANY harness config changes — skills, agents, hooks, INSTRUCTIONS, Gemini settings, slash commands, etc.
 > For CLI binary changes, see the [`onebrain-ai/onebrain-cli`](https://github.com/onebrain-ai/onebrain-cli/blob/main/CHANGELOG.md) repository.
+
+## v3.1.1 — 2026-05-27
+
+- INSTRUCTIONS.md (`session_token` doc): `CLAUDE_CODE_SESSION_ID` added as the **top-priority** token source (above `$WT_SESSION`), matching CLI v3.2.5. Claude Code sets it on every host (Obsidian terminal, Claude Desktop, agent-teams) and it is unique per session even when several sessions share one terminal — so checkpoint counters no longer churn with the `claude` PID or collide across sessions in one terminal. Legacy layers (`$WT_SESSION` → … → random) remain as fallback for older CLI.
 
 ## v3.1.0 — 2026-05-26
 
